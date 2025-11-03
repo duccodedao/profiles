@@ -137,19 +137,18 @@
         margin-top: 2rem;
         position: relative;
     }
-    /* *** MODIFIED: Added horizontal scroll *** */
     .category-tabs {
         display: flex;
         align-items: center;
         border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         position: relative;
-        flex-wrap: nowrap; /* Prevent wrapping */
-        overflow-x: auto; /* Enable horizontal scroll */
-        justify-content: flex-start; /* Align tabs to the left */
-        -ms-overflow-style: none;  /* IE and Edge */
-        scrollbar-width: none;  /* Firefox */
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        justify-content: flex-start;
+        -ms-overflow-style: none; 
+        scrollbar-width: none; 
     }
-    .category-tabs::-webkit-scrollbar { /* Hide scrollbar for Chrome, Safari, and Opera */
+    .category-tabs::-webkit-scrollbar {
         display: none;
     }
 
@@ -165,7 +164,7 @@
         display: flex;
         align-items: center;
         gap: 8px;
-        flex-shrink: 0; /* Prevent tabs from shrinking */
+        flex-shrink: 0;
     }
     .category-tab.active {
         color: #fff;
@@ -505,6 +504,24 @@ document.addEventListener('DOMContentLoaded', () => {
         exchange: 'Exchange',
         airdrop: 'Airdrop'
     };
+
+    // *** NEW: Library of random images for projects ***
+    const randomProjectImages = [
+        'https://images.unsplash.com/photo-1519389950473-47ba0277781c?&auto=format&fit=crop&w=128&q=80',
+        'https://images.unsplash.com/photo-1556761175-b413da4b248d?&auto=format&fit=crop&w=128&q=80',
+        'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?&auto=format&fit=crop&w=128&q=80',
+        'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?&auto=format&fit=crop&w=128&q=80',
+        'https://images.unsplash.com/photo-1552664730-d307ca884978?&auto=format&fit=crop&w=128&q=80',
+        'https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?&auto=format&fit=crop&w=128&q=80',
+        'https://images.unsplash.com/photo-1551434678-e076c223a692?&auto=format&fit=crop&w=128&q=80',
+        'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?&auto=format&fit=crop&w=128&q=80'
+    ];
+
+    // *** NEW: Function to get a random image from the library ***
+    function getRandomProjectImage() {
+        const randomIndex = Math.floor(Math.random() * randomProjectImages.length);
+        return randomProjectImages[randomIndex];
+    }
     
     const sidebar = document.getElementById('sidebar');
     const sidebarLinks = document.getElementById('sidebar-links');
@@ -579,7 +596,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function generateCategoryKey(name) { return name.trim().toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-'); }
     
-    // *** NEW: Utility function to fix URLs ***
     function normalizeUrl(url) {
         if (!url || url.trim() === '') return '';
         let trimmedUrl = url.trim();
@@ -622,7 +638,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const projectIndex = allProjects.indexOf(p);
                         return `<div class="col-12 col-md-6 mb-3">
                             <a href="#" data-link="${p.link}" data-project-index="${projectIndex}" class="project-card h-100">
-                                <img src="${p.imageUrl || 'https://via.placeholder.com/64'}" class="project-icon" alt="${p.name}">
+                                <img src="${p.imageUrl || getRandomProjectImage()}" class="project-icon" alt="${p.name}">
                                 <div class="project-card-content">
                                     <div class="text-start">
                                         <h5>${p.name}</h5>
@@ -988,7 +1004,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     projectsData.push({ 
                         name, 
                         description: field.querySelector('.project-desc').value.trim(), 
-                        link: normalizeUrl(link), // *** FIXED: Normalize URL on save ***
+                        link: normalizeUrl(link),
                         imageUrl: field.querySelector('.project-image').value.trim(), 
                         category: field.querySelector('.project-category').value,
                         clicks: parseInt(field.querySelector('.project-clicks-hidden').value, 10) || 0
@@ -1019,9 +1035,43 @@ document.addEventListener('DOMContentLoaded', () => {
         } 
     }
 
-    function openChangePasswordModal() { const modalBody = document.getElementById('change-password-modal-body'); const modalFooter = document.getElementById('change-password-modal-footer'); if (currentUser.providerId === 'password') { modalBody.innerHTML = `<form id="change-password-form"><div class="mb-3"><label class="form-label">Mật khẩu cũ</label><input type="password" class="form-control" id="old-password" required></div><div class="mb-3"><label class="form-label">Mật khẩu mới</label><input type="password" class="form-control" id="new-password" required minlength="6"></div><div class="mb-3"><label class="form-label">Xác nhận mật khẩu</label><input type="password" class="form-control" id="confirm-password" required></div></form>`; modalFooter.innerHTML = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button><button type="submit" form="change-password-form" class="btn btn-primary">Lưu</button>`; document.getElementById('change-password-form').addEventListener('submit', handleChangePassword); } else { modalBody.innerHTML = `<p>Tài khoản của bạn được liên kết với Google. Để đổi mật khẩu, bạn cần dùng chức năng của Google.</p><p>Gửi email đặt lại mật khẩu đến <strong>${auth.currentUser.email}</strong>?</p>`; modalFooter.innerHTML = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button><button type="button" id="send-reset-email-google-btn" class="btn btn-primary">Gửi Email</button>`; document.getElementById('send-reset-email-google-btn').addEventListener('click', handleSendResetEmailFromModal); } changePasswordModal.show(); }
-    async function handleChangePassword(e) { e.preventDefault(); const oldPass = document.getElementById('old-password').value; const newPass = document.getElementById('new-password').value; if (newPass !== document.getElementById('confirm-password').value) { showToast("Mật khẩu mới không khớp."); return; } const btn = e.target.querySelector('button[type="submit"]'); btn.disabled = true; try { await auth.currentUser.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(auth.currentUser.email, oldPass)); await auth.currentUser.updatePassword(newPass); showToast("Đổi mật khẩu thành công!", "success"); changePasswordModal.hide(); } catch (error) { showToast(error.code === 'auth/wrong-password' ? "Mật khẩu cũ không chính xác." : "Đã có lỗi."); } finally { btn.disabled = false; } }
-    async function handleSendResetEmailFromModal() { const btn = document.getElementById('send-reset-email-google-btn'); btn.disabled = true; try { await auth.sendPasswordResetEmail(auth.currentUser.email); showToast("Email đặt lại mật khẩu đã được gửi.", "success"); changePasswordModal.hide(); } catch(error) { showToast("Gửi email thất bại."); } finally { btn.disabled = false; } }
+    // === START: MODIFIED PASSWORD CHANGE LOGIC ===
+    function openChangePasswordModal() {
+        const modalBody = document.getElementById('change-password-modal-body');
+        const modalFooter = document.getElementById('change-password-modal-footer');
+
+        // Unified message for all account types
+        modalBody.innerHTML = `<p>Một liên kết để đặt lại mật khẩu sẽ được gửi đến email đã đăng ký của bạn:</p><p class="text-center"><strong>${auth.currentUser.email}</strong></p><p>Vui lòng kiểm tra hộp thư đến để tiếp tục.</p>`;
+
+        modalFooter.innerHTML = `
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+            <button type="button" id="send-reset-link-btn" class="btn btn-primary">Gửi liên kết</button>
+        `;
+
+        // Add event listener to the new button
+        document.getElementById('send-reset-link-btn').addEventListener('click', handleSendResetLinkFromModal);
+
+        changePasswordModal.show();
+    }
+
+    async function handleSendResetLinkFromModal() {
+        const btn = document.getElementById('send-reset-link-btn');
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Đang gửi...`;
+
+        try {
+            await auth.sendPasswordResetEmail(auth.currentUser.email);
+            showToast("Email đặt lại mật khẩu đã được gửi.", "success");
+            changePasswordModal.hide();
+        } catch (error) {
+            console.error("Lỗi gửi email đặt lại mật khẩu:", error);
+            showToast("Gửi email thất bại. Vui lòng thử lại.");
+            btn.disabled = false; // Re-enable button on failure
+            btn.textContent = 'Gửi liên kết';
+        }
+    }
+    // === END: MODIFIED PASSWORD CHANGE LOGIC ===
+
     function setupAuthForm() { showRegisterBtn.addEventListener('click', () => authFlipCard.classList.add('is-flipped')); showLoginBtn.addEventListener('click', () => authFlipCard.classList.remove('is-flipped')); document.getElementById('forgot-password-btn').addEventListener('click', () => switchView('forgotPassword')); document.getElementById('back-to-login-btn').addEventListener('click', () => { switchView('auth'); authFlipCard.classList.remove('is-flipped'); }); const resetEmailBtn = document.getElementById('reset-mode-email-btn'), resetPhoneBtn = document.getElementById('reset-mode-phone-btn'); const resetEmailGroup = document.getElementById('reset-email-group'), resetPhoneGroup = document.getElementById('reset-phone-group'); resetEmailBtn.addEventListener('click', () => { passwordResetMode = 'email'; resetEmailGroup.style.display = 'block'; resetPhoneGroup.style.display = 'none'; resetEmailBtn.classList.replace('btn-outline-light', 'btn-primary'); resetPhoneBtn.classList.replace('btn-primary', 'btn-outline-light'); }); resetPhoneBtn.addEventListener('click', () => { passwordResetMode = 'phone'; resetEmailGroup.style.display = 'none'; resetPhoneGroup.style.display = 'block'; resetPhoneBtn.classList.replace('btn-outline-light', 'btn-primary'); resetEmailBtn.classList.replace('btn-primary', 'btn-outline-light'); }); }
 
     function main() {
