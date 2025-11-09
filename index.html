@@ -17,9 +17,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
-    
-    <!-- NEW: SortableJS for Drag & Drop -->
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
 </head>
 <style>
@@ -396,82 +393,6 @@
         color: var(--accent-primary);
     }
 
-    /* === NEW STYLES for NEW FEATURES === */
-    /* Profile View Counter */
-    .profile-stats {
-        margin-top: 1rem;
-        color: rgba(255, 255, 255, 0.8);
-    }
-    .profile-stats i {
-        margin-right: 6px;
-    }
-
-    /* Search Bar */
-    .search-container {
-        margin-top: 2rem;
-        margin-bottom: -1rem;
-    }
-    #project-search-input {
-        background-color: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        color: white;
-        border-radius: 12px;
-    }
-    #project-search-input::placeholder { color: rgba(255, 255, 255, 0.6); }
-
-    /* YouTube Embed */
-    .youtube-embed-container {
-        position: relative;
-        width: 100%;
-        aspect-ratio: 16 / 9; /* Responsive 16:9 ratio */
-        border-radius: 15px;
-        overflow: hidden;
-        box-shadow: var(--shadow-light);
-    }
-    .youtube-embed-container iframe {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        border: 0;
-    }
-
-    /* Dashboard Styling */
-    #view-dashboard .card {
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(10px);
-    }
-    .stat-card {
-        border-radius: 1rem;
-        padding: 1.5rem;
-    }
-    .stat-card .stat-value {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: var(--accent-primary);
-    }
-    .stat-card .stat-label {
-        font-size: 1rem;
-        color: var(--text-secondary);
-    }
-    #top-projects-list .list-group-item {
-        background: none;
-    }
-
-    /* Preview Mode */
-    body.preview-mode #edit-profile-btn,
-    body.preview-mode .rename-category-btn,
-    body.preview-mode #add-category-btn {
-        display: none !important;
-    }
-    
-    /* SortableJS helper class */
-    .sortable-ghost {
-        opacity: 0.4;
-        background: #c8ebfb;
-    }
-
 </style>
 <body>
     <div id="particles-js"></div>
@@ -600,16 +521,6 @@
             </div>
         </div>
 
-        <!-- NEW: Dashboard View -->
-        <div class="view" id="view-dashboard">
-            <div class="row justify-content-center">
-                <div class="col-12 col-md-10 col-lg-8" id="dashboard-page-content">
-                    <!-- Dashboard content will be rendered here by JS -->
-                </div>
-            </div>
-        </div>
-
-
         <!-- Not Found View -->
         <div class="view text-center" id="view-not-found">
             <div class="card-glass p-5">
@@ -691,10 +602,8 @@
         </div>
     </div>
 
-<script>
-// No changes to JS libraries, just added SortableJS CDN in <head>
-</script>
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -723,12 +632,10 @@ document.addEventListener('DOMContentLoaded', () => {
         auth: document.getElementById('view-auth'), 
         profile: document.getElementById('view-profile'), 
         notFound: document.getElementById('view-not-found'),
-        forgotPassword: document.getElementById('view-forgot-password'),
-        dashboard: document.getElementById('view-dashboard') // NEW
+        forgotPassword: document.getElementById('view-forgot-password') 
     };
     const headerControls = document.getElementById('header-controls');
     const profilePageContent = document.getElementById('profile-page-content');
-    const dashboardPageContent = document.getElementById('dashboard-page-content'); // NEW
     const editModal = new bootstrap.Modal(document.getElementById('editModal'));
     const changePasswordModal = new bootstrap.Modal(document.getElementById('changePasswordModal'));
     const projectDetailModal = new bootstrap.Modal(document.getElementById('projectDetailModal'));
@@ -801,24 +708,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('sidebar-toggle-btn').addEventListener('click', toggleSidebar);
 
         if (currentUser) {
-            let ownerLinks = `
-                <a class="sidebar-link" href="#" id="dashboard-btn"><i class="fas fa-chart-line"></i> Dashboard</a>
-                <a class="sidebar-link" href="#" id="preview-mode-btn"><i class="fas fa-eye"></i> Chế độ xem trước</a>
-                <hr>
-            `;
-            sidebarLinks.innerHTML = `
-                <a class="sidebar-link" href="?user=${currentUser.username}"><i class="fas fa-user-circle"></i> Trang của tôi</a>
-                ${ownerLinks}
-                <a class="sidebar-link" href="#" id="copy-profile-link-btn"><i class="fas fa-copy"></i> Sao chép Link</a>
-                <a class="sidebar-link" href="#" id="change-password-btn"><i class="fas fa-key"></i> Đổi mật khẩu</a>
-                <hr>
-                <a class="sidebar-link" href="#" id="export-json-btn"><i class="fas fa-file-export"></i> Xuất JSON</a>
-                <a class="sidebar-link" href="#" id="import-json-btn"><i class="fas fa-file-import"></i> Nhập JSON</a>
-                <hr>
-                <a class="sidebar-link logout" href="#" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>`;
-            
-            document.getElementById('dashboard-btn').addEventListener('click', async (e) => { e.preventDefault(); const docSnap = await db.collection('profiles').doc(currentUser.username).get(); if(docSnap.exists) renderDashboard(docSnap.data()); closeSidebar(); });
-            document.getElementById('preview-mode-btn').addEventListener('click', (e) => { e.preventDefault(); togglePreviewMode(); });
+            sidebarLinks.innerHTML = `<a class="sidebar-link" href="?user=${currentUser.username}"><i class="fas fa-user-circle"></i> Trang của tôi</a><a class="sidebar-link" href="#" id="copy-profile-link-btn"><i class="fas fa-copy"></i> Sao chép Link</a><a class="sidebar-link" href="#" id="change-password-btn"><i class="fas fa-key"></i> Đổi mật khẩu</a><hr><a class="sidebar-link" href="#" id="export-json-btn"><i class="fas fa-file-export"></i> Xuất JSON</a><a class="sidebar-link" href="#" id="import-json-btn"><i class="fas fa-file-import"></i> Nhập JSON</a><hr><a class="sidebar-link logout" href="#" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>`;
             document.getElementById('logout-btn').addEventListener('click', handleLogout);
             document.getElementById('copy-profile-link-btn').addEventListener('click', handleCopyLink);
             document.getElementById('change-password-btn').addEventListener('click', openChangePasswordModal);
@@ -839,6 +729,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleExportJson(e) { e.preventDefault(); if (!currentUser) return; try { const docSnap = await db.collection('profiles').doc(currentUser.username).get(); if (!docSnap.exists) { showToast("Không tìm thấy dữ liệu hồ sơ."); return; } const data = docSnap.data(); const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2)); const downloadAnchorNode = document.createElement('a'); downloadAnchorNode.setAttribute("href", dataStr); downloadAnchorNode.setAttribute("download", `bmass_profile_${currentUser.username}.json`); document.body.appendChild(downloadAnchorNode); downloadAnchorNode.click(); downloadAnchorNode.remove(); showToast("Đã xuất dữ liệu thành công!", "success"); closeSidebar(); } catch (error) { console.error("Lỗi khi xuất JSON:", error); showToast("Đã có lỗi xảy ra khi xuất dữ liệu."); } }
     async function handleImportJson(e) { const file = e.target.files[0]; if (!file) return; if (!confirm("Bạn có chắc chắn muốn nhập dữ liệu từ tệp này không? Mọi dữ liệu hồ sơ hiện tại (ngoại trừ username, email) sẽ bị ghi đè.")) return; const reader = new FileReader(); reader.onload = async (event) => { try { const importedData = JSON.parse(event.target.result); if (typeof importedData !== 'object' || importedData === null || !importedData.name) throw new Error("Tệp JSON không hợp lệ."); delete importedData.ownerUid; delete importedData.username; delete importedData.email; await db.collection('profiles').doc(currentUser.username).update(importedData); showToast("Nhập dữ liệu thành công! Trang sẽ được làm mới.", "success"); setTimeout(() => location.reload(), 1500); } catch (error) { console.error("Lỗi khi nhập JSON:", error); showToast("Lỗi: " + error.message); } finally { e.target.value = null; } }; reader.readAsText(file); closeSidebar(); }
 
+    // MODIFIED: Handle route change to check for project ID
     async function handleRouteChange() {
         const params = new URLSearchParams(window.location.search);
         const username = params.get('user');
@@ -847,6 +738,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (username) {
             const profileData = await fetchAndRenderProfile(username);
             
+            // NEW: If a project ID is in the URL, try to show its modal after the page has loaded
             if (projectIdToShow && profileData) {
                 await showProjectModalById(profileData, projectIdToShow, username);
             }
@@ -893,43 +785,24 @@ document.addEventListener('DOMContentLoaded', () => {
         
         return processedText.replace(/\n/g, '<br>');
     }
-    
-    // NEW: Helper to get YouTube video ID from various URL formats
-    function getYouTubeId(url) {
-        let ID = '';
-        url = url.replace(/(>|<)/gi,'').split(/(vi\/|v=|\/v\/|youtu\.be\/|\/embed\/)/);
-        if (url[2] !== undefined) {
-            ID = url[2].split(/[^0-9a-z_\-]/i);
-            ID = ID[0];
-        } else {
-            ID = url;
-        }
-        return ID;
-    }
 
 
+    // MODIFIED: Function now returns profile data on success
     async function fetchAndRenderProfile(username) {
         switchView('loading');
         try {
-            const docRef = db.collection('profiles').doc(username);
-            const docSnap = await docRef.get();
-            
+            const docSnap = await db.collection('profiles').doc(username).get();
             if (!docSnap.exists) {
                 switchView('notFound');
                 return null;
             }
-
-            // Increment profile view count. This is async and won't block rendering.
-            docRef.update({ profileViews: firebase.firestore.FieldValue.increment(1) });
             
             const data = docSnap.data();
             const isOwner = currentUser && currentUser.uid === data.ownerUid;
 
             let socialLinksHTML = '';
             for (const [key, url] of Object.entries(data.socials || {})) { if (url && socialIcons[key]) { const href = key === 'gmail' ? `mailto:${url}` : url; socialLinksHTML += `<a href="${href}" ${key !== 'gmail' ? 'target="_blank" rel="noopener noreferrer"' : ''} class="social-link" title="${key}"><i class="${socialIcons[key]}"></i></a>`; } }
-            
-            const viewCountHTML = `<div class="profile-stats"><i class="fas fa-eye"></i>${(data.profileViews || 0) + 1} Lượt xem</div>`;
-            const profileInfoHTML = `<div class="card-glass text-center" style="padding-top: 80px;"><img src="${data.avatarUrl || 'https://via.placeholder.com/150'}" class="profile-avatar"><div class="profile-name-wrapper mt-3"><h1 class="profile-name">${data.name}</h1>${data.isVerified ? '<i class="fas fa-check-circle verified-tick" title="Đã xác thực"></i>' : ''}</div><p class="text-secondary col-md-10 mx-auto mt-2" style="color: rgba(255, 255, 255, 0.7) !important;">${data.bio}</p>${viewCountHTML}<div class="social-links">${socialLinksHTML}</div>${isOwner ? '<button id="edit-profile-btn" title="Chỉnh sửa"><i class="fas fa-pencil-alt"></i></button>' : ''}</div>`;
+            const profileInfoHTML = `<div class="card-glass text-center" style="padding-top: 80px;"><img src="${data.avatarUrl || 'https://via.placeholder.com/150'}" class="profile-avatar"><div class="profile-name-wrapper mt-3"><h1 class="profile-name">${data.name}</h1>${data.isVerified ? '<i class="fas fa-check-circle verified-tick" title="Đã xác thực"></i>' : ''}</div><p class="text-secondary col-md-10 mx-auto mt-2" style="color: rgba(255, 255, 255, 0.7) !important;">${data.bio}</p><div class="social-links">${socialLinksHTML}</div>${isOwner ? '<button id="edit-profile-btn" title="Chỉnh sửa"><i class="fas fa-pencil-alt"></i></button>' : ''}</div>`;
             
             const customCategories = data.customCategories || {}; 
             const allProjects = data.projects || [];
@@ -944,7 +817,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (leaderboardProjects.length > 0) {
                 tabsHTML += `<button class="category-tab" data-category="leaderboard"><i class="fas fa-trophy" style="color: #FFD700;"></i><span>Bảng xếp hạng</span></button>`;
-                contentHTML += `<div class="category-content" data-category="leaderboard"><div class="row g-3">${generateProjectItemsHTML(leaderboardProjects, allProjects)}</div></div>`;
+                
+                const leaderboardItemsHTML = leaderboardProjects.map(p => {
+                    const projectIndex = allProjects.indexOf(p);
+                    return `<div class="col-12 col-md-6 mb-3">
+                        <div data-project-index="${projectIndex}" class="project-card h-100">
+                            <img src="${p.imageUrl || getRandomProjectImage()}" class="project-icon" alt="${p.name}">
+                            <div class="project-card-content">
+                                <div class="text-start">
+                                    <h5>${p.name}</h5>
+                                    <p class="mb-0">${p.description || ''}</p>
+                                </div>
+                                <div class="project-clicks">
+                                    <i class="fas fa-eye me-1"></i>
+                                    <span class="project-clicks-count">${p.clicks || 0}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+                contentHTML += `<div class="category-content" data-category="leaderboard"><div class="row g-3">${leaderboardItemsHTML}</div></div>`;
             }
 
             const allCategoryKeys = [...new Set([...Object.keys(defaultCategories), ...Object.keys(customCategories)])];
@@ -958,22 +850,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 const projectsInCategory = allProjects.filter(p => (p.category || 'project') === key);
                 let itemsHTML = '<p class="text-white-50">Chưa có mục nào trong danh mục này.</p>';
                 if(projectsInCategory.length > 0) {
-                    itemsHTML = generateProjectItemsHTML(projectsInCategory, allProjects);
+                    itemsHTML = projectsInCategory.map(p => {
+                        const projectIndex = allProjects.indexOf(p);
+                        return `<div class="col-12 col-md-6 mb-3">
+                            <div data-project-index="${projectIndex}" class="project-card h-100">
+                                <img src="${p.imageUrl || getRandomProjectImage()}" class="project-icon" alt="${p.name}">
+                                <div class="project-card-content">
+                                    <div class="text-start">
+                                        <h5>${p.name}</h5>
+                                        <p class="mb-0">${p.description || ''}</p>
+                                    </div>
+                                    <div class="project-clicks">
+                                        <i class="fas fa-eye me-1"></i>
+                                        <span class="project-clicks-count">${p.clicks || 0}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`;
+                    }).join('');
                 }
                 contentHTML += `<div class="category-content" data-category="${key}"><div class="row g-3">${itemsHTML}</div></div>`;
             });
             
-            const searchBarHTML = `<div class="search-container"><input type="search" id="project-search-input" class="form-control" placeholder="🔍 Tìm kiếm dự án..."></div>`;
-            const projectsContainerHTML = allProjects.length > 0 || isOwner ? `${searchBarHTML}<div class="category-tabs-container"><div class="category-tabs" id="category-tabs">${tabsHTML}${isOwner ? '<button class="category-tab" id="add-category-btn" title="Thêm danh mục mới"><i class="fas fa-plus"></i></button>' : ''}<div class="tab-underline" id="tab-underline"></div></div><div class="category-content-container" id="category-content-container">${contentHTML}</div></div>` : '';
+            const projectsContainerHTML = allProjects.length > 0 || isOwner ? `<div class="category-tabs-container"><div class="category-tabs" id="category-tabs">${tabsHTML}${isOwner ? '<button class="category-tab" id="add-category-btn" title="Thêm danh mục mới"><i class="fas fa-plus"></i></button>' : ''}<div class="tab-underline" id="tab-underline"></div></div><div class="category-content-container" id="category-content-container">${contentHTML}</div></div>` : '';
 
             profilePageContent.innerHTML = profileInfoHTML + projectsContainerHTML;
             switchView('profile');
 
             if (document.getElementById('category-tabs')) {
                 setupCategoryTabs();
-                document.getElementById('project-search-input').addEventListener('input', handleProjectSearch);
             }
-            if (isOwner) {
+             if (isOwner) {
                 const editBtn = document.getElementById('edit-profile-btn');
                 if (editBtn) {
                     editBtn.style.display = 'flex';
@@ -987,63 +894,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 card.addEventListener('click', () => handleProjectClick(card));
             });
             
-            return data;
+            return data; // Return data on success
         } catch (error) {
             console.error("Error loading profile:", error);
             switchView('notFound');
-            return null;
+            return null; // Return null on error
         }
     }
-    
-    // NEW: Refactored project item HTML generation
-    function generateProjectItemsHTML(projectsToDisplay, allProjectsList) {
-        return projectsToDisplay.map(p => {
-            const projectIndex = allProjectsList.indexOf(p);
-            
-            if (p.embedType === 'youtube') {
-                const videoId = getYouTubeId(p.link);
-                if (videoId) {
-                    return `<div class="col-12 col-md-6 mb-3 project-item" data-name="${p.name.toLowerCase()}" data-description="${(p.description || '').toLowerCase()}">
-                        <div class="youtube-embed-container">
-                            <iframe src="https://www.youtube.com/embed/${videoId}" title="${p.name}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                        </div>
-                    </div>`;
-                }
-            }
-
-            // Default card
-            return `<div class="col-12 col-md-6 mb-3 project-item" data-name="${p.name.toLowerCase()}" data-description="${(p.description || '').toLowerCase()}">
-                <div data-project-index="${projectIndex}" class="project-card h-100">
-                    <img src="${p.imageUrl || getRandomProjectImage()}" class="project-icon" alt="${p.name}">
-                    <div class="project-card-content">
-                        <div class="text-start">
-                            <h5>${p.name}</h5>
-                            <p class="mb-0">${p.description || ''}</p>
-                        </div>
-                        <div class="project-clicks">
-                            <i class="fas fa-eye me-1"></i>
-                            <span class="project-clicks-count">${p.clicks || 0}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>`;
-        }).join('');
-    }
-
-    // NEW: Search functionality
-    function handleProjectSearch(e) {
-        const searchTerm = e.target.value.toLowerCase().trim();
-        document.querySelectorAll('.project-item').forEach(item => {
-            const name = item.dataset.name;
-            const desc = item.dataset.description;
-            if (name.includes(searchTerm) || desc.includes(searchTerm)) {
-                item.style.display = 'block';
-            } else {
-                item.style.display = 'none';
-            }
-        });
-    }
-
 
     function setupCategoryTabs() {
         const tabsContainer = document.getElementById('category-tabs');
@@ -1115,7 +972,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 linkBtn.dataset.link = project.link;
                 linkBtn.dataset.projectIndex = projectIndex;
                 linkBtn.dataset.username = username;
-                
+
+                // MODIFIED: Populate Share Button with project ID
                 const shareBtn = document.getElementById('project-detail-share-btn');
                 shareBtn.dataset.projectName = project.name;
                 shareBtn.dataset.projectId = project.id; 
@@ -1128,6 +986,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
+    // MODIFIED: Share handler creates a URL with the project ID
     async function handleShareProject(buttonElement) {
         const name = buttonElement.dataset.projectName;
         const projectId = buttonElement.dataset.projectId;
@@ -1157,14 +1016,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
+    // NEW: Function to show a project modal directly from a project ID
     async function showProjectModalById(profileData, projectId, username) {
         const allProjects = profileData.projects || [];
+        // Use == for loose comparison as URL param is string and ID is number
         const projectToShow = allProjects.find(p => p.id == projectId); 
 
         if (projectToShow) {
             const projectIndex = allProjects.indexOf(projectToShow);
-            const cardElement = { dataset: { projectIndex: projectIndex } };
+            const cardElement = { dataset: { projectIndex: projectIndex } }; // Mock element
             await handleProjectClick(cardElement);
+
+            // Clean the URL to avoid modal popping up on refresh
             const cleanUrl = `${window.location.pathname}?user=${username}`;
             history.replaceState(null, '', cleanUrl);
         } else {
@@ -1340,10 +1203,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    async function handleRegister(e) { e.preventDefault(); const username = document.getElementById('register-username').value.trim().toLowerCase(); const email = document.getElementById('register-email').value.trim(); const password = document.getElementById('register-password').value; const phone = document.getElementById('register-phone').value.trim(); const btn = e.target.querySelector('button[type="submit"]'); btn.disabled = true; btn.innerHTML = `<div class="spinner-border spinner-border-sm"></div>`; if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) { showToast("Username không hợp lệ."); btn.disabled = false; btn.textContent = 'Đăng ký'; return; } if (phone && phone.length < 9) { showToast("Số điện thoại không hợp lệ."); btn.disabled = false; btn.textContent = 'Đăng ký'; return; } try { const userDoc = await db.collection('profiles').doc(username).get(); if (userDoc.exists) { showToast("Username này đã được sử dụng."); btn.disabled = false; btn.textContent = 'Đăng ký'; return; } const userCredential = await auth.createUserWithEmailAndPassword(email, password); const user = userCredential.user; await user.sendEmailVerification(); await db.collection('profiles').doc(username).set({ ownerUid: user.uid, username, name: username, avatarUrl: "", isVerified: false, email, phoneNumber: phone, bio: "Chào mừng đến trang của tôi!", socials: {}, projects: [], customCategories: {}, profileViews: 0 }); showToast("Đăng ký thành công! Vui lòng xác thực email.", 'success'); currentUser = { uid: user.uid, email: user.email, username, providerId: 'password' }; setupSidebar(); history.pushState(null, '', `?user=${username}`); verificationBanner.style.display = 'block'; await fetchAndRenderProfile(username); } catch (error) { showToast(error.code === 'auth/email-already-in-use' ? "Email này đã được sử dụng." : "Đã có lỗi xảy ra."); } finally { btn.disabled = false; btn.textContent = 'Đăng ký'; } }
+    async function handleRegister(e) { e.preventDefault(); const username = document.getElementById('register-username').value.trim().toLowerCase(); const email = document.getElementById('register-email').value.trim(); const password = document.getElementById('register-password').value; const phone = document.getElementById('register-phone').value.trim(); const btn = e.target.querySelector('button[type="submit"]'); btn.disabled = true; btn.innerHTML = `<div class="spinner-border spinner-border-sm"></div>`; if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) { showToast("Username không hợp lệ."); btn.disabled = false; btn.textContent = 'Đăng ký'; return; } if (phone && phone.length < 9) { showToast("Số điện thoại không hợp lệ."); btn.disabled = false; btn.textContent = 'Đăng ký'; return; } try { const userDoc = await db.collection('profiles').doc(username).get(); if (userDoc.exists) { showToast("Username này đã được sử dụng."); btn.disabled = false; btn.textContent = 'Đăng ký'; return; } const userCredential = await auth.createUserWithEmailAndPassword(email, password); const user = userCredential.user; await user.sendEmailVerification(); await db.collection('profiles').doc(username).set({ ownerUid: user.uid, username, name: username, avatarUrl: "", isVerified: false, email, phoneNumber: phone, bio: "Chào mừng đến trang của tôi!", socials: {}, projects: [], customCategories: {} }); showToast("Đăng ký thành công! Vui lòng xác thực email.", 'success'); currentUser = { uid: user.uid, email: user.email, username, providerId: 'password' }; setupSidebar(); history.pushState(null, '', `?user=${username}`); verificationBanner.style.display = 'block'; await fetchAndRenderProfile(username); } catch (error) { showToast(error.code === 'auth/email-already-in-use' ? "Email này đã được sử dụng." : "Đã có lỗi xảy ra."); } finally { btn.disabled = false; btn.textContent = 'Đăng ký'; } }
     async function handleLogin(e) { e.preventDefault(); const email = document.getElementById('login-email').value.trim(); const password = document.getElementById('login-password').value; const btn = e.target.querySelector('button[type="submit"]'); btn.disabled = true; btn.innerHTML = `<div class="spinner-border spinner-border-sm"></div>`; try { await auth.signInWithEmailAndPassword(email, password); } catch (error) { showToast("Email hoặc mật khẩu không chính xác."); btn.disabled = false; btn.textContent = 'Đăng nhập'; } }
     async function handleLogout(e) { e.preventDefault(); await auth.signOut(); window.location.href = '/'; }
-    async function handleGoogleLogin() { const provider = new firebase.auth.GoogleAuthProvider(); try { const result = await auth.signInWithPopup(provider); const user = result.user; const profileQuery = await db.collection('profiles').where('ownerUid', '==', user.uid).limit(1).get(); if (profileQuery.empty) { let username = user.email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, ''); let userDoc = await db.collection('profiles').doc(username).get(); while(userDoc.exists) { username = username + Math.floor(Math.random() * 100); userDoc = await db.collection('profiles').doc(username).get(); } await db.collection('profiles').doc(username).set({ ownerUid: user.uid, username, name: user.displayName || username, avatarUrl: user.photoURL || "", isVerified: true, email: user.email, phoneNumber: "", bio: "Chào mừng đến trang của tôi!", socials: {}, projects: [], customCategories: {}, profileViews: 0 }); currentUser = { uid: user.uid, email: user.email, username, providerId: 'google.com' }; setupSidebar(); history.pushState(null, '', `?user=${username}`); await fetchAndRenderProfile(username); showToast("Tài khoản đã được tạo thành công!", 'success'); } else { showToast("Chào mừng bạn trở lại!", 'success'); } } catch (error) { if (error.code !== 'auth/popup-closed-by-user') showToast("Không thể đăng nhập với Google."); } }
+    async function handleGoogleLogin() { const provider = new firebase.auth.GoogleAuthProvider(); try { const result = await auth.signInWithPopup(provider); const user = result.user; const profileQuery = await db.collection('profiles').where('ownerUid', '==', user.uid).limit(1).get(); if (profileQuery.empty) { let username = user.email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, ''); let userDoc = await db.collection('profiles').doc(username).get(); while(userDoc.exists) { username = username + Math.floor(Math.random() * 100); userDoc = await db.collection('profiles').doc(username).get(); } await db.collection('profiles').doc(username).set({ ownerUid: user.uid, username, name: user.displayName || username, avatarUrl: user.photoURL || "", isVerified: true, email: user.email, phoneNumber: "", bio: "Chào mừng đến trang của tôi!", socials: {}, projects: [], customCategories: {} }); currentUser = { uid: user.uid, email: user.email, username, providerId: 'google.com' }; setupSidebar(); history.pushState(null, '', `?user=${username}`); await fetchAndRenderProfile(username); showToast("Tài khoản đã được tạo thành công!", 'success'); } else { showToast("Chào mừng bạn trở lại!", 'success'); } } catch (error) { if (error.code !== 'auth/popup-closed-by-user') showToast("Không thể đăng nhập với Google."); } }
     async function handleForgotPassword(e) { e.preventDefault(); const btn = e.target.querySelector('button[type="submit"]'); btn.disabled = true; btn.innerHTML = `<div class="spinner-border spinner-border-sm"></div> Đang gửi...`; try { if (passwordResetMode === 'email') { const email = document.getElementById('reset-email-input').value.trim(); if (!email) { showToast("Vui lòng nhập email."); return; } await auth.sendPasswordResetEmail(email); showToast(`Đã gửi email khôi phục đến ${email}.`, 'success'); switchView('auth'); } else { const phone = document.getElementById('reset-phone-input').value.trim(); if (!phone) { showToast("Vui lòng nhập số điện thoại."); return; } const querySnapshot = await db.collection('profiles').where('phoneNumber', '==', phone).limit(1).get(); if (querySnapshot.empty) showToast("Không tìm thấy tài khoản với số điện thoại này."); else { const userEmail = querySnapshot.docs[0].data().email; if (userEmail) { await auth.sendPasswordResetEmail(userEmail); showToast(`Đã gửi liên kết khôi phục.`, 'success'); switchView('auth'); } else showToast("Tài khoản này không có email để gửi liên kết."); } } } catch (error) { showToast("Đã xảy ra lỗi."); } finally { btn.disabled = false; btn.textContent = 'Gửi liên kết'; } }
     async function reauthenticateUser() { const user = auth.currentUser; const providerId = user.providerData[0].providerId; if (providerId === 'password') { const password = prompt("Để xác nhận, vui lòng nhập mật khẩu của bạn:"); if (!password) return null; return user.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(user.email, password)); } else if (providerId === 'google.com') { return user.reauthenticateWithPopup(new firebase.auth.GoogleAuthProvider()); } }
     async function handleChangeEmail(e) { const newEmail = document.getElementById('edit-email').value.trim(); if (newEmail === auth.currentUser.email) return; const btn = e.target; btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'; try { await reauthenticateUser(); await auth.currentUser.verifyBeforeUpdateEmail(newEmail); await db.collection('profiles').doc(currentUser.username).update({ email: newEmail }); showToast(`Email xác thực đã được gửi đến ${newEmail}.`, 'success'); editModal.hide(); } catch (error) { if (error.code === 'auth/wrong-password') showToast("Mật khẩu không chính xác."); else if (error.code === 'auth/email-already-in-use') showToast("Email này đã được sử dụng."); else if (error.code !== 'auth/popup-closed-by-user') showToast("Xác thực thất bại."); } finally { btn.disabled = false; btn.textContent = 'Đổi'; } }
@@ -1412,16 +1275,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         modalBody.querySelector('#add-category-modal-btn').addEventListener('click', () => handleAddCategory(true));
 
-        // NEW: Initialize SortableJS for drag and drop
-        const projectsContainer = document.getElementById('edit-projects-container');
-        if (projectsContainer) {
-            new Sortable(projectsContainer, {
-                animation: 150,
-                ghostClass: 'sortable-ghost'
-            });
-        }
-
-
         editModal.show();
     }
     
@@ -1432,7 +1285,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return `<option value="${key}" ${isSelected ? 'selected' : ''}>${displayName}</option>`;
         }).join('');
         return `<div class="p-3 border rounded mb-3 project-field">
-            <div class="d-flex justify-content-between align-items-center mb-2" style="cursor: grab;">
+            <div class="d-flex justify-content-between align-items-center mb-2">
                 <strong>Mục #${index + 1}</strong>
                 <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove()"></button>
             </div>
@@ -1443,11 +1296,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="col-md-6"><label class="form-label small">Danh mục</label><select class="form-select project-category">${categoryOptions}</select></div>
             </div>
             <label class="form-label small">Mô tả ngắn</label><input type="text" class="form-control mb-2 project-desc" placeholder="Mô tả ngắn gọn" value="${project.description || ''}">
-            <div class="row g-2">
-                <div class="col-md-8"><label class="form-label small">Link</label><input type="url" class="form-control project-link" placeholder="Đường dẫn (URL)" value="${project.link || ''}"></div>
-                <div class="col-md-4"><label class="form-label small">Loại</label><select class="form-select project-embed-type"><option value="normal" ${project.embedType !== 'youtube' ? 'selected' : ''}>Link thường</option><option value="youtube" ${project.embedType === 'youtube' ? 'selected' : ''}>Nhúng YouTube</option></select></div>
-            </div>
-            <label class="form-label small mt-2">URL Hình ảnh (bỏ trống nếu nhúng YouTube)</label><input type="url" class="form-control project-image" placeholder="Link ảnh logo" value="${project.imageUrl || ''}">
+            <label class="form-label small">Link</label><input type="url" class="form-control mb-2 project-link" placeholder="Đường dẫn (URL)" value="${project.link || ''}">
+            <label class="form-label small">URL Hình ảnh</label><input type="url" class="form-control project-image" placeholder="Link ảnh logo" value="${project.imageUrl || ''}">
             <label class="form-label small mt-2">Mô tả dài (Hướng dẫn, chi tiết...)</label>
             <textarea class="form-control project-long-desc" rows="4" placeholder="Nội dung chi tiết sẽ hiển thị trong popup...">${project.longDescription || ''}</textarea>
         </div>`;
@@ -1490,6 +1340,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (name && link) { 
                     let projectId = parseInt(field.querySelector('.project-id-hidden').value, 10);
                     if (!projectId || isNaN(projectId)) {
+                         // Pass both new and existing projects to find the true max ID
                         projectId = getNewProjectId([...existingProjects, ...projectsData]);
                     }
 
@@ -1501,8 +1352,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         imageUrl: field.querySelector('.project-image').value.trim(), 
                         category: field.querySelector('.project-category').value,
                         clicks: parseInt(field.querySelector('.project-clicks-hidden').value, 10) || 0,
-                        longDescription: field.querySelector('.project-long-desc').value.trim(),
-                        embedType: field.querySelector('.project-embed-type').value
+                        longDescription: field.querySelector('.project-long-desc').value.trim()
                     }); 
                 } 
             }); 
@@ -1562,63 +1412,6 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.textContent = 'Gửi liên kết';
         }
     }
-    
-    // NEW: Dashboard and Preview Mode functions
-    function renderDashboard(data) {
-        const allProjects = data.projects || [];
-        const totalClicks = allProjects.reduce((sum, p) => sum + (p.clicks || 0), 0);
-        const topProjects = [...allProjects].sort((a, b) => (b.clicks || 0) - (a.clicks || 0)).slice(0, 5);
-        
-        const topProjectsHTML = topProjects.map((p, index) => `
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <span><strong>#${index + 1}</strong> ${p.name}</span>
-                <span class="badge bg-primary rounded-pill">${p.clicks || 0} clicks</span>
-            </li>
-        `).join('') || '<li class="list-group-item">Chưa có dữ liệu.</li>';
-
-        dashboardPageContent.innerHTML = `
-            <div class="card-glass text-white mb-4">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h2 class="mb-0">Dashboard</h2>
-                    <button id="back-to-profile-btn" class="btn btn-outline-light">Về trang cá nhân</button>
-                </div>
-            </div>
-            <div class="row g-4">
-                <div class="col-md-6">
-                    <div class="card stat-card text-center h-100">
-                        <div class="stat-value">${data.profileViews || 0}</div>
-                        <div class="stat-label">Tổng lượt xem trang</div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card stat-card text-center h-100">
-                        <div class="stat-value">${totalClicks}</div>
-                        <div class="stat-label">Tổng lượt nhấp dự án</div>
-                    </div>
-                </div>
-                <div class="col-12">
-                    <div class="card stat-card">
-                        <h5 class="mb-3">Top 5 dự án hàng đầu</h5>
-                        <ul class="list-group list-group-flush" id="top-projects-list">
-                           ${topProjectsHTML}
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        `;
-        document.getElementById('back-to-profile-btn').addEventListener('click', () => switchView('profile'));
-        switchView('dashboard');
-    }
-
-    function togglePreviewMode() {
-        document.body.classList.toggle('preview-mode');
-        const btn = document.getElementById('preview-mode-btn');
-        const isPreviewing = document.body.classList.contains('preview-mode');
-        btn.innerHTML = isPreviewing ? '<i class="fas fa-edit"></i> Tắt xem trước' : '<i class="fas fa-eye"></i> Chế độ xem trước';
-        showToast(isPreviewing ? "Đã bật chế độ xem trước." : "Đã tắt chế độ xem trước.", "info");
-        closeSidebar();
-    }
-
 
     function setupAuthForm() { showRegisterBtn.addEventListener('click', () => authFlipCard.classList.add('is-flipped')); showLoginBtn.addEventListener('click', () => authFlipCard.classList.remove('is-flipped')); document.getElementById('forgot-password-btn').addEventListener('click', () => switchView('forgotPassword')); document.getElementById('back-to-login-btn').addEventListener('click', () => { switchView('auth'); authFlipCard.classList.remove('is-flipped'); }); const resetEmailBtn = document.getElementById('reset-mode-email-btn'), resetPhoneBtn = document.getElementById('reset-mode-phone-btn'); const resetEmailGroup = document.getElementById('reset-email-group'), resetPhoneGroup = document.getElementById('reset-phone-group'); resetEmailBtn.addEventListener('click', () => { passwordResetMode = 'email'; resetEmailGroup.style.display = 'block'; resetPhoneGroup.style.display = 'none'; resetEmailBtn.classList.replace('btn-outline-light', 'btn-primary'); resetPhoneBtn.classList.replace('btn-primary', 'btn-outline-light'); }); resetPhoneBtn.addEventListener('click', () => { passwordResetMode = 'phone'; resetEmailGroup.style.display = 'none'; resetPhoneGroup.style.display = 'block'; resetPhoneBtn.classList.replace('btn-outline-light', 'btn-primary'); resetEmailBtn.classList.replace('btn-primary', 'btn-outline-light'); }); }
 
@@ -1635,7 +1428,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else { console.warn("User in Auth but not Firestore. Logging out."); await auth.signOut(); currentUser = null; }
             } else currentUser = null;
             setupSidebar(); 
-            await handleRouteChange();
+            await handleRouteChange(); // Make sure this is awaited
         });
         document.getElementById('login-form').addEventListener('submit', handleLogin);
         document.getElementById('register-form').addEventListener('submit', handleRegister);
