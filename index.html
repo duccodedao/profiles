@@ -110,7 +110,7 @@
     .social-links { display: flex; justify-content: center; flex-wrap: wrap; gap: 1rem; margin-top: 1.5rem; }
     .social-link { font-size: 1.5rem; color: #fff; transition: var(--transition-smooth); width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background-color: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); text-decoration: none; }
     .social-link:hover { transform: translateY(-5px); color: white; background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary)); box-shadow: 0 4px 15px rgba(145, 94, 255, 0.4); }
-    .project-card { display: flex; align-items: center; text-decoration: none; color: var(--text-primary); background: rgba(255, 255, 255, 0.9); padding: 1rem; border-radius: 15px; border: 1px solid #dee2e6; transition: var(--transition-smooth); box-shadow: var(--shadow-light); cursor: pointer; }
+    .project-card { display: flex; align-items: center; text-decoration: none; color: var(--text-primary); background: rgba(255, 255, 255, 0.9); padding: 1rem; border-radius: 15px; border: 1px solid #dee2e6; transition: var(--transition-smooth); box-shadow: var(--shadow-light); cursor: pointer; min-height: 120px; }
     .project-card:hover { transform: translateY(-5px) scale(1.02); box-shadow: 0 8px 25px rgba(145, 94, 255, 0.15); border-color: var(--accent-primary); }
     .project-icon { width: 64px; height: 64px; border-radius: 12px; object-fit: cover; margin-right: 1rem; flex-shrink: 0; }
     #edit-profile-btn { position: absolute; bottom: -25px; right: 2rem; width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary)); color: white; font-size: 1.5rem; display: none; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.2); cursor: pointer; transition: transform 0.3s; }
@@ -123,6 +123,17 @@
         align-items: flex-start;
         flex-grow: 1;
         min-height: 64px;
+    }
+    /* Style for truncating the short description */
+    .project-card-content p {
+        display: -webkit-box;
+        -webkit-line-clamp: 2; /* Limit to 2 lines */
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        line-height: 1.4;
     }
     .project-clicks {
         align-self: flex-end;
@@ -282,7 +293,27 @@
         border-color: var(--accent-primary);
         box-shadow: 0 0 0 0.25rem rgba(145, 94, 255, 0.25);
     }
-    
+    /* Styles for the new accordion in the edit modal */
+    #edit-projects-accordion .accordion-button:not(.collapsed) {
+        background-color: rgba(145, 94, 255, 0.1);
+        color: var(--accent-primary);
+        box-shadow: none;
+    }
+    #edit-projects-accordion .accordion-body {
+        background-color: #fdfcff;
+        padding: 1rem;
+    }
+    #edit-projects-accordion .project-form-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .accordion-button strong { flex-shrink: 0; }
+    .accordion-button .text-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
     /* === Project Detail Modal Styling === */
     #projectDetailModal .modal-content {
         border-radius: 1rem;
@@ -754,9 +785,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getCategoryDisplayName(key, customCategories = {}) {
-        if (key === 'leaderboard') return 'Bảng xếp hạng';
-        if (defaultCategories[key]) return defaultCategories[key];
+        if (key === 'leaderboard') return 'BXH';
         if (customCategories[key]) return customCategories[key];
+        if (defaultCategories[key]) return defaultCategories[key];
         return key.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     }
 
@@ -816,7 +847,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .slice(0, 10);
 
             if (leaderboardProjects.length > 0) {
-                tabsHTML += `<button class="category-tab" data-category="leaderboard"><i class="fas fa-trophy" style="color: #FFD700;"></i><span>Bảng xếp hạng</span></button>`;
+                tabsHTML += `<button class="category-tab" data-category="leaderboard"><i class="fas fa-trophy" style="color: #FFD700;"></i><span>BXH</span></button>`;
                 
                 const leaderboardItemsHTML = leaderboardProjects.map(p => {
                     const projectIndex = allProjects.indexOf(p);
@@ -826,7 +857,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="project-card-content">
                                 <div class="text-start">
                                     <h5>${p.name}</h5>
-                                    <p class="mb-0">${p.description || ''}</p>
+                                    <p>${p.description || ''}</p>
                                 </div>
                                 <div class="project-clicks">
                                     <i class="fas fa-eye me-1"></i>
@@ -843,8 +874,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             allCategoryKeys.forEach(key => {
                 const displayName = getCategoryDisplayName(key, customCategories);
-                const isCustom = !defaultCategories.hasOwnProperty(key);
-                const renameButton = isOwner && isCustom ? `<button class="rename-category-btn" data-category-key="${key}" title="Đổi tên danh mục"><i class="fas fa-pencil-alt"></i></button>` : '';
+                const renameButton = isOwner && key !== 'leaderboard' ? `<button class="rename-category-btn" data-category-key="${key}" title="Đổi tên danh mục"><i class="fas fa-pencil-alt"></i></button>` : '';
                 tabsHTML += `<button class="category-tab" data-category="${key}"><span>${displayName}</span>${renameButton}</button>`;
                 
                 const projectsInCategory = allProjects.filter(p => (p.category || 'project') === key);
@@ -858,7 +888,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div class="project-card-content">
                                     <div class="text-start">
                                         <h5>${p.name}</h5>
-                                        <p class="mb-0">${p.description || ''}</p>
+                                        <p>${p.description || ''}</p>
                                     </div>
                                     <div class="project-clicks">
                                         <i class="fas fa-eye me-1"></i>
@@ -1103,8 +1133,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (fromModal) {
                 editModal.hide();
+                openEditModal(); // Reopen modal to show new category
+            } else {
+               fetchAndRenderProfile(currentUser.username);
             }
-            fetchAndRenderProfile(currentUser.username);
         } catch (error) {
             console.error("Lỗi khi thêm danh mục:", error);
             showToast("Không thể thêm danh mục.");
@@ -1120,7 +1152,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const customCategories = data.customCategories || {};
             const projects = data.projects || [];
 
-            const oldDisplayName = customCategories[oldKey] || oldKey;
+            const oldDisplayName = getCategoryDisplayName(oldKey, customCategories);
             const newName = prompt("Đổi tên danh mục:", oldDisplayName);
 
             if (!newName || newName.trim() === '' || newName.trim() === oldDisplayName) return;
@@ -1136,20 +1168,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             
-            delete customCategories[oldKey];
-            customCategories[newKey] = newName.trim();
+            if(defaultCategories.hasOwnProperty(oldKey) && !customCategories.hasOwnProperty(oldKey)) {
+                 // Renaming a default category for the first time
+                 customCategories[oldKey] = newName.trim();
+            } else {
+                // Renaming a custom category
+                delete customCategories[oldKey];
+                customCategories[newKey] = newName.trim();
 
-            const updatedProjects = projects.map(proj => {
-                if (proj.category === oldKey) {
-                    return { ...proj, category: newKey };
-                }
-                return proj;
-            });
+                const updatedProjects = projects.map(proj => {
+                    if (proj.category === oldKey) {
+                        return { ...proj, category: newKey };
+                    }
+                    return proj;
+                });
 
-            await docRef.update({
-                customCategories: customCategories,
-                projects: updatedProjects
-            });
+                 await docRef.update({ projects: updatedProjects });
+            }
+
+            await docRef.update({ customCategories: customCategories });
 
             showToast("Đổi tên danh mục thành công!", "success");
             
@@ -1212,6 +1249,21 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleChangeEmail(e) { const newEmail = document.getElementById('edit-email').value.trim(); if (newEmail === auth.currentUser.email) return; const btn = e.target; btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'; try { await reauthenticateUser(); await auth.currentUser.verifyBeforeUpdateEmail(newEmail); await db.collection('profiles').doc(currentUser.username).update({ email: newEmail }); showToast(`Email xác thực đã được gửi đến ${newEmail}.`, 'success'); editModal.hide(); } catch (error) { if (error.code === 'auth/wrong-password') showToast("Mật khẩu không chính xác."); else if (error.code === 'auth/email-already-in-use') showToast("Email này đã được sử dụng."); else if (error.code !== 'auth/popup-closed-by-user') showToast("Xác thực thất bại."); } finally { btn.disabled = false; btn.textContent = 'Đổi'; } }
     async function handleChangeUsername(e) { const newUsername = document.getElementById('edit-username').value.trim().toLowerCase(); if (!newUsername || newUsername === currentUser.username || !/^[a-zA-Z0-9_]{3,20}$/.test(newUsername)) return; const btn = e.target; btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'; try { const newDoc = await db.collection('profiles').doc(newUsername).get(); if (newDoc.exists) { showToast("Username này đã tồn tại."); return; } await reauthenticateUser(); const oldDoc = await db.collection('profiles').doc(currentUser.username).get(); if (oldDoc.exists) { const profileData = oldDoc.data(); profileData.username = newUsername; await db.collection('profiles').doc(newUsername).set(profileData); await db.collection('profiles').doc(currentUser.username).delete(); currentUser.username = newUsername; history.pushState(null, '', `?user=${newUsername}`); setupSidebar(); editModal.hide(); showToast(`Đổi username thành công!`, "success"); } } catch (error) { if (error.code === 'auth/wrong-password') showToast("Mật khẩu không chính xác."); else if (error.code !== 'auth/popup-closed-by-user') showToast("Xác thực thất bại."); } finally { btn.disabled = false; btn.textContent = 'Đổi'; } }
     
+    // New helper function for the copy link button in the modal
+    function copyProjectLink(username, projectId) {
+        if (!username || !projectId) {
+            showToast("Không thể tạo link cho mục chưa được lưu.");
+            return;
+        }
+        const projectUrl = `${window.location.origin}${window.location.pathname}?user=${username}&project=${projectId}`;
+        navigator.clipboard.writeText(projectUrl).then(() => {
+            showToast("Link của mục đã được sao chép!", "success");
+        }).catch(err => {
+            showToast("Sao chép thất bại.");
+            console.error('Failed to copy project link: ', err);
+        });
+    }
+
     async function openEditModal() {
         const modalBody = document.getElementById('edit-modal-body');
         const docSnap = await db.collection('profiles').doc(currentUser.username).get();
@@ -1219,19 +1271,22 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const customCategories = data.customCategories || {};
         const allCategoryKeys = [...new Set([...Object.keys(defaultCategories), ...Object.keys(customCategories)])];
-        let projectFieldsHTML = (data.projects || []).map((p, i) => createProjectFieldHTML(p, i, allCategoryKeys, customCategories)).join('');
+        let projectFieldsHTML = (data.projects || []).map((p, i) => createProjectFieldHTML(p, i, allCategoryKeys, customCategories, currentUser.username)).join('');
         const socialFieldsHTML = Object.keys(socialIcons).map(key => `<div class="col-md-6 mb-3"><label class="form-label small">${key === 'gmail' ? 'Địa chỉ Gmail' : `${key.charAt(0).toUpperCase() + key.slice(1)} URL`}</label><input type="${key === 'gmail' ? 'email' : 'url'}" class="form-control" id="edit-${key}" value="${(data.socials || {})[key] || ''}"></div>`).join('');
 
         let categoryManagerHTML = '<hr><h6 class="mb-3">Quản lý Danh mục</h6>';
         categoryManagerHTML += '<div id="category-manager-container" class="border rounded p-2 mb-3">';
         if (Object.keys(customCategories).length > 0) {
             for (const [key, name] of Object.entries(customCategories)) {
+                 const deleteBtnHTML = !defaultCategories.hasOwnProperty(key) 
+                    ? `<button type="button" class="btn btn-sm btn-outline-danger delete-cat-btn" data-cat-key="${key}" title="Xóa"><i class="fas fa-trash-alt"></i></button>`
+                    : '';
                 categoryManagerHTML += `
                     <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
                         <span class="text-truncate" style="max-width: 60%;">${name}</span>
                         <div class="ms-auto">
                             <button type="button" class="btn btn-sm btn-outline-primary me-2 edit-cat-btn" data-cat-key="${key}" title="Sửa tên"><i class="fas fa-pencil-alt"></i></button>
-                            <button type="button" class="btn btn-sm btn-outline-danger delete-cat-btn" data-cat-key="${key}" title="Xóa"><i class="fas fa-trash-alt"></i></button>
+                            ${deleteBtnHTML}
                         </div>
                     </div>`;
             }
@@ -1242,7 +1297,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         modalBody.innerHTML = `<form id="edit-form">
-            <div class="mb-3"><label class="form-label">Ảnh đại diện</label><div class="d-flex align-items-center"><img id="avatar-preview" src="${data.avatarUrl || 'https://via.placeholder.com/150'}" class="rounded-circle me-3" width="80" height="80" style="object-fit: cover; border: 2px solid #ddd;"><div class="flex-grow-1"><input type="file" class="form-control" id="edit-avatar-file" accept="image/*"><input type="hidden" id="edit-avatar-url" value="${data.avatarUrl || ''}"><div class="form-text">Chọn một file ảnh mới để thay đổi.</div></div></div></div>
+            <div class="mb-3">
+                <label class="form-label">Ảnh đại diện</label>
+                <div class="d-flex align-items-center">
+                    <img id="avatar-preview" src="${data.avatarUrl || 'https://via.placeholder.com/150'}" class="rounded-circle me-3" width="80" height="80" style="object-fit: cover; border: 2px solid #ddd;">
+                    <div class="flex-grow-1">
+                        <label class="form-label small">Tải ảnh mới</label>
+                        <input type="file" class="form-control" id="edit-avatar-file" accept="image/*">
+                        <input type="hidden" id="edit-avatar-url-current" value="${data.avatarUrl || ''}">
+                        
+                        <label class="form-label small mt-2">Hoặc dán link ảnh</label>
+                        <input type="url" class="form-control" id="edit-avatar-url-new" placeholder="https://example.com/image.png">
+                    </div>
+                </div>
+            </div>
             <div class="mb-3"><label class="form-label">Tên hiển thị</label><input type="text" class="form-control" id="edit-name" value="${data.name || ''}" required></div>
             <div class="mb-3"><label class="form-label">Tiểu sử ngắn</label><textarea class="form-control" id="edit-bio" rows="3">${data.bio || ''}</textarea></div>
             <hr><h6 class="mb-3">Tài khoản & Bảo mật</h6>
@@ -1252,11 +1320,37 @@ document.addEventListener('DOMContentLoaded', () => {
             
             ${categoryManagerHTML}
 
-            <hr><h6 class="mb-3">Danh sách Liên kết</h6><div id="edit-projects-container">${projectFieldsHTML}</div><button type="button" id="edit-add-project-btn" class="btn btn-outline-secondary mt-2"><i class="fas fa-plus me-2"></i>Thêm Mục</button>
+            <hr><h6 class="mb-3">Liệt kê dự án</h6>
+            <div class="accordion" id="edit-projects-accordion">${projectFieldsHTML}</div>
+            <button type="button" id="edit-add-project-btn" class="btn btn-outline-secondary mt-2"><i class="fas fa-plus me-2"></i>Thêm Mục</button>
         </form>`;
+        
+        modalBody.querySelector('#edit-avatar-file').addEventListener('change', e => { 
+            if (e.target.files[0]) { 
+                document.getElementById('edit-avatar-url-new').value = ''; // Clear URL input if file is chosen
+                const reader = new FileReader(); 
+                reader.onload = event => { document.getElementById('avatar-preview').src = event.target.result; }; 
+                reader.readAsDataURL(e.target.files[0]); 
+            } 
+        });
+        modalBody.querySelector('#edit-avatar-url-new').addEventListener('input', e => {
+            const url = e.target.value.trim();
+            if (url) {
+                document.getElementById('edit-avatar-file').value = ''; // Clear file input if URL is typed
+                document.getElementById('avatar-preview').src = url;
+            }
+        });
 
-        modalBody.querySelector('#edit-avatar-file').addEventListener('change', e => { if (e.target.files[0]) { const reader = new FileReader(); reader.onload = event => { document.getElementById('avatar-preview').src = event.target.result; }; reader.readAsDataURL(e.target.files[0]); } });
-        document.getElementById('edit-add-project-btn').addEventListener('click', () => { document.getElementById('edit-projects-container').insertAdjacentHTML('beforeend', createProjectFieldHTML({}, document.querySelectorAll('.project-field').length, allCategoryKeys, customCategories)); });
+        document.getElementById('edit-add-project-btn').addEventListener('click', () => { 
+            const container = document.getElementById('edit-projects-accordion');
+            const newIndex = container.querySelectorAll('.accordion-item').length;
+            const newItemHTML = createProjectFieldHTML({}, newIndex, allCategoryKeys, customCategories, currentUser.username);
+            container.insertAdjacentHTML('beforeend', newItemHTML);
+            const newItem = container.lastElementChild;
+            const collapseElement = newItem.querySelector('.accordion-collapse');
+            new bootstrap.Collapse(collapseElement, { toggle: true });
+        });
+
         modalBody.querySelector('#change-email-btn').addEventListener('click', handleChangeEmail);
         modalBody.querySelector('#change-username-btn').addEventListener('click', handleChangeUsername);
 
@@ -1278,28 +1372,47 @@ document.addEventListener('DOMContentLoaded', () => {
         editModal.show();
     }
     
-    function createProjectFieldHTML(project = {}, index, categories, customCategories = {}) {
+    function createProjectFieldHTML(project = {}, index, categories, customCategories = {}, username) {
         const categoryOptions = categories.map(key => {
             const displayName = getCategoryDisplayName(key, customCategories);
             const isSelected = (project.category || 'project') === key;
             return `<option value="${key}" ${isSelected ? 'selected' : ''}>${displayName}</option>`;
         }).join('');
-        return `<div class="p-3 border rounded mb-3 project-field">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <strong>Mục #${index + 1}</strong>
-                <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove()"></button>
+
+        const collapseId = `project-collapse-${Date.now()}-${index}`; // More unique ID
+        const headerId = `project-header-${Date.now()}-${index}`;
+        const displayName = project.name ? project.name : 'Mục mới';
+        const copyLinkBtn = project.id ? `<button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyProjectLink('${username}', ${project.id})"><i class="fas fa-copy me-1"></i>Copy Link</button>` : '';
+
+        return `
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="${headerId}">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}" aria-expanded="false" aria-controls="${collapseId}">
+                    <strong>#${index + 1}</strong><span class="ms-2 text-truncate">${displayName}</span>
+                </button>
+            </h2>
+            <div id="${collapseId}" class="accordion-collapse collapse" aria-labelledby="${headerId}" data-bs-parent="#edit-projects-accordion">
+                <div class="accordion-body project-field">
+                    <div class="project-form-header">
+                        <span class="text-muted small"><strong>ID:</strong> ${project.id || 'Chưa lưu'}</span>
+                        <div>
+                            ${copyLinkBtn}
+                            <button type="button" class="btn-close ms-2" onclick="if(confirm('Bạn chắc chắn muốn xóa mục này?')) { this.closest('.accordion-item').remove() }"></button>
+                        </div>
+                    </div>
+                    <input type="hidden" class="project-id-hidden" value="${project.id || ''}">
+                    <input type="hidden" class="project-clicks-hidden" value="${project.clicks || 0}">
+                    <div class="row g-2">
+                        <div class="col-md-6"><label class="form-label small">Tên</label><input type="text" class="form-control mb-2 project-name" placeholder="Tên dự án/sàn" value="${project.name || ''}"></div>
+                        <div class="col-md-6"><label class="form-label small">Danh mục</label><select class="form-select project-category">${categoryOptions}</select></div>
+                    </div>
+                    <label class="form-label small">Mô tả ngắn</label><input type="text" class="form-control mb-2 project-desc" placeholder="Mô tả ngắn gọn" value="${project.description || ''}">
+                    <label class="form-label small">Link</label><input type="url" class="form-control mb-2 project-link" placeholder="Đường dẫn (URL)" value="${project.link || ''}">
+                    <label class="form-label small">URL Hình ảnh</label><input type="url" class="form-control project-image" placeholder="Link ảnh logo" value="${project.imageUrl || ''}">
+                    <label class="form-label small mt-2">Mô tả dài (Hướng dẫn, chi tiết...)</label>
+                    <textarea class="form-control project-long-desc" rows="4" placeholder="Nội dung chi tiết sẽ hiển thị trong popup...">${project.longDescription || ''}</textarea>
+                </div>
             </div>
-            <input type="hidden" class="project-id-hidden" value="${project.id || ''}">
-            <input type="hidden" class="project-clicks-hidden" value="${project.clicks || 0}">
-            <div class="row g-2">
-                <div class="col-md-6"><label class="form-label small">Tên</label><input type="text" class="form-control mb-2 project-name" placeholder="Tên dự án/sàn" value="${project.name || ''}"></div>
-                <div class="col-md-6"><label class="form-label small">Danh mục</label><select class="form-select project-category">${categoryOptions}</select></div>
-            </div>
-            <label class="form-label small">Mô tả ngắn</label><input type="text" class="form-control mb-2 project-desc" placeholder="Mô tả ngắn gọn" value="${project.description || ''}">
-            <label class="form-label small">Link</label><input type="url" class="form-control mb-2 project-link" placeholder="Đường dẫn (URL)" value="${project.link || ''}">
-            <label class="form-label small">URL Hình ảnh</label><input type="url" class="form-control project-image" placeholder="Link ảnh logo" value="${project.imageUrl || ''}">
-            <label class="form-label small mt-2">Mô tả dài (Hướng dẫn, chi tiết...)</label>
-            <textarea class="form-control project-long-desc" rows="4" placeholder="Nội dung chi tiết sẽ hiển thị trong popup...">${project.longDescription || ''}</textarea>
         </div>`;
     }
 
@@ -1317,14 +1430,19 @@ document.addEventListener('DOMContentLoaded', () => {
         saveBtn.disabled = true; 
         saveBtn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Đang lưu...`; 
         try { 
-            let avatarUrlToSave = document.getElementById('edit-avatar-url').value; 
+            let avatarUrlToSave = document.getElementById('edit-avatar-url-current').value; 
+            const avatarUrlFromInput = document.getElementById('edit-avatar-url-new').value.trim();
             const file = document.getElementById('edit-avatar-file').files[0]; 
+
             if (file) { 
                 const filePath = `avatars/${currentUser.uid}/avatar_${Date.now()}`; 
                 const fileRef = storage.ref(filePath); 
                 await fileRef.put(file); 
                 avatarUrlToSave = await fileRef.getDownloadURL(); 
-            } 
+            } else if (avatarUrlFromInput) {
+                avatarUrlToSave = avatarUrlFromInput;
+            }
+
             const socialsData = {}; 
             Object.keys(socialIcons).forEach(key => { 
                 const el = document.getElementById(`edit-${key}`); 
@@ -1334,13 +1452,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const projectsData = []; 
             const existingProjects = (await db.collection('profiles').doc(currentUser.username).get()).data().projects || [];
 
-            document.querySelectorAll('#edit-projects-container .project-field').forEach(field => { 
+            document.querySelectorAll('#edit-projects-accordion .accordion-item').forEach(item => { 
+                const field = item.querySelector('.project-field');
+                if (!field) return;
+
                 const name = field.querySelector('.project-name').value.trim(); 
                 const link = field.querySelector('.project-link').value.trim(); 
                 if (name && link) { 
                     let projectId = parseInt(field.querySelector('.project-id-hidden').value, 10);
                     if (!projectId || isNaN(projectId)) {
-                         // Pass both new and existing projects to find the true max ID
                         projectId = getNewProjectId([...existingProjects, ...projectsData]);
                     }
 
