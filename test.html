@@ -3,79 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống BHYT Pro - Có QR & Share</title>
+    <title>Hệ Thống BHYT Pro (Final Fix)</title>
     
     <!-- Thư viện chụp ảnh hóa đơn -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <!-- Thư viện tạo mã QR -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
-            authDomain: "profile-d1214.firebaseapp.com",
-            projectId: "profile-d1214",
-            storageBucket: "profile-d1214.firebasestorage.app",
-            messagingSenderId: "914980131889",
-            appId: "1:914980131889:web:72f8da15c42dbee671b110",
-            measurementId: "G-C587M69LZW"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // Lưu toàn bộ data lịch sử vào biến global để tiện truy xuất khi bấm xem lại
-        window.globalHistoryData = {};
-
-        // --- LƯU FIREBASE ---
-        window.saveInvoiceToFirebase = async function(data) {
-            try {
-                // Thêm timestamp server
-                await addDoc(collection(db, "history_bhyt"), {
-                    ...data,
-                    timestamp: serverTimestamp()
-                });
-                // alert("✅ Đã lưu!"); // Không cần alert để trải nghiệm mượt hơn
-            } catch (e) {
-                console.error("Lỗi lưu:", e);
-                alert("Lỗi lưu dữ liệu: " + e.message);
-            }
-        }
-
-        // --- TẢI LỊCH SỬ ---
-        const historyTable = document.getElementById('historyBody');
-        const q = query(collection(db, "history_bhyt"), orderBy("timestamp", "desc"));
-        
-        onSnapshot(q, (snapshot) => {
-            historyTable.innerHTML = "";
-            window.globalHistoryData = {}; // Reset data
-            
-            snapshot.forEach((doc) => {
-                const item = doc.data();
-                const id = doc.id;
-                window.globalHistoryData[id] = item; // Lưu vào cache
-
-                const date = item.timestamp ? new Date(item.timestamp.toDate()).toLocaleString('vi-VN') : "Vừa xong";
-                
-                // Nút xem chi tiết
-                const row = `
-                    <tr onclick="loadFromHistory('${id}')" style="cursor:pointer" title="Bấm để xem lại hóa đơn này">
-                        <td>${date}</td>
-                        <td><b style="color:#0066cc">${item.representative}</b><br><span style="font-size:11px; color:#666">${item.qty} người</span></td>
-                        <td>${item.duration} tháng</td>
-                        <td style="font-weight:bold; color:#b30000">${item.totalAmount}</td>
-                        <td style="text-align:center">👁️</td>
-                    </tr>
-                `;
-                historyTable.innerHTML += row;
-            });
-        });
-    </script>
-
     <style>
         :root { --primary: #0066cc; --bg: #f0f2f5; }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); padding: 20px; color: #333; }
@@ -97,7 +31,7 @@
         button { flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; color: white; font-weight: bold; transition: 0.2s; }
         button:active { transform: scale(0.98); }
         .btn-save { background: #28a745; } 
-        .btn-share { background: #0066cc; } /* Màu xanh Share */
+        .btn-share { background: #0066cc; } 
         .btn-print { background: #6c757d; }
         
         /* CỘT HÓA ĐƠN */
@@ -118,7 +52,7 @@
         .qr-note {
             font-size: 9px;
             text-align: right;
-            margin-top: 62px; /* Đẩy xuống dưới QR */
+            margin-top: 62px;
             font-style: italic;
         }
 
@@ -153,7 +87,7 @@
         
         <div class="form-group">
             <label>Người bán (Đại lý)</label>
-            <select id="seller">
+            <select id="seller" onchange="window.renderInvoice()">
                 <option value="Lâm Minh Ngoãn">Lâm Minh Ngoãn</option>
                 <option value="Sơn Lý Hồng Đức">Sơn Lý Hồng Đức</option>
             </select>
@@ -161,17 +95,17 @@
 
         <div class="form-group">
             <label>SĐT Khách hàng</label>
-            <input type="number" id="phone" placeholder="09xxxxxxxx">
+            <input type="number" id="phone" placeholder="09xxxxxxxx" oninput="window.renderInvoice()">
         </div>
 
         <div style="display:flex; gap:10px;">
             <div class="form-group" style="flex:1">
                 <label>Số người</label>
-                <input type="number" id="qty" value="1" min="1" max="10" onchange="updateBuyerInputs()">
+                <input type="number" id="qty" value="1" min="1" max="10" onchange="window.updateBuyerInputs()">
             </div>
             <div class="form-group" style="flex:1">
                 <label>Thời hạn</label>
-                <select id="duration" onchange="renderInvoice()">
+                <select id="duration" onchange="window.renderInvoice()">
                     <option value="3">3 Tháng</option>
                     <option value="6">6 Tháng</option>
                     <option value="12" selected>12 Tháng</option>
@@ -181,7 +115,7 @@
 
         <div class="form-group">
             <label>Tính từ người thứ mấy?</label>
-            <select id="startTier" onchange="renderInvoice()">
+            <select id="startTier" onchange="window.renderInvoice()">
                 <option value="1">Người thứ 1 (100%)</option>
                 <option value="2">Người thứ 2 (70%)</option>
                 <option value="3">Người thứ 3 (60%)</option>
@@ -193,20 +127,20 @@
         <label>Danh sách thành viên:</label>
         <div id="buyerListContainer" class="dynamic-list">
             <!-- Ô nhập tên sinh ra tự động -->
-            <input type="text" id="buyer_0" class="sub-input" placeholder="Họ tên đại diện (Bắt buộc)" oninput="renderInvoice()">
+            <input type="text" id="buyer_0" class="sub-input" placeholder="Họ tên đại diện (Bắt buộc)" oninput="window.renderInvoice()">
         </div>
 
         <div class="form-group">
             <label>Ảnh CCCD (Nếu có)</label>
-            <input type="file" id="fileInput" accept="image/*" onchange="handleImage(this)">
+            <input type="file" id="fileInput" accept="image/*" onchange="window.handleImage(this)">
         </div>
 
         <div class="btn-group">
             <button class="btn-print" onclick="window.print()">🖨️ In</button>
-            <button class="btn-save" onclick="handleSaveAndDownload()">💾 Tải Ảnh</button>
+            <button class="btn-save" onclick="window.handleSaveAndDownload()">💾 Tải Ảnh</button>
         </div>
         <div class="btn-group">
-            <button class="btn-share" onclick="handleShare()">📤 Chia sẻ Hóa Đơn (Zalo/FB)</button>
+            <button class="btn-share" onclick="window.handleShare()">📤 Chia sẻ Hóa Đơn (Zalo/FB)</button>
         </div>
         <div id="statusMsg" style="text-align:center; font-size:12px; margin-top:5px; color:green; height:15px;"></div>
     </div>
@@ -219,7 +153,8 @@
                 <div id="qrcode" class="qr-container"></div>
                 <div class="qr-note">Quét để tra cứu</div>
 
-                <img src="https://upload.wikimedia.org/wikipedia/vi/9/91/Vietnam_Social_Security_Logo.png" style="height:40px; float:left;">
+                <!-- Logo dùng link có hỗ trợ CORS hoặc Base64 nếu cần -->
+                <img src="https://upload.wikimedia.org/wikipedia/vi/9/91/Vietnam_Social_Security_Logo.png" crossorigin="anonymous" style="height:40px; float:left;">
                 <h1 style="clear:none;">HÓA ĐƠN BHYT</h1>
                 <p style="margin:5px 0; font-size:13px;">DỊCH VỤ CÔNG ÍCH - VIETNAM POST</p>
             </div>
@@ -283,43 +218,48 @@
     </div>
 </div>
 
-<script>
-    // --- CẤU HÌNH LOGIC ---
+<!-- SCRIPT CHÍNH (Đã Gộp và Sửa Lỗi Scope) -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
+        authDomain: "profile-d1214.firebaseapp.com",
+        projectId: "profile-d1214",
+        storageBucket: "profile-d1214.firebasestorage.app",
+        messagingSenderId: "914980131889",
+        appId: "1:914980131889:web:72f8da15c42dbee671b110",
+        measurementId: "G-C587M69LZW"
+    };
+
+    // Khởi tạo Firebase an toàn
+    let db;
+    try {
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        console.log("Firebase Connected");
+    } catch (err) {
+        console.error("Firebase Error:", err);
+        alert("Lỗi kết nối Firebase. Lịch sử sẽ không được lưu.");
+    }
+
+    // --- BIẾN TOÀN CỤC ---
+    window.globalHistoryData = {};
     const BASE_SALARY = 2340000;
     const RATE = 0.045; 
     const MONTHLY_BASE = BASE_SALARY * RATE; // 105.300
     const TIERS = [1.0, 0.7, 0.6, 0.5, 0.4];
     const BHXH_URL = "https://baohiemxahoi.gov.vn/tracuu/pages/tra-cuu-thoi-han-su-dung-the-bhyt.aspx";
-
     let currentImageData = null;
     let currentTotalString = "0 đ";
 
-    window.onload = function() {
-        updateBuyerInputs(); 
-        generateQR(); // Tạo QR ngay
-        renderInvoice();
-    }
+    // --- CÁC HÀM XỬ LÝ CHÍNH (GẮN VÀO WINDOW ĐỂ HTML GỌI ĐƯỢC) ---
 
-    // --- TẠO QR CODE ---
-    function generateQR() {
-        const qrContainer = document.getElementById("qrcode");
-        qrContainer.innerHTML = ""; // Xóa cũ
-        new QRCode(qrContainer, {
-            text: BHXH_URL,
-            width: 60,
-            height: 60,
-            colorDark : "#000000",
-            colorLight : "#ffffff",
-            correctLevel : QRCode.CorrectLevel.L
-        });
-    }
-
-    // --- XỬ LÝ GIAO DIỆN ---
-    function updateBuyerInputs() {
+    window.updateBuyerInputs = function() {
         const qty = parseInt(document.getElementById('qty').value);
         const container = document.getElementById('buyerListContainer');
         
-        // Giữ lại giá trị cũ nếu có
         let oldValues = [];
         container.querySelectorAll('input').forEach(input => oldValues.push(input.value));
 
@@ -331,49 +271,39 @@
             input.id = `buyer_${i}`;
             input.className = "sub-input";
             input.placeholder = i === 0 ? "Họ tên đại diện (Bắt buộc)" : `Thành viên ${i+1}`;
-            input.oninput = renderInvoice;
+            input.oninput = window.renderInvoice;
             
             if (oldValues[i]) input.value = oldValues[i];
             container.appendChild(input);
         }
-        renderInvoice();
+        window.renderInvoice();
     }
 
-    function handleImage(input) {
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                currentImageData = e.target.result;
-                document.getElementById('outImage').src = currentImageData;
-                document.getElementById('outImage').style.display = 'block';
-            }
-            reader.readAsDataURL(input.files[0]);
-        }
-    }
-
-    function formatMoney(n) {
+    window.formatMoney = function(n) {
+        // Làm tròn số tiền trước khi format
+        n = Math.round(n);
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
     }
 
-    // --- RENDER HÓA ĐƠN ---
-    function renderInvoice() {
+    window.renderInvoice = function() {
         const seller = document.getElementById('seller').value;
-        const phone = document.getElementById('phone').value;
+        const phone = document.getElementById('phone').value || "---";
         const duration = parseInt(document.getElementById('duration').value);
         const qty = parseInt(document.getElementById('qty').value);
         const startTier = parseInt(document.getElementById('startTier').value);
 
-        // Ngày giờ hiện tại (hoặc lấy từ lịch sử nếu đang view history)
-        // Ở đây ta luôn lấy thời gian thực khi sửa đổi, trừ khi loadHistory sẽ override lại sau
         const now = new Date();
-        document.getElementById('outDate').innerText = now.toLocaleString('vi-VN');
+        // Kiểm tra xem có đang view lịch sử không để giữ ngày cũ
+        if (!document.getElementById('outDate').getAttribute('data-locked')) {
+            document.getElementById('outDate').innerText = now.toLocaleString('vi-VN');
+        }
         
         document.getElementById('outSeller').innerText = seller;
         document.getElementById('outPhone').innerText = phone;
         document.getElementById('outDuration').innerText = duration + " Tháng";
 
-        // Xử lý tên
-        const repName = document.getElementById('buyer_0') ? document.getElementById('buyer_0').value : "";
+        const repInput = document.getElementById('buyer_0');
+        const repName = repInput ? repInput.value : "";
         document.getElementById('outRep').innerText = (repName || "Khách lẻ").toUpperCase();
 
         let totalAmount = 0;
@@ -388,7 +318,7 @@
             if (currentTierIndex > 4) currentTierIndex = 4;
             
             const percent = TIERS[currentTierIndex];
-            const price = (MONTHLY_BASE * percent * duration); 
+            const price = Math.round(MONTHLY_BASE * percent * duration); // Làm tròn
 
             totalAmount += price;
 
@@ -396,24 +326,49 @@
                 <tr>
                     <td style="text-align:center">${i+1}</td>
                     <td>${name.toUpperCase()}</td>
-                    <td style="text-align:center">${percent * 100}%</td>
-                    <td style="text-align:right">${formatMoney(price)}</td>
+                    <td style="text-align:center">${Math.round(percent * 100)}%</td>
+                    <td style="text-align:right">${window.formatMoney(price)}</td>
                 </tr>
             `;
         }
 
         document.getElementById('tableBody').innerHTML = html;
-        currentTotalString = formatMoney(totalAmount);
+        currentTotalString = window.formatMoney(totalAmount);
         document.getElementById('outTotal').innerText = currentTotalString;
     }
 
-    // --- LẤY DỮ LIỆU ĐỂ LƯU ---
+    window.handleImage = function(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                currentImageData = e.target.result;
+                const img = document.getElementById('outImage');
+                img.src = currentImageData;
+                img.style.display = 'block';
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    window.generateQR = function() {
+        const qrContainer = document.getElementById("qrcode");
+        qrContainer.innerHTML = "";
+        new QRCode(qrContainer, {
+            text: BHXH_URL,
+            width: 60,
+            height: 60,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.L
+        });
+    }
+
     function getFormData() {
         const qty = parseInt(document.getElementById('qty').value);
         let members = [];
         for(let i=0; i<qty; i++) {
-            let val = document.getElementById(`buyer_${i}`).value;
-            members.push(val);
+            let el = document.getElementById(`buyer_${i}`);
+            if(el) members.push(el.value);
         }
 
         return {
@@ -422,86 +377,104 @@
             qty: qty,
             duration: document.getElementById('duration').value,
             startTier: document.getElementById('startTier').value,
-            representative: document.getElementById('buyer_0').value || "Khách lẻ",
-            members: members, // Lưu danh sách tên
+            representative: document.getElementById('buyer_0') ? document.getElementById('buyer_0').value : "Khách lẻ",
+            members: members,
             totalAmount: currentTotalString,
-            imageData: currentImageData // Lưu chuỗi base64 ảnh CCCD (nếu cần xem lại)
+            imageData: currentImageData
         };
     }
 
-    // --- XỬ LÝ LƯU & TẢI ---
-    async function handleSaveAndDownload() {
+    window.handleSaveAndDownload = async function() {
         const data = getFormData();
         
-        // 1. Lưu Firebase
-        if(window.saveInvoiceToFirebase) {
+        if(db) {
             document.getElementById('statusMsg').innerText = "Đang lưu...";
-            await window.saveInvoiceToFirebase(data);
-            document.getElementById('statusMsg').innerText = "Đã lưu lịch sử!";
+            try {
+                await addDoc(collection(db, "history_bhyt"), {
+                    ...data,
+                    timestamp: serverTimestamp()
+                });
+                document.getElementById('statusMsg').innerText = "Đã lưu lịch sử!";
+            } catch (e) {
+                console.error(e);
+                alert("Lỗi lưu Firebase: " + e.message);
+            }
         }
 
-        // 2. Tải ảnh
-        downloadImage(data.representative);
+        window.downloadImage(data.representative);
     }
 
-    function downloadImage(name) {
-        html2canvas(document.getElementById('invoice'), { scale: 2 }).then(canvas => {
+    window.downloadImage = function(name) {
+        // Cấu hình useCORS để sửa lỗi ảnh bị trắng
+        html2canvas(document.getElementById('invoice'), { 
+            scale: 2,
+            useCORS: true, 
+            allowTaint: true 
+        }).then(canvas => {
             const link = document.createElement('a');
             link.download = `BHYT_${name || 'HoaDon'}.png`;
             link.href = canvas.toDataURL("image/png");
             link.click();
+        }).catch(err => {
+            alert("Lỗi tạo ảnh: " + err);
         });
     }
 
-    // --- CHIA SẺ (SHARE API) ---
-    async function handleShare() {
-        // Lưu trước khi share
+    window.handleShare = async function() {
         const data = getFormData();
-        if(window.saveInvoiceToFirebase) await window.saveInvoiceToFirebase(data);
+        if(db) {
+            try {
+                await addDoc(collection(db, "history_bhyt"), {
+                    ...data,
+                    timestamp: serverTimestamp()
+                });
+            } catch(e) { console.log("Lỗi lưu ngầm:", e) }
+        }
 
-        document.getElementById('statusMsg').innerText = "Đang tạo ảnh để chia sẻ...";
+        document.getElementById('statusMsg').innerText = "Đang xử lý chia sẻ...";
         
-        const canvas = await html2canvas(document.getElementById('invoice'), { scale: 2 });
-        
-        canvas.toBlob(async (blob) => {
-            const file = new File([blob], `BHYT_${data.representative}.png`, { type: 'image/png' });
+        try {
+            const canvas = await html2canvas(document.getElementById('invoice'), { 
+                scale: 2,
+                useCORS: true,
+                allowTaint: true
+            });
+            
+            canvas.toBlob(async (blob) => {
+                const file = new File([blob], `BHYT_${data.representative}.png`, { type: 'image/png' });
 
-            // Kiểm tra trình duyệt có hỗ trợ Share không
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                try {
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
                     await navigator.share({
                         title: 'Hóa Đơn BHYT',
-                        text: `Gửi hóa đơn BHYT cho khách hàng ${data.representative}`,
+                        text: `Gửi hóa đơn BHYT cho ${data.representative}`,
                         files: [file]
                     });
-                    document.getElementById('statusMsg').innerText = "Đã chia sẻ thành công!";
-                } catch (err) {
-                    console.error("Lỗi chia sẻ:", err);
-                    document.getElementById('statusMsg').innerText = "Đã hủy chia sẻ.";
+                    document.getElementById('statusMsg').innerText = "Chia sẻ thành công!";
+                } else {
+                    // Fallback cho PC
+                    alert("Máy tính không hỗ trợ chia sẻ trực tiếp. Ảnh sẽ được tải về máy.");
+                    window.downloadImage(data.representative);
+                    document.getElementById('statusMsg').innerText = "Đã tải về máy.";
                 }
-            } else {
-                alert("Trình duyệt của bạn không hỗ trợ chia sẻ trực tiếp (Chỉ hỗ trợ trên Mobile Chrome/Safari/Samsung Internet). Hệ thống sẽ tải ảnh về thay thế.");
-                downloadImage(data.representative);
-            }
-        }, 'image/png');
+            }, 'image/png');
+        } catch (err) {
+            console.error(err);
+            alert("Lỗi chia sẻ: " + err);
+        }
     }
 
-    // --- LOAD LẠI TỪ LỊCH SỬ ---
     window.loadFromHistory = function(docId) {
         const data = window.globalHistoryData[docId];
         if(!data) return;
 
-        // Điền lại form
         document.getElementById('seller').value = data.seller;
         document.getElementById('phone').value = data.phone;
         document.getElementById('duration').value = data.duration;
         document.getElementById('qty').value = data.qty;
         document.getElementById('startTier').value = data.startTier;
 
-        // Tạo lại ô input
-        updateBuyerInputs();
+        window.updateBuyerInputs();
 
-        // Điền tên thành viên
         if(data.members && Array.isArray(data.members)) {
             data.members.forEach((name, index) => {
                 const input = document.getElementById(`buyer_${index}`);
@@ -509,28 +482,65 @@
             });
         }
 
-        // Ảnh CCCD cũ
         if(data.imageData) {
             currentImageData = data.imageData;
-            document.getElementById('outImage').src = currentImageData;
-            document.getElementById('outImage').style.display = 'block';
+            const img = document.getElementById('outImage');
+            img.src = currentImageData;
+            img.style.display = 'block';
         } else {
             currentImageData = null;
             document.getElementById('outImage').style.display = 'none';
         }
 
-        // Render lại hóa đơn
-        renderInvoice();
-
-        // Override ngày hiển thị trên hóa đơn thành ngày trong lịch sử (để đúng thực tế cũ)
+        // Khóa ngày lại theo lịch sử
+        const dateEl = document.getElementById('outDate');
         if(data.timestamp) {
              const oldDate = new Date(data.timestamp.toDate()).toLocaleString('vi-VN');
-             document.getElementById('outDate').innerText = oldDate;
+             dateEl.innerText = oldDate;
+             dateEl.setAttribute('data-locked', 'true'); // Đánh dấu đang xem lịch sử
+        } else {
+            dateEl.removeAttribute('data-locked');
         }
 
-        // Cuộn lên đầu trang
+        window.renderInvoice();
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        document.getElementById('statusMsg').innerText = "Đã tải lại hóa đơn từ lịch sử!";
+        document.getElementById('statusMsg').innerText = "Đang xem lại hóa đơn từ lịch sử.";
+    }
+
+    // --- KHỞI CHẠY ---
+    window.onload = function() {
+        window.updateBuyerInputs();
+        window.generateQR();
+        window.renderInvoice();
+    }
+
+    // Lắng nghe dữ liệu lịch sử
+    if(db) {
+        const historyTable = document.getElementById('historyBody');
+        const q = query(collection(db, "history_bhyt"), orderBy("timestamp", "desc"));
+        
+        onSnapshot(q, (snapshot) => {
+            historyTable.innerHTML = "";
+            window.globalHistoryData = {};
+            
+            snapshot.forEach((doc) => {
+                const item = doc.data();
+                window.globalHistoryData[doc.id] = item;
+
+                const date = item.timestamp ? new Date(item.timestamp.toDate()).toLocaleString('vi-VN') : "Vừa xong";
+                
+                const row = `
+                    <tr onclick="window.loadFromHistory('${doc.id}')" style="cursor:pointer" title="Bấm để xem lại">
+                        <td>${date}</td>
+                        <td><b>${item.representative}</b><br><span style="font-size:11px; color:#666">${item.qty} người</span></td>
+                        <td>${item.duration} tháng</td>
+                        <td style="font-weight:bold; color:#b30000">${item.totalAmount}</td>
+                        <td style="text-align:center">👁️</td>
+                    </tr>
+                `;
+                historyTable.innerHTML += row;
+            });
+        });
     }
 </script>
 
