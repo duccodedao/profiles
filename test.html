@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phần Mềm BHYT Hộ Gia Đình & Lưu Trữ</title>
+    <title>Hệ Thống BHYT Pro - Có Lịch Sử & Ảnh</title>
     
     <!-- Thư viện chụp ảnh hóa đơn -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
-    <!-- Firebase SDK (Dạng Modular) -->
+    <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-        // Cấu hình Firebase của bạn
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
@@ -27,38 +27,44 @@
         // Khởi tạo Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const storage = getStorage(app);
 
-        // --- HÀM LƯU DỮ LIỆU ---
-        window.saveInvoiceToFirebase = async function(data) {
-            try {
-                await addDoc(collection(db, "history_bhyt"), {
-                    ...data,
-                    timestamp: serverTimestamp() // Lưu giờ server
-                });
-                alert("✅ Đã lưu đơn hàng vào lịch sử!");
-            } catch (e) {
-                console.error("Lỗi lưu:", e);
-                alert("❌ Lỗi khi lưu vào Firebase: " + e.message);
-            }
-        }
+        // --- BIẾN TOÀN CỤC CHO FIREBASE ---
+        window.db = db;
+        window.storage = storage;
+        window.addDoc = addDoc;
+        window.collection = collection;
+        window.serverTimestamp = serverTimestamp;
+        window.ref = ref;
+        window.uploadString = uploadString;
+        window.getDownloadURL = getDownloadURL;
 
-        // --- HÀM TẢI LỊCH SỬ ---
+        // --- TẢI LỊCH SỬ ---
         const historyTable = document.getElementById('historyBody');
+        // Lưu trữ dữ liệu lịch sử vào biến cục bộ để dùng cho Modal
+        window.historyDataCache = {}; 
+
         const q = query(collection(db, "history_bhyt"), orderBy("timestamp", "desc"));
         
         onSnapshot(q, (snapshot) => {
             historyTable.innerHTML = "";
-            snapshot.forEach((doc) => {
-                const item = doc.data();
+            window.historyDataCache = {};
+
+            snapshot.forEach((docSnap) => {
+                const item = docSnap.data();
+                const id = docSnap.id;
+                window.historyDataCache[id] = item; // Cache lại để popup dùng
+
                 const date = item.timestamp ? new Date(item.timestamp.toDate()).toLocaleString('vi-VN') : "Vừa xong";
                 
                 const row = `
                     <tr>
                         <td>${date}</td>
-                        <td>${item.buyerName}</td>
-                        <td>${item.qty} người</td>
-                        <td>${item.duration} tháng</td>
-                        <td style="font-weight:bold; color:#b30000">${item.totalAmount}</td>
+                        <td><b>${item.buyerName}</b><br><small>${item.phone}</small></td>
+                        <td>${item.totalAmount}</td>
+                        <td style="text-align:center;">
+                            <button class="btn-view" onclick="openDetailModal('${id}')">👁️ Xem</button>
+                        </td>
                     </tr>
                 `;
                 historyTable.innerHTML += row;
@@ -68,62 +74,82 @@
 
     <style>
         :root { --primary: #0066cc; --bg: #f0f2f5; }
-        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); padding: 20px; color: #333; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); padding: 20px; color: #333; margin: 0; }
         
-        .container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
+        .container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; max-width: 1200px; margin: 0 auto; }
         
-        /* CỘT TRÁI */
+        /* INPUT PANEL */
         .panel-input { background: white; padding: 20px; border-radius: 10px; width: 100%; max-width: 400px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .panel-input h2 { color: var(--primary); margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        
         .form-group { margin-bottom: 12px; }
         label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
-        input, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
         
-        .dynamic-list { max-height: 200px; overflow-y: auto; background: #f9f9f9; padding: 10px; border: 1px dashed #ccc; margin-bottom: 10px; }
+        .dynamic-list { max-height: 150px; overflow-y: auto; background: #fafafa; padding: 10px; border: 1px dashed #ccc; margin-bottom: 10px; }
         .sub-input { margin-bottom: 5px; font-size: 13px; }
 
         .btn-group { display: flex; gap: 8px; margin-top: 15px; }
-        button { flex: 1; padding: 10px; border: none; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; }
-        .btn-save { background: #28a745; } /* Xanh lá */
-        .btn-zalo { background: #0068ff; } /* Xanh Zalo */
+        button { flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; color: white; font-weight: bold; transition: 0.2s; }
+        .btn-save { background: #28a745; }
+        .btn-zalo { background: #0068ff; }
+        .btn-view { background: #17a2b8; padding: 5px 10px; font-size: 12px; }
         
-        /* CỘT PHẢI - HÓA ĐƠN */
+        /* INVOICE PREVIEW */
         .panel-preview { width: 100%; max-width: 450px; }
         #invoice { background: white; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); font-family: 'Times New Roman', serif; position: relative; }
-        
-        .inv-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 10px; }
-        .inv-header h1 { font-size: 20px; margin: 0; color: #b30000; text-transform: uppercase; }
         
         table.inv-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
         table.inv-table th, table.inv-table td { border: 1px solid #888; padding: 5px; }
         table.inv-table th { background: #eee; }
         
-        .total { text-align: right; font-size: 18px; font-weight: bold; color: #b30000; margin-top: 10px; }
-        
-        .cccd-img { width: 100%; margin-top: 10px; border: 1px dashed #ccc; display: none; }
+        .cccd-img { width: 100%; margin-top: 10px; border: 1px solid #ddd; display: none; }
 
-        /* BẢNG LỊCH SỬ */
-        .history-panel { width: 100%; max-width: 900px; background: white; padding: 20px; margin-top: 30px; border-radius: 10px; }
-        .history-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        .history-table th, .history-table td { padding: 10px; border-bottom: 1px solid #eee; text-align: left; }
+        /* HISTORY TABLE */
+        .history-panel { width: 100%; max-width: 900px; background: white; padding: 20px; margin-top: 30px; border-radius: 10px; overflow-x: auto; }
+        .history-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 500px; }
+        .history-table th, .history-table td { padding: 12px 10px; border-bottom: 1px solid #eee; text-align: left; }
+        .history-table th { background-color: #f8f9fa; color: var(--primary); }
+
+        /* MODAL POPUP */
+        .modal-overlay {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 1000;
+            justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: white; width: 95%; max-width: 500px;
+            max-height: 90vh; overflow-y: auto;
+            border-radius: 10px; padding: 20px;
+            position: relative; animation: slideDown 0.3s;
+        }
+        @keyframes slideDown { from {transform: translateY(-50px); opacity: 0;} to {transform: translateY(0); opacity: 1;} }
         
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
+        .close-btn { background: transparent; color: #333; font-size: 24px; padding: 0; width: auto; flex: none; }
+        
+        .modal-actions { margin-top: 20px; display: flex; gap: 10px; }
+        
+        /* LOADING */
+        #loadingOverlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); z-index: 2000; text-align: center; padding-top: 200px; font-weight: bold; color: var(--primary); }
+
         @media print {
-            .panel-input, .history-panel, .btn-group { display: none; }
-            .panel-preview { max-width: 100%; }
-            #invoice { box-shadow: none; border: none; }
+            .panel-input, .history-panel, .btn-group, .modal-actions, .close-btn { display: none !important; }
+            .modal-overlay { position: static; background: white; display: block; }
+            .modal-content { box-shadow: none; width: 100%; max-width: 100%; }
         }
     </style>
 </head>
 <body>
 
+<div id="loadingOverlay">⏳ Đang xử lý dữ liệu và tải ảnh... Vui lòng chờ...</div>
+
 <div class="container">
-    <!-- INPUT -->
+    <!-- PANEL NHẬP LIỆU -->
     <div class="panel-input">
-        <h2>Thông Tin Mua BHYT</h2>
+        <h2 style="color: var(--primary); margin-top: 0;">Lập Hóa Đơn BHYT</h2>
         
         <div class="form-group">
-            <label>Người bán</label>
+            <label>Đại lý thu</label>
             <select id="seller">
                 <option value="Lâm Minh Ngoãn">Lâm Minh Ngoãn</option>
                 <option value="Sơn Lý Hồng Đức">Sơn Lý Hồng Đức</option>
@@ -131,21 +157,21 @@
         </div>
 
         <div class="form-group">
-            <label>SĐT Liên hệ</label>
-            <input type="number" id="phone" placeholder="09xxxxxxxx">
+            <label>SĐT Khách hàng</label>
+            <input type="number" id="phone" placeholder="Nhập SĐT...">
         </div>
 
         <div style="display:flex; gap:10px;">
             <div class="form-group" style="flex:1">
-                <label>Số người mua</label>
+                <label>Số người</label>
                 <input type="number" id="qty" value="1" min="1" max="10" onchange="updateBuyerInputs()">
             </div>
             <div class="form-group" style="flex:1">
                 <label>Thời hạn</label>
                 <select id="duration" onchange="renderInvoice()">
-                    <option value="3">3 Tháng</option>
+                    <option value="12">12 Tháng</option>
                     <option value="6">6 Tháng</option>
-                    <option value="12" selected>12 Tháng</option>
+                    <option value="3">3 Tháng</option>
                 </select>
             </div>
         </div>
@@ -153,128 +179,126 @@
         <div class="form-group">
             <label>Tính từ người thứ mấy?</label>
             <select id="startTier" onchange="renderInvoice()">
-                <option value="1">Người thứ 1 (100%)</option>
-                <option value="2">Người thứ 2 (70%)</option>
-                <option value="3">Người thứ 3 (60%)</option>
-                <option value="4">Người thứ 4 (50%)</option>
-                <option value="5">Người thứ 5+ (40%)</option>
+                <option value="1">Thứ 1 (100%)</option>
+                <option value="2">Thứ 2 (70%)</option>
+                <option value="3">Thứ 3 (60%)</option>
+                <option value="4">Thứ 4 (50%)</option>
+                <option value="5">Thứ 5+ (40%)</option>
             </select>
         </div>
 
-        <label>Danh sách tên người mua (Tùy chọn nhập):</label>
+        <label>Danh sách tên:</label>
         <div id="buyerListContainer" class="dynamic-list">
-            <!-- Các ô nhập tên sẽ hiện ở đây -->
-            <input type="text" id="buyer_0" class="sub-input" placeholder="Họ tên người đại diện (Bắt buộc)" oninput="renderInvoice()">
+            <!-- JS sẽ tạo input ở đây -->
         </div>
 
         <div class="form-group">
-            <label>Ảnh CCCD / Thẻ cũ</label>
+            <label>Ảnh CCCD / Hồ sơ (Bắt buộc để lưu ảnh)</label>
             <input type="file" id="fileInput" accept="image/*" onchange="handleImage(this)">
         </div>
 
         <div class="btn-group">
-            <button class="btn-save" onclick="processSave()">💾 Lưu & Tải Ảnh</button>
-            <button class="btn-zalo" onclick="shareZalo()">💬 Gửi Zalo</button>
+            <button class="btn-save" onclick="saveData()">💾 Lưu & Tải Ảnh</button>
         </div>
-        <p style="font-size:11px; color:#666; font-style:italic; margin-top:5px;">*Nút Gửi Zalo sẽ tải ảnh về và mở web Zalo để bạn dán ảnh vào.</p>
     </div>
 
-    <!-- HÓA ĐƠN -->
+    <!-- PREVIEW HÓA ĐƠN -->
     <div class="panel-preview">
         <div id="invoice">
-            <div class="inv-header">
-                <h1>HÓA ĐƠN BHYT HỘ GIA ĐÌNH</h1>
-                <p style="margin:5px 0; font-size:12px;">Ngày lập: <span id="outDate">...</span></p>
-                <p style="margin:0; font-size:12px;">Người thu: <span id="outSeller" style="font-weight:bold">...</span></p>
+            <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:10px;">
+                <h2 style="margin:0; color:#b30000;">HÓA ĐƠN BHYT</h2>
+                <small>Ngày: <span id="outDate">...</span> | Thu ngân: <span id="outSeller">...</span></small>
             </div>
-
-            <div style="font-size:14px;">
-                <div><b>Đại diện:</b> <span id="outRep">...</span></div>
+            
+            <div style="margin-top:10px; font-size:14px;">
+                <div><b>Khách hàng:</b> <span id="outRep">...</span></div>
                 <div><b>SĐT:</b> <span id="outPhone">...</span></div>
-                <div><b>Thời hạn:</b> <span id="outDuration">...</span></div>
+                <div><b>Gói:</b> <span id="outDuration">...</span></div>
             </div>
 
             <table class="inv-table">
-                <thead>
-                    <tr>
-                        <th>STT</th>
-                        <th>Họ và Tên</th>
-                        <th>Mức đóng</th>
-                        <th>Thành tiền</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody">
-                    <!-- Dữ liệu -->
-                </tbody>
+                <thead><tr><th>STT</th><th>Họ Tên</th><th>Mức %</th><th>Tiền</th></tr></thead>
+                <tbody id="tableBody"></tbody>
             </table>
 
-            <div class="total">TỔNG: <span id="outTotal">0 đ</span></div>
+            <div style="text-align:right; font-weight:bold; font-size:18px; color:#b30000; margin-top:10px;">
+                TỔNG: <span id="outTotal">0 đ</span>
+            </div>
 
             <img id="outImage" class="cccd-img" src="">
-            
-            <div style="text-align:center; font-style:italic; font-size:12px; margin-top:15px;">
-                Cảm ơn quý khách đã tham gia BHYT!
-            </div>
         </div>
     </div>
 </div>
 
-<!-- LỊCH SỬ MUA HÀNG -->
+<!-- LỊCH SỬ -->
 <div class="container">
     <div class="history-panel">
-        <h3 style="color:var(--primary); margin-top:0;">Lịch Sử Giao Dịch (Real-time)</h3>
+        <h3 style="color:var(--primary); margin:0 0 15px 0;">Lịch sử giao dịch</h3>
         <table class="history-table">
             <thead>
                 <tr>
                     <th>Thời gian</th>
-                    <th>Người mua</th>
-                    <th>Số lượng</th>
-                    <th>Thời hạn</th>
+                    <th>Khách hàng</th>
                     <th>Tổng tiền</th>
+                    <th style="text-align:center;">Thao tác</th>
                 </tr>
             </thead>
             <tbody id="historyBody">
-                <tr><td colspan="5">Đang tải dữ liệu...</td></tr>
+                <tr><td colspan="4" style="text-align:center;">Đang tải dữ liệu...</td></tr>
             </tbody>
         </table>
     </div>
 </div>
 
+<!-- MODAL CHI TIẾT -->
+<div id="detailModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 style="margin:0; color:var(--primary);">Chi Tiết Giao Dịch</h3>
+            <button class="close-btn" onclick="closeModal()">×</button>
+        </div>
+        
+        <div id="modalBody">
+            <!-- Nội dung chi tiết sẽ được render vào đây -->
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn-zalo" onclick="shareViaAPI()">📤 Share (API)</button>
+            <button class="btn-view" style="background:#6c757d;" onclick="closeModal()">Đóng</button>
+        </div>
+    </div>
+</div>
+
 <script>
-    // LOGIC TÍNH TIỀN
+    // --- LOGIC TÍNH TOÁN ---
     const BASE_SALARY = 2340000;
-    const RATE = 0.045; 
-    const MONTHLY_BASE = BASE_SALARY * RATE; // 105.300
+    const RATE = 0.045;
+    const MONTHLY_BASE = BASE_SALARY * RATE; 
     const TIERS = [1.0, 0.7, 0.6, 0.5, 0.4];
 
-    let currentImageData = null;
-    let currentTotalString = "0 đ";
+    let currentImageData = null; // Base64 cho preview
+    let currentTotalVal = 0;
+    let currentDataObj = {}; // Dữ liệu hiện tại
 
     window.onload = function() {
-        updateBuyerInputs(); // Tạo ô nhập đầu tiên
+        updateBuyerInputs();
         renderInvoice();
     }
 
-    // Tạo các ô input dựa trên số lượng người
     function updateBuyerInputs() {
         const qty = parseInt(document.getElementById('qty').value);
         const container = document.getElementById('buyerListContainer');
+        const oldName = document.getElementById('buyer_0')?.value || "";
         
-        // Lưu lại giá trị cũ của người đại diện (người đầu tiên)
-        const firstInput = document.getElementById('buyer_0');
-        const oldName = firstInput ? firstInput.value : "";
-
-        container.innerHTML = ""; // Xóa cũ
-
+        container.innerHTML = "";
         for (let i = 0; i < qty; i++) {
             const input = document.createElement("input");
             input.type = "text";
             input.id = `buyer_${i}`;
             input.className = "sub-input";
-            input.placeholder = i === 0 ? "Họ tên người đại diện (Bắt buộc)" : `Tên thành viên ${i+1} (Không bắt buộc)`;
-            input.oninput = renderInvoice; // Gõ là cập nhật hóa đơn ngay
-            
-            if (i === 0) input.value = oldName;
+            input.placeholder = i===0 ? "Tên đại diện (Bắt buộc)" : `Thành viên ${i+1}`;
+            input.oninput = renderInvoice;
+            if(i===0) input.value = oldName;
             container.appendChild(input);
         }
         renderInvoice();
@@ -284,7 +308,7 @@
         if (input.files && input.files[0]) {
             const reader = new FileReader();
             reader.onload = function(e) {
-                currentImageData = e.target.result;
+                currentImageData = e.target.result; // Data URL base64
                 document.getElementById('outImage').src = currentImageData;
                 document.getElementById('outImage').style.display = 'block';
             }
@@ -297,101 +321,180 @@
     }
 
     function renderInvoice() {
-        // Lấy dữ liệu
         const seller = document.getElementById('seller').value;
         const phone = document.getElementById('phone').value;
         const duration = parseInt(document.getElementById('duration').value);
         const qty = parseInt(document.getElementById('qty').value);
-        const startTier = parseInt(document.getElementById('startTier').value); // 1-5
-
-        // Ngày giờ
-        const now = new Date();
-        document.getElementById('outDate').innerText = now.toLocaleString('vi-VN');
+        const startTier = parseInt(document.getElementById('startTier').value);
+        
+        document.getElementById('outDate').innerText = new Date().toLocaleString('vi-VN');
         document.getElementById('outSeller').innerText = seller;
         document.getElementById('outPhone').innerText = phone;
         document.getElementById('outDuration').innerText = duration + " Tháng";
 
-        // Xử lý người đại diện
-        const repName = document.getElementById('buyer_0').value || "Khách lẻ";
+        const repName = document.getElementById('buyer_0')?.value || "Khách lẻ";
         document.getElementById('outRep').innerText = repName.toUpperCase();
 
-        // Tính tiền & Render bảng
         let totalAmount = 0;
         let html = "";
-        
+        let members = []; // Lưu danh sách thành viên để gửi lên server
+
         for (let i = 0; i < qty; i++) {
-            // Lấy tên
-            const nameInput = document.getElementById(`buyer_${i}`);
-            let name = nameInput.value;
-            if (!name) name = i === 0 ? "Người mua" : `Thành viên ${i+1}`;
-
-            // Xác định bậc đóng
-            let currentTierIndex = (startTier - 1) + i;
-            if (currentTierIndex > 4) currentTierIndex = 4;
+            let name = document.getElementById(`buyer_${i}`).value || (i===0?"Người mua":`Thành viên ${i+1}`);
+            let tierIdx = (startTier - 1) + i;
+            if(tierIdx > 4) tierIdx = 4;
             
-            const percent = TIERS[currentTierIndex];
-            const price = (MONTHLY_BASE * percent * duration); // Làm tròn theo quy định BHXH thường tính từng tháng
-
+            let percent = TIERS[tierIdx];
+            let price = MONTHLY_BASE * percent * duration;
             totalAmount += price;
 
-            html += `
-                <tr>
-                    <td style="text-align:center">${i+1}</td>
-                    <td>${name.toUpperCase()}</td>
-                    <td style="text-align:center">${percent * 100}%</td>
-                    <td style="text-align:right">${formatMoney(price)}</td>
-                </tr>
-            `;
+            members.push({ name: name, percent: percent, price: price });
+
+            html += `<tr>
+                <td style="text-align:center">${i+1}</td>
+                <td>${name}</td>
+                <td style="text-align:center">${percent*100}%</td>
+                <td style="text-align:right">${formatMoney(price)}</td>
+            </tr>`;
         }
 
         document.getElementById('tableBody').innerHTML = html;
-        currentTotalString = formatMoney(totalAmount);
-        document.getElementById('outTotal').innerText = currentTotalString;
-    }
-
-    // --- CHỨC NĂNG LƯU VÀ SHARE ---
-
-    async function processSave() {
-        // 1. Lưu vào Firebase
-        const data = {
-            seller: document.getElementById('seller').value,
-            buyerName: document.getElementById('buyer_0').value || "Khách lẻ",
-            phone: document.getElementById('phone').value,
-            qty: document.getElementById('qty').value,
-            duration: document.getElementById('duration').value,
-            totalAmount: currentTotalString,
-            // Nếu muốn lưu tên tất cả mọi người, có thể gom mảng ở đây
+        document.getElementById('outTotal').innerText = formatMoney(totalAmount);
+        
+        // Cập nhật object dữ liệu hiện tại để chuẩn bị lưu
+        currentDataObj = {
+            seller, phone, qty, duration, startTier,
+            buyerName: repName,
+            members: members,
+            totalAmount: formatMoney(totalAmount),
+            totalVal: totalAmount
         };
-
-        if(window.saveInvoiceToFirebase) {
-            await window.saveInvoiceToFirebase(data);
-        }
-
-        // 2. Tải ảnh về
-        downloadImage();
     }
 
-    function downloadImage() {
-        html2canvas(document.getElementById('invoice'), { scale: 2 }).then(canvas => {
+    // --- LƯU DỮ LIỆU (CÓ UPLOAD ẢNH) ---
+    async function saveData() {
+        const loading = document.getElementById('loadingOverlay');
+        loading.style.display = 'block';
+
+        try {
+            let imageUrl = "";
+
+            // 1. Nếu có ảnh, Upload lên Firebase Storage
+            if (currentImageData) {
+                const fileName = `bhyt_images/${Date.now()}.jpg`;
+                const storageRef = window.ref(window.storage, fileName);
+                
+                // Upload chuỗi Base64
+                await window.uploadString(storageRef, currentImageData, 'data_url');
+                
+                // Lấy URL công khai
+                imageUrl = await window.getDownloadURL(storageRef);
+            }
+
+            // 2. Lưu thông tin vào Firestore
+            const docData = {
+                ...currentDataObj,
+                imageUrl: imageUrl, // Lưu link ảnh
+                timestamp: window.serverTimestamp()
+            };
+
+            await window.addDoc(window.collection(window.db, "history_bhyt"), docData);
+            
+            // 3. Tải ảnh hóa đơn về máy (tạo từ canvas)
+            await downloadInvoiceImage();
+
+            alert("✅ Đã lưu thành công và tải ảnh về!");
+        } catch (error) {
+            console.error(error);
+            alert("❌ Lỗi: " + error.message);
+        } finally {
+            loading.style.display = 'none';
+        }
+    }
+
+    function downloadInvoiceImage() {
+        return html2canvas(document.getElementById('invoice'), { scale: 2 }).then(canvas => {
             const link = document.createElement('a');
-            link.download = `BHYT_${document.getElementById('buyer_0').value}.png`;
+            link.download = `BHYT_${currentDataObj.buyerName}.png`;
             link.href = canvas.toDataURL("image/png");
             link.click();
         });
     }
 
-    function shareZalo() {
-        // Quy trình: Tải ảnh trước -> Mở Zalo Web
-        downloadImage();
+    // --- XỬ LÝ MODAL & SHARE API ---
+    let currentModalData = null;
+
+    function openDetailModal(docId) {
+        const data = window.historyDataCache[docId];
+        if(!data) return;
+
+        currentModalData = data;
+        const modalBody = document.getElementById('modalBody');
         
-        // Mở Zalo sau 1s để kịp tải ảnh
-        setTimeout(() => {
-            // Mở trang Zalo, người dùng tự paste ảnh hoặc attach file vừa tải
-            // Trên Mobile nó sẽ nhắc mở app Zalo
-            window.open('https://zalo.me/', '_blank');
-        }, 1000);
+        // Tạo HTML chi tiết
+        let membersHtml = `<table class="inv-table" style="width:100%">
+            <tr><th>Tên</th><th>Mức</th><th>Tiền</th></tr>`;
+        
+        if(data.members) {
+            data.members.forEach(m => {
+                membersHtml += `<tr>
+                    <td>${m.name}</td>
+                    <td style="text-align:center">${m.percent*100}%</td>
+                    <td style="text-align:right">${formatMoney(m.price)}</td>
+                </tr>`;
+            });
+        }
+        membersHtml += `</table>`;
+
+        // Check ảnh
+        const imgHtml = data.imageUrl ? 
+            `<div style="margin-top:10px; font-weight:bold;">Ảnh đính kèm:</div>
+             <img src="${data.imageUrl}" style="width:100%; border:1px solid #ccc; margin-top:5px; max-height:300px; object-fit:contain;">` 
+            : `<p style="color:#666; font-style:italic;">Không có ảnh đính kèm</p>`;
+
+        const html = `
+            <div style="font-size:14px; line-height:1.6;">
+                <div><b>Mã GD:</b> ${docId.slice(0,8)}...</div>
+                <div><b>Người mua:</b> ${data.buyerName} - <b>SĐT:</b> ${data.phone}</div>
+                <div><b>Gói:</b> ${data.duration} tháng - <b>SL:</b> ${data.qty} người</div>
+                <div><b>Tổng tiền:</b> <span style="color:red; font-weight:bold; font-size:16px;">${data.totalAmount}</span></div>
+                <hr>
+                ${membersHtml}
+                ${imgHtml}
+            </div>
+        `;
+
+        modalBody.innerHTML = html;
+        document.getElementById('detailModal').style.display = 'flex';
     }
 
+    function closeModal() {
+        document.getElementById('detailModal').style.display = 'none';
+    }
+
+    // --- SHARE BẰNG NAVIGATOR.SHARE API ---
+    async function shareViaAPI() {
+        if (!currentModalData) return;
+
+        const shareData = {
+            title: 'Hóa Đơn BHYT',
+            text: `Hóa đơn BHYT\nKhách: ${currentModalData.buyerName}\nTổng tiền: ${currentModalData.totalAmount}\nChi tiết: ${currentModalData.members.length} người.`,
+            url: currentModalData.imageUrl || window.location.href // Ưu tiên share link ảnh nếu có
+        };
+
+        try {
+            if (navigator.share) {
+                await navigator.share(shareData);
+                console.log('Chia sẻ thành công');
+            } else {
+                // Fallback nếu trình duyệt không hỗ trợ (ví dụ PC Chrome cũ)
+                alert("Trình duyệt này không hỗ trợ API Share. Hãy copy link ảnh hoặc chụp màn hình.");
+                if(currentModalData.imageUrl) window.open(currentModalData.imageUrl, '_blank');
+            }
+        } catch (err) {
+            console.error('Lỗi share:', err);
+        }
+    }
 </script>
 
 </body>
