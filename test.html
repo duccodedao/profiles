@@ -3,160 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phần Mềm Tính BHYT Hộ Gia Đình 2024</title>
+    <title>Phần Mềm BHYT Hộ Gia Đình & Lưu Trữ</title>
+    
+    <!-- Thư viện chụp ảnh hóa đơn -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- Firebase SDK (Dạng Modular) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // Cấu hình Firebase của bạn
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
+            authDomain: "profile-d1214.firebaseapp.com",
+            projectId: "profile-d1214",
+            storageBucket: "profile-d1214.firebasestorage.app",
+            messagingSenderId: "914980131889",
+            appId: "1:914980131889:web:72f8da15c42dbee671b110",
+            measurementId: "G-C587M69LZW"
+        };
+
+        // Khởi tạo Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- HÀM LƯU DỮ LIỆU ---
+        window.saveInvoiceToFirebase = async function(data) {
+            try {
+                await addDoc(collection(db, "history_bhyt"), {
+                    ...data,
+                    timestamp: serverTimestamp() // Lưu giờ server
+                });
+                alert("✅ Đã lưu đơn hàng vào lịch sử!");
+            } catch (e) {
+                console.error("Lỗi lưu:", e);
+                alert("❌ Lỗi khi lưu vào Firebase: " + e.message);
+            }
+        }
+
+        // --- HÀM TẢI LỊCH SỬ ---
+        const historyTable = document.getElementById('historyBody');
+        const q = query(collection(db, "history_bhyt"), orderBy("timestamp", "desc"));
+        
+        onSnapshot(q, (snapshot) => {
+            historyTable.innerHTML = "";
+            snapshot.forEach((doc) => {
+                const item = doc.data();
+                const date = item.timestamp ? new Date(item.timestamp.toDate()).toLocaleString('vi-VN') : "Vừa xong";
+                
+                const row = `
+                    <tr>
+                        <td>${date}</td>
+                        <td>${item.buyerName}</td>
+                        <td>${item.qty} người</td>
+                        <td>${item.duration} tháng</td>
+                        <td style="font-weight:bold; color:#b30000">${item.totalAmount}</td>
+                    </tr>
+                `;
+                historyTable.innerHTML += row;
+            });
+        });
+    </script>
+
     <style>
-        :root {
-            --primary: #0066cc; /* Màu xanh bưu điện/BHXH */
-            --bg: #eef2f5;
-            --text: #333;
-        }
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background-color: var(--bg);
-            padding: 20px;
-            color: var(--text);
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        /* CỘT TRÁI: NHẬP LIỆU */
-        .panel-input {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            width: 100%;
-            max-width: 400px;
-        }
-        .panel-input h2 { 
-            color: var(--primary); 
-            margin-top: 0; 
-            border-bottom: 2px solid var(--primary); 
-            padding-bottom: 10px;
-        }
+        :root { --primary: #0066cc; --bg: #f0f2f5; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); padding: 20px; color: #333; }
         
-        .form-group { margin-bottom: 15px; }
-        .form-row { display: flex; gap: 10px; }
-        .form-row .form-group { flex: 1; }
-
-        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; }
-        input, select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 15px;
-            box-sizing: border-box;
-        }
-        input:focus, select:focus { outline: 2px solid var(--primary); border-color: transparent; }
-
-        .note { font-size: 12px; color: #666; font-style: italic; margin-top: -10px; margin-bottom: 10px; }
-
-        /* Nút bấm */
-        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
-        button {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            color: white;
-            transition: 0.2s;
-        }
-        .btn-update { background: #28a745; }
-        .btn-print { background: #6c757d; }
-        .btn-down { background: #17a2b8; }
-        button:hover { opacity: 0.9; }
-
-        .upload-box {
-            border: 2px dashed #bbb;
-            padding: 15px;
-            text-align: center;
-            cursor: pointer;
-            border-radius: 6px;
-            background: #f9f9f9;
-        }
-        .upload-box:hover { border-color: var(--primary); background: #eef6ff; }
-
-        /* CỘT PHẢI: HÓA ĐƠN */
-        .panel-preview {
-            width: 100%;
-            max-width: 480px;
-        }
+        .container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
         
-        #invoice {
-            background: white;
-            padding: 25px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-            position: relative;
-            font-family: 'Times New Roman', serif; /* Font giống giấy tờ */
-        }
-
-        .inv-header { text-align: center; margin-bottom: 20px; }
-        .inv-header h1 { margin: 0; font-size: 24px; text-transform: uppercase; color: #b30000; }
-        .inv-header p { margin: 5px 0; font-size: 14px; font-weight: bold; }
+        /* CỘT TRÁI */
+        .panel-input { background: white; padding: 20px; border-radius: 10px; width: 100%; max-width: 400px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .panel-input h2 { color: var(--primary); margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; }
         
-        .inv-meta { display: flex; justify-content: space-between; font-size: 13px; font-style: italic; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
         
-        .inv-section { margin-bottom: 10px; font-size: 15px; }
-        .inv-label { font-weight: bold; width: 120px; display: inline-block; }
+        .dynamic-list { max-height: 200px; overflow-y: auto; background: #f9f9f9; padding: 10px; border: 1px dashed #ccc; margin-bottom: 10px; }
+        .sub-input { margin-bottom: 5px; font-size: 13px; }
+
+        .btn-group { display: flex; gap: 8px; margin-top: 15px; }
+        button { flex: 1; padding: 10px; border: none; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; }
+        .btn-save { background: #28a745; } /* Xanh lá */
+        .btn-zalo { background: #0068ff; } /* Xanh Zalo */
         
-        /* Bảng chi tiết tiền */
-        .details-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 15px 0;
-            font-size: 14px;
-        }
-        .details-table th, .details-table td {
-            border: 1px solid #999;
-            padding: 8px;
-            text-align: left;
-        }
-        .details-table th { background: #eee; text-align: center; }
-        .details-table td:last-child { text-align: right; }
+        /* CỘT PHẢI - HÓA ĐƠN */
+        .panel-preview { width: 100%; max-width: 450px; }
+        #invoice { background: white; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); font-family: 'Times New Roman', serif; position: relative; }
+        
+        .inv-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 10px; }
+        .inv-header h1 { font-size: 20px; margin: 0; color: #b30000; text-transform: uppercase; }
+        
+        table.inv-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+        table.inv-table th, table.inv-table td { border: 1px solid #888; padding: 5px; }
+        table.inv-table th { background: #eee; }
+        
+        .total { text-align: right; font-size: 18px; font-weight: bold; color: #b30000; margin-top: 10px; }
+        
+        .cccd-img { width: 100%; margin-top: 10px; border: 1px dashed #ccc; display: none; }
 
-        .total-section {
-            text-align: right;
-            font-size: 18px;
-            font-weight: bold;
-            margin-top: 15px;
-            color: #b30000;
-        }
-
-        .cccd-area {
-            margin-top: 20px;
-            text-align: center;
-            border-top: 1px dashed #aaa;
-            padding-top: 10px;
-        }
-        .cccd-area img {
-            max-width: 100%;
-            max-height: 300px;
-            border: 1px solid #ccc;
-        }
-
-        /* Ẩn khi in */
+        /* BẢNG LỊCH SỬ */
+        .history-panel { width: 100%; max-width: 900px; background: white; padding: 20px; margin-top: 30px; border-radius: 10px; }
+        .history-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .history-table th, .history-table td { padding: 10px; border-bottom: 1px solid #eee; text-align: left; }
+        
         @media print {
-            body { background: white; }
-            .panel-input, .btn-group { display: none; }
-            .panel-preview { max-width: 100%; width: 100%; box-shadow: none; }
-            #invoice { border: none; padding: 0; }
+            .panel-input, .history-panel, .btn-group { display: none; }
+            .panel-preview { max-width: 100%; }
+            #invoice { box-shadow: none; border: none; }
         }
     </style>
 </head>
 <body>
 
+<div class="container">
     <!-- INPUT -->
     <div class="panel-input">
-        <h2>Lập Hóa Đơn BHYT</h2>
-
+        <h2>Thông Tin Mua BHYT</h2>
+        
         <div class="form-group">
-            <label>Đại lý thu (Người bán)</label>
+            <label>Người bán</label>
             <select id="seller">
                 <option value="Lâm Minh Ngoãn">Lâm Minh Ngoãn</option>
                 <option value="Sơn Lý Hồng Đức">Sơn Lý Hồng Đức</option>
@@ -164,231 +131,268 @@
         </div>
 
         <div class="form-group">
-            <label>Đại diện hộ gia đình (Người mua)</label>
-            <input type="text" id="buyerName" placeholder="Ví dụ: Nguyễn Văn A">
+            <label>SĐT Liên hệ</label>
+            <input type="number" id="phone" placeholder="09xxxxxxxx">
         </div>
 
-        <div class="form-group">
-            <label>Số điện thoại</label>
-            <input type="number" id="buyerPhone" placeholder="09xxxxxxx">
-        </div>
-
-        <hr>
-
-        <div class="form-row">
-            <div class="form-group">
-                <label>Thời hạn thẻ</label>
+        <div style="display:flex; gap:10px;">
+            <div class="form-group" style="flex:1">
+                <label>Số người mua</label>
+                <input type="number" id="qty" value="1" min="1" max="10" onchange="updateBuyerInputs()">
+            </div>
+            <div class="form-group" style="flex:1">
+                <label>Thời hạn</label>
                 <select id="duration" onchange="renderInvoice()">
                     <option value="3">3 Tháng</option>
                     <option value="6">6 Tháng</option>
-                    <option value="9">9 Tháng</option>
-                    <option value="12" selected>1 Năm (12 tháng)</option>
+                    <option value="12" selected>12 Tháng</option>
                 </select>
             </div>
-            <div class="form-group">
-                <label>Ngày lập</label>
-                <input type="text" id="buyDate" readonly style="background:#eee; font-size:13px;">
-            </div>
         </div>
-
-        <div class="form-row">
-            <div class="form-group">
-                <label>Số lượng người mua</label>
-                <input type="number" id="qty" value="1" min="1" max="10" onchange="renderInvoice()">
-            </div>
-            <div class="form-group">
-                <label>Tính từ người thứ</label>
-                <input type="number" id="startTier" value="1" min="1" max="5" onchange="renderInvoice()">
-            </div>
-        </div>
-        <p class="note">*Ví dụ: Mua cho cả nhà 4 người -> Chọn Số lượng: 4, Tính từ người thứ: 1.<br>
-        *Mua cho vợ (người thứ 2) do chồng đã có -> Chọn Số lượng: 1, Tính từ người thứ: 2.</p>
 
         <div class="form-group">
-            <label>Ảnh CCCD / Hồ sơ đính kèm</label>
-            <div class="upload-box" onclick="document.getElementById('fileInput').click()">
-                <span id="fileName">📂 Chọn ảnh...</span>
-                <input type="file" id="fileInput" hidden accept="image/*" onchange="handleImage(this)">
-            </div>
+            <label>Tính từ người thứ mấy?</label>
+            <select id="startTier" onchange="renderInvoice()">
+                <option value="1">Người thứ 1 (100%)</option>
+                <option value="2">Người thứ 2 (70%)</option>
+                <option value="3">Người thứ 3 (60%)</option>
+                <option value="4">Người thứ 4 (50%)</option>
+                <option value="5">Người thứ 5+ (40%)</option>
+            </select>
+        </div>
+
+        <label>Danh sách tên người mua (Tùy chọn nhập):</label>
+        <div id="buyerListContainer" class="dynamic-list">
+            <!-- Các ô nhập tên sẽ hiện ở đây -->
+            <input type="text" id="buyer_0" class="sub-input" placeholder="Họ tên người đại diện (Bắt buộc)" oninput="renderInvoice()">
+        </div>
+
+        <div class="form-group">
+            <label>Ảnh CCCD / Thẻ cũ</label>
+            <input type="file" id="fileInput" accept="image/*" onchange="handleImage(this)">
         </div>
 
         <div class="btn-group">
-            <button class="btn-update" onclick="renderInvoice()">Cập Nhật Giá</button>
+            <button class="btn-save" onclick="processSave()">💾 Lưu & Tải Ảnh</button>
+            <button class="btn-zalo" onclick="shareZalo()">💬 Gửi Zalo</button>
         </div>
-        <div class="btn-group">
-            <button class="btn-print" onclick="window.print()">In Phiếu</button>
-            <button class="btn-down" onclick="downloadImage()">Tải Ảnh</button>
-        </div>
+        <p style="font-size:11px; color:#666; font-style:italic; margin-top:5px;">*Nút Gửi Zalo sẽ tải ảnh về và mở web Zalo để bạn dán ảnh vào.</p>
     </div>
 
-    <!-- PREVIEW HÓA ĐƠN -->
+    <!-- HÓA ĐƠN -->
     <div class="panel-preview">
         <div id="invoice">
             <div class="inv-header">
-                <img src="https://upload.wikimedia.org/wikipedia/vi/9/91/Vietnam_Social_Security_Logo.png" style="height: 50px; margin-bottom:5px;">
-                <h1>Biên Lai Thu Tiền</h1>
-                <p>BẢO HIỂM Y TẾ HỘ GIA ĐÌNH</p>
+                <h1>HÓA ĐƠN BHYT HỘ GIA ĐÌNH</h1>
+                <p style="margin:5px 0; font-size:12px;">Ngày lập: <span id="outDate">...</span></p>
+                <p style="margin:0; font-size:12px;">Người thu: <span id="outSeller" style="font-weight:bold">...</span></p>
             </div>
 
-            <div class="inv-meta">
-                <span id="outDate">Ngày: ...</span>
-                <span id="outSeller">NV Thu: ...</span>
+            <div style="font-size:14px;">
+                <div><b>Đại diện:</b> <span id="outRep">...</span></div>
+                <div><b>SĐT:</b> <span id="outPhone">...</span></div>
+                <div><b>Thời hạn:</b> <span id="outDuration">...</span></div>
             </div>
 
-            <div class="inv-section">
-                <div style="margin-bottom:5px;"><span class="inv-label">Người nộp:</span> <span id="outBuyer">...</span></div>
-                <div><span class="inv-label">Điện thoại:</span> <span id="outPhone">...</span></div>
-            </div>
-
-            <div class="inv-section" style="margin-top:10px;">
-                <span class="inv-label">Nội dung:</span> Thu tiền BHYT Hộ gia đình <b id="outDuration">12 tháng</b>
-            </div>
-
-            <!-- Bảng chi tiết tiền -->
-            <table class="details-table">
+            <table class="inv-table">
                 <thead>
                     <tr>
-                        <th style="width: 50px;">STT</th>
-                        <th>Đối tượng</th>
-                        <th>Mức đóng (%)</th>
+                        <th>STT</th>
+                        <th>Họ và Tên</th>
+                        <th>Mức đóng</th>
                         <th>Thành tiền</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
-                    <!-- Dòng dữ liệu sẽ sinh ra ở đây -->
+                    <!-- Dữ liệu -->
                 </tbody>
             </table>
 
-            <div class="total-section">
-                TỔNG CỘNG: <span id="outTotal">0 đ</span>
-            </div>
+            <div class="total">TỔNG: <span id="outTotal">0 đ</span></div>
 
-            <div style="text-align:center; font-style:italic; margin-top:20px; font-size:13px;">
-                (Biên lai này có giá trị đối chiếu khi nhận thẻ)<br>
-                Cảm ơn Quý khách!
-            </div>
-
-            <div class="cccd-area" id="cccdArea" style="display:none;">
-                <p style="font-weight:bold; font-size:12px;">HỒ SƠ ĐÍNH KÈM</p>
-                <img id="outImage" src="">
+            <img id="outImage" class="cccd-img" src="">
+            
+            <div style="text-align:center; font-style:italic; font-size:12px; margin-top:15px;">
+                Cảm ơn quý khách đã tham gia BHYT!
             </div>
         </div>
     </div>
+</div>
 
-    <script>
-        // CẤU HÌNH GIÁ (Lương cơ sở 2.340.000)
-        const BASE_SALARY = 2340000;
-        const RATE = 0.045; // 4.5%
-        const ONE_MONTH_BASE = BASE_SALARY * RATE; // 105.300 vnđ
+<!-- LỊCH SỬ MUA HÀNG -->
+<div class="container">
+    <div class="history-panel">
+        <h3 style="color:var(--primary); margin-top:0;">Lịch Sử Giao Dịch (Real-time)</h3>
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Thời gian</th>
+                    <th>Người mua</th>
+                    <th>Số lượng</th>
+                    <th>Thời hạn</th>
+                    <th>Tổng tiền</th>
+                </tr>
+            </thead>
+            <tbody id="historyBody">
+                <tr><td colspan="5">Đang tải dữ liệu...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 
-        // Mức đóng theo thứ tự: Người 1, 2, 3, 4, 5+
-        // Index 0 là người 1 (100%), Index 1 là người 2 (70%)...
-        const TIERS = [1.0, 0.7, 0.6, 0.5, 0.4]; 
+<script>
+    // LOGIC TÍNH TIỀN
+    const BASE_SALARY = 2340000;
+    const RATE = 0.045; 
+    const MONTHLY_BASE = BASE_SALARY * RATE; // 105.300
+    const TIERS = [1.0, 0.7, 0.6, 0.5, 0.4];
 
-        let currentImg = null;
+    let currentImageData = null;
+    let currentTotalString = "0 đ";
 
-        window.onload = function() {
-            updateTime();
-            setInterval(updateTime, 60000);
-            renderInvoice();
+    window.onload = function() {
+        updateBuyerInputs(); // Tạo ô nhập đầu tiên
+        renderInvoice();
+    }
+
+    // Tạo các ô input dựa trên số lượng người
+    function updateBuyerInputs() {
+        const qty = parseInt(document.getElementById('qty').value);
+        const container = document.getElementById('buyerListContainer');
+        
+        // Lưu lại giá trị cũ của người đại diện (người đầu tiên)
+        const firstInput = document.getElementById('buyer_0');
+        const oldName = firstInput ? firstInput.value : "";
+
+        container.innerHTML = ""; // Xóa cũ
+
+        for (let i = 0; i < qty; i++) {
+            const input = document.createElement("input");
+            input.type = "text";
+            input.id = `buyer_${i}`;
+            input.className = "sub-input";
+            input.placeholder = i === 0 ? "Họ tên người đại diện (Bắt buộc)" : `Tên thành viên ${i+1} (Không bắt buộc)`;
+            input.oninput = renderInvoice; // Gõ là cập nhật hóa đơn ngay
+            
+            if (i === 0) input.value = oldName;
+            container.appendChild(input);
+        }
+        renderInvoice();
+    }
+
+    function handleImage(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                currentImageData = e.target.result;
+                document.getElementById('outImage').src = currentImageData;
+                document.getElementById('outImage').style.display = 'block';
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function formatMoney(n) {
+        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
+    }
+
+    function renderInvoice() {
+        // Lấy dữ liệu
+        const seller = document.getElementById('seller').value;
+        const phone = document.getElementById('phone').value;
+        const duration = parseInt(document.getElementById('duration').value);
+        const qty = parseInt(document.getElementById('qty').value);
+        const startTier = parseInt(document.getElementById('startTier').value); // 1-5
+
+        // Ngày giờ
+        const now = new Date();
+        document.getElementById('outDate').innerText = now.toLocaleString('vi-VN');
+        document.getElementById('outSeller').innerText = seller;
+        document.getElementById('outPhone').innerText = phone;
+        document.getElementById('outDuration').innerText = duration + " Tháng";
+
+        // Xử lý người đại diện
+        const repName = document.getElementById('buyer_0').value || "Khách lẻ";
+        document.getElementById('outRep').innerText = repName.toUpperCase();
+
+        // Tính tiền & Render bảng
+        let totalAmount = 0;
+        let html = "";
+        
+        for (let i = 0; i < qty; i++) {
+            // Lấy tên
+            const nameInput = document.getElementById(`buyer_${i}`);
+            let name = nameInput.value;
+            if (!name) name = i === 0 ? "Người mua" : `Thành viên ${i+1}`;
+
+            // Xác định bậc đóng
+            let currentTierIndex = (startTier - 1) + i;
+            if (currentTierIndex > 4) currentTierIndex = 4;
+            
+            const percent = TIERS[currentTierIndex];
+            const price = (MONTHLY_BASE * percent * duration); // Làm tròn theo quy định BHXH thường tính từng tháng
+
+            totalAmount += price;
+
+            html += `
+                <tr>
+                    <td style="text-align:center">${i+1}</td>
+                    <td>${name.toUpperCase()}</td>
+                    <td style="text-align:center">${percent * 100}%</td>
+                    <td style="text-align:right">${formatMoney(price)}</td>
+                </tr>
+            `;
+        }
+
+        document.getElementById('tableBody').innerHTML = html;
+        currentTotalString = formatMoney(totalAmount);
+        document.getElementById('outTotal').innerText = currentTotalString;
+    }
+
+    // --- CHỨC NĂNG LƯU VÀ SHARE ---
+
+    async function processSave() {
+        // 1. Lưu vào Firebase
+        const data = {
+            seller: document.getElementById('seller').value,
+            buyerName: document.getElementById('buyer_0').value || "Khách lẻ",
+            phone: document.getElementById('phone').value,
+            qty: document.getElementById('qty').value,
+            duration: document.getElementById('duration').value,
+            totalAmount: currentTotalString,
+            // Nếu muốn lưu tên tất cả mọi người, có thể gom mảng ở đây
         };
 
-        function updateTime() {
-            const now = new Date();
-            document.getElementById('buyDate').value = now.toLocaleString('vi-VN');
+        if(window.saveInvoiceToFirebase) {
+            await window.saveInvoiceToFirebase(data);
         }
 
-        function formatMoney(amount) {
-            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-        }
+        // 2. Tải ảnh về
+        downloadImage();
+    }
 
-        function handleImage(input) {
-            if (input.files && input.files[0]) {
-                document.getElementById('fileName').innerText = input.files[0].name;
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    currentImg = e.target.result;
-                    renderInvoice();
-                };
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
+    function downloadImage() {
+        html2canvas(document.getElementById('invoice'), { scale: 2 }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `BHYT_${document.getElementById('buyer_0').value}.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+        });
+    }
 
-        function renderInvoice() {
-            // Lấy dữ liệu Input
-            const seller = document.getElementById('seller').value;
-            const buyer = document.getElementById('buyerName').value || "Khách lẻ";
-            const phone = document.getElementById('buyerPhone').value || "---";
-            const dateStr = document.getElementById('buyDate').value;
-            
-            const months = parseInt(document.getElementById('duration').value);
-            const qty = parseInt(document.getElementById('qty').value); // Số lượng người mua
-            const startTier = parseInt(document.getElementById('startTier').value); // Bắt đầu từ người thứ mấy (1-5)
+    function shareZalo() {
+        // Quy trình: Tải ảnh trước -> Mở Zalo Web
+        downloadImage();
+        
+        // Mở Zalo sau 1s để kịp tải ảnh
+        setTimeout(() => {
+            // Mở trang Zalo, người dùng tự paste ảnh hoặc attach file vừa tải
+            // Trên Mobile nó sẽ nhắc mở app Zalo
+            window.open('https://zalo.me/', '_blank');
+        }, 1000);
+    }
 
-            // Điền thông tin cơ bản
-            document.getElementById('outSeller').innerText = "NV: " + seller;
-            document.getElementById('outBuyer').innerText = buyer.toUpperCase();
-            document.getElementById('outPhone').innerText = phone;
-            document.getElementById('outDate').innerText = dateStr;
-            document.getElementById('outDuration').innerText = `${months} tháng`;
+</script>
 
-            // TÍNH TOÁN TIỀN
-            let totalAmount = 0;
-            let tableHtml = "";
-
-            for (let i = 0; i < qty; i++) {
-                // Xác định người này là người thứ mấy trong hộ
-                // Ví dụ: Bắt đầu từ người 1 -> i=0 -> currentPerson = 1
-                // Ví dụ: Bắt đầu từ người 2 -> i=0 -> currentPerson = 2
-                let currentPersonIndex = (startTier - 1) + i; 
-                
-                // Nếu vượt quá người thứ 5, vẫn tính là mức thứ 5 (index 4)
-                let tierIndex = currentPersonIndex;
-                if (tierIndex > 4) tierIndex = 4;
-
-                const percent = TIERS[tierIndex];
-                
-                // Tính tiền: (LươngCS * 4.5% * %GiảmTrừ * SốTháng)
-                // Làm tròn logic giống bảng giá Bưu điện: Math.round(Base * Month * Percent)
-                // Lưu ý: Phép tính chuẩn của BHXH là tính giá 1 tháng trước, sau đó nhân số tháng.
-                // Giá 1 tháng = 105.300 * Percent
-                let oneMonthPrice = ONE_MONTH_BASE * percent;
-                let finalPrice = oneMonthPrice * months;
-
-                totalAmount += finalPrice;
-
-                tableHtml += `
-                    <tr>
-                        <td style="text-align:center">${i + 1}</td>
-                        <td>Người thứ ${currentPersonIndex + 1}</td>
-                        <td style="text-align:center">${percent * 100}%</td>
-                        <td>${formatMoney(finalPrice)}</td>
-                    </tr>
-                `;
-            }
-
-            document.getElementById('tableBody').innerHTML = tableHtml;
-            document.getElementById('outTotal').innerText = formatMoney(totalAmount);
-
-            // Ảnh CCCD
-            const imgArea = document.getElementById('cccdArea');
-            if (currentImg) {
-                imgArea.style.display = 'block';
-                document.getElementById('outImage').src = currentImg;
-            } else {
-                imgArea.style.display = 'none';
-            }
-        }
-
-        function downloadImage() {
-            const invoice = document.getElementById('invoice');
-            html2canvas(invoice, { scale: 2 }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = `HoaDon_BHYT_${document.getElementById('buyerName').value}.png`;
-                link.href = canvas.toDataURL("image/png");
-                link.click();
-            });
-        }
-    </script>
 </body>
 </html>
