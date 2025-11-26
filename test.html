@@ -3,141 +3,361 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quét & Copy BHYT</title>
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <title>Hệ Thống Bán BHYT & Xuất Hóa Đơn</title>
+    <!-- Thư viện để chụp ảnh hóa đơn -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; text-align: center; }
-        .container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        h2 { color: #0066cc; }
-        #reader { width: 100%; border-radius: 8px; overflow: hidden; background: black; }
-        
-        .result-box {
-            display: none;
-            margin-top: 20px;
-            padding: 15px;
-            background: #e9ecef;
-            border-radius: 8px;
-            text-align: left;
+        :root {
+            --primary: #0056b3;
+            --border: #ddd;
+            --bg: #f4f6f9;
         }
-        .info-row { margin-bottom: 8px; border-bottom: 1px dashed #ccc; padding-bottom: 5px; }
-        .label { font-weight: bold; color: #555; }
-        .value { color: #000; font-weight: bold; font-size: 1.1em; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            padding: 20px;
+            color: #333;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
 
-        .btn-action {
-            display: block;
+        /* KHUNG NHẬP LIỆU */
+        .input-panel {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             width: 100%;
-            padding: 15px;
-            margin-top: 15px;
-            background-color: #28a745;
-            color: white;
-            text-decoration: none;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            transition: 0.2s;
+            max-width: 400px;
+            height: fit-content;
         }
-        .btn-action:active { transform: scale(0.98); }
+        .input-panel h2 { margin-top: 0; color: var(--primary); text-align: center; }
         
-        .highlight { background: yellow; padding: 2px 5px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        input:focus, select:focus { outline: 2px solid var(--primary); border-color: transparent; }
+
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            transition: 0.3s;
+        }
+        .btn-create { background-color: #28a745; }
+        .btn-create:hover { background-color: #218838; }
         
-        #msgCopy { color: green; font-size: 12px; margin-top: 5px; display: none; }
+        .btn-download { background-color: #17a2b8; }
+        .btn-download:hover { background-color: #138496; }
+
+        .btn-print { background-color: #6c757d; }
+        .btn-print:hover { background-color: #5a6268; }
+
+        /* KHUNG HÓA ĐƠN (PREVIEW) */
+        .invoice-container {
+            background: white;
+            width: 100%;
+            max-width: 450px; /* Khổ giấy in nhiệt thông dụng thường nhỏ hơn, nhưng để 450px cho dễ nhìn */
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        /* Thiết kế hóa đơn giống giấy in nhiệt */
+        #invoice {
+            border: 1px dashed #333;
+            padding: 20px;
+            background: #fff;
+        }
+        
+        .inv-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; }
+        .inv-header h1 { margin: 0; font-size: 22px; text-transform: uppercase; }
+        .inv-header p { margin: 5px 0; font-size: 12px; }
+
+        .inv-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+        .inv-label { font-weight: bold; }
+        .inv-total { border-top: 1px solid #000; padding-top: 10px; margin-top: 10px; font-size: 18px; font-weight: bold; text-align: right; }
+
+        .cccd-preview {
+            margin-top: 20px;
+            text-align: center;
+            border-top: 1px dotted #ccc;
+            padding-top: 10px;
+        }
+        .cccd-preview img {
+            max-width: 100%;
+            border-radius: 4px;
+            border: 1px solid #eee;
+        }
+        .footer-note {
+            margin-top: 20px;
+            text-align: center;
+            font-style: italic;
+            font-size: 12px;
+        }
+
+        /* Ẩn input file mặc định, làm đẹp nút upload */
+        .file-upload {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 5px;
+            background: #fafafa;
+        }
+        .file-upload:hover { background: #eee; border-color: var(--primary); }
+
+        /* MEDIA PRINT: Chỉ in phần hóa đơn */
+        @media print {
+            body * { visibility: hidden; }
+            .invoice-container, .invoice-container * { visibility: visible; }
+            .invoice-container {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                box-shadow: none;
+                border: none;
+            }
+            /* Ẩn các nút khi in */
+            .no-print { display: none; }
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>Quét QR BHYT</h2>
-    
-    <div id="reader"></div>
-    
-    <button id="btnScan" onclick="startScan()" style="margin-top:10px; padding:10px 20px; background:#007bff; color:white; border:none; borderRadius:4px; cursor:pointer;">Bật Camera</button>
-
-    <div id="result" class="result-box">
-        <h3 style="margin-top:0">Đã đọc dữ liệu!</h3>
+    <!-- PANEL NHẬP LIỆU -->
+    <div class="input-panel no-print">
+        <h2>Lập Hóa Đơn BHYT</h2>
         
-        <div class="info-row">
-            <span class="label">Mã số:</span><br>
-            <span class="value highlight" id="txtCode">...</span>
-            <div id="msgCopy">✅ Đã copy mã số vào bộ nhớ tạm!</div>
-        </div>
-        
-        <div class="info-row">
-            <span class="label">Họ tên:</span>
-            <span class="value" id="txtName">...</span>
-        </div>
-        
-        <div class="info-row">
-            <span class="label">Ngày sinh:</span>
-            <span class="value" id="txtDob">...</span>
+        <div class="form-group">
+            <label>Người bán (Đại lý)</label>
+            <select id="seller">
+                <option value="Lâm Minh Ngoãn">Lâm Minh Ngoãn</option>
+                <option value="Sơn Lý Hồng Đức">Sơn Lý Hồng Đức</option>
+            </select>
         </div>
 
-        <!-- Nút hành động chính -->
-        <button class="btn-action" onclick="goToOfficialSite()">
-            🔗 DÁN VÀO TRANG BHXH
-        </button>
-        <p style="font-size:12px; color:#666;">Bấm nút trên để mở trang BHXH, sau đó nhấn chuột phải chọn "Dán" (hoặc Ctrl+V) vào ô Mã số.</p>
+        <div class="form-group">
+            <label>Họ tên người mua</label>
+            <input type="text" id="buyerName" placeholder="Ví dụ: Nguyễn Văn A">
+        </div>
+
+        <div class="form-group">
+            <label>Số điện thoại</label>
+            <input type="number" id="buyerPhone" placeholder="09xxxxxxx">
+        </div>
+
+        <div class="form-group">
+            <label>Gói bảo hiểm</label>
+            <select id="duration" onchange="updatePrice()">
+                <!-- Giá tạm tính theo lương cơ sở 2.340.000 (4.5%) -->
+                <option value="3">3 Tháng (315.900 đ)</option>
+                <option value="6">6 Tháng (631.800 đ)</option>
+                <option value="9">9 Tháng (947.700 đ)</option>
+                <option value="12" selected>12 Tháng (1.263.600 đ)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Ngày mua (Mặc định hiện tại)</label>
+            <input type="text" id="buyDate" readonly style="background: #eee;">
+        </div>
+
+        <div class="form-group">
+            <label>Ảnh CCCD / Thẻ BHYT cũ</label>
+            <div class="file-upload" onclick="document.getElementById('cccdFile').click()">
+                <span id="fileName">Bấm để chọn ảnh...</span>
+                <input type="file" id="cccdFile" accept="image/*" style="display: none;" onchange="handleImageUpload(this)">
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-create" onclick="renderInvoice()">Cập nhật Hóa Đơn</button>
+        </div>
+        
+        <div class="btn-group">
+            <button class="btn-print" onclick="window.print()">🖨️ In Hóa Đơn</button>
+            <button class="btn-download" onclick="downloadImage()">💾 Tải Ảnh Hóa Đơn</button>
+        </div>
     </div>
-</div>
 
-<script>
-    let html5QrcodeScanner;
-    let scannedCode = "";
+    <!-- KHUNG HIỂN THỊ HÓA ĐƠN -->
+    <div class="invoice-container">
+        <div id="invoice">
+            <div class="inv-header">
+                <h1>BIÊN LAI THU TIỀN</h1>
+                <p>DỊCH VỤ BẢO HIỂM Y TẾ TOÀN DÂN</p>
+                <p>----------------------------------</p>
+            </div>
 
-    function startScan() {
-        document.getElementById('btnScan').style.display = 'none';
-        html5QrcodeScanner = new Html5Qrcode("reader");
-        html5QrcodeScanner.start(
-            { facingMode: "environment" }, 
-            { fps: 10, qrbox: { width: 250, height: 250 } },
-            onScanSuccess
-        );
-    }
+            <div class="inv-content">
+                <div class="inv-row">
+                    <span class="inv-label">Mã hóa đơn:</span>
+                    <span id="invId">#HD0000</span>
+                </div>
+                <div class="inv-row">
+                    <span class="inv-label">Ngày lập:</span>
+                    <span id="outDate">...</span>
+                </div>
+                <div class="inv-row">
+                    <span class="inv-label">Người thu:</span>
+                    <span id="outSeller" style="text-transform: uppercase;">...</span>
+                </div>
+                <hr style="border: 0.5px dashed #ccc; margin: 10px 0;">
+                
+                <div class="inv-row">
+                    <span class="inv-label">Khách hàng:</span>
+                    <span id="outBuyer" style="font-weight: bold;">...</span>
+                </div>
+                <div class="inv-row">
+                    <span class="inv-label">SĐT:</span>
+                    <span id="outPhone">...</span>
+                </div>
+                <div class="inv-row">
+                    <span class="inv-label">Nội dung:</span>
+                    <span>Gia hạn/Mua mới BHYT</span>
+                </div>
+                <div class="inv-row">
+                    <span class="inv-label">Thời hạn:</span>
+                    <span id="outDuration">12 Tháng</span>
+                </div>
+                
+                <div class="inv-total">
+                    TỔNG TIỀN: <span id="outTotal" style="color: red;">1.263.600 đ</span>
+                </div>
 
-    function onScanSuccess(decodedText) {
-        html5QrcodeScanner.stop();
-        document.getElementById('reader').style.display = 'none';
-        
-        // Phân tách dữ liệu QR BHYT (Mẫu: DN4...|NGUYEN VAN A|...)
-        const parts = decodedText.split('|');
-        
-        let bhytCode = parts[0] || decodedText;
-        let name = parts[1] || "";
-        let dob = parts[2] || "";
+                <div class="footer-note">
+                    Cảm ơn quý khách đã sử dụng dịch vụ!<br>
+                    Vui lòng giữ lại hóa đơn để đối chiếu.
+                </div>
+            </div>
 
-        // Hiển thị kết quả
-        scannedCode = bhytCode;
-        document.getElementById('result').style.display = 'block';
-        document.getElementById('txtCode').innerText = bhytCode;
-        document.getElementById('txtName').innerText = decodeUnicode(name);
-        document.getElementById('txtDob').innerText = dob;
+            <!-- Khu vực hiển thị ảnh CCCD -->
+            <div class="cccd-preview" id="cccdArea" style="display: none;">
+                <p style="font-size: 12px; font-weight: bold; margin-bottom: 5px;">HỒ SƠ ĐÍNH KÈM (CCCD/CMND)</p>
+                <img id="outImage" src="" alt="Anh CCCD">
+            </div>
+        </div>
+    </div>
 
-        // Tự động Copy mã số
-        copyToClipboard(bhytCode);
-    }
+    <script>
+        // Bảng giá (Dựa trên lương cơ sở 2.340.000 từ 1/7/2024 - 4.5%)
+        // 1 tháng = 105.300đ
+        const PRICE_LIST = {
+            "3": 315900,
+            "6": 631800,
+            "9": 947700,
+            "12": 1263600
+        };
 
-    function copyToClipboard(text) {
-        navigator.clipboard.writeText(text).then(() => {
-            document.getElementById('msgCopy').style.display = 'block';
-        }).catch(err => {
-            console.error('Không copy được: ', err);
-            // Fallback cho trình duyệt cũ nếu cần
-        });
-    }
+        let currentImageBase64 = null;
 
-    function goToOfficialSite() {
-        // Copy lại lần nữa cho chắc chắn khi bấm nút (do cơ chế bảo mật trình duyệt yêu cầu tương tác người dùng)
-        navigator.clipboard.writeText(scannedCode).then(() => {
-            window.open('https://baohiemxahoi.gov.vn/tracuu/pages/tra-cuu-thoi-han-su-dung-the-bhyt.aspx', '_blank');
-        });
-    }
+        // Khởi tạo ngày giờ mặc định khi tải trang
+        window.onload = function() {
+            updateRealTime();
+            setInterval(updateRealTime, 60000); // Cập nhật mỗi phút
+            renderInvoice(); // Render lần đầu
+        };
 
-    function decodeUnicode(str) {
-        return str; // Xử lý font nếu cần
-    }
-</script>
+        function updateRealTime() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('vi-VN');
+            const timeStr = now.toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'});
+            document.getElementById('buyDate').value = `${dateStr} ${timeStr}`;
+        }
 
+        // Xử lý khi chọn ảnh
+        function handleImageUpload(input) {
+            if (input.files && input.files[0]) {
+                document.getElementById('fileName').innerText = input.files[0].name;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentImageBase64 = e.target.result;
+                    renderInvoice(); // Cập nhật lại hóa đơn ngay
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // Cập nhật giá khi đổi select
+        function updatePrice() {
+            // Chỉ cần gọi renderInvoice, giá sẽ tự tính
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+        }
+
+        // Hàm chính: Đổ dữ liệu từ Form sang Hóa đơn
+        function renderInvoice() {
+            // Lấy dữ liệu
+            const seller = document.getElementById('seller').value;
+            const buyer = document.getElementById('buyerName').value || "Khách lẻ";
+            const phone = document.getElementById('buyerPhone').value || "---";
+            const duration = document.getElementById('duration').value;
+            const dateVal = document.getElementById('buyDate').value;
+            const price = PRICE_LIST[duration];
+
+            // Gán dữ liệu vào hóa đơn
+            // Tạo mã hóa đơn ngẫu nhiên dựa trên thời gian
+            const randomId = Math.floor(Math.random() * 10000);
+            // document.getElementById('invId').innerText = `#HD${randomId}`; // Nếu muốn mã đổi liên tục
+            
+            document.getElementById('outDate').innerText = dateVal;
+            document.getElementById('outSeller').innerText = seller;
+            document.getElementById('outBuyer').innerText = buyer.toUpperCase();
+            document.getElementById('outPhone').innerText = phone;
+            document.getElementById('outDuration').innerText = `${duration} Tháng`;
+            document.getElementById('outTotal').innerText = formatCurrency(price);
+
+            // Xử lý ảnh CCCD
+            const cccdArea = document.getElementById('cccdArea');
+            const outImg = document.getElementById('outImage');
+            
+            if (currentImageBase64) {
+                cccdArea.style.display = 'block';
+                outImg.src = currentImageBase64;
+            } else {
+                cccdArea.style.display = 'none';
+            }
+        }
+
+        // Chức năng tải ảnh hóa đơn
+        function downloadImage() {
+            const invoiceElement = document.getElementById('invoice');
+            
+            // Dùng html2canvas chụp lại div #invoice
+            html2canvas(invoiceElement, {
+                scale: 2, // Tăng độ phân giải ảnh lên 2 lần cho nét
+                useCORS: true, // Hỗ trợ load ảnh
+                backgroundColor: "#ffffff"
+            }).then(canvas => {
+                // Tạo link tải về
+                const link = document.createElement('a');
+                link.download = `HoaDon_BHYT_${document.getElementById('buyerName').value}.png`;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+            }).catch(err => {
+                alert("Lỗi khi tạo ảnh: " + err);
+            });
+        }
+    </script>
 </body>
 </html>
