@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống BHYT Pro - Print & Scan</title>
+    <title>Hệ Thống BHYT Pro V3 - Full Features</title>
     
     <!-- Thư viện hỗ trợ -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
-    <!-- Thư viện Quét QR Camera -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     
     <!-- Firebase SDK -->
@@ -32,49 +31,43 @@
         
         window.fullHistoryData = [];
 
-        // --- HÀM LƯU MỚI HOẶC CẬP NHẬT ---
+        // --- HÀM LƯU / CẬP NHẬT ---
         window.saveDataToFirebase = async function(data, docId = null) {
+            window.showLoading(true);
             try {
                 if (docId) {
-                    // CẬP NHẬT (EDIT) - Giữ nguyên invoiceCode
                     const docRef = doc(db, "history_bhyt_full", docId);
-                    // Loại bỏ createdDate khỏi data update để tránh ghi đè ngày gốc
-                    const { createdDate, ...updateData } = data; 
-                    
-                    await updateDoc(docRef, {
-                        ...updateData,
-                        lastEdited: serverTimestamp()
-                    });
+                    const { createdDate, ...updateData } = data; // Giữ nguyên ngày tạo gốc
+                    await updateDoc(docRef, { ...updateData, lastEdited: serverTimestamp() });
+                    window.showLoading(false);
                     return "updated";
                 } else {
-                    // TẠO MỚI (NEW)
                     await addDoc(collection(db, "history_bhyt_full"), {
-                        ...data,
-                        createdDate: serverTimestamp(),
-                        timestamp: serverTimestamp()
+                        ...data, createdDate: serverTimestamp(), timestamp: serverTimestamp()
                     });
+                    window.showLoading(false);
                     return "created";
                 }
             } catch (e) {
                 console.error(e);
-                alert("Lỗi hệ thống: " + e.message);
+                window.showLoading(false);
+                alert("Lỗi: " + e.message);
                 return false;
             }
         }
 
-        // --- HÀM XÓA ĐƠN ---
         window.deleteInvoice = async function(docId) {
-            if(confirm("Bạn có chắc chắn muốn XÓA vĩnh viễn đơn này không?")) {
+            if(confirm("Xác nhận XÓA vĩnh viễn đơn này?")) {
+                window.showLoading(true);
                 try {
                     await deleteDoc(doc(db, "history_bhyt_full", docId));
-                    alert("Đã xóa thành công!");
-                } catch (e) {
-                    alert("Lỗi xóa đơn: " + e.message);
-                }
+                    alert("Đã xóa!");
+                } catch (e) { alert("Lỗi: " + e.message); }
+                window.showLoading(false);
             }
         }
 
-        // --- TẢI LỊCH SỬ ---
+        // --- LOAD DATA & STATS ---
         const historyTable = document.getElementById('historyBody');
         const q = query(collection(db, "history_bhyt_full"), orderBy("timestamp", "desc"));
         
@@ -82,20 +75,28 @@
             historyTable.innerHTML = "";
             window.fullHistoryData = [];
             
+            let totalRevenue = 0;
+            let count = 0;
+
             snapshot.forEach((doc) => {
                 const item = doc.data();
                 const id = doc.id;
                 
-                // Xử lý ngày hiển thị
                 let dateObj = item.createdDate ? item.createdDate.toDate() : (item.timestamp ? item.timestamp.toDate() : new Date());
                 let dateStr = dateObj.toLocaleString('vi-VN');
-                let sortTime = dateObj.getTime();
+                
+                // Tính tổng tiền cho thống kê (loại bỏ chữ " đ" và dấu chấm để cộng)
+                let amountRaw = parseInt((item.totalAmount || "0").replace(/\./g, '').replace(' ₫', ''));
+                if(!isNaN(amountRaw)) totalRevenue += amountRaw;
+                count++;
 
-                // Cache dữ liệu (client-side search)
-                window.fullHistoryData.push({ id, dateObj, sortTime, ...item });
-
+                window.fullHistoryData.push({ id, dateObj, amountRaw, ...item });
                 renderHistoryRow(id, dateStr, item);
             });
+
+            // Cập nhật thống kê
+            document.getElementById('statCount').innerText = count;
+            document.getElementById('statRevenue').innerText = totalRevenue.toLocaleString('vi-VN') + " ₫";
         });
 
         window.renderHistoryRow = function(id, dateStr, item) {
@@ -103,20 +104,21 @@
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>
-                    <b>${invoiceCode}</b><br>
-                    <span style="font-size:11px; color:#666">${dateStr}</span>
+                    <div style="font-weight:bold; color:#0066cc">${invoiceCode}</div>
+                    <div style="font-size:11px; color:#666">${dateStr}</div>
                 </td>
                 <td>
-                    <div style="font-weight:bold; color:#0056b3">${item.buyerName}</div>
+                    <div style="font-weight:bold;">${item.buyerName}</div>
                     <div style="font-size:12px; color:#555">
-                        ${item.qty} người | ${item.phone || "Không SĐT"}
-                        ${item.editHistory ? '<br><span style="color:#d9534f; font-style:italic">Checking (Đã chỉnh sửa)</span>' : ''}
+                        ${item.qty} người | ${item.duration} tháng
+                        ${item.notes ? `<br><span style="color:#e67e22; font-style:italic">📝 ${item.notes}</span>` : ''}
                     </div>
                 </td>
                 <td style="font-weight:bold; color:#b30000; text-align:right">${item.totalAmount}</td>
                 <td style="text-align:center">
-                    <button class="btn-icon" onclick="restoreInvoice('${id}')" title="Sửa & In lại">📝</button>
-                    <button class="btn-icon btn-delete" onclick="deleteInvoice('${id}')" title="Xóa đơn">🗑️</button>
+                    <button class="btn-icon" onclick="copyTextInfo('${id}')" title="Copy Text">📋</button>
+                    <button class="btn-icon" onclick="restoreInvoice('${id}')" title="Sửa">✏️</button>
+                    <button class="btn-icon btn-delete" onclick="deleteInvoice('${id}')" title="Xóa">🗑️</button>
                 </td>
             `;
             document.getElementById('historyBody').appendChild(row);
@@ -124,130 +126,151 @@
     </script>
 
     <style>
-        :root { --primary: #0066cc; --bg: #f4f7f6; --text: #333; }
-        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); padding: 15px; color: var(--text); margin: 0; }
+        :root { --primary: #0066cc; --bg: #f0f2f5; --text: #333; --danger: #dc3545; --success: #28a745; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); padding: 10px; color: var(--text); margin: 0; }
         
-        .main-wrapper { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; align-items: flex-start; }
+        /* LAYOUT */
+        .main-wrapper { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; align-items: flex-start; max-width: 1200px; margin: 0 auto; }
         
-        /* CỘT TRÁI */
-        .panel-input { background: white; padding: 20px; border-radius: 8px; width: 100%; max-width: 400px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); position: relative; }
-        .panel-title { color: var(--primary); margin: 0 0 15px 0; border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 18px; display: flex; justify-content: space-between; align-items: center; }
+        /* PANEL INPUT */
+        .panel-input { background: white; padding: 20px; border-radius: 10px; width: 100%; max-width: 400px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); position: relative; }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; }
+        .panel-header h2 { margin: 0; color: var(--primary); font-size: 18px; }
         
+        /* FORM ELEMENTS */
         .form-group { margin-bottom: 12px; }
-        label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 4px; color: #555; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        
-        .dynamic-list { max-height: 150px; overflow-y: auto; background: #fafafa; padding: 10px; border: 1px solid #eee; margin-bottom: 10px; }
-        .sub-input { margin-bottom: 8px; font-size: 13px; }
+        label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 5px; color: #555; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; transition: 0.2s; }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); outline: none; }
+        textarea { resize: vertical; height: 60px; font-family: inherit; }
 
-        .btn-group { display: flex; gap: 10px; margin-top: 15px; }
-        button { flex: 1; padding: 12px; border: none; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; transition: 0.2s; }
-        .btn-preview { background: #17a2b8; } 
-        .btn-reset { background: #6c757d; width: auto; flex: none; font-size: 12px; padding: 5px 10px;}
-        .btn-scan { position: absolute; top: 20px; right: 20px; background: #28a745; font-size: 12px; padding: 5px 10px; width: auto; flex:none; z-index: 10;}
+        .row-group { display: flex; gap: 10px; }
+        .dynamic-list { max-height: 150px; overflow-y: auto; background: #f9f9f9; padding: 10px; border: 1px solid #eee; border-radius: 6px; margin-bottom: 10px; }
+        .sub-input { margin-bottom: 8px; font-size: 13px; border: 1px solid #e0e0e0; }
+
+        /* BUTTONS */
+        button { padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; font-size: 13px; }
+        button:active { transform: scale(0.98); }
+        .btn-primary { background: var(--primary); color: white; width: 100%; font-size: 15px; padding: 12px; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-scan { background: var(--success); color: white; margin-right: 5px; }
         
-        /* CỘT PHẢI - LIVE PREVIEW */
+        /* LIVE PREVIEW */
         .panel-preview { width: 100%; max-width: 420px; }
-        #invoice { background: white; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); font-family: 'Times New Roman', serif; position: relative; min-height: 500px; }
+        #invoice { background: white; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); font-family: 'Times New Roman', serif; position: relative; min-height: 500px; border-radius: 2px; }
         
+        /* INVOICE STYLING */
         .inv-top { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 10px; }
-        .inv-top h1 { font-size: 20px; margin: 0; color: #b30000; text-transform: uppercase; }
-        .inv-id { font-size: 14px; font-weight: bold; color: #555; text-align: right; }
+        .inv-top h1 { font-size: 22px; margin: 0; color: #b30000; text-transform: uppercase; letter-spacing: 1px; }
+        .inv-meta { font-size: 12px; color: #444; line-height: 1.4; }
+        .inv-id { font-size: 14px; font-weight: bold; color: #555; text-align: right; margin-top: 5px; }
         
-        .edit-log { margin-top: 15px; border-top: 1px dotted #999; padding-top: 5px; font-size: 11px; color: #d9534f; font-style: italic; }
+        .inv-info { font-size: 13px; line-height: 1.6; margin-bottom: 10px; }
+        .inv-info b { min-width: 80px; display: inline-block; }
 
-        table.inv-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
-        table.inv-table th, table.inv-table td { border: 1px solid #888; padding: 5px; }
-        table.inv-table th { background: #f0f0f0; }
-        .total { text-align: right; font-size: 16px; font-weight: bold; color: #b30000; margin-top: 10px; }
+        table.inv-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 13px; }
+        table.inv-table th, table.inv-table td { border: 1px solid #888; padding: 6px; }
+        table.inv-table th { background: #f0f0f0; text-transform: uppercase; font-size: 11px; }
+        .total { text-align: right; font-size: 18px; font-weight: bold; color: #b30000; margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px; }
+        .edit-log { margin-top: 15px; border-top: 1px dotted #999; padding-top: 5px; font-size: 10px; color: #d9534f; font-style: italic; }
 
-        /* MODAL PREVIEW & CONFIRM */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
-        .modal-content { background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; position: relative; text-align: center; }
-        .modal-body { margin-bottom: 20px; border: 1px solid #eee; padding: 10px; }
-        
-        .modal-actions { display: flex; gap: 10px; justify-content: center; }
-        .btn-confirm-save { background: #28a745; }
-        .btn-confirm-share { background: #0088ff; }
-        .btn-print { background: #343a40; }
-        .btn-cancel { background: #dc3545; }
+        /* DASHBOARD STATS */
+        .stats-panel { background: #34495e; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-around; align-items: center; max-width: 850px; margin: 0 auto 20px auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .stat-item { text-align: center; }
+        .stat-val { font-size: 20px; font-weight: bold; color: #f1c40f; }
+        .stat-label { font-size: 12px; opacity: 0.8; text-transform: uppercase; }
 
-        /* MODAL SCANNER */
-        #scanner-container { width: 100%; height: 300px; background: #000; margin-bottom: 10px; }
-
-        /* LỊCH SỬ */
-        .history-panel { width: 100%; max-width: 850px; background: white; padding: 20px; margin: 30px auto; border-radius: 8px; }
-        .history-tools { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; background: #f9f9f9; padding: 10px; border-radius: 6px; }
+        /* HISTORY */
+        .history-panel { width: 100%; max-width: 850px; background: white; padding: 20px; margin: 0 auto 40px auto; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .history-tools { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; background: #f8f9fa; padding: 12px; border-radius: 8px; }
         .history-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        .history-table th { background: #eee; padding: 10px; text-align: left; }
-        .history-table td { padding: 8px 10px; border-bottom: 1px solid #eee; }
+        .history-table th { background: #e9ecef; padding: 12px; text-align: left; font-weight: 600; color: #495057; }
+        .history-table td { padding: 10px; border-bottom: 1px solid #eee; vertical-align: middle; }
         
-        .btn-icon { background: #e9ecef; border: 1px solid #ccc; padding: 5px 8px; border-radius: 4px; cursor: pointer; color: #333; width: 30px;}
-        .btn-delete { color: #dc3545; border-color: #dc3545; margin-left: 5px; }
+        .btn-icon { background: #fff; border: 1px solid #dee2e6; padding: 6px; border-radius: 4px; font-size: 14px; width: 32px; height: 32px; display: inline-flex; justify-content: center; align-items: center; }
+        .btn-icon:hover { background: #e2e6ea; }
+        .btn-delete { color: var(--danger); border-color: #f5c6cb; }
+        .btn-delete:hover { background: #f8d7da; }
 
-        /* --- PRINT CSS: 1/3 A4 CONFIGURATION --- */
+        /* MODALS */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(2px); }
+        .modal-content { background: white; padding: 25px; border-radius: 12px; width: 95%; max-width: 500px; max-height: 90vh; overflow-y: auto; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-actions { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
+        .btn-confirm-save { background: var(--success); color: white; }
+        .btn-print { background: #343a40; color: white; }
+        .btn-cancel { background: var(--danger); color: white; }
+
+        /* LOADING SPINNER */
+        #loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.8); z-index: 2000; justify-content: center; align-items: center; flex-direction: column; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- PRINT CSS: TỐI ƯU KHỔ 1/3 A4 (KHOẢNG 10cm x 21cm) --- */
         @media print {
             @page { margin: 0; size: auto; }
             body * { visibility: hidden; }
+            #modalInvoiceView, #modalInvoiceView * { visibility: visible; }
             
-            /* Chỉ hiện phần hóa đơn trong modal (nếu đang mở modal) hoặc preview */
-            #modalInvoiceView, #modalInvoiceView * {
-                visibility: visible;
-            }
-            
-            /* Định vị hóa đơn để in */
             #modalInvoiceView {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                /* Chiều cao 1/3 A4 (~99mm), trừ margin */
-                height: 105mm; 
-                padding: 15px;
-                box-sizing: border-box;
-                border-bottom: 1px dashed #333; /* Đường cắt giấy */
+                position: absolute; left: 0; top: 0;
+                width: 100mm; /* Khổ rộng ~1/3 A4 */
+                padding: 5mm;
+                font-size: 12pt;
+                color: black;
             }
-
-            /* Ẩn ảnh CCCD và Log khi in để tiết kiệm giấy và cho gọn */
-            .cccd-img, .edit-log { display: none !important; }
-            
-            /* Ẩn các nút bấm */
-            .modal-actions, .modal-overlay { background: none; box-shadow: none; position: static; display: block; height: auto; width: 100%; }
-            .modal-content { box-shadow: none; border: none; width: 100%; max-width: 100%; padding: 0; margin: 0; position: static;}
-            h3, p { display: none; } /* Ẩn tiêu đề modal */
+            #modalInvoiceView h1 { font-size: 16pt; }
+            #modalInvoiceView .cccd-img, #modalInvoiceView .edit-log { display: none !important; }
+            .modal-content { box-shadow: none; padding: 0; margin: 0; width: auto; background: none; }
+            .modal-overlay { position: static; background: none; display: block; height: auto; }
+            .modal-actions, h3, p { display: none; }
         }
     </style>
 </head>
 <body>
 
+<!-- STATS DASHBOARD -->
+<div class="stats-panel">
+    <div class="stat-item">
+        <div class="stat-val" id="statCount">0</div>
+        <div class="stat-label">Tổng Đơn Hàng</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-val" id="statRevenue">0 ₫</div>
+        <div class="stat-label">Doanh Thu Tạm Tính</div>
+    </div>
+</div>
+
 <div class="main-wrapper">
     <!-- INPUT FORM -->
     <div class="panel-input">
-        <button class="btn-scan" onclick="openScanner()">📷 Quét Camera</button>
-        <h2 class="panel-title">
-            <span>Nhập Liệu</span>
-            <button class="btn-reset" onclick="resetForm()">Tạo Mới</button>
-        </h2>
+        <div class="panel-header">
+            <h2>Nhập Liệu</h2>
+            <div>
+                <button class="btn-scan" onclick="openScanner()">📷 Quét</button>
+                <button class="btn-secondary" onclick="resetForm()">Mới</button>
+            </div>
+        </div>
         
         <!-- Hidden Inputs -->
-        <input type="hidden" id="currentDocId" value="">
-        <input type="hidden" id="currentInvoiceCode" value="">
-        <input type="hidden" id="originalCreatedDate" value="">
+        <input type="hidden" id="currentDocId">
+        <input type="hidden" id="currentInvoiceCode">
+        <input type="hidden" id="originalCreatedDate">
 
-        <div class="form-group">
-            <label>Người thu</label>
-            <select id="seller" onchange="renderInvoice()">
-                <option value="Lâm Minh Ngoãn">Lâm Minh Ngoãn</option>
-                <option value="Sơn Lý Hồng Đức">Sơn Lý Hồng Đức</option>
-            </select>
+        <div class="row-group">
+            <div class="form-group" style="flex:1">
+                <label>Người thu</label>
+                <select id="seller" onchange="renderInvoice()">
+                    <option value="Lâm Minh Ngoãn">Lâm Minh Ngoãn</option>
+                    <option value="Sơn Lý Hồng Đức">Sơn Lý Hồng Đức</option>
+                </select>
+            </div>
+            <div class="form-group" style="flex:1">
+                <label>SĐT Khách</label>
+                <input type="number" id="phone" placeholder="09..." oninput="renderInvoice()">
+            </div>
         </div>
 
-        <div class="form-group">
-            <label>SĐT Khách hàng</label>
-            <input type="number" id="phone" placeholder="Nhập SĐT..." oninput="renderInvoice()">
-        </div>
-
-        <div style="display:flex; gap:10px;">
+        <div class="row-group">
             <div class="form-group" style="flex:1">
                 <label>Số người</label>
                 <input type="number" id="qty" value="1" min="1" max="10" onchange="updateBuyerInputs()">
@@ -262,28 +285,38 @@
             </div>
         </div>
 
-        <div class="form-group">
-            <label>Tính từ người thứ mấy?</label>
-            <select id="startTier" onchange="renderInvoice()">
-                <option value="1">Người thứ 1</option>
-                <option value="2">Người thứ 2</option>
-                <option value="3">Người thứ 3</option>
-            </select>
+        <div class="row-group">
+            <div class="form-group" style="flex:1">
+                <label>Bắt đầu từ</label>
+                <input type="date" id="startDate" onchange="renderInvoice()">
+            </div>
+            <div class="form-group" style="flex:1">
+                <label>Mức đóng từ</label>
+                <select id="startTier" onchange="renderInvoice()">
+                    <option value="1">Người thứ 1</option>
+                    <option value="2">Người thứ 2</option>
+                    <option value="3">Người thứ 3</option>
+                    <option value="4">Người thứ 4</option>
+                </select>
+            </div>
         </div>
 
-        <label>Danh sách tên người tham gia:</label>
+        <label>Danh sách người tham gia:</label>
         <div id="buyerListContainer" class="dynamic-list">
-            <input type="text" id="buyer_0" class="sub-input" placeholder="Họ tên Đại diện" oninput="renderInvoice()">
+            <input type="text" id="buyer_0" class="sub-input" placeholder="Họ tên Đại diện (Bắt buộc)" oninput="renderInvoice()">
         </div>
 
         <div class="form-group">
-            <label>Ảnh CCCD</label>
+            <label>Ghi chú nội bộ (Không in):</label>
+            <textarea id="notes" placeholder="VD: Khách nợ, Đã chuyển khoản..."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Ảnh CCCD (Tùy chọn)</label>
             <input type="file" id="fileInput" accept="image/*" onchange="handleImage(this)">
         </div>
 
-        <div class="btn-group">
-            <button class="btn-preview" onclick="openPreviewModal()">👁️ Xem Trước & Lưu</button>
-        </div>
+        <button class="btn-primary" onclick="openPreviewModal()">👁️ Xem Trước & Lưu</button>
     </div>
 
     <!-- LIVE PREVIEW -->
@@ -292,59 +325,62 @@
             <div class="inv-top">
                 <div>
                     <h1>HÓA ĐƠN BHYT</h1>
-                    <p style="margin:5px 0; font-size:12px;">Ngày lập: <span id="outDate">...</span></p>
-                    <p style="margin:0; font-size:12px; font-weight:bold" id="outSeller">...</p>
-                    <p id="outEditDate" style="margin:2px 0; font-size:11px; color:#d9534f; display:none;"></p>
+                    <div class="inv-meta">
+                        Ngày lập: <span id="outDate">...</span><br>
+                        Người thu: <b id="outSeller">...</b>
+                        <p id="outEditDate" style="margin:2px 0; color:#d9534f; display:none;"></p>
+                    </div>
                 </div>
-                <div>
-                    <div id="qr-container"></div>
-                    <div class="inv-id" id="outInvoiceCode">#MỚI</div>
+                <div style="text-align:right">
+                    <div id="qr-container" style="display:inline-block"></div>
+                    <div class="inv-id" id="outInvoiceCode">#...</div>
                 </div>
             </div>
 
-            <div style="font-size:13px; margin-top:10px;">
-                <div><b>Đại diện:</b> <span id="outRep" style="text-transform:uppercase">...</span></div>
+            <div class="inv-info">
+                <div><b>Đại diện:</b> <span id="outRep" style="text-transform:uppercase; font-weight:bold">...</span></div>
                 <div><b>SĐT:</b> <span id="outPhone">...</span></div>
+                <div><b>Có giá trị từ:</b> <span id="outStartDate">...</span></div>
                 <div><b>Thời hạn:</b> <span id="outDuration">...</span></div>
             </div>
 
             <table class="inv-table">
                 <thead>
                     <tr>
-                        <th style="width:30px">STT</th>
+                        <th style="width:25px">TT</th>
                         <th>Họ và Tên</th>
-                        <th style="width:50px">%</th>
+                        <th style="width:40px">%</th>
                         <th style="text-align:right">Thành tiền</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody"></tbody>
             </table>
 
-            <div class="total">TỔNG: <span id="outTotal">0 đ</span></div>
+            <div class="total">TỔNG CỘNG: <span id="outTotal">0 ₫</span></div>
             
             <div id="outEditLog" class="edit-log" style="display:none;"></div>
 
-            <img id="outImage" class="cccd-img" src="" style="width:100%; margin-top:10px; display:none; border:1px dashed #ccc;">
+            <img id="outImage" class="cccd-img" src="" style="width:100%; margin-top:15px; display:none; border:1px dashed #ccc;">
             
-            <div style="text-align:center; font-style:italic; font-size:11px; margin-top:20px;">
-                Quét mã QR để tra cứu hóa đơn này.
+            <div style="text-align:center; font-style:italic; font-size:11px; margin-top:20px; color:#777;">
+                Cảm ơn quý khách đã tin tưởng sử dụng dịch vụ!
             </div>
         </div>
     </div>
 </div>
 
-<!-- MODAL PREVIEW & ACTION -->
+<!-- OVERLAYS -->
+<div id="loading-overlay">
+    <div class="spinner"></div>
+    <div style="font-weight:600">Đang xử lý...</div>
+</div>
+
 <div id="previewModal" class="modal-overlay">
     <div class="modal-content">
-        <h3 style="margin-top:0">Xác Nhận Hóa Đơn</h3>
-        <p style="font-size:13px; color:#666">Kiểm tra thông tin trước khi in hoặc lưu.</p>
-        
-        <div class="modal-body" id="modalInvoiceView">
-            <!-- Nội dung Invoice copy vào đây -->
-        </div>
-
+        <h3>Xác Nhận Hóa Đơn</h3>
+        <div class="modal-body" id="modalInvoiceView"></div>
         <div class="modal-actions">
-            <button class="btn-confirm-save" onclick="handleConfirmSave(false)">💾 Lưu Đơn</button>
+            <button class="btn-confirm-save" onclick="handleConfirmSave(false)">💾 Lưu</button>
             <button class="btn-print" onclick="printInvoice()">🖨️ In Đơn</button>
             <button class="btn-confirm-share" onclick="handleConfirmSave(true)">📤 Lưu & Gửi Ảnh</button>
             <button class="btn-cancel" onclick="closePreviewModal()">Hủy</button>
@@ -352,36 +388,32 @@
     </div>
 </div>
 
-<!-- MODAL SCANNER -->
 <div id="scannerModal" class="modal-overlay">
     <div class="modal-content" style="max-width:400px; background:#000; color:white">
         <h3 style="color:white">Quét Mã Hóa Đơn</h3>
         <div id="reader" style="width:100%"></div>
-        <p style="font-size:12px; color:#ccc">Đưa mã QR trên hóa đơn vào khung hình</p>
-        <button class="btn-cancel" onclick="closeScanner()" style="width:100%">Đóng Camera</button>
+        <button class="btn-cancel" onclick="closeScanner()" style="width:100%; margin-top:10px">Đóng Camera</button>
     </div>
 </div>
 
-<!-- HISTORY -->
+<!-- HISTORY TABLE -->
 <div class="history-panel">
     <h3>Lịch Sử Giao Dịch</h3>
     <div class="history-tools">
-        <div style="flex:2">
-            <label>Tìm kiếm:</label>
-            <input type="text" id="searchBox" placeholder="Nhập Mã HĐ hoặc Tên..." onkeyup="filterHistory()">
+        <div style="flex:3; min-width:200px">
+            <input type="text" id="searchBox" placeholder="🔍 Tìm tên, số điện thoại hoặc mã đơn..." onkeyup="filterHistory()">
         </div>
         <div style="flex:1">
-             <label>&nbsp;</label>
-             <button class="btn-preview" onclick="exportToExcel()" style="padding:10px">Xuất Excel</button>
+             <button class="btn-secondary" onclick="exportToExcel()" style="width:100%">Xuất Excel</button>
         </div>
     </div>
     <table class="history-table">
         <thead>
             <tr>
-                <th style="width:150px">Mã HĐ & Ngày</th>
-                <th>Thông tin khách</th>
-                <th style="text-align:right">Tổng tiền</th>
-                <th style="text-align:center">Thao tác</th>
+                <th style="width:140px">Mã & Ngày</th>
+                <th>Chi tiết khách hàng</th>
+                <th style="text-align:right">Thành tiền</th>
+                <th style="text-align:center; width:120px">Thao tác</th>
             </tr>
         </thead>
         <tbody id="historyBody"></tbody>
@@ -389,47 +421,54 @@
 </div>
 
 <script>
-    // --- CẤU HÌNH ---
-    const BASE_SALARY = 2340000;
-    const RATE = 0.045; 
-    const MONTHLY_BASE = BASE_SALARY * RATE; 
-    const TIERS = [1.0, 0.7, 0.6, 0.5, 0.4];
+    // --- CẤU HÌNH CƠ BẢN ---
+    const BASE_SALARY = 2340000; // Lương cơ sở
+    const MONTHLY_BASE = BASE_SALARY * 0.045; 
+    const TIERS = [1.0, 0.7, 0.6, 0.5, 0.4]; // Mức đóng: 100%, 70%...
     const SELLER_PHONE = { "Lâm Minh Ngoãn": "085.6111.552", "Sơn Lý Hồng Đức": "" };
 
-    // State Variables
+    // Biến toàn cục
     let currentImageData = null;
-    let currentTotalString = "0 đ";
+    let currentTotalString = "0 ₫";
     let snapshotData = {}; 
     let html5QrcodeScanner = null;
 
+    // --- KHỞI TẠO ---
     window.onload = function() {
+        // Mặc định ngày bắt đầu là hôm nay
+        document.getElementById('startDate').valueAsDate = new Date();
         resetForm();
     }
 
-    // --- LOGIC FORM & INVOICE ---
+    function showLoading(show) {
+        document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
+    }
+
+    // --- LOGIC FORM & TÍNH TOÁN ---
     function resetForm() {
         document.getElementById('currentDocId').value = "";
-        document.getElementById('currentInvoiceCode').value = generateInvoiceCode();
+        document.getElementById('currentInvoiceCode').value = "HD-" + Math.floor(10000 + Math.random() * 90000);
         document.getElementById('originalCreatedDate').value = "";
         
         document.getElementById('phone').value = "";
         document.getElementById('qty').value = "1";
         document.getElementById('startTier').value = "1";
+        document.getElementById('startDate').valueAsDate = new Date();
+        document.getElementById('notes').value = "";
         
+        // Reset ảnh
+        currentImageData = null;
+        document.getElementById('fileInput').value = "";
+
         updateBuyerInputs();
-        
         snapshotData = {}; 
         renderInvoice();
-    }
-
-    function generateInvoiceCode() {
-        return "HD-" + Math.floor(10000 + Math.random() * 90000);
     }
 
     function generateQR(text) {
         document.getElementById("qr-container").innerHTML = "";
         new QRCode(document.getElementById("qr-container"), {
-            text: text, width: 60, height: 60, correctLevel : QRCode.CorrectLevel.L
+            text: text, width: 64, height: 64, correctLevel : QRCode.CorrectLevel.L
         });
     }
 
@@ -445,7 +484,7 @@
             input.type = "text";
             input.id = `buyer_${i}`;
             input.className = "sub-input";
-            input.placeholder = i === 0 ? "Họ tên Đại diện" : `Thành viên ${i+1}`;
+            input.placeholder = i === 0 ? "Họ tên Đại diện (Bắt buộc)" : `Thành viên ${i+1}`;
             input.value = existing[i] || "";
             input.oninput = renderInvoice; 
             container.appendChild(input);
@@ -454,38 +493,44 @@
     }
 
     function renderInvoice() {
-        const docId = document.getElementById('currentDocId').value;
         const invoiceCode = document.getElementById('currentInvoiceCode').value;
         const seller = document.getElementById('seller').value;
         const phone = document.getElementById('phone').value;
         const duration = parseInt(document.getElementById('duration').value);
         const qty = parseInt(document.getElementById('qty').value);
         const startTier = parseInt(document.getElementById('startTier').value);
+        const startDateVal = document.getElementById('startDate').value;
 
+        // Header Info
         document.getElementById('outInvoiceCode').innerText = "#" + invoiceCode;
         document.getElementById('outSeller').innerText = seller + (SELLER_PHONE[seller] ? ` - ${SELLER_PHONE[seller]}` : "");
-        
-        // QR Code: Chứa Invoice Code để quét lại
         generateQR(invoiceCode);
 
         // Date Handling
         const originalDateVal = document.getElementById('originalCreatedDate').value;
         const displayDate = originalDateVal ? new Date(originalDateVal).toLocaleString('vi-VN') : new Date().toLocaleString('vi-VN');
         document.getElementById('outDate').innerText = displayDate;
-
-        const editLabel = document.getElementById('outEditDate');
-        if(docId) {
-            editLabel.innerText = "Sửa đổi: " + new Date().toLocaleString('vi-VN');
-            editLabel.style.display = 'block';
+        
+        // Start Date Display
+        if(startDateVal) {
+            const d = new Date(startDateVal);
+            document.getElementById('outStartDate').innerText = d.toLocaleDateString('vi-VN');
         } else {
-            editLabel.style.display = 'none';
+            document.getElementById('outStartDate').innerText = "...";
         }
 
+        // Edit Label
+        const docId = document.getElementById('currentDocId').value;
+        document.getElementById('outEditDate').style.display = docId ? 'block' : 'none';
+        if(docId) document.getElementById('outEditDate').innerText = "Cập nhật: " + new Date().toLocaleString('vi-VN');
+
+        // Customer Info
         document.getElementById('outPhone').innerText = phone || "---";
         document.getElementById('outDuration').innerText = duration + " Tháng";
         const repName = document.getElementById('buyer_0') ? document.getElementById('buyer_0').value : "";
         document.getElementById('outRep').innerText = (repName || "Khách lẻ").toUpperCase();
 
+        // Calculate
         let totalAmount = 0;
         let html = "";
         for (let i = 0; i < qty; i++) {
@@ -499,16 +544,23 @@
             const price = (MONTHLY_BASE * TIERS[tierIdx] * duration);
             totalAmount += price;
 
-            html += `<tr><td style="text-align:center">${i+1}</td><td style="text-transform:uppercase">${name}</td><td style="text-align:center">${Math.round(TIERS[tierIdx]*100)}</td><td style="text-align:right">${price.toLocaleString('vi-VN')}</td></tr>`;
+            html += `<tr>
+                <td style="text-align:center">${i+1}</td>
+                <td style="text-transform:uppercase; font-weight:500">${name}</td>
+                <td style="text-align:center">${Math.round(TIERS[tierIdx]*100)}</td>
+                <td style="text-align:right">${price.toLocaleString('vi-VN')}</td>
+            </tr>`;
         }
         document.getElementById('tableBody').innerHTML = html;
         currentTotalString = totalAmount.toLocaleString('vi-VN', {style:'currency', currency:'VND'});
         document.getElementById('outTotal').innerText = currentTotalString;
 
+        // Image
         const imgEl = document.getElementById('outImage');
         if(currentImageData) { imgEl.src = currentImageData; imgEl.style.display = 'block'; } 
         else { imgEl.style.display = 'none'; }
         
+        // Log changes
         generateChangeLog(repName, qty, duration, currentTotalString);
     }
 
@@ -520,18 +572,14 @@
             let changes = [];
             if(snapshotData.buyerName !== newName) changes.push(`Tên: ${snapshotData.buyerName} -> ${newName}`);
             if(parseInt(snapshotData.qty) !== parseInt(newQty)) changes.push(`Số lượng: ${snapshotData.qty} -> ${newQty}`);
-            if(parseInt(snapshotData.duration) !== parseInt(newDur)) changes.push(`Thời hạn: ${snapshotData.duration} -> ${newDur}`);
-
+            
             if(changes.length > 0) {
-                logDiv.innerHTML = "<b>Ghi chú thay đổi:</b><br>" + changes.join("<br>");
+                logDiv.innerHTML = "<b>Thay đổi:</b><br>" + changes.join("<br>");
                 logDiv.style.display = 'block';
             } else {
-                if(snapshotData.editHistory && snapshotData.editHistory.length > 0) {
+                logDiv.style.display = (snapshotData.editHistory && snapshotData.editHistory.length > 0) ? 'block' : 'none';
+                if(snapshotData.editHistory && snapshotData.editHistory.length > 0)
                      logDiv.innerHTML = "<b>Lịch sử:</b><br>" + snapshotData.editHistory.join("<br>");
-                     logDiv.style.display = 'block';
-                } else {
-                    logDiv.style.display = 'none';
-                }
             }
         } else {
             logDiv.style.display = 'none';
@@ -546,8 +594,12 @@
         }
     }
 
-    // --- MODAL & ACTION ---
+    // --- MODAL ACTIONS ---
     function openPreviewModal() {
+        // Validate
+        const repName = document.getElementById('buyer_0').value.trim();
+        if(!repName) { alert("Vui lòng nhập tên người đại diện!"); return; }
+
         const source = document.getElementById('invoice');
         const dest = document.getElementById('modalInvoiceView');
         dest.innerHTML = source.innerHTML; 
@@ -573,7 +625,7 @@
         for(let i=0; i<qty; i++) members.push(document.getElementById(`buyer_${i}`).value);
         
         const logDiv = document.getElementById('outEditLog');
-        let currentChanges = logDiv.style.display !== 'none' ? logDiv.innerText.replace("Ghi chú thay đổi:", "").trim() : "";
+        let currentChanges = logDiv.style.display !== 'none' ? logDiv.innerText.replace("Thay đổi:", "").trim() : "";
         
         let newHistoryArr = snapshotData.editHistory || [];
         if(currentChanges && docId) {
@@ -587,6 +639,8 @@
             duration: document.getElementById('duration').value,
             qty: qty,
             startTier: document.getElementById('startTier').value,
+            startDate: document.getElementById('startDate').value,
+            notes: document.getElementById('notes').value,
             buyerName: members[0] || "Khách lẻ",
             members: members,
             totalAmount: currentTotalString,
@@ -597,54 +651,48 @@
         const result = await window.saveDataToFirebase(data, docId);
         
         if (result) {
-            // Không đóng modal ngay để người dùng có thể in nếu muốn
             if(isShare) {
-                shareInvoice();
+                shareInvoice(); // Lưu xong thì gửi ảnh
             } else {
-                alert(result === "created" ? "✅ Đã lưu đơn mới!" : "✅ Đã cập nhật đơn!");
-                // Nếu là lưu thường thì reset form để làm đơn khác
+                alert("✅ Đã lưu thành công!");
                 closePreviewModal();
-                resetForm();
+                if(result === 'created') resetForm();
             }
         }
     }
 
     async function shareInvoice() {
         const invoice = document.getElementById('invoice');
-        const canvas = await html2canvas(invoice, { scale: 2, useCORS: true });
-        
-        canvas.toBlob(async (blob) => {
-            const file = new File([blob], `BHYT_${Date.now()}.png`, { type: "image/png" });
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                try {
+        showLoading(true);
+        try {
+            const canvas = await html2canvas(invoice, { scale: 2, useCORS: true });
+            canvas.toBlob(async (blob) => {
+                const file = new File([blob], `BHYT_${Date.now()}.png`, { type: "image/png" });
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
                     await navigator.share({ files: [file] });
-                } catch (err) { downloadFile(canvas); }
-            } else {
-                downloadFile(canvas);
-            }
-        });
-    }
-
-    function downloadFile(canvas) {
-        const link = document.createElement('a');
-        link.href = canvas.toDataURL("image/png");
-        link.download = "HoaDon.png";
-        link.click();
-    }
-
-    // --- RESTORE & CAMERA SCAN ---
-    window.restoreInvoice = function(id) {
-        // Tìm trong dữ liệu đã tải
-        const item = window.fullHistoryData.find(x => x.id === id);
-        
-        if(!item) {
-            alert("Không tìm thấy dữ liệu đơn này!");
-            return;
+                } else {
+                    const link = document.createElement('a');
+                    link.href = canvas.toDataURL("image/png");
+                    link.download = "HoaDon.png";
+                    link.click();
+                }
+                showLoading(false);
+            });
+        } catch (e) {
+            showLoading(false);
+            alert("Lỗi tạo ảnh: " + e.message);
         }
+    }
+
+    // --- RESTORE & CAMERA ---
+    window.restoreInvoice = function(id) {
+        const item = window.fullHistoryData.find(x => x.id === id);
+        if(!item) return;
 
         document.getElementById('currentDocId').value = id;
         document.getElementById('currentInvoiceCode').value = item.invoiceCode;
         
+        // Khôi phục ngày tạo
         const createdDate = item.createdDate ? item.createdDate.toDate().toISOString() : (item.timestamp ? item.timestamp.toDate().toISOString() : "");
         document.getElementById('originalCreatedDate').value = createdDate;
 
@@ -653,6 +701,9 @@
         document.getElementById('duration').value = item.duration;
         document.getElementById('qty').value = item.qty;
         document.getElementById('startTier').value = item.startTier || 1;
+        document.getElementById('notes').value = item.notes || "";
+        
+        if(item.startDate) document.getElementById('startDate').value = item.startDate;
 
         updateBuyerInputs();
         if(item.members) {
@@ -673,62 +724,112 @@
         };
 
         renderInvoice();
-        
-        // Đóng modal scan nếu đang mở
         closeScanner();
-        // Cuộn lên trên
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        alert("Đã tìm thấy đơn: " + item.invoiceCode);
     }
 
-    // Logic Quét Camera
+    // --- CAMERA LOGIC FIX ---
     window.openScanner = function() {
         document.getElementById('scannerModal').style.display = 'flex';
-        
-        html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
-        html5QrcodeScanner.render(onScanSuccess);
+        // Delay 1 xíu để modal hiện lên
+        setTimeout(() => {
+            if(!html5QrcodeScanner) {
+                html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }, false);
+                html5QrcodeScanner.render(onScanSuccess, (err)=>{});
+            }
+        }, 100);
     }
 
     window.closeScanner = function() {
         document.getElementById('scannerModal').style.display = 'none';
         if(html5QrcodeScanner) {
-            html5QrcodeScanner.clear();
+            html5QrcodeScanner.clear().then(() => {
+                html5QrcodeScanner = null;
+            }).catch(err => {
+                console.error("Failed to clear scanner", err);
+                html5QrcodeScanner = null;
+            });
         }
     }
 
     function onScanSuccess(decodedText, decodedResult) {
-        // Mã QR chứa InvoiceCode (VD: HD-12345)
-        console.log(`Scan matched: ${decodedText}`);
-        
-        // Tìm trong danh sách lịch sử xem có mã này không
+        console.log(`Scan: ${decodedText}`);
         const foundItem = window.fullHistoryData.find(x => x.invoiceCode === decodedText);
-        
         if (foundItem) {
             restoreInvoice(foundItem.id);
         } else {
-            alert("Không tìm thấy đơn có mã: " + decodedText + "\nVui lòng thử lại hoặc tải lại trang.");
+            alert("Không tìm thấy đơn: " + decodedText);
         }
+    }
+
+    // --- UTILS ---
+    window.copyTextInfo = function(id) {
+        const item = window.fullHistoryData.find(x => x.id === id);
+        if(!item) return;
+        const text = `ĐƠN BHYT: ${item.invoiceCode}\nKhách: ${item.buyerName}\nSĐT: ${item.phone}\nSố người: ${item.qty} (${item.duration} tháng)\nTổng tiền: ${item.totalAmount}\n${item.notes ? 'Note: '+item.notes : ''}`;
+        navigator.clipboard.writeText(text).then(() => alert("Đã copy thông tin!"));
     }
 
     window.filterHistory = function() {
         const term = document.getElementById('searchBox').value.toLowerCase();
+        let currentFilteredTotal = 0;
+        let count = 0;
+
+        // Lọc hiển thị và tính lại tổng tiền
+        window.fullHistoryData.forEach(item => {
+            // Tìm trong DOM tương ứng (nếu DOM còn tồn tại thì ẩn/hiện)
+            // Tuy nhiên cách tốt hơn là render lại hoặc dùng CSS display
+            const searchSource = (item.invoiceCode + " " + item.buyerName + " " + item.phone).toLowerCase();
+            const isMatch = searchSource.includes(term);
+            
+            // Tìm row trong bảng (cách đơn giản là loop lại table row nhưng ở đây ta có data)
+            // Ta sẽ render lại table dựa trên filter thì tốt hơn, nhưng để nhanh ta ẩn hiện TR
+            // Do logic renderHistoryRow append, ta sẽ dùng DOM traversal
+            
+            // Cách DOM traversal:
+            const rows = document.querySelectorAll('#historyBody tr');
+            // Logic này giả định thứ tự rows khớp thứ tự fullHistoryData (do onSnapshot push theo thứ tự)
+            // Tốt nhất là search text trên DOM
+        });
+
         const rows = document.querySelectorAll('#historyBody tr');
         rows.forEach(row => {
             const text = row.innerText.toLowerCase();
-            row.style.display = text.includes(term) ? '' : 'none';
+            if(text.includes(term)) {
+                row.style.display = '';
+                // Lấy lại giá tiền từ cột thứ 3
+                const moneyStr = row.cells[2].innerText;
+                const money = parseInt(moneyStr.replace(/\./g, '').replace(' ₫', ''));
+                if(!isNaN(money)) currentFilteredTotal += money;
+                count++;
+            } else {
+                row.style.display = 'none';
+            }
         });
+        
+        // Update stats theo kết quả search
+        document.getElementById('statCount').innerText = count;
+        document.getElementById('statRevenue').innerText = currentFilteredTotal.toLocaleString('vi-VN') + " ₫";
     }
 
     window.exportToExcel = function() {
         if(window.fullHistoryData.length === 0) return alert("Chưa có dữ liệu!");
         const data = window.fullHistoryData.map((item, idx) => ({
-            "STT": idx+1, "Mã HĐ": item.invoiceCode, "Ngày tạo": item.dateObj.toLocaleString(),
-            "Đại diện": item.buyerName, "SĐT": item.phone, "Tổng tiền": item.totalAmount
+            "STT": idx+1, 
+            "Mã HĐ": item.invoiceCode, 
+            "Ngày tạo": item.dateObj.toLocaleString(),
+            "Đại diện": item.buyerName, 
+            "SĐT": item.phone, 
+            "Số người": item.qty,
+            "Thời hạn": item.duration + " tháng",
+            "Ngày bắt đầu": item.startDate || "",
+            "Tổng tiền": item.totalAmount,
+            "Ghi chú": item.notes || ""
         }));
         const ws = XLSX.utils.json_to_sheet(data);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "BHYT");
-        XLSX.writeFile(wb, "DanhSach.xlsx");
+        XLSX.writeFile(wb, "DanhSach_BHYT.xlsx");
     }
 </script>
 
