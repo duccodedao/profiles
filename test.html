@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quét & Copy BHYT</title>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; text-align: center; }
+        .container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h2 { color: #0066cc; }
+        #reader { width: 100%; border-radius: 8px; overflow: hidden; background: black; }
+        
+        .result-box {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 8px;
+            text-align: left;
+        }
+        .info-row { margin-bottom: 8px; border-bottom: 1px dashed #ccc; padding-bottom: 5px; }
+        .label { font-weight: bold; color: #555; }
+        .value { color: #000; font-weight: bold; font-size: 1.1em; }
+
+        .btn-action {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin-top: 15px;
+            background-color: #28a745;
+            color: white;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: 0.2s;
+        }
+        .btn-action:active { transform: scale(0.98); }
+        
+        .highlight { background: yellow; padding: 2px 5px; }
+        
+        #msgCopy { color: green; font-size: 12px; margin-top: 5px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Quét QR BHYT</h2>
+    
+    <div id="reader"></div>
+    
+    <button id="btnScan" onclick="startScan()" style="margin-top:10px; padding:10px 20px; background:#007bff; color:white; border:none; borderRadius:4px; cursor:pointer;">Bật Camera</button>
+
+    <div id="result" class="result-box">
+        <h3 style="margin-top:0">Đã đọc dữ liệu!</h3>
+        
+        <div class="info-row">
+            <span class="label">Mã số:</span><br>
+            <span class="value highlight" id="txtCode">...</span>
+            <div id="msgCopy">✅ Đã copy mã số vào bộ nhớ tạm!</div>
+        </div>
+        
+        <div class="info-row">
+            <span class="label">Họ tên:</span>
+            <span class="value" id="txtName">...</span>
+        </div>
+        
+        <div class="info-row">
+            <span class="label">Ngày sinh:</span>
+            <span class="value" id="txtDob">...</span>
+        </div>
+
+        <!-- Nút hành động chính -->
+        <button class="btn-action" onclick="goToOfficialSite()">
+            🔗 DÁN VÀO TRANG BHXH
+        </button>
+        <p style="font-size:12px; color:#666;">Bấm nút trên để mở trang BHXH, sau đó nhấn chuột phải chọn "Dán" (hoặc Ctrl+V) vào ô Mã số.</p>
+    </div>
+</div>
+
+<script>
+    let html5QrcodeScanner;
+    let scannedCode = "";
+
+    function startScan() {
+        document.getElementById('btnScan').style.display = 'none';
+        html5QrcodeScanner = new Html5Qrcode("reader");
+        html5QrcodeScanner.start(
+            { facingMode: "environment" }, 
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            onScanSuccess
+        );
+    }
+
+    function onScanSuccess(decodedText) {
+        html5QrcodeScanner.stop();
+        document.getElementById('reader').style.display = 'none';
+        
+        // Phân tách dữ liệu QR BHYT (Mẫu: DN4...|NGUYEN VAN A|...)
+        const parts = decodedText.split('|');
+        
+        let bhytCode = parts[0] || decodedText;
+        let name = parts[1] || "";
+        let dob = parts[2] || "";
+
+        // Hiển thị kết quả
+        scannedCode = bhytCode;
+        document.getElementById('result').style.display = 'block';
+        document.getElementById('txtCode').innerText = bhytCode;
+        document.getElementById('txtName').innerText = decodeUnicode(name);
+        document.getElementById('txtDob').innerText = dob;
+
+        // Tự động Copy mã số
+        copyToClipboard(bhytCode);
+    }
+
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            document.getElementById('msgCopy').style.display = 'block';
+        }).catch(err => {
+            console.error('Không copy được: ', err);
+            // Fallback cho trình duyệt cũ nếu cần
+        });
+    }
+
+    function goToOfficialSite() {
+        // Copy lại lần nữa cho chắc chắn khi bấm nút (do cơ chế bảo mật trình duyệt yêu cầu tương tác người dùng)
+        navigator.clipboard.writeText(scannedCode).then(() => {
+            window.open('https://baohiemxahoi.gov.vn/tracuu/pages/tra-cuu-thoi-han-su-dung-the-bhyt.aspx', '_blank');
+        });
+    }
+
+    function decodeUnicode(str) {
+        return str; // Xử lý font nếu cần
+    }
+</script>
+
+</body>
+</html>
