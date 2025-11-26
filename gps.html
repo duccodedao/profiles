@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chia Sẻ Toạ Độ</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+        h2 { margin-bottom: 20px; color: #333; }
+        
+        #shareBtn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: background 0.3s;
+            width: 100%;
+            font-weight: bold;
+        }
+        #shareBtn:active { transform: scale(0.98); }
+        #shareBtn:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        #status { margin-top: 15px; color: #666; font-size: 14px; min-height: 20px;}
+        
+        .result-box {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 8px;
+            display: none; /* Ẩn mặc định */
+        }
+        .coords-text {
+            font-family: monospace;
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            word-break: break-all;
+        }
+        .copy-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>📍 Vị Trí Của Tôi</h2>
+        
+        <button id="shareBtn">CHIA SẺ TOẠ ĐỘ NGAY</button>
+        <div id="status"></div>
+
+        <div id="result" class="result-box">
+            <div id="coordsDisplay" class="coords-text">...</div>
+            <button class="copy-btn" onclick="copyToClipboard()">📋 Sao chép để dán Map</button>
+            <br><br>
+            <a id="googleMapLink" href="#" target="_blank" style="color:#007bff; text-decoration:none; font-size:14px;">Mở trực tiếp Google Maps ↗</a>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs (Compat version for simple usage) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        // 1. Cấu hình Firebase của bạn
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
+            authDomain: "profile-d1214.firebaseapp.com",
+            projectId: "profile-d1214",
+            storageBucket: "profile-d1214.firebasestorage.app",
+            messagingSenderId: "914980131889",
+            appId: "1:914980131889:web:72f8da15c42dbee671b110",
+            measurementId: "G-C587M69LZW"
+        };
+
+        // 2. Khởi tạo Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        const shareBtn = document.getElementById('shareBtn');
+        const statusDiv = document.getElementById('status');
+        const resultDiv = document.getElementById('result');
+        const coordsDisplay = document.getElementById('coordsDisplay');
+        const googleMapLink = document.getElementById('googleMapLink');
+        let currentCoords = "";
+
+        // 3. Xử lý sự kiện click nút
+        shareBtn.addEventListener('click', () => {
+            if (!navigator.geolocation) {
+                statusDiv.innerText = "Trình duyệt không hỗ trợ định vị.";
+                return;
+            }
+
+            statusDiv.innerText = "Đang lấy vị trí chính xác nhất...";
+            shareBtn.disabled = true;
+
+            navigator.geolocation.getCurrentPosition(successPosition, errorPosition, {
+                enableHighAccuracy: true, // Yêu cầu độ chính xác cao nhất (GPS)
+                timeout: 10000,
+                maximumAge: 0
+            });
+        });
+
+        // 4. Khi lấy toạ độ thành công
+        function successPosition(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const accuracy = position.coords.accuracy; // Độ lệch (mét)
+
+            // Định dạng chuỗi để dán vào Google Maps: "Lat, Long"
+            currentCoords = `${lat}, ${lng}`;
+
+            statusDiv.innerText = `Đã tìm thấy! (Độ lệch: ${Math.round(accuracy)}m). Đang lưu...`;
+
+            // Lưu vào Firebase Firestore
+            db.collection("locations").add({
+                latitude: lat,
+                longitude: lng,
+                accuracy: accuracy,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                userAgent: navigator.userAgent // Lưu thêm info thiết bị để biết ai gửi
+            })
+            .then((docRef) => {
+                statusDiv.innerText = "✅ Đã lưu vào hệ thống thành công!";
+                showResult(lat, lng);
+            })
+            .catch((error) => {
+                console.error("Lỗi lưu firebase: ", error);
+                statusDiv.innerText = "⚠️ Có lỗi khi lưu dữ liệu (Kiểm tra Rules).";
+                // Vẫn hiện kết quả cho người dùng dù lỗi database
+                showResult(lat, lng); 
+            })
+            .finally(() => {
+                shareBtn.disabled = false;
+            });
+        }
+
+        // 5. Hiển thị kết quả
+        function showResult(lat, lng) {
+            resultDiv.style.display = "block";
+            coordsDisplay.innerText = `${lat}, ${lng}`;
+            // Tạo link mở nhanh
+            googleMapLink.href = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+        }
+
+        // 6. Xử lý lỗi khi không lấy được vị trí
+        function errorPosition(err) {
+            shareBtn.disabled = false;
+            console.warn(`ERROR(${err.code}): ${err.message}`);
+            switch(err.code) {
+                case err.PERMISSION_DENIED:
+                    statusDiv.innerText = "❌ Bạn đã từ chối cấp quyền vị trí.";
+                    break;
+                case err.POSITION_UNAVAILABLE:
+                    statusDiv.innerText = "❌ Không thể xác định vị trí hiện tại.";
+                    break;
+                case err.TIMEOUT:
+                    statusDiv.innerText = "❌ Hết thời gian chờ lấy vị trí.";
+                    break;
+                default:
+                    statusDiv.innerText = "❌ Lỗi không xác định.";
+            }
+        }
+
+        // 7. Chức năng copy
+        function copyToClipboard() {
+            navigator.clipboard.writeText(currentCoords).then(() => {
+                alert("Đã copy toạ độ: " + currentCoords);
+            }, (err) => {
+                console.error('Lỗi copy: ', err);
+            });
+        }
+    </script>
+</body>
+</html>
