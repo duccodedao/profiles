@@ -3,17 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống BHYT Pro - Edit & ID</title>
+    <title>Hệ Thống BHYT Pro - Print & Scan</title>
     
     <!-- Thư viện hỗ trợ -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <!-- Thư viện Quét QR Camera -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, updateDoc, doc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
@@ -34,19 +36,22 @@
         window.saveDataToFirebase = async function(data, docId = null) {
             try {
                 if (docId) {
-                    // CẬP NHẬT (EDIT)
+                    // CẬP NHẬT (EDIT) - Giữ nguyên invoiceCode
                     const docRef = doc(db, "history_bhyt_full", docId);
+                    // Loại bỏ createdDate khỏi data update để tránh ghi đè ngày gốc
+                    const { createdDate, ...updateData } = data; 
+                    
                     await updateDoc(docRef, {
-                        ...data,
-                        lastEdited: serverTimestamp() // Cập nhật thời gian sửa
+                        ...updateData,
+                        lastEdited: serverTimestamp()
                     });
                     return "updated";
                 } else {
                     // TẠO MỚI (NEW)
                     await addDoc(collection(db, "history_bhyt_full"), {
                         ...data,
-                        createdDate: serverTimestamp(), // Ngày lập gốc
-                        timestamp: serverTimestamp() // Dùng để sort
+                        createdDate: serverTimestamp(),
+                        timestamp: serverTimestamp()
                     });
                     return "created";
                 }
@@ -54,6 +59,18 @@
                 console.error(e);
                 alert("Lỗi hệ thống: " + e.message);
                 return false;
+            }
+        }
+
+        // --- HÀM XÓA ĐƠN ---
+        window.deleteInvoice = async function(docId) {
+            if(confirm("Bạn có chắc chắn muốn XÓA vĩnh viễn đơn này không?")) {
+                try {
+                    await deleteDoc(doc(db, "history_bhyt_full", docId));
+                    alert("Đã xóa thành công!");
+                } catch (e) {
+                    alert("Lỗi xóa đơn: " + e.message);
+                }
             }
         }
 
@@ -74,7 +91,7 @@
                 let dateStr = dateObj.toLocaleString('vi-VN');
                 let sortTime = dateObj.getTime();
 
-                // Cache dữ liệu
+                // Cache dữ liệu (client-side search)
                 window.fullHistoryData.push({ id, dateObj, sortTime, ...item });
 
                 renderHistoryRow(id, dateStr, item);
@@ -99,6 +116,7 @@
                 <td style="font-weight:bold; color:#b30000; text-align:right">${item.totalAmount}</td>
                 <td style="text-align:center">
                     <button class="btn-icon" onclick="restoreInvoice('${id}')" title="Sửa & In lại">📝</button>
+                    <button class="btn-icon btn-delete" onclick="deleteInvoice('${id}')" title="Xóa đơn">🗑️</button>
                 </td>
             `;
             document.getElementById('historyBody').appendChild(row);
@@ -112,7 +130,7 @@
         .main-wrapper { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; align-items: flex-start; }
         
         /* CỘT TRÁI */
-        .panel-input { background: white; padding: 20px; border-radius: 8px; width: 100%; max-width: 400px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .panel-input { background: white; padding: 20px; border-radius: 8px; width: 100%; max-width: 400px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); position: relative; }
         .panel-title { color: var(--primary); margin: 0 0 15px 0; border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 18px; display: flex; justify-content: space-between; align-items: center; }
         
         .form-group { margin-bottom: 12px; }
@@ -124,9 +142,10 @@
 
         .btn-group { display: flex; gap: 10px; margin-top: 15px; }
         button { flex: 1; padding: 12px; border: none; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; transition: 0.2s; }
-        .btn-preview { background: #17a2b8; } /* Màu xanh ngọc */
+        .btn-preview { background: #17a2b8; } 
         .btn-reset { background: #6c757d; width: auto; flex: none; font-size: 12px; padding: 5px 10px;}
-
+        .btn-scan { position: absolute; top: 20px; right: 20px; background: #28a745; font-size: 12px; padding: 5px 10px; width: auto; flex:none; z-index: 10;}
+        
         /* CỘT PHẢI - LIVE PREVIEW */
         .panel-preview { width: 100%; max-width: 420px; }
         #invoice { background: white; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); font-family: 'Times New Roman', serif; position: relative; min-height: 500px; }
@@ -150,7 +169,11 @@
         .modal-actions { display: flex; gap: 10px; justify-content: center; }
         .btn-confirm-save { background: #28a745; }
         .btn-confirm-share { background: #0088ff; }
+        .btn-print { background: #343a40; }
         .btn-cancel { background: #dc3545; }
+
+        /* MODAL SCANNER */
+        #scanner-container { width: 100%; height: 300px; background: #000; margin-bottom: 10px; }
 
         /* LỊCH SỬ */
         .history-panel { width: 100%; max-width: 850px; background: white; padding: 20px; margin: 30px auto; border-radius: 8px; }
@@ -159,12 +182,39 @@
         .history-table th { background: #eee; padding: 10px; text-align: left; }
         .history-table td { padding: 8px 10px; border-bottom: 1px solid #eee; }
         
-        .btn-icon { background: #e9ecef; border: 1px solid #ccc; padding: 5px 8px; border-radius: 4px; cursor: pointer; }
+        .btn-icon { background: #e9ecef; border: 1px solid #ccc; padding: 5px 8px; border-radius: 4px; cursor: pointer; color: #333; width: 30px;}
+        .btn-delete { color: #dc3545; border-color: #dc3545; margin-left: 5px; }
 
+        /* --- PRINT CSS: 1/3 A4 CONFIGURATION --- */
         @media print {
-            .panel-input, .history-panel, .btn-group, .modal-overlay { display: none !important; }
-            .panel-preview { position: absolute; left: 0; top: 0; width: 100%; max-width: 100%; }
-            #invoice { box-shadow: none; padding: 0; }
+            @page { margin: 0; size: auto; }
+            body * { visibility: hidden; }
+            
+            /* Chỉ hiện phần hóa đơn trong modal (nếu đang mở modal) hoặc preview */
+            #modalInvoiceView, #modalInvoiceView * {
+                visibility: visible;
+            }
+            
+            /* Định vị hóa đơn để in */
+            #modalInvoiceView {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                /* Chiều cao 1/3 A4 (~99mm), trừ margin */
+                height: 105mm; 
+                padding: 15px;
+                box-sizing: border-box;
+                border-bottom: 1px dashed #333; /* Đường cắt giấy */
+            }
+
+            /* Ẩn ảnh CCCD và Log khi in để tiết kiệm giấy và cho gọn */
+            .cccd-img, .edit-log { display: none !important; }
+            
+            /* Ẩn các nút bấm */
+            .modal-actions, .modal-overlay { background: none; box-shadow: none; position: static; display: block; height: auto; width: 100%; }
+            .modal-content { box-shadow: none; border: none; width: 100%; max-width: 100%; padding: 0; margin: 0; position: static;}
+            h3, p { display: none; } /* Ẩn tiêu đề modal */
         }
     </style>
 </head>
@@ -173,12 +223,13 @@
 <div class="main-wrapper">
     <!-- INPUT FORM -->
     <div class="panel-input">
+        <button class="btn-scan" onclick="openScanner()">📷 Quét Camera</button>
         <h2 class="panel-title">
             <span>Nhập Liệu</span>
             <button class="btn-reset" onclick="resetForm()">Tạo Mới</button>
         </h2>
         
-        <!-- Hidden Inputs để quản lý ID và trạng thái Edit -->
+        <!-- Hidden Inputs -->
         <input type="hidden" id="currentDocId" value="">
         <input type="hidden" id="currentInvoiceCode" value="">
         <input type="hidden" id="originalCreatedDate" value="">
@@ -235,7 +286,7 @@
         </div>
     </div>
 
-    <!-- LIVE PREVIEW (HIỂN THỊ ĐỂ NGƯỜI DÙNG THẤY KHI NHẬP) -->
+    <!-- LIVE PREVIEW -->
     <div class="panel-preview">
         <div id="invoice">
             <div class="inv-top">
@@ -243,7 +294,6 @@
                     <h1>HÓA ĐƠN BHYT</h1>
                     <p style="margin:5px 0; font-size:12px;">Ngày lập: <span id="outDate">...</span></p>
                     <p style="margin:0; font-size:12px; font-weight:bold" id="outSeller">...</p>
-                    <!-- Hiển thị ngày chỉnh sửa nếu có -->
                     <p id="outEditDate" style="margin:2px 0; font-size:11px; color:#d9534f; display:none;"></p>
                 </div>
                 <div>
@@ -272,13 +322,12 @@
 
             <div class="total">TỔNG: <span id="outTotal">0 đ</span></div>
             
-            <!-- Khu vực Log chỉnh sửa -->
             <div id="outEditLog" class="edit-log" style="display:none;"></div>
 
             <img id="outImage" class="cccd-img" src="" style="width:100%; margin-top:10px; display:none; border:1px dashed #ccc;">
             
             <div style="text-align:center; font-style:italic; font-size:11px; margin-top:20px;">
-                Quét mã QR để tra cứu. Cảm ơn quý khách!
+                Quét mã QR để tra cứu hóa đơn này.
             </div>
         </div>
     </div>
@@ -288,18 +337,28 @@
 <div id="previewModal" class="modal-overlay">
     <div class="modal-content">
         <h3 style="margin-top:0">Xác Nhận Hóa Đơn</h3>
-        <p style="font-size:13px; color:#666">Vui lòng kiểm tra kỹ thông tin trước khi lưu.</p>
+        <p style="font-size:13px; color:#666">Kiểm tra thông tin trước khi in hoặc lưu.</p>
         
-        <!-- Clone Invoice Here -->
         <div class="modal-body" id="modalInvoiceView">
-            <!-- Sẽ được copy từ Live Preview vào đây -->
+            <!-- Nội dung Invoice copy vào đây -->
         </div>
 
         <div class="modal-actions">
             <button class="btn-confirm-save" onclick="handleConfirmSave(false)">💾 Lưu Đơn</button>
+            <button class="btn-print" onclick="printInvoice()">🖨️ In Đơn</button>
             <button class="btn-confirm-share" onclick="handleConfirmSave(true)">📤 Lưu & Gửi Ảnh</button>
             <button class="btn-cancel" onclick="closePreviewModal()">Hủy</button>
         </div>
+    </div>
+</div>
+
+<!-- MODAL SCANNER -->
+<div id="scannerModal" class="modal-overlay">
+    <div class="modal-content" style="max-width:400px; background:#000; color:white">
+        <h3 style="color:white">Quét Mã Hóa Đơn</h3>
+        <div id="reader" style="width:100%"></div>
+        <p style="font-size:12px; color:#ccc">Đưa mã QR trên hóa đơn vào khung hình</p>
+        <button class="btn-cancel" onclick="closeScanner()" style="width:100%">Đóng Camera</button>
     </div>
 </div>
 
@@ -308,11 +367,11 @@
     <h3>Lịch Sử Giao Dịch</h3>
     <div class="history-tools">
         <div style="flex:2">
-            <label>Tìm kiếm (Mã HĐ hoặc Tên khách):</label>
-            <input type="text" id="searchBox" placeholder="VD: HD-12345 hoặc Nguyễn Văn A..." onkeyup="filterHistory()">
+            <label>Tìm kiếm:</label>
+            <input type="text" id="searchBox" placeholder="Nhập Mã HĐ hoặc Tên..." onkeyup="filterHistory()">
         </div>
         <div style="flex:1">
-             <label>&nbsp;</label> <!-- Spacer -->
+             <label>&nbsp;</label>
              <button class="btn-preview" onclick="exportToExcel()" style="padding:10px">Xuất Excel</button>
         </div>
     </div>
@@ -335,13 +394,13 @@
     const RATE = 0.045; 
     const MONTHLY_BASE = BASE_SALARY * RATE; 
     const TIERS = [1.0, 0.7, 0.6, 0.5, 0.4];
-    const BHYT_URL = "https://baohiemxahoi.gov.vn/tracuu/pages/tra-cuu-thoi-han-su-dung-the-bhyt.aspx";
     const SELLER_PHONE = { "Lâm Minh Ngoãn": "085.6111.552", "Sơn Lý Hồng Đức": "" };
 
     // State Variables
     let currentImageData = null;
     let currentTotalString = "0 đ";
-    let snapshotData = {}; // Dùng để so sánh khi sửa
+    let snapshotData = {}; 
+    let html5QrcodeScanner = null;
 
     window.onload = function() {
         resetForm();
@@ -350,7 +409,7 @@
     // --- LOGIC FORM & INVOICE ---
     function resetForm() {
         document.getElementById('currentDocId').value = "";
-        document.getElementById('currentInvoiceCode').value = generateInvoiceCode(); // Tạo mã mới
+        document.getElementById('currentInvoiceCode').value = generateInvoiceCode();
         document.getElementById('originalCreatedDate').value = "";
         
         document.getElementById('phone').value = "";
@@ -358,23 +417,19 @@
         document.getElementById('startTier').value = "1";
         
         updateBuyerInputs();
-        generateQR();
         
-        // Reset Log
         snapshotData = {}; 
-        
         renderInvoice();
     }
 
     function generateInvoiceCode() {
-        // Tạo mã ngẫu nhiên: HD-XXXXX
         return "HD-" + Math.floor(10000 + Math.random() * 90000);
     }
 
-    function generateQR() {
+    function generateQR(text) {
         document.getElementById("qr-container").innerHTML = "";
         new QRCode(document.getElementById("qr-container"), {
-            text: BHYT_URL, width: 60, height: 60, correctLevel : QRCode.CorrectLevel.L
+            text: text, width: 60, height: 60, correctLevel : QRCode.CorrectLevel.L
         });
     }
 
@@ -399,7 +454,6 @@
     }
 
     function renderInvoice() {
-        // Lấy dữ liệu
         const docId = document.getElementById('currentDocId').value;
         const invoiceCode = document.getElementById('currentInvoiceCode').value;
         const seller = document.getElementById('seller').value;
@@ -408,32 +462,30 @@
         const qty = parseInt(document.getElementById('qty').value);
         const startTier = parseInt(document.getElementById('startTier').value);
 
-        // Hiển thị Header
         document.getElementById('outInvoiceCode').innerText = "#" + invoiceCode;
         document.getElementById('outSeller').innerText = seller + (SELLER_PHONE[seller] ? ` - ${SELLER_PHONE[seller]}` : "");
         
-        // Xử lý Ngày tháng
+        // QR Code: Chứa Invoice Code để quét lại
+        generateQR(invoiceCode);
+
+        // Date Handling
         const originalDateVal = document.getElementById('originalCreatedDate').value;
-        // Nếu đang sửa (có docId) -> Dùng ngày gốc. Nếu mới -> Dùng ngày hiện tại
         const displayDate = originalDateVal ? new Date(originalDateVal).toLocaleString('vi-VN') : new Date().toLocaleString('vi-VN');
         document.getElementById('outDate').innerText = displayDate;
 
-        // Nếu đang sửa, hiển thị ngày chỉnh sửa
         const editLabel = document.getElementById('outEditDate');
         if(docId) {
-            editLabel.innerText = "Chỉnh sửa: " + new Date().toLocaleString('vi-VN');
+            editLabel.innerText = "Sửa đổi: " + new Date().toLocaleString('vi-VN');
             editLabel.style.display = 'block';
         } else {
             editLabel.style.display = 'none';
         }
 
-        // Hiển thị thông tin khách
         document.getElementById('outPhone').innerText = phone || "---";
         document.getElementById('outDuration').innerText = duration + " Tháng";
         const repName = document.getElementById('buyer_0') ? document.getElementById('buyer_0').value : "";
         document.getElementById('outRep').innerText = (repName || "Khách lẻ").toUpperCase();
 
-        // Tính tiền
         let totalAmount = 0;
         let html = "";
         for (let i = 0; i < qty; i++) {
@@ -447,18 +499,16 @@
             const price = (MONTHLY_BASE * TIERS[tierIdx] * duration);
             totalAmount += price;
 
-            html += `<tr><td style="text-align:center">${i+1}</td><td style="text-transform:uppercase">${name}</td><td style="text-align:center">${TIERS[tierIdx]*100}</td><td style="text-align:right">${price.toLocaleString('vi-VN')}</td></tr>`;
+            html += `<tr><td style="text-align:center">${i+1}</td><td style="text-transform:uppercase">${name}</td><td style="text-align:center">${Math.round(TIERS[tierIdx]*100)}</td><td style="text-align:right">${price.toLocaleString('vi-VN')}</td></tr>`;
         }
         document.getElementById('tableBody').innerHTML = html;
         currentTotalString = totalAmount.toLocaleString('vi-VN', {style:'currency', currency:'VND'});
         document.getElementById('outTotal').innerText = currentTotalString;
 
-        // Ảnh CCCD
         const imgEl = document.getElementById('outImage');
         if(currentImageData) { imgEl.src = currentImageData; imgEl.style.display = 'block'; } 
         else { imgEl.style.display = 'none'; }
         
-        // TẠO LOG THAY ĐỔI (SO SÁNH VỚI SNAPSHOT)
         generateChangeLog(repName, qty, duration, currentTotalString);
     }
 
@@ -466,27 +516,18 @@
         const logDiv = document.getElementById('outEditLog');
         const docId = document.getElementById('currentDocId').value;
         
-        // Chỉ hiện log khi đang sửa (có docId) và có dữ liệu gốc (snapshotData)
         if(docId && snapshotData.buyerName) {
             let changes = [];
-            
-            if(snapshotData.buyerName !== newName) 
-                changes.push(`Tên: ${snapshotData.buyerName} -> ${newName}`);
-            
-            if(parseInt(snapshotData.qty) !== parseInt(newQty))
-                changes.push(`Số lượng: ${snapshotData.qty} -> ${newQty}`);
-                
-            if(parseInt(snapshotData.duration) !== parseInt(newDur))
-                changes.push(`Thời hạn: ${snapshotData.duration} -> ${newDur}`);
+            if(snapshotData.buyerName !== newName) changes.push(`Tên: ${snapshotData.buyerName} -> ${newName}`);
+            if(parseInt(snapshotData.qty) !== parseInt(newQty)) changes.push(`Số lượng: ${snapshotData.qty} -> ${newQty}`);
+            if(parseInt(snapshotData.duration) !== parseInt(newDur)) changes.push(`Thời hạn: ${snapshotData.duration} -> ${newDur}`);
 
-            // Nếu có thay đổi, hiển thị
             if(changes.length > 0) {
                 logDiv.innerHTML = "<b>Ghi chú thay đổi:</b><br>" + changes.join("<br>");
                 logDiv.style.display = 'block';
             } else {
-                // Nếu chưa đổi gì so với lúc load lên thì không hiện, hoặc giữ log cũ nếu có
                 if(snapshotData.editHistory && snapshotData.editHistory.length > 0) {
-                     logDiv.innerHTML = "<b>Lịch sử trước đó:</b><br>" + snapshotData.editHistory.join("<br>");
+                     logDiv.innerHTML = "<b>Lịch sử:</b><br>" + snapshotData.editHistory.join("<br>");
                      logDiv.style.display = 'block';
                 } else {
                     logDiv.style.display = 'none';
@@ -505,14 +546,12 @@
         }
     }
 
-    // --- MODAL & SAVE FLOW ---
+    // --- MODAL & ACTION ---
     function openPreviewModal() {
-        // Copy nội dung từ Live Preview vào Modal
         const source = document.getElementById('invoice');
         const dest = document.getElementById('modalInvoiceView');
         dest.innerHTML = source.innerHTML; 
         
-        // Copy style inline cho ảnh trong modal (để tránh lỗi hiển thị)
         const modalImg = dest.querySelector('img.cccd-img');
         if(modalImg && currentImageData) modalImg.src = currentImageData;
 
@@ -523,18 +562,19 @@
         document.getElementById('previewModal').style.display = 'none';
     }
 
+    function printInvoice() {
+        window.print();
+    }
+
     async function handleConfirmSave(isShare) {
-        // 1. Thu thập dữ liệu
         const docId = document.getElementById('currentDocId').value;
         const qty = parseInt(document.getElementById('qty').value);
         let members = [];
         for(let i=0; i<qty; i++) members.push(document.getElementById(`buyer_${i}`).value);
         
-        // Lấy log thay đổi hiện tại từ giao diện (nếu có)
         const logDiv = document.getElementById('outEditLog');
         let currentChanges = logDiv.style.display !== 'none' ? logDiv.innerText.replace("Ghi chú thay đổi:", "").trim() : "";
         
-        // Merge với lịch sử cũ
         let newHistoryArr = snapshotData.editHistory || [];
         if(currentChanges && docId) {
             newHistoryArr.push(`${new Date().toLocaleString('vi-VN')}: ${currentChanges}`);
@@ -551,25 +591,25 @@
             members: members,
             totalAmount: currentTotalString,
             imageData: currentImageData,
-            editHistory: newHistoryArr // Lưu mảng lịch sử sửa
+            editHistory: newHistoryArr
         };
 
-        // 2. Lưu Firebase
         const result = await window.saveDataToFirebase(data, docId);
         
         if (result) {
-            closePreviewModal();
+            // Không đóng modal ngay để người dùng có thể in nếu muốn
             if(isShare) {
                 shareInvoice();
             } else {
-                alert(result === "created" ? "✅ Đã tạo mới hóa đơn!" : "✅ Đã cập nhật hóa đơn!");
-                resetForm(); // Reset sau khi lưu xong
+                alert(result === "created" ? "✅ Đã lưu đơn mới!" : "✅ Đã cập nhật đơn!");
+                // Nếu là lưu thường thì reset form để làm đơn khác
+                closePreviewModal();
+                resetForm();
             }
         }
     }
 
     async function shareInvoice() {
-        // Chụp ảnh hóa đơn gốc (Live Preview) để có chất lượng tốt nhất
         const invoice = document.getElementById('invoice');
         const canvas = await html2canvas(invoice, { scale: 2, useCORS: true });
         
@@ -590,18 +630,21 @@
         link.href = canvas.toDataURL("image/png");
         link.download = "HoaDon.png";
         link.click();
-        alert("Ảnh đã tải về. Vui lòng gửi qua Zalo.");
     }
 
-    // --- RESTORE (EDIT MODE) ---
+    // --- RESTORE & CAMERA SCAN ---
     window.restoreInvoice = function(id) {
+        // Tìm trong dữ liệu đã tải
         const item = window.fullHistoryData.find(x => x.id === id);
-        if(!item) return;
+        
+        if(!item) {
+            alert("Không tìm thấy dữ liệu đơn này!");
+            return;
+        }
 
-        // SET GIÁ TRỊ VÀO FORM
         document.getElementById('currentDocId').value = id;
-        document.getElementById('currentInvoiceCode').value = item.invoiceCode || generateInvoiceCode();
-        // Quan trọng: Lấy ngày tạo gốc để giữ nguyên
+        document.getElementById('currentInvoiceCode').value = item.invoiceCode;
+        
         const createdDate = item.createdDate ? item.createdDate.toDate().toISOString() : (item.timestamp ? item.timestamp.toDate().toISOString() : "");
         document.getElementById('originalCreatedDate').value = createdDate;
 
@@ -621,7 +664,6 @@
 
         currentImageData = item.imageData || null;
         
-        // LƯU SNAPSHOT ĐỂ SO SÁNH
         snapshotData = {
             buyerName: item.buyerName,
             qty: item.qty,
@@ -631,15 +673,47 @@
         };
 
         renderInvoice();
+        
+        // Đóng modal scan nếu đang mở
+        closeScanner();
+        // Cuộn lên trên
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        alert("Đã tìm thấy đơn: " + item.invoiceCode);
     }
 
-    // --- SEARCH & EXPORT ---
+    // Logic Quét Camera
+    window.openScanner = function() {
+        document.getElementById('scannerModal').style.display = 'flex';
+        
+        html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+        html5QrcodeScanner.render(onScanSuccess);
+    }
+
+    window.closeScanner = function() {
+        document.getElementById('scannerModal').style.display = 'none';
+        if(html5QrcodeScanner) {
+            html5QrcodeScanner.clear();
+        }
+    }
+
+    function onScanSuccess(decodedText, decodedResult) {
+        // Mã QR chứa InvoiceCode (VD: HD-12345)
+        console.log(`Scan matched: ${decodedText}`);
+        
+        // Tìm trong danh sách lịch sử xem có mã này không
+        const foundItem = window.fullHistoryData.find(x => x.invoiceCode === decodedText);
+        
+        if (foundItem) {
+            restoreInvoice(foundItem.id);
+        } else {
+            alert("Không tìm thấy đơn có mã: " + decodedText + "\nVui lòng thử lại hoặc tải lại trang.");
+        }
+    }
+
     window.filterHistory = function() {
         const term = document.getElementById('searchBox').value.toLowerCase();
         const rows = document.querySelectorAll('#historyBody tr');
         rows.forEach(row => {
-            // Tìm trong cả text của row (Bao gồm Tên và Mã hóa đơn)
             const text = row.innerText.toLowerCase();
             row.style.display = text.includes(term) ? '' : 'none';
         });
@@ -649,8 +723,7 @@
         if(window.fullHistoryData.length === 0) return alert("Chưa có dữ liệu!");
         const data = window.fullHistoryData.map((item, idx) => ({
             "STT": idx+1, "Mã HĐ": item.invoiceCode, "Ngày tạo": item.dateObj.toLocaleString(),
-            "Đại diện": item.buyerName, "SĐT": item.phone, "Tổng tiền": item.totalAmount,
-            "Lịch sử sửa": (item.editHistory||[]).join("; ")
+            "Đại diện": item.buyerName, "SĐT": item.phone, "Tổng tiền": item.totalAmount
         }));
         const ws = XLSX.utils.json_to_sheet(data);
         const wb = XLSX.utils.book_new();
