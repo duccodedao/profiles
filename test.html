@@ -3,150 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Bán BHYT & Xuất Hóa Đơn</title>
-    <!-- Thư viện để chụp ảnh hóa đơn -->
+    <title>Phần Mềm Tính BHYT Hộ Gia Đình 2024</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root {
-            --primary: #0056b3;
-            --border: #ddd;
-            --bg: #f4f6f9;
+            --primary: #0066cc; /* Màu xanh bưu điện/BHXH */
+            --bg: #eef2f5;
+            --text: #333;
         }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', Arial, sans-serif;
             background-color: var(--bg);
             padding: 20px;
-            color: #333;
+            color: var(--text);
             display: flex;
             gap: 20px;
-            flex-wrap: wrap;
             justify-content: center;
+            flex-wrap: wrap;
         }
 
-        /* KHUNG NHẬP LIỆU */
-        .input-panel {
+        /* CỘT TRÁI: NHẬP LIỆU */
+        .panel-input {
             background: white;
             padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
             width: 100%;
             max-width: 400px;
-            height: fit-content;
         }
-        .input-panel h2 { margin-top: 0; color: var(--primary); text-align: center; }
+        .panel-input h2 { 
+            color: var(--primary); 
+            margin-top: 0; 
+            border-bottom: 2px solid var(--primary); 
+            padding-bottom: 10px;
+        }
         
         .form-group { margin-bottom: 15px; }
+        .form-row { display: flex; gap: 10px; }
+        .form-row .form-group { flex: 1; }
+
         label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; }
         input, select {
             width: 100%;
             padding: 10px;
-            border: 1px solid var(--border);
-            border-radius: 5px;
-            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 15px;
             box-sizing: border-box;
         }
         input:focus, select:focus { outline: 2px solid var(--primary); border-color: transparent; }
 
+        .note { font-size: 12px; color: #666; font-style: italic; margin-top: -10px; margin-bottom: 10px; }
+
+        /* Nút bấm */
         .btn-group { display: flex; gap: 10px; margin-top: 20px; }
         button {
             flex: 1;
             padding: 12px;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
             color: white;
-            transition: 0.3s;
+            transition: 0.2s;
         }
-        .btn-create { background-color: #28a745; }
-        .btn-create:hover { background-color: #218838; }
-        
-        .btn-download { background-color: #17a2b8; }
-        .btn-download:hover { background-color: #138496; }
+        .btn-update { background: #28a745; }
+        .btn-print { background: #6c757d; }
+        .btn-down { background: #17a2b8; }
+        button:hover { opacity: 0.9; }
 
-        .btn-print { background-color: #6c757d; }
-        .btn-print:hover { background-color: #5a6268; }
-
-        /* KHUNG HÓA ĐƠN (PREVIEW) */
-        .invoice-container {
-            background: white;
-            width: 100%;
-            max-width: 450px; /* Khổ giấy in nhiệt thông dụng thường nhỏ hơn, nhưng để 450px cho dễ nhìn */
-            padding: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            position: relative;
-        }
-
-        /* Thiết kế hóa đơn giống giấy in nhiệt */
-        #invoice {
-            border: 1px dashed #333;
-            padding: 20px;
-            background: #fff;
-        }
-        
-        .inv-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; }
-        .inv-header h1 { margin: 0; font-size: 22px; text-transform: uppercase; }
-        .inv-header p { margin: 5px 0; font-size: 12px; }
-
-        .inv-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
-        .inv-label { font-weight: bold; }
-        .inv-total { border-top: 1px solid #000; padding-top: 10px; margin-top: 10px; font-size: 18px; font-weight: bold; text-align: right; }
-
-        .cccd-preview {
-            margin-top: 20px;
-            text-align: center;
-            border-top: 1px dotted #ccc;
-            padding-top: 10px;
-        }
-        .cccd-preview img {
-            max-width: 100%;
-            border-radius: 4px;
-            border: 1px solid #eee;
-        }
-        .footer-note {
-            margin-top: 20px;
-            text-align: center;
-            font-style: italic;
-            font-size: 12px;
-        }
-
-        /* Ẩn input file mặc định, làm đẹp nút upload */
-        .file-upload {
-            border: 2px dashed #ccc;
-            padding: 20px;
+        .upload-box {
+            border: 2px dashed #bbb;
+            padding: 15px;
             text-align: center;
             cursor: pointer;
-            border-radius: 5px;
-            background: #fafafa;
+            border-radius: 6px;
+            background: #f9f9f9;
         }
-        .file-upload:hover { background: #eee; border-color: var(--primary); }
+        .upload-box:hover { border-color: var(--primary); background: #eef6ff; }
 
-        /* MEDIA PRINT: Chỉ in phần hóa đơn */
+        /* CỘT PHẢI: HÓA ĐƠN */
+        .panel-preview {
+            width: 100%;
+            max-width: 480px;
+        }
+        
+        #invoice {
+            background: white;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+            position: relative;
+            font-family: 'Times New Roman', serif; /* Font giống giấy tờ */
+        }
+
+        .inv-header { text-align: center; margin-bottom: 20px; }
+        .inv-header h1 { margin: 0; font-size: 24px; text-transform: uppercase; color: #b30000; }
+        .inv-header p { margin: 5px 0; font-size: 14px; font-weight: bold; }
+        
+        .inv-meta { display: flex; justify-content: space-between; font-size: 13px; font-style: italic; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+        
+        .inv-section { margin-bottom: 10px; font-size: 15px; }
+        .inv-label { font-weight: bold; width: 120px; display: inline-block; }
+        
+        /* Bảng chi tiết tiền */
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+        .details-table th, .details-table td {
+            border: 1px solid #999;
+            padding: 8px;
+            text-align: left;
+        }
+        .details-table th { background: #eee; text-align: center; }
+        .details-table td:last-child { text-align: right; }
+
+        .total-section {
+            text-align: right;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 15px;
+            color: #b30000;
+        }
+
+        .cccd-area {
+            margin-top: 20px;
+            text-align: center;
+            border-top: 1px dashed #aaa;
+            padding-top: 10px;
+        }
+        .cccd-area img {
+            max-width: 100%;
+            max-height: 300px;
+            border: 1px solid #ccc;
+        }
+
+        /* Ẩn khi in */
         @media print {
-            body * { visibility: hidden; }
-            .invoice-container, .invoice-container * { visibility: visible; }
-            .invoice-container {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                margin: 0;
-                box-shadow: none;
-                border: none;
-            }
-            /* Ẩn các nút khi in */
-            .no-print { display: none; }
+            body { background: white; }
+            .panel-input, .btn-group { display: none; }
+            .panel-preview { max-width: 100%; width: 100%; box-shadow: none; }
+            #invoice { border: none; padding: 0; }
         }
     </style>
 </head>
 <body>
 
-    <!-- PANEL NHẬP LIỆU -->
-    <div class="input-panel no-print">
+    <!-- INPUT -->
+    <div class="panel-input">
         <h2>Lập Hóa Đơn BHYT</h2>
-        
+
         <div class="form-group">
-            <label>Người bán (Đại lý)</label>
+            <label>Đại lý thu (Người bán)</label>
             <select id="seller">
                 <option value="Lâm Minh Ngoãn">Lâm Minh Ngoãn</option>
                 <option value="Sơn Lý Hồng Đức">Sơn Lý Hồng Đức</option>
@@ -154,7 +164,7 @@
         </div>
 
         <div class="form-group">
-            <label>Họ tên người mua</label>
+            <label>Đại diện hộ gia đình (Người mua)</label>
             <input type="text" id="buyerName" placeholder="Ví dụ: Nguyễn Văn A">
         </div>
 
@@ -163,199 +173,220 @@
             <input type="number" id="buyerPhone" placeholder="09xxxxxxx">
         </div>
 
-        <div class="form-group">
-            <label>Gói bảo hiểm</label>
-            <select id="duration" onchange="updatePrice()">
-                <!-- Giá tạm tính theo lương cơ sở 2.340.000 (4.5%) -->
-                <option value="3">3 Tháng (315.900 đ)</option>
-                <option value="6">6 Tháng (631.800 đ)</option>
-                <option value="9">9 Tháng (947.700 đ)</option>
-                <option value="12" selected>12 Tháng (1.263.600 đ)</option>
-            </select>
+        <hr>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Thời hạn thẻ</label>
+                <select id="duration" onchange="renderInvoice()">
+                    <option value="3">3 Tháng</option>
+                    <option value="6">6 Tháng</option>
+                    <option value="9">9 Tháng</option>
+                    <option value="12" selected>1 Năm (12 tháng)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Ngày lập</label>
+                <input type="text" id="buyDate" readonly style="background:#eee; font-size:13px;">
+            </div>
         </div>
 
-        <div class="form-group">
-            <label>Ngày mua (Mặc định hiện tại)</label>
-            <input type="text" id="buyDate" readonly style="background: #eee;">
+        <div class="form-row">
+            <div class="form-group">
+                <label>Số lượng người mua</label>
+                <input type="number" id="qty" value="1" min="1" max="10" onchange="renderInvoice()">
+            </div>
+            <div class="form-group">
+                <label>Tính từ người thứ</label>
+                <input type="number" id="startTier" value="1" min="1" max="5" onchange="renderInvoice()">
+            </div>
         </div>
+        <p class="note">*Ví dụ: Mua cho cả nhà 4 người -> Chọn Số lượng: 4, Tính từ người thứ: 1.<br>
+        *Mua cho vợ (người thứ 2) do chồng đã có -> Chọn Số lượng: 1, Tính từ người thứ: 2.</p>
 
         <div class="form-group">
-            <label>Ảnh CCCD / Thẻ BHYT cũ</label>
-            <div class="file-upload" onclick="document.getElementById('cccdFile').click()">
-                <span id="fileName">Bấm để chọn ảnh...</span>
-                <input type="file" id="cccdFile" accept="image/*" style="display: none;" onchange="handleImageUpload(this)">
+            <label>Ảnh CCCD / Hồ sơ đính kèm</label>
+            <div class="upload-box" onclick="document.getElementById('fileInput').click()">
+                <span id="fileName">📂 Chọn ảnh...</span>
+                <input type="file" id="fileInput" hidden accept="image/*" onchange="handleImage(this)">
             </div>
         </div>
 
         <div class="btn-group">
-            <button class="btn-create" onclick="renderInvoice()">Cập nhật Hóa Đơn</button>
+            <button class="btn-update" onclick="renderInvoice()">Cập Nhật Giá</button>
         </div>
-        
         <div class="btn-group">
-            <button class="btn-print" onclick="window.print()">🖨️ In Hóa Đơn</button>
-            <button class="btn-download" onclick="downloadImage()">💾 Tải Ảnh Hóa Đơn</button>
+            <button class="btn-print" onclick="window.print()">In Phiếu</button>
+            <button class="btn-down" onclick="downloadImage()">Tải Ảnh</button>
         </div>
     </div>
 
-    <!-- KHUNG HIỂN THỊ HÓA ĐƠN -->
-    <div class="invoice-container">
+    <!-- PREVIEW HÓA ĐƠN -->
+    <div class="panel-preview">
         <div id="invoice">
             <div class="inv-header">
-                <h1>BIÊN LAI THU TIỀN</h1>
-                <p>DỊCH VỤ BẢO HIỂM Y TẾ TOÀN DÂN</p>
-                <p>----------------------------------</p>
+                <img src="https://upload.wikimedia.org/wikipedia/vi/9/91/Vietnam_Social_Security_Logo.png" style="height: 50px; margin-bottom:5px;">
+                <h1>Biên Lai Thu Tiền</h1>
+                <p>BẢO HIỂM Y TẾ HỘ GIA ĐÌNH</p>
             </div>
 
-            <div class="inv-content">
-                <div class="inv-row">
-                    <span class="inv-label">Mã hóa đơn:</span>
-                    <span id="invId">#HD0000</span>
-                </div>
-                <div class="inv-row">
-                    <span class="inv-label">Ngày lập:</span>
-                    <span id="outDate">...</span>
-                </div>
-                <div class="inv-row">
-                    <span class="inv-label">Người thu:</span>
-                    <span id="outSeller" style="text-transform: uppercase;">...</span>
-                </div>
-                <hr style="border: 0.5px dashed #ccc; margin: 10px 0;">
-                
-                <div class="inv-row">
-                    <span class="inv-label">Khách hàng:</span>
-                    <span id="outBuyer" style="font-weight: bold;">...</span>
-                </div>
-                <div class="inv-row">
-                    <span class="inv-label">SĐT:</span>
-                    <span id="outPhone">...</span>
-                </div>
-                <div class="inv-row">
-                    <span class="inv-label">Nội dung:</span>
-                    <span>Gia hạn/Mua mới BHYT</span>
-                </div>
-                <div class="inv-row">
-                    <span class="inv-label">Thời hạn:</span>
-                    <span id="outDuration">12 Tháng</span>
-                </div>
-                
-                <div class="inv-total">
-                    TỔNG TIỀN: <span id="outTotal" style="color: red;">1.263.600 đ</span>
-                </div>
-
-                <div class="footer-note">
-                    Cảm ơn quý khách đã sử dụng dịch vụ!<br>
-                    Vui lòng giữ lại hóa đơn để đối chiếu.
-                </div>
+            <div class="inv-meta">
+                <span id="outDate">Ngày: ...</span>
+                <span id="outSeller">NV Thu: ...</span>
             </div>
 
-            <!-- Khu vực hiển thị ảnh CCCD -->
-            <div class="cccd-preview" id="cccdArea" style="display: none;">
-                <p style="font-size: 12px; font-weight: bold; margin-bottom: 5px;">HỒ SƠ ĐÍNH KÈM (CCCD/CMND)</p>
-                <img id="outImage" src="" alt="Anh CCCD">
+            <div class="inv-section">
+                <div style="margin-bottom:5px;"><span class="inv-label">Người nộp:</span> <span id="outBuyer">...</span></div>
+                <div><span class="inv-label">Điện thoại:</span> <span id="outPhone">...</span></div>
+            </div>
+
+            <div class="inv-section" style="margin-top:10px;">
+                <span class="inv-label">Nội dung:</span> Thu tiền BHYT Hộ gia đình <b id="outDuration">12 tháng</b>
+            </div>
+
+            <!-- Bảng chi tiết tiền -->
+            <table class="details-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">STT</th>
+                        <th>Đối tượng</th>
+                        <th>Mức đóng (%)</th>
+                        <th>Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Dòng dữ liệu sẽ sinh ra ở đây -->
+                </tbody>
+            </table>
+
+            <div class="total-section">
+                TỔNG CỘNG: <span id="outTotal">0 đ</span>
+            </div>
+
+            <div style="text-align:center; font-style:italic; margin-top:20px; font-size:13px;">
+                (Biên lai này có giá trị đối chiếu khi nhận thẻ)<br>
+                Cảm ơn Quý khách!
+            </div>
+
+            <div class="cccd-area" id="cccdArea" style="display:none;">
+                <p style="font-weight:bold; font-size:12px;">HỒ SƠ ĐÍNH KÈM</p>
+                <img id="outImage" src="">
             </div>
         </div>
     </div>
 
     <script>
-        // Bảng giá (Dựa trên lương cơ sở 2.340.000 từ 1/7/2024 - 4.5%)
-        // 1 tháng = 105.300đ
-        const PRICE_LIST = {
-            "3": 315900,
-            "6": 631800,
-            "9": 947700,
-            "12": 1263600
-        };
+        // CẤU HÌNH GIÁ (Lương cơ sở 2.340.000)
+        const BASE_SALARY = 2340000;
+        const RATE = 0.045; // 4.5%
+        const ONE_MONTH_BASE = BASE_SALARY * RATE; // 105.300 vnđ
 
-        let currentImageBase64 = null;
+        // Mức đóng theo thứ tự: Người 1, 2, 3, 4, 5+
+        // Index 0 là người 1 (100%), Index 1 là người 2 (70%)...
+        const TIERS = [1.0, 0.7, 0.6, 0.5, 0.4]; 
 
-        // Khởi tạo ngày giờ mặc định khi tải trang
+        let currentImg = null;
+
         window.onload = function() {
-            updateRealTime();
-            setInterval(updateRealTime, 60000); // Cập nhật mỗi phút
-            renderInvoice(); // Render lần đầu
+            updateTime();
+            setInterval(updateTime, 60000);
+            renderInvoice();
         };
 
-        function updateRealTime() {
+        function updateTime() {
             const now = new Date();
-            const dateStr = now.toLocaleDateString('vi-VN');
-            const timeStr = now.toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'});
-            document.getElementById('buyDate').value = `${dateStr} ${timeStr}`;
+            document.getElementById('buyDate').value = now.toLocaleString('vi-VN');
         }
 
-        // Xử lý khi chọn ảnh
-        function handleImageUpload(input) {
+        function formatMoney(amount) {
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+        }
+
+        function handleImage(input) {
             if (input.files && input.files[0]) {
                 document.getElementById('fileName').innerText = input.files[0].name;
-                
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    currentImageBase64 = e.target.result;
-                    renderInvoice(); // Cập nhật lại hóa đơn ngay
-                }
+                    currentImg = e.target.result;
+                    renderInvoice();
+                };
                 reader.readAsDataURL(input.files[0]);
             }
         }
 
-        // Cập nhật giá khi đổi select
-        function updatePrice() {
-            // Chỉ cần gọi renderInvoice, giá sẽ tự tính
-        }
-
-        function formatCurrency(amount) {
-            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-        }
-
-        // Hàm chính: Đổ dữ liệu từ Form sang Hóa đơn
         function renderInvoice() {
-            // Lấy dữ liệu
+            // Lấy dữ liệu Input
             const seller = document.getElementById('seller').value;
             const buyer = document.getElementById('buyerName').value || "Khách lẻ";
             const phone = document.getElementById('buyerPhone').value || "---";
-            const duration = document.getElementById('duration').value;
-            const dateVal = document.getElementById('buyDate').value;
-            const price = PRICE_LIST[duration];
-
-            // Gán dữ liệu vào hóa đơn
-            // Tạo mã hóa đơn ngẫu nhiên dựa trên thời gian
-            const randomId = Math.floor(Math.random() * 10000);
-            // document.getElementById('invId').innerText = `#HD${randomId}`; // Nếu muốn mã đổi liên tục
+            const dateStr = document.getElementById('buyDate').value;
             
-            document.getElementById('outDate').innerText = dateVal;
-            document.getElementById('outSeller').innerText = seller;
+            const months = parseInt(document.getElementById('duration').value);
+            const qty = parseInt(document.getElementById('qty').value); // Số lượng người mua
+            const startTier = parseInt(document.getElementById('startTier').value); // Bắt đầu từ người thứ mấy (1-5)
+
+            // Điền thông tin cơ bản
+            document.getElementById('outSeller').innerText = "NV: " + seller;
             document.getElementById('outBuyer').innerText = buyer.toUpperCase();
             document.getElementById('outPhone').innerText = phone;
-            document.getElementById('outDuration').innerText = `${duration} Tháng`;
-            document.getElementById('outTotal').innerText = formatCurrency(price);
+            document.getElementById('outDate').innerText = dateStr;
+            document.getElementById('outDuration').innerText = `${months} tháng`;
 
-            // Xử lý ảnh CCCD
-            const cccdArea = document.getElementById('cccdArea');
-            const outImg = document.getElementById('outImage');
-            
-            if (currentImageBase64) {
-                cccdArea.style.display = 'block';
-                outImg.src = currentImageBase64;
+            // TÍNH TOÁN TIỀN
+            let totalAmount = 0;
+            let tableHtml = "";
+
+            for (let i = 0; i < qty; i++) {
+                // Xác định người này là người thứ mấy trong hộ
+                // Ví dụ: Bắt đầu từ người 1 -> i=0 -> currentPerson = 1
+                // Ví dụ: Bắt đầu từ người 2 -> i=0 -> currentPerson = 2
+                let currentPersonIndex = (startTier - 1) + i; 
+                
+                // Nếu vượt quá người thứ 5, vẫn tính là mức thứ 5 (index 4)
+                let tierIndex = currentPersonIndex;
+                if (tierIndex > 4) tierIndex = 4;
+
+                const percent = TIERS[tierIndex];
+                
+                // Tính tiền: (LươngCS * 4.5% * %GiảmTrừ * SốTháng)
+                // Làm tròn logic giống bảng giá Bưu điện: Math.round(Base * Month * Percent)
+                // Lưu ý: Phép tính chuẩn của BHXH là tính giá 1 tháng trước, sau đó nhân số tháng.
+                // Giá 1 tháng = 105.300 * Percent
+                let oneMonthPrice = ONE_MONTH_BASE * percent;
+                let finalPrice = oneMonthPrice * months;
+
+                totalAmount += finalPrice;
+
+                tableHtml += `
+                    <tr>
+                        <td style="text-align:center">${i + 1}</td>
+                        <td>Người thứ ${currentPersonIndex + 1}</td>
+                        <td style="text-align:center">${percent * 100}%</td>
+                        <td>${formatMoney(finalPrice)}</td>
+                    </tr>
+                `;
+            }
+
+            document.getElementById('tableBody').innerHTML = tableHtml;
+            document.getElementById('outTotal').innerText = formatMoney(totalAmount);
+
+            // Ảnh CCCD
+            const imgArea = document.getElementById('cccdArea');
+            if (currentImg) {
+                imgArea.style.display = 'block';
+                document.getElementById('outImage').src = currentImg;
             } else {
-                cccdArea.style.display = 'none';
+                imgArea.style.display = 'none';
             }
         }
 
-        // Chức năng tải ảnh hóa đơn
         function downloadImage() {
-            const invoiceElement = document.getElementById('invoice');
-            
-            // Dùng html2canvas chụp lại div #invoice
-            html2canvas(invoiceElement, {
-                scale: 2, // Tăng độ phân giải ảnh lên 2 lần cho nét
-                useCORS: true, // Hỗ trợ load ảnh
-                backgroundColor: "#ffffff"
-            }).then(canvas => {
-                // Tạo link tải về
+            const invoice = document.getElementById('invoice');
+            html2canvas(invoice, { scale: 2 }).then(canvas => {
                 const link = document.createElement('a');
                 link.download = `HoaDon_BHYT_${document.getElementById('buyerName').value}.png`;
                 link.href = canvas.toDataURL("image/png");
                 link.click();
-            }).catch(err => {
-                alert("Lỗi khi tạo ảnh: " + err);
             });
         }
     </script>
