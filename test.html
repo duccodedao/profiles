@@ -3,21 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Telegram Super App</title>
+    <title>Telegram Super App V3</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Thêm Font và Icon -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
         :root {
-            --bg-gradient: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-            --card-bg: rgba(255, 255, 255, 0.08);
-            --card-border: 1px solid rgba(255, 255, 255, 0.1);
-            --accent: #00c6ff;
-            --accent-grad: linear-gradient(90deg, #00c6ff, #0072ff);
+            --bg-gradient: radial-gradient(circle at top, #1a1a2e, #16213e, #0f3460);
+            --card-bg: rgba(22, 33, 62, 0.6);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+            --neon-blue: #00f2ff;
+            --neon-purple: #bd00ff;
             --text-main: #ffffff;
-            --text-sub: #b0b0b0;
+            --text-sub: #8a8d91;
         }
 
         body {
@@ -31,268 +30,258 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* Layout */
         .container {
-            padding: 20px 20px 100px 20px; /* Padding bottom cho Nav bar */
+            padding: 20px 20px 100px 20px;
             max-width: 480px;
             margin: 0 auto;
         }
 
-        /* Header Profile */
-        .profile-header {
+        /* 1. Header Info */
+        .header-card {
             display: flex;
             align-items: center;
-            gap: 15px;
-            margin-bottom: 25px;
+            justify-content: space-between;
+            margin-bottom: 30px;
         }
+        .user-block { display: flex; align-items: center; gap: 12px; }
+        .avatar { width: 50px; height: 50px; border-radius: 12px; border: 2px solid var(--neon-blue); box-shadow: 0 0 10px rgba(0, 242, 255, 0.3); }
+        .user-name { font-weight: 700; font-size: 16px; font-family: 'Rajdhani', sans-serif; }
+        .user-id { font-size: 12px; color: var(--text-sub); }
+        .balance-block { text-align: right; }
+        .balance-val { font-size: 24px; font-weight: 800; color: var(--neon-blue); text-shadow: 0 0 10px rgba(0,242,255,0.4); font-family: 'Rajdhani', sans-serif; }
+        .balance-lbl { font-size: 10px; color: var(--text-sub); text-transform: uppercase; }
 
-        .avatar {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            border: 2px solid var(--accent);
-            box-shadow: 0 0 15px rgba(0, 198, 255, 0.3);
-            object-fit: cover;
-        }
-
-        .user-info h2 { margin: 0; font-size: 18px; font-weight: 800; }
-        .user-info p { margin: 2px 0 0; color: var(--text-sub); font-size: 12px; }
-        .badge {
-            background: rgba(255, 215, 0, 0.2);
-            color: #ffd700;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: bold;
-            display: inline-block;
-            margin-top: 4px;
-        }
-
-        /* Main Score Display */
-        .main-score {
+        /* 2. Mining Section */
+        .mining-card {
             background: var(--card-bg);
-            backdrop-filter: blur(10px);
-            border: var(--card-border);
+            border: var(--glass-border);
+            backdrop-filter: blur(12px);
             border-radius: 20px;
-            padding: 25px;
-            text-align: center;
-            margin-bottom: 20px;
+            padding: 20px;
+            margin-bottom: 25px;
             position: relative;
             overflow: hidden;
         }
+        .mining-header { display: flex; justify-content: space-between; margin-bottom: 15px; }
+        .mining-title { font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .mining-timer { font-family: monospace; color: var(--neon-purple); font-weight: bold; }
         
-        .main-score::before {
-            content: '';
-            position: absolute;
-            top: -50%; left: -50%; width: 200%; height: 200%;
-            background: radial-gradient(circle, rgba(0,198,255,0.1) 0%, transparent 60%);
-            animation: rotate 10s linear infinite;
+        .progress-track {
+            height: 12px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+            box-shadow: 0 0 10px var(--neon-blue);
+            transition: width 1s linear;
         }
 
-        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-        .score-label { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-sub); }
-        .score-number { font-size: 42px; font-weight: 800; margin: 10px 0; background: var(--accent-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-
-        /* Action Buttons */
-        .btn-grad {
-            background: var(--accent-grad);
-            border: none;
-            color: white;
-            padding: 15px;
-            border-radius: 12px;
+        .btn-action {
             width: 100%;
-            font-weight: 600;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 700;
             font-size: 16px;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0, 114, 255, 0.3);
-            transition: transform 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: 0.3s;
         }
-        .btn-grad:active { transform: scale(0.97); }
-        .btn-grad.disabled { opacity: 0.6; filter: grayscale(1); pointer-events: none; }
-
-        /* Task List */
-        .section-title { font-size: 18px; margin-bottom: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
         
-        .task-item {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: var(--card-border);
-        }
-        .task-left { display: flex; align-items: center; gap: 12px; }
-        .task-icon { width: 32px; height: 32px; background: rgba(255,255,255,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
-        .task-reward { font-size: 12px; color: var(--accent); font-weight: bold; }
-        .btn-claim { background: rgba(255,255,255,0.1); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
-        .btn-claim.claimed { color: #00ff88; background: rgba(0, 255, 136, 0.1); }
+        .btn-start { background: rgba(0, 242, 255, 0.15); color: var(--neon-blue); border: 1px solid var(--neon-blue); }
+        .btn-claim { background: linear-gradient(90deg, #00f2ff, #0099ff); color: #000; box-shadow: 0 0 20px rgba(0,242,255,0.4); animation: pulse 1.5s infinite; }
+        .btn-disabled { background: rgba(255,255,255,0.05); color: #555; pointer-events: none; }
 
-        /* Navigation Bar */
-        .nav-bar {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+
+        /* 3. Wheel Section */
+        .wheel-container {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            margin: 20px auto;
+        }
+        .wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 4px solid var(--neon-purple);
+            background: conic-gradient(
+                #16213e 0deg 60deg,
+                #0f3460 60deg 120deg,
+                #16213e 120deg 180deg,
+                #0f3460 180deg 240deg,
+                #16213e 240deg 300deg,
+                #0f3460 300deg 360deg
+            );
+            position: relative;
+            transition: transform 4s cubic-bezier(0.25, 0.1, 0.25, 1);
+            box-shadow: 0 0 30px rgba(189, 0, 255, 0.2);
+        }
+        .wheel::before {
+            content: ''; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px; height: 40px;
+            background: #fff; border-radius: 50%;
+            z-index: 2; border: 4px solid var(--neon-purple);
+        }
+        .marker {
+            position: absolute; top: -10px; left: 50%;
             transform: translateX(-50%);
-            width: 90%;
-            max-width: 400px;
-            background: rgba(20, 20, 30, 0.9);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            display: flex;
-            justify-content: space-around;
-            padding: 15px 0;
-            border: 1px solid rgba(255,255,255,0.1);
-            z-index: 100;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-
-        .nav-item {
-            color: var(--text-sub);
-            text-align: center;
-            font-size: 10px;
-            cursor: pointer;
-            transition: color 0.3s;
-            width: 60px;
+            width: 0; height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 25px solid var(--neon-blue);
+            z-index: 5;
+            filter: drop-shadow(0 0 5px var(--neon-blue));
         }
         
-        .nav-item i { font-size: 20px; margin-bottom: 4px; display: block; }
-        .nav-item.active { color: var(--accent); }
-
-        /* Views Logic */
-        .view-section { display: none; animation: fadeIn 0.4s ease; }
-        .view-section.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Loader */
-        #loading-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 999;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        .wheel-item {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform-origin: 0 0;
+            font-size: 14px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 5px #000;
         }
-        .matrix-text { color: #00ff88; font-family: monospace; font-size: 12px; margin-top: 15px; }
 
-        /* Leaderboard specific */
-        .rank-item { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .rank-num { width: 30px; font-weight: bold; color: var(--text-sub); }
-        .rank-name { flex-grow: 1; margin-left: 10px; }
-        .rank-score { font-weight: bold; color: var(--accent); }
+        /* 4. Task List */
+        .task-row {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(255,255,255,0.03); border-radius: 12px;
+            padding: 12px 15px; margin-bottom: 10px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .task-icon { width: 36px; height: 36px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px; }
+        .reward-pill { font-size: 11px; color: var(--neon-blue); background: rgba(0, 242, 255, 0.1); padding: 2px 6px; border-radius: 4px; }
+
+        /* Nav Bar */
+        .nav-bar {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 85%; max-width: 400px;
+            background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(20px);
+            border-radius: 50px; border: 1px solid rgba(255,255,255,0.1);
+            display: flex; justify-content: space-between; padding: 10px 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5); z-index: 100;
+        }
+        .nav-item { color: #666; font-size: 20px; padding: 10px; border-radius: 50%; transition: 0.3s; position: relative; }
+        .nav-item.active { color: #fff; background: var(--neon-blue); box-shadow: 0 0 15px var(--neon-blue); transform: translateY(-5px); }
+        .nav-item.active i { color: #000; }
+
+        /* Views */
+        .view { display: none; animation: fadeUp 0.3s ease; }
+        .view.active { display: block; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
-    <!-- Loading Screen -->
-    <div id="loading-overlay">
-        <i class="fas fa-satellite-dish fa-spin fa-2x" style="color: var(--accent)"></i>
-        <div class="matrix-text" id="loading-text">INITIALIZING SYSTEM...</div>
-    </div>
-
     <div class="container">
-        <!-- VIEW: HOME -->
-        <div id="view-home" class="view-section active">
-            <div class="profile-header">
-                <img id="user-avatar" src="https://via.placeholder.com/60" class="avatar">
-                <div class="user-info">
-                    <h2 id="user-name">Loading...</h2>
-                    <p id="user-id">ID: ---</p>
-                    <span id="premium-badge" class="badge" style="display:none">PREMIUM USER</span>
+        <!-- Header -->
+        <div class="header-card">
+            <div class="user-block">
+                <img id="u-avatar" src="https://via.placeholder.com/50" class="avatar">
+                <div>
+                    <div class="user-name" id="u-name">...</div>
+                    <div class="user-id" id="u-id">ID: ...</div>
                 </div>
             </div>
+            <div class="balance-block">
+                <div class="balance-lbl">Points</div>
+                <div class="balance-val" id="u-balance">0</div>
+            </div>
+        </div>
 
-            <div class="main-score">
-                <div class="score-label">Tổng Điểm Của Bạn</div>
-                <div class="score-number" id="total-score">0</div>
-                <button class="btn-grad" id="check-btn" onclick="analyzeAccount()">
-                    <i class="fas fa-sync-alt"></i> Quét & Cập nhật
-                </button>
+        <!-- VIEW: HOME (Mining) -->
+        <div id="view-home" class="view active">
+            <!-- Thẻ Khai thác -->
+            <div class="mining-card">
+                <div class="mining-header">
+                    <div class="mining-title"><i class="fas fa-hammer"></i> Cloud Mining</div>
+                    <div class="mining-timer" id="mining-timer">00:00:00</div>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-bar" id="mining-bar"></div>
+                </div>
+                <p style="font-size: 12px; color: var(--text-sub); margin-bottom: 15px; text-align: center;">
+                    Tốc độ: <span style="color:white">50 Points/giờ</span>
+                </p>
+                <button id="mining-btn" class="btn-action btn-start" onclick="handleMining()">Start Mining</button>
             </div>
 
-            <div class="section-title"><i class="fas fa-calendar-check"></i> Điểm danh hàng ngày</div>
-            <div class="task-item">
-                <div class="task-left">
-                    <div class="task-icon">📅</div>
-                    <div>
-                        <div>Daily Check-in</div>
-                        <div class="task-reward">+100 Points</div>
-                    </div>
-                </div>
-                <button class="btn-claim" id="daily-btn" onclick="claimDaily()">Nhận</button>
+            <!-- Check Analysis (Feature cũ nhưng làm đẹp lại) -->
+             <div class="mining-card" style="padding: 15px;">
+                <div class="mining-title" style="margin-bottom: 10px;"><i class="fas fa-microchip"></i> Account Scan</div>
+                <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">Quét dữ liệu hoạt động để nhận điểm thưởng một lần.</p>
+                <button class="btn-action" style="background:#2a2a3e; color:white; font-size:12px; padding:10px" onclick="analyzeAccount()">Quét Ngay</button>
+            </div>
+        </div>
+
+        <!-- VIEW: GAME (Lucky Wheel) -->
+        <div id="view-game" class="view">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h2 style="margin: 0;">VÒNG QUAY</h2>
+                <p style="margin: 5px 0; font-size: 12px; color: #aaa;">Thử vận may mỗi ngày</p>
             </div>
             
-            <div class="section-title"><i class="fas fa-user-friends"></i> Mời bạn bè</div>
-             <div class="task-item" style="display: block; text-align: center;">
-                 <p style="font-size: 12px; color: #ccc; margin-bottom: 10px;">Nhận 10% số điểm từ bạn bè của bạn!</p>
-                 <button class="btn-grad" style="padding: 10px;" onclick="copyReferral()">
-                    <i class="fas fa-copy"></i> Copy Link Mời
-                 </button>
+            <div class="wheel-container">
+                <div class="marker"></div>
+                <div class="wheel" id="wheel">
+                    <!-- Text items được add bằng JS -->
+                </div>
             </div>
+            
+            <button id="spin-btn" class="btn-action btn-claim" style="margin-top: 20px;" onclick="spinWheel()">QUAY (Free)</button>
         </div>
 
         <!-- VIEW: TASKS -->
-        <div id="view-tasks" class="view-section">
-            <div class="section-title"><i class="fas fa-tasks"></i> Nhiệm vụ khả dụng</div>
-            <div id="task-list">
-                <!-- Task mẫu -->
-                <div class="task-item">
-                    <div class="task-left">
-                        <div class="task-icon"><i class="fab fa-telegram"></i></div>
-                        <div>
-                            <div>Tham gia Channel</div>
-                            <div class="task-reward">+500 PTS</div>
-                        </div>
+        <div id="view-tasks" class="view">
+            <h3 style="margin-bottom: 15px;">Nhiệm vụ</h3>
+            
+            <div class="task-row">
+                <div style="display:flex; align-items:center">
+                    <div class="task-icon"><i class="fab fa-telegram"></i></div>
+                    <div>
+                        <div style="font-weight:600; font-size:14px">Join Channel</div>
+                        <div class="reward-pill">+200</div>
                     </div>
-                    <button class="btn-claim" onclick="completeTask(this, 500)">Làm</button>
                 </div>
-                 <div class="task-item">
-                    <div class="task-left">
-                        <div class="task-icon"><i class="fab fa-twitter"></i></div>
-                        <div>
-                            <div>Follow Twitter (X)</div>
-                            <div class="task-reward">+300 PTS</div>
-                        </div>
+                <button class="btn-action" style="width:auto; padding: 6px 12px; font-size:12px" onclick="doTask(this, 200)">Go</button>
+            </div>
+
+            <div class="task-row">
+                <div style="display:flex; align-items:center">
+                    <div class="task-icon"><i class="fab fa-youtube"></i></div>
+                    <div>
+                        <div style="font-weight:600; font-size:14px">Watch Video</div>
+                        <div class="reward-pill">+150</div>
                     </div>
-                    <button class="btn-claim" onclick="completeTask(this, 300)">Làm</button>
                 </div>
+                <button class="btn-action" style="width:auto; padding: 6px 12px; font-size:12px" onclick="doTask(this, 150)">Go</button>
             </div>
         </div>
 
-        <!-- VIEW: LEADERBOARD -->
-        <div id="view-rank" class="view-section">
-            <div class="section-title"><i class="fas fa-trophy"></i> Top 10 Người Dùng</div>
-            <div class="main-score" style="padding: 15px;">
-                <div class="score-label">Xếp hạng của bạn</div>
-                <div style="font-size: 24px; font-weight: bold; margin-top: 5px;">#<span id="my-rank">--</span></div>
-            </div>
-            <div id="leaderboard-list" style="background: var(--card-bg); border-radius: 12px; border: var(--card-border);">
-                <div style="padding: 20px; text-align: center;">Đang tải dữ liệu...</div>
-            </div>
-        </div>
     </div>
 
-    <!-- Bottom Navigation -->
+    <!-- Bottom Nav -->
     <div class="nav-bar">
-        <div class="nav-item active" onclick="switchTab('home', this)">
-            <i class="fas fa-home"></i> Home
-        </div>
-        <div class="nav-item" onclick="switchTab('tasks', this)">
-            <i class="fas fa-scroll"></i> Tasks
-        </div>
-        <div class="nav-item" onclick="switchTab('rank', this)">
-            <i class="fas fa-chart-bar"></i> Rank
-        </div>
+        <div class="nav-item active" onclick="switchTab('home', this)"><i class="fas fa-home"></i></div>
+        <div class="nav-item" onclick="switchTab('game', this)"><i class="fas fa-gamepad"></i></div>
+        <div class="nav-item" onclick="switchTab('tasks', this)"><i class="fas fa-clipboard-list"></i></div>
     </div>
 
-    <!-- Firebase Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, orderBy, limit, getDocs, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // Config Firebase cũ của bạn
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
@@ -306,244 +295,259 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const tg = window.Telegram.WebApp;
-        
+
+        // Global State
         let currentUser = null;
-        let userData = null;
+        let userData = { score: 0, miningStart: null, lastSpin: null };
+        const MINING_TIME = 4 * 60 * 60 * 1000; // 4 tiếng (mili giây)
+        const MINING_REWARD = 200; // 200 điểm cho 4 tiếng
+        
+        // Wheel config
+        const wheelValues = [50, 0, 500, 100, 0, 1000]; // 6 phần
+        let currentRotation = 0;
 
-        // Init App
-        async function initApp() {
+        // Init
+        async function init() {
             tg.expand();
-            tg.enableClosingConfirmation();
+            tg.setHeaderColor('#1a1a2e');
             
-            // Lấy theme color từ Telegram để set status bar (nếu cần)
-            tg.setHeaderColor('#0f0c29'); 
-
             currentUser = tg.initDataUnsafe.user;
-            
-            // Môi trường test nếu không có Telegram
-            if (!currentUser) {
-                currentUser = { id: 123456789, first_name: "Test", last_name: "User", username: "tester", is_premium: true, photo_url: "https://via.placeholder.com/60" };
+            if(!currentUser) {
+                // Test mode
+                currentUser = { id: 99999, first_name: "Tester", username: "dev" };
             }
 
-            // Render UI cơ bản
-            document.getElementById('user-name').innerText = currentUser.first_name + (currentUser.last_name ? " " + currentUser.last_name : "");
-            document.getElementById('user-id').innerText = `ID: ${currentUser.id}`;
-            if(currentUser.photo_url) document.getElementById('user-avatar').src = currentUser.photo_url;
-            if(currentUser.is_premium) document.getElementById('premium-badge').style.display = 'inline-block';
+            // Render Info
+            document.getElementById('u-name').innerText = currentUser.first_name;
+            document.getElementById('u-id').innerText = "ID: " + currentUser.id;
+            if(currentUser.photo_url) document.getElementById('u-avatar').src = currentUser.photo_url;
 
-            // Load Data từ Firebase
-            await loadUserData();
+            // Load Data
+            await loadData();
             
-            // Ẩn loading
-            setTimeout(() => {
-                document.getElementById('loading-overlay').style.display = 'none';
-            }, 1000);
+            // Start Loop UI
+            setInterval(updateMiningUI, 1000);
+            renderWheelItems();
         }
 
-        // Load User Data
-        async function loadUserData() {
-            const userRef = doc(db, "users", currentUser.id.toString());
-            const docSnap = await getDoc(userRef);
-
-            if (docSnap.exists()) {
-                userData = docSnap.data();
-                document.getElementById('total-score').innerText = userData.score.toLocaleString();
-                checkDailyStatus();
+        async function loadData() {
+            const ref = doc(db, "users", currentUser.id.toString());
+            const snap = await getDoc(ref);
+            
+            if(snap.exists()) {
+                userData = snap.data();
+                // Fix lỗi nếu user cũ thiếu trường miningStart
+                if(!userData.miningStart) userData.miningStart = null;
             } else {
-                // User mới
-                userData = { score: 0, lastCheckin: null };
-                document.getElementById('total-score').innerText = "0";
-                // Tự động phân tích lần đầu cho user mới
-                // analyzeAccount(); -> Để user tự bấm thì hay hơn
+                // User mới chưa có data, tạo doc rỗng để tránh lỗi
+                await setDoc(ref, { 
+                    id: currentUser.id, 
+                    score: 0,
+                    firstName: currentUser.first_name
+                }, { merge: true });
+            }
+            updateBalanceUI();
+            updateMiningUI();
+        }
+
+        // --- CORE FUNCTIONS ---
+
+        function updateBalanceUI() {
+            document.getElementById('u-balance').innerText = Math.floor(userData.score).toLocaleString();
+        }
+
+        // 1. MINING LOGIC
+        window.handleMining = async () => {
+            const btn = document.getElementById('mining-btn');
+            const now = Date.now();
+            const ref = doc(db, "users", currentUser.id.toString());
+
+            // Case 1: Start Mining
+            if(!userData.miningStart) {
+                userData.miningStart = now;
+                await updateDoc(ref, { miningStart: now });
+                btn.innerText = "Mining...";
+                btn.className = "btn-action btn-disabled";
+                return;
+            }
+
+            // Case 2: Claim Reward
+            const elapsed = now - userData.miningStart;
+            if(elapsed >= MINING_TIME) {
+                // Claim
+                await updateDoc(ref, {
+                    score: increment(MINING_REWARD),
+                    miningStart: null // Reset
+                });
+                userData.score += MINING_REWARD;
+                userData.miningStart = null;
+                
+                updateBalanceUI();
+                tg.HapticFeedback.notificationOccurred('success');
+                tg.showAlert(`Đã nhận ${MINING_REWARD} điểm!`);
+                
+                // Reset UI
+                updateMiningUI();
+            }
+        };
+
+        function updateMiningUI() {
+            const btn = document.getElementById('mining-btn');
+            const timerEl = document.getElementById('mining-timer');
+            const barEl = document.getElementById('mining-bar');
+
+            if (!userData.miningStart) {
+                // Chưa đào
+                btn.innerText = "START MINING";
+                btn.className = "btn-action btn-start";
+                timerEl.innerText = "00:00:00";
+                barEl.style.width = "0%";
+                return;
+            }
+
+            const now = Date.now();
+            const elapsed = now - userData.miningStart;
+            
+            if (elapsed >= MINING_TIME) {
+                // Đã xong -> Hiện nút Claim
+                btn.innerText = "CLAIM REWARD";
+                btn.className = "btn-action btn-claim";
+                timerEl.innerText = "DONE!";
+                barEl.style.width = "100%";
+            } else {
+                // Đang chạy
+                btn.innerText = "MINING...";
+                btn.className = "btn-action btn-disabled";
+                
+                // Tính %
+                const percent = (elapsed / MINING_TIME) * 100;
+                barEl.style.width = `${percent}%`;
+
+                // Tính giờ còn lại
+                const remain = MINING_TIME - elapsed;
+                const h = Math.floor(remain / (1000 * 60 * 60));
+                const m = Math.floor((remain % (1000 * 60 * 60)) / (1000 * 60));
+                const s = Math.floor((remain % (1000 * 60)) / 1000);
+                timerEl.innerText = `${h}:${m < 10 ? '0'+m : m}:${s < 10 ? '0'+s : s}`;
             }
         }
 
-        // Tính năng 1: Phân tích tài khoản (Core cũ)
-        window.analyzeAccount = async () => {
-            const btn = document.getElementById('check-btn');
+        // 2. LUCKY WHEEL LOGIC
+        function renderWheelItems() {
+            const wheel = document.getElementById('wheel');
+            wheelValues.forEach((val, i) => {
+                const el = document.createElement('div');
+                el.className = 'wheel-item';
+                // Xoay text vào giữa múi (60 độ mỗi múi, offset 30 độ)
+                el.style.transform = `rotate(${i * 60 + 30}deg) translateY(-80px)`;
+                el.innerText = val > 0 ? val : "MISS";
+                wheel.appendChild(el);
+            });
+        }
+
+        window.spinWheel = async () => {
+            const btn = document.getElementById('spin-btn');
             if(btn.disabled) return;
             
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang quét...';
+            // Check cooldown (giả sử mỗi ngày 1 lần)
+            const today = new Date().toDateString();
+            if(userData.lastSpin === today) {
+                tg.showAlert("Hôm nay bạn đã quay rồi. Quay lại vào ngày mai!");
+                return;
+            }
+
             btn.disabled = true;
-
-            // Logic tính điểm
-            let ageScore = 0;
-            const idFactor = 7000000000 - currentUser.id;
-            if (idFactor > 0) ageScore += Math.floor(idFactor / 10000000); // Ví dụ công thức
-            if (currentUser.is_premium) ageScore += 5000;
-            if (currentUser.username) ageScore += 500;
             
-            // Giữ lại điểm cũ (nếu có) và cộng thêm điểm ageScore (nếu chưa từng nhận)
-            // Ở đây mình làm đơn giản: Update lại profile và set điểm nếu là lần đầu.
-            // Nếu user đã tồn tại, chỉ update thông tin, không reset điểm.
+            // Random kết quả (0-5)
+            const resultIndex = Math.floor(Math.random() * 6); 
+            // Góc quay thêm: 
+            // 6 múi, mỗi múi 60 độ.
+            // Kết quả rơi vào múi index, cần xoay sao cho múi đó nằm trên cùng (0 độ - marker).
+            // Công thức: Xoay ngược chiều kim đồng hồ.
+            const segmentAngle = 60;
+            const randomOffset = Math.floor(Math.random() * 40) - 20; // Random một chút trong múi
+            const rotateAngle = 360 * 5 + (360 - (resultIndex * segmentAngle)) + randomOffset; 
             
-            const userRef = doc(db, "users", currentUser.id.toString());
+            currentRotation += rotateAngle;
             
-            let finalScore = userData.score;
-            // Nếu score bằng 0 (user mới) thì cộng điểm tuổi thọ
-            if(userData.score === 0) {
-                finalScore = ageScore + 1000; // 1000 bonus
-            }
-
-            try {
-                await setDoc(userRef, {
-                    id: currentUser.id,
-                    username: currentUser.username || "",
-                    firstName: currentUser.first_name,
-                    lastName: currentUser.last_name || "",
-                    isPremium: currentUser.is_premium || false,
-                    score: finalScore,
-                    lastActive: serverTimestamp()
-                }, { merge: true }); // Merge để không mất fields khác
+            const wheel = document.getElementById('wheel');
+            wheel.style.transform = `rotate(${currentRotation}deg)`;
+            
+            // Đợi quay xong (4s)
+            setTimeout(async () => {
+                const points = wheelValues[resultIndex];
                 
-                userData.score = finalScore;
-                animateScore(finalScore);
-                tg.HapticFeedback.notificationOccurred('success');
-                btn.innerHTML = '<i class="fas fa-check"></i> Đã cập nhật';
-            } catch (e) {
-                console.error(e);
-                btn.innerHTML = 'Lỗi';
-            }
-            
-            setTimeout(() => { btn.disabled = false; btn.innerHTML = '<i class="fas fa-sync-alt"></i> Quét & Cập nhật'; }, 3000);
+                if(points > 0) {
+                    const ref = doc(db, "users", currentUser.id.toString());
+                    await updateDoc(ref, {
+                        score: increment(points),
+                        lastSpin: today
+                    });
+                    userData.score += points;
+                    userData.lastSpin = today;
+                    updateBalanceUI();
+                    
+                    tg.HapticFeedback.notificationOccurred('success');
+                    tg.showAlert(`Chúc mừng! Bạn nhận được ${points} điểm!`);
+                } else {
+                    tg.HapticFeedback.notificationOccurred('error');
+                    tg.showAlert("Tiếc quá! Chúc may mắn lần sau.");
+                    // Vẫn update lastSpin để chặn quay tiếp
+                    const ref = doc(db, "users", currentUser.id.toString());
+                    await updateDoc(ref, { lastSpin: today });
+                    userData.lastSpin = today;
+                }
+                
+                btn.disabled = false;
+                btn.innerText = "Mai quay tiếp nhé";
+                
+            }, 4000);
         };
 
-        // Tính năng 2: Daily Check-in
-        window.claimDaily = async () => {
-            const btn = document.getElementById('daily-btn');
-            if(btn.classList.contains('claimed')) return;
-
-            const today = new Date().toDateString();
-            const userRef = doc(db, "users", currentUser.id.toString());
-
-            try {
-                await updateDoc(userRef, {
-                    score: increment(100),
-                    lastCheckin: today
-                });
-                
-                userData.score += 100;
-                document.getElementById('total-score').innerText = userData.score.toLocaleString();
-                
-                btn.innerText = "Đã nhận";
-                btn.classList.add('claimed');
-                tg.HapticFeedback.notificationOccurred('success');
-                
-                // Show popup effect (đơn giản)
-                tg.showAlert("Bạn đã nhận được 100 điểm!");
-            } catch (e) {
-                console.log("User chưa có trong DB, cần analyze trước");
-                tg.showAlert("Vui lòng Quét tài khoản trước!");
+        // 3. SCAN LOGIC (Từ bản cũ, giữ lại để user có điểm khởi đầu)
+        window.analyzeAccount = async () => {
+            if(userData.score > 0) {
+                 tg.showAlert("Bạn đã nhận điểm phân tích rồi!");
+                 return;
             }
-        };
-
-        function checkDailyStatus() {
-            if(!userData.lastCheckin) return;
-            const today = new Date().toDateString();
-            if(userData.lastCheckin === today) {
-                const btn = document.getElementById('daily-btn');
-                btn.innerText = "Đã nhận";
-                btn.classList.add('claimed');
-            }
+            // Logic đơn giản
+            let pts = 1000 + (currentUser.is_premium ? 2000 : 0);
+            const ref = doc(db, "users", currentUser.id.toString());
+            await updateDoc(ref, { score: increment(pts) });
+            userData.score += pts;
+            updateBalanceUI();
+            tg.showAlert(`Đã nhận ${pts} điểm từ hồ sơ của bạn!`);
         }
 
-        // Tính năng 3: Leaderboard
-        window.loadLeaderboard = async () => {
-            const listDiv = document.getElementById('leaderboard-list');
-            listDiv.innerHTML = '<div style="padding:20px; text-align:center"><i class="fas fa-spinner fa-spin"></i></div>';
+        // 4. TASK LOGIC
+        window.doTask = async (btn, reward) => {
+             // Fake delay
+             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+             await new Promise(r => setTimeout(r, 2000));
+             
+             const ref = doc(db, "users", currentUser.id.toString());
+             await updateDoc(ref, { score: increment(reward) });
+             userData.score += reward;
+             updateBalanceUI();
+             
+             btn.innerText = "Done";
+             btn.disabled = true;
+             btn.style.background = "#2ecc71";
+        }
 
-            const q = query(collection(db, "users"), orderBy("score", "desc"), limit(10));
-            const querySnapshot = await getDocs(q);
+        // UI Switcher
+        window.switchTab = (name, el) => {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById('view-' + name).classList.add('active');
             
-            let html = '';
-            let index = 1;
-            querySnapshot.forEach((doc) => {
-                const u = doc.data();
-                const isMe = u.id === currentUser.id;
-                if(isMe) document.getElementById('my-rank').innerText = index;
-                
-                html += `
-                    <div class="rank-item" style="${isMe ? 'background:rgba(0,198,255,0.1)' : ''}">
-                        <div class="rank-num" style="color: ${index === 1 ? '#ffd700' : (index === 2 ? '#c0c0c0' : (index === 3 ? '#cd7f32' : 'inherit'))}">${index}</div>
-                        <div class="avatar" style="width:30px; height:30px; border-width:1px; margin-right:10px; background:#333"></div> 
-                        <div class="rank-name">
-                            ${u.firstName} ${u.isPremium ? '<i class="fas fa-star" style="color:#ffd700; font-size:10px"></i>' : ''}
-                        </div>
-                        <div class="rank-score">${u.score.toLocaleString()}</div>
-                    </div>
-                `;
-                index++;
-            });
-            listDiv.innerHTML = html;
-        }
-
-        // UI Helpers
-        window.switchTab = (tabName, el) => {
-            // Update Nav UI
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             el.classList.add('active');
-
-            // Hide all views
-            document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
-            
-            // Show target view
-            document.getElementById(`view-${tabName}`).classList.add('active');
-            
-            // Logic khi chuyển tab
-            if(tabName === 'rank') {
-                loadLeaderboard();
-            }
             tg.HapticFeedback.selectionChanged();
         };
 
-        window.completeTask = async (btn, points) => {
-            if(btn.innerText === "Xong") return;
-            
-            // Giả lập mở link
-            // window.open('https://t.me/your_channel', '_blank');
-            
-            // Giả lập delay check
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            await new Promise(r => setTimeout(r, 1500));
-            
-            // Cộng điểm
-            const userRef = doc(db, "users", currentUser.id.toString());
-            try {
-                await updateDoc(userRef, { score: increment(points) });
-                userData.score += points;
-                document.getElementById('total-score').innerText = userData.score.toLocaleString();
-                
-                btn.innerText = "Xong";
-                btn.classList.add('claimed');
-                tg.HapticFeedback.notificationOccurred('success');
-            } catch(e) {
-                tg.showAlert("Vui lòng Quét tài khoản trước!");
-                btn.innerText = "Làm";
-            }
-        };
-
-        window.copyReferral = () => {
-            const link = `https://t.me/YOUR_BOT_NAME?start=ref_${currentUser.id}`;
-            navigator.clipboard.writeText(link);
-            tg.showAlert("Đã copy link mời!");
-        }
-
-        function animateScore(target) {
-            let current = 0;
-            const el = document.getElementById('total-score');
-            const step = target / 50;
-            const interval = setInterval(() => {
-                current += step;
-                if(current >= target) {
-                    current = target;
-                    clearInterval(interval);
-                }
-                el.innerText = Math.floor(current).toLocaleString();
-            }, 10);
-        }
-
         // Run
-        initApp();
+        init();
+
     </script>
 </body>
 </html>
