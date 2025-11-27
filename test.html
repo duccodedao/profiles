@@ -2,391 +2,294 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Crypto Signal Analyzer</title>
-    <!-- Thư viện biểu đồ của TradingView -->
-    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Account Analyzer</title>
+    <!-- Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            --bg-color: #0f111a;
-            --panel-color: #1c1f2e;
-            --text-color: #d1d4dc;
-            --accent-color: #2962ff;
-            --green: #00b3a6;
-            --red: #f23645;
+            --tg-theme-bg-color: #1c1c1e;
+            --tg-theme-text-color: #ffffff;
+            --tg-theme-button-color: #2481cc;
+            --tg-theme-button-text-color: #ffffff;
+            --accent: #00ff88;
         }
 
         body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            background-color: var(--tg-theme-bg-color, #1c1c1e);
+            color: var(--tg-theme-text-color, #ffffff);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
             padding: 20px;
             display: flex;
             flex-direction: column;
-            height: 100vh;
-            box-sizing: border-box;
-        }
-
-        h1 { margin: 0 0 20px 0; font-size: 24px; color: #fff; }
-
-        .container {
-            display: flex;
-            gap: 20px;
-            height: 100%;
-        }
-
-        /* Sidebar Controls */
-        .sidebar {
-            width: 300px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .card {
-            background-color: var(--panel-color);
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        }
-
-        .input-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-size: 12px; color: #787b86; }
-        
-        input, select {
-            width: 100%;
-            padding: 10px;
-            background: #2a2e39;
-            border: 1px solid #363a45;
-            color: #fff;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-
-        button {
-            width: 100%;
-            padding: 12px;
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.3s;
-        }
-        button:hover { background-color: #1e4bd1; }
-        button:disabled { background-color: #555; cursor: not-allowed; }
-
-        /* Signal Box */
-        .signal-box { text-align: center; }
-        .signal-status { font-size: 28px; font-weight: bold; margin: 10px 0; }
-        .buy { color: var(--green); }
-        .sell { color: var(--red); }
-        .neutral { color: #888; }
-
-        .setup-details {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-top: 15px;
-            text-align: left;
-            font-size: 14px;
-        }
-
-        .setup-row { display: flex; justify-content: space-between; border-bottom: 1px solid #363a45; padding-bottom: 5px; }
-        .val-entry { color: #ebac00; font-weight: bold; }
-        .val-tp { color: var(--green); font-weight: bold; }
-        .val-sl { color: var(--red); font-weight: bold; }
-
-        /* Chart Area */
-        .chart-container {
-            flex-grow: 1;
-            background-color: var(--panel-color);
-            border-radius: 8px;
-            position: relative;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
             overflow: hidden;
         }
-        #chart { width: 100%; height: 100%; }
-        
-        .loading { display: none; text-align: center; color: var(--accent-color); font-weight: bold; }
+
+        /* Card Style */
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 30px;
+            width: 100%;
+            max-width: 350px;
+            text-align: center;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 2;
+        }
+
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin-bottom: 15px;
+            border: 3px solid var(--accent);
+            box-shadow: 0 0 15px var(--accent);
+            object-fit: cover;
+        }
+
+        h1 { font-size: 24px; margin-bottom: 5px; }
+        p { font-size: 14px; opacity: 0.7; margin-top: 0; }
+
+        .score-box {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(0, 255, 136, 0.1);
+            border-radius: 12px;
+            border: 1px dashed var(--accent);
+        }
+
+        .score-value {
+            font-size: 36px;
+            font-weight: bold;
+            color: var(--accent);
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+
+        .btn {
+            background-color: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #fff);
+            border: none;
+            padding: 14px 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s;
+        }
+
+        .btn:active { transform: scale(0.98); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* Loading Overlay */
+        #loading {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #000;
+            z-index: 10;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 3px solid transparent;
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .log-text {
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: var(--accent);
+            text-align: left;
+            width: 80%;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-    <h1>🤖 AI Crypto Analyzer (Mô phỏng dữ liệu Binance)</h1>
+    <!-- Màn hình chính -->
+    <div class="card" id="main-card">
+        <img id="user-avatar" src="https://via.placeholder.com/80" alt="User" class="avatar">
+        <h1 id="user-name">Guest</h1>
+        <p id="user-id">ID: ---</p>
 
-    <div class="container">
-        <!-- Sidebar Setup -->
-        <div class="sidebar">
-            <div class="card">
-                <div class="input-group">
-                    <label>Cặp tiền (VD: BTCUSDT, ETHUSDT)</label>
-                    <input type="text" id="symbol" value="BTCUSDT" style="text-transform: uppercase;">
-                </div>
-                <div class="input-group">
-                    <label>Khung thời gian</label>
-                    <select id="interval">
-                        <option value="15m">15 Phút</option>
-                        <option value="1h" selected>1 Giờ</option>
-                        <option value="4h">4 Giờ</option>
-                        <option value="1d">1 Ngày</option>
-                    </select>
-                </div>
-                <button onclick="runAnalysis()" id="btnAnalyze">🚀 Phân tích & Tìm Setup</button>
-                <div class="loading" id="loading">Đang tải dữ liệu & tính toán...</div>
-            </div>
-
-            <!-- Kết quả Phân tích -->
-            <div class="card signal-box" id="resultPanel" style="display:none;">
-                <label>TÍN HIỆU AI</label>
-                <div id="signalText" class="signal-status neutral">NEUTRAL</div>
-                
-                <div class="setup-details" id="setupDetails">
-                    <div class="setup-row">
-                        <span>Giá hiện tại:</span> <span id="currentPrice">--</span>
-                    </div>
-                    <div class="setup-row">
-                        <span>RSI (14):</span> <span id="rsiValue">--</span>
-                    </div>
-                    <div class="setup-row">
-                        <span>Xu hướng (EMA200):</span> <span id="trendValue">--</span>
-                    </div>
-                    
-                    <div id="tradeSetup" style="display:none; margin-top:10px; background:#2a2e39; padding:10px; border-radius:4px;">
-                        <div class="setup-row"><span>🎯 TP (Take Profit):</span> <span class="val-tp" id="tpPrice">--</span></div>
-                        <div class="setup-row"><span>⚡ Entry (Vào lệnh):</span> <span class="val-entry" id="entryPrice">--</span></div>
-                        <div class="setup-row"><span>🛑 STL (Stop Loss):</span> <span class="val-sl" id="slPrice">--</span></div>
-                        <div style="font-size:11px; margin-top:5px; color:#787b86;">*Setup tính theo ATR (Risk:Reward 1:2)</div>
-                    </div>
-                </div>
-            </div>
+        <div class="score-box hidden" id="result-box">
+            <div>ĐIỂM TÍN NHIỆM</div>
+            <div class="score-value" id="score">0</div>
+            <p style="font-size: 10px; margin-top: 5px;">Dữ liệu đã lưu vào Firebase</p>
         </div>
 
-        <!-- Chart -->
-        <div class="chart-container">
-            <div id="chart"></div>
+        <button class="btn" id="check-btn" onclick="startAnalysis()">Kiểm tra thông tin</button>
+    </div>
+
+    <!-- Màn hình Loading -->
+    <div id="loading">
+        <div class="loader"></div>
+        <div class="log-text" id="log-console">
+            > Initializing...<br>
         </div>
     </div>
 
-    <script>
-        // --- 1. CONFIG & INIT CHART ---
-        const chartElement = document.getElementById('chart');
-        const chart = LightweightCharts.createChart(chartElement, {
-            layout: { background: { color: '#1c1f2e' }, textColor: '#d1d4dc' },
-            grid: { vertLines: { color: '#2a2e39' }, horzLines: { color: '#2a2e39' } },
-            timeScale: { timeVisible: true, secondsVisible: false },
-        });
+    <!-- Firebase SDK (Modular) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const candleSeries = chart.addCandlestickSeries({
-            upColor: '#00b3a6', downColor: '#f23645', borderVisible: false, wickUpColor: '#00b3a6', wickDownColor: '#f23645'
-        });
-        
-        const emaSeries = chart.addLineSeries({ color: '#2962ff', lineWidth: 2, title: 'EMA 50' });
-        const emaSlowSeries = chart.addLineSeries({ color: '#ff9800', lineWidth: 2, title: 'EMA 200' });
+        // 1. Cấu hình Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
+            authDomain: "profile-d1214.firebaseapp.com",
+            projectId: "profile-d1214",
+            storageBucket: "profile-d1214.firebasestorage.app",
+            messagingSenderId: "914980131889",
+            appId: "1:914980131889:web:72f8da15c42dbee671b110",
+            measurementId: "G-C587M69LZW"
+        };
 
-        let currentCandles = [];
+        // Khởi tạo Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-        // --- 2. MATH FUNCTIONS (INDICATORS) ---
-        // Tính RSI
-        function calculateRSI(closes, period = 14) {
-            let gains = 0, losses = 0;
-            for (let i = 1; i <= period; i++) {
-                let change = closes[i] - closes[i - 1];
-                if (change > 0) gains += change;
-                else losses += Math.abs(change);
+        // 2. Khởi tạo Telegram Web App
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Mở rộng full màn hình
+
+        // Lấy dữ liệu user
+        const user = tg.initDataUnsafe.user;
+
+        // Xử lý giao diện ban đầu
+        if (user) {
+            document.getElementById('user-name').innerText = (user.first_name + ' ' + (user.last_name || '')).trim();
+            document.getElementById('user-id').innerText = `ID: ${user.id}`;
+            if (user.photo_url) {
+                document.getElementById('user-avatar').src = user.photo_url;
             }
-            let avgGain = gains / period;
-            let avgLoss = losses / period;
-            let rsis = new Array(period).fill(null); // Padding
-
-            for (let i = period + 1; i < closes.length; i++) {
-                let change = closes[i] - closes[i - 1];
-                let gain = change > 0 ? change : 0;
-                let loss = change < 0 ? Math.abs(change) : 0;
-                
-                avgGain = (avgGain * (period - 1) + gain) / period;
-                avgLoss = (avgLoss * (period - 1) + loss) / period;
-                
-                let rs = avgGain / avgLoss;
-                rsis.push(100 - (100 / (1 + rs)));
-            }
-            return rsis;
+        } else {
+            document.getElementById('user-name').innerText = "Vui lòng mở trên Telegram";
+            document.getElementById('check-btn').disabled = true;
         }
 
-        // Tính EMA
-        function calculateEMA(closes, period) {
-            let k = 2 / (period + 1);
-            let emaArray = [closes[0]];
-            for (let i = 1; i < closes.length; i++) {
-                emaArray.push(closes[i] * k + emaArray[i - 1] * (1 - k));
+        // 3. Hàm tính điểm (Logic quan trọng)
+        function calculateScore(user) {
+            let score = 1000; // Điểm cơ bản
+
+            // Tính điểm tuổi thọ dựa trên ID (ID càng nhỏ -> tạo càng sớm)
+            // Telegram ID hiện tại khoảng 7 tỷ (cho user mới 2024). Các user cũ có ID thấp hơn.
+            // Công thức giả lập:
+            const idFactor = 7000000000 - user.id;
+            if (idFactor > 0) {
+                score += Math.floor(idFactor / 10000000); // Mỗi 10 triệu đơn vị ID thấp hơn được cộng điểm
             }
-            return emaArray;
+
+            // Cộng điểm Premium (Độ hoạt động/Uy tín)
+            if (user.is_premium) {
+                score += 5000; // Premium được cộng nhiều điểm
+            }
+
+            // Cộng điểm có Username
+            if (user.username) {
+                score += 500;
+            }
+
+            return score;
         }
 
-        // Tính ATR (Độ biến động)
-        function calculateATR(highs, lows, closes, period = 14) {
-            let trs = [highs[0] - lows[0]];
-            for(let i=1; i < closes.length; i++) {
-                let hl = highs[i] - lows[i];
-                let hc = Math.abs(highs[i] - closes[i-1]);
-                let lc = Math.abs(lows[i] - closes[i-1]);
-                trs.push(Math.max(hl, hc, lc));
-            }
-            // Simple Moving Average of TR for ATR
-            let atrs = new Array(period-1).fill(null);
-            let sum = 0;
-            for(let i=0; i<period; i++) sum += trs[i];
-            atrs.push(sum/period);
+        // 4. Hàm chạy hiệu ứng và lưu data
+        window.startAnalysis = async () => {
+            if (!user) return;
+
+            const loadingEl = document.getElementById('loading');
+            const logEl = document.getElementById('log-console');
+            const btn = document.getElementById('check-btn');
+
+            loadingEl.style.display = 'flex';
             
-            for(let i=period; i<trs.length; i++) {
-                let prevATR = atrs[atrs.length-1];
-                atrs.push((prevATR * (period - 1) + trs[i]) / period);
-            }
-            return atrs;
-        }
-
-        // --- 3. LOGIC XỬ LÝ CHÍNH ---
-        async function runAnalysis() {
-            const symbol = document.getElementById('symbol').value.toUpperCase();
-            const interval = document.getElementById('interval').value;
-            const btn = document.getElementById('btnAnalyze');
-            const loading = document.getElementById('loading');
-            
-            btn.disabled = true;
-            loading.style.display = 'block';
+            // Hàm helper để tạo delay và log text
+            const log = async (text, delay = 500) => {
+                logEl.innerHTML += `> ${text}<br>`;
+                await new Promise(r => setTimeout(r, delay));
+            };
 
             try {
-                // Fetch data từ Binance API (Public)
-                const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=300`);
-                const data = await response.json();
+                // Hiệu ứng giả lập quét dữ liệu chuyên nghiệp
+                await log("Connecting to API...", 800);
+                await log(`Detected User ID: ${user.id}`, 600);
+                await log("Analyzing account age...", 1000);
+                
+                if(user.is_premium) {
+                    await log("PREMIUM ACCOUNT DETECTED [+5000]", 800);
+                }
+                
+                await log("Calculating activity metrics...", 1000);
+                await log("Syncing with Firebase Database...", 500);
 
-                if (!Array.isArray(data)) throw new Error("Lỗi cặp tiền hoặc mạng.");
+                // Tính toán thực tế
+                const finalScore = calculateScore(user);
 
-                // Parse Data
-                const times = [], opens = [], highs = [], lows = [], closes = [];
-                const chartData = data.map(d => {
-                    const time = d[0] / 1000;
-                    const open = parseFloat(d[1]);
-                    const high = parseFloat(d[2]);
-                    const low = parseFloat(d[3]);
-                    const close = parseFloat(d[4]);
-                    
-                    times.push(time);
-                    opens.push(open);
-                    highs.push(high);
-                    lows.push(low);
-                    closes.push(close);
-
-                    return { time, open, high, low, close };
+                // Lưu vào Firebase
+                await setDoc(doc(db, "users", user.id.toString()), {
+                    id: user.id,
+                    username: user.username || "No Username",
+                    firstName: user.first_name,
+                    lastName: user.last_name || "",
+                    isPremium: user.is_premium || false,
+                    language: user.language_code,
+                    score: finalScore,
+                    analyzedAt: serverTimestamp(),
+                    device: tg.platform
                 });
 
-                // Cập nhật biểu đồ
-                candleSeries.setData(chartData);
+                await log("SUCCESS. DATA SAVED.", 500);
 
-                // --- TÍNH TOÁN CHỈ BÁO ---
-                const ema50 = calculateEMA(closes, 50);
-                const ema200 = calculateEMA(closes, 200);
-                const rsi = calculateRSI(closes, 14);
-                const atr = calculateATR(highs, lows, closes, 14);
-
-                // Vẽ EMA lên biểu đồ
-                const ema50Data = chartData.map((d, i) => ({ time: d.time, value: ema50[i] }));
-                const ema200Data = chartData.map((d, i) => ({ time: d.time, value: ema200[i] }));
-                emaSeries.setData(ema50Data);
-                emaSlowSeries.setData(ema200Data);
-
-                // --- LOGIC PHÂN TÍCH TÍN HIỆU (AI LOGIC) ---
-                const lastIdx = closes.length - 1;
-                const price = closes[lastIdx];
-                const lastRSI = rsi[lastIdx];
-                const lastATR = atr[atr.length - 1]; // ATR array is shorter due to padding
-                const curEMA50 = ema50[lastIdx];
-                const curEMA200 = ema200[lastIdx];
-
-                let signal = "NEUTRAL";
-                let setup = null;
-
-                // Xác định xu hướng
-                const trend = price > curEMA200 ? "UPTREND (Tăng)" : "DOWNTREND (Giảm)";
-
-                // Chiến lược: Pullback theo xu hướng
-                // BUY: Giá > EMA200 (Uptrend) và RSI bị bán quá mức (<40) nhưng bắt đầu hồi
-                if (price > curEMA200 && price > curEMA50) {
-                    if (lastRSI < 45) { // Điều kiện mua sớm khi RSI thấp trong uptrend
-                        signal = "BUY / LONG";
-                        setup = {
-                            entry: price,
-                            sl: price - (2 * lastATR), // Stoploss dưới 2 ATR
-                            tp: price + (3 * lastATR)  // TP 3 ATR (RR 1.5)
-                        };
+                // Tắt loading, hiện kết quả
+                loadingEl.style.display = 'none';
+                btn.classList.add('hidden');
+                
+                const resultBox = document.getElementById('result-box');
+                resultBox.classList.remove('hidden');
+                
+                // Hiệu ứng chạy số điểm
+                let currentScore = 0;
+                const scoreEl = document.getElementById('score');
+                const interval = setInterval(() => {
+                    currentScore += 50;
+                    if (currentScore >= finalScore) {
+                        currentScore = finalScore;
+                        clearInterval(interval);
+                        // Haptic feedback (Rung điện thoại)
+                        tg.HapticFeedback.notificationOccurred('success');
                     }
-                }
-                // SELL: Giá < EMA200 (Downtrend) và RSI cao (>60)
-                else if (price < curEMA200 && price < curEMA50) {
-                    if (lastRSI > 55) {
-                        signal = "SELL / SHORT";
-                        setup = {
-                            entry: price,
-                            sl: price + (2 * lastATR),
-                            tp: price - (3 * lastATR)
-                        };
-                    }
-                }
-
-                // Hiển thị kết quả
-                document.getElementById('resultPanel').style.display = 'block';
-                const signalEl = document.getElementById('signalText');
-                signalEl.innerText = signal;
-                signalEl.className = `signal-status ${signal.includes('BUY') ? 'buy' : (signal.includes('SELL') ? 'sell' : 'neutral')}`;
-
-                document.getElementById('currentPrice').innerText = price.toFixed(2);
-                document.getElementById('rsiValue').innerText = lastRSI ? lastRSI.toFixed(2) : "N/A";
-                document.getElementById('trendValue').innerText = trend;
-
-                const tradeSetupDiv = document.getElementById('tradeSetup');
-                if (setup) {
-                    tradeSetupDiv.style.display = 'block';
-                    document.getElementById('tpPrice').innerText = setup.tp.toFixed(2);
-                    document.getElementById('entryPrice').innerText = setup.entry.toFixed(2);
-                    document.getElementById('slPrice').innerText = setup.sl.toFixed(2);
-
-                    // Vẽ marker lên chart
-                    const markerColor = signal.includes('BUY') ? '#00b3a6' : '#f23645';
-                    const markerText = signal.includes('BUY') ? 'BUY' : 'SELL';
-                    const markerPos = signal.includes('BUY') ? 'belowBar' : 'aboveBar';
-                    const markerShape = signal.includes('BUY') ? 'arrowUp' : 'arrowDown';
-
-                    candleSeries.setMarkers([
-                        {
-                            time: chartData[lastIdx].time,
-                            position: markerPos,
-                            color: markerColor,
-                            shape: markerShape,
-                            text: markerText,
-                        }
-                    ]);
-                } else {
-                    tradeSetupDiv.style.display = 'none';
-                    candleSeries.setMarkers([]);
-                }
-
-                // Auto scale chart
-                chart.timeScale().fitContent();
+                    scoreEl.innerText = currentScore.toLocaleString();
+                }, 10);
 
             } catch (error) {
-                alert("Lỗi: " + error.message);
                 console.error(error);
-            } finally {
-                btn.disabled = false;
-                loading.style.display = 'none';
+                logEl.innerHTML += `<span style="color:red">> ERROR: ${error.message}</span>`;
+                tg.HapticFeedback.notificationOccurred('error');
+                setTimeout(() => {
+                    loadingEl.style.display = 'none';
+                    alert("Lỗi khi lưu dữ liệu. Kiểm tra Console.");
+                }, 2000);
             }
-        }
-        
-        // Chạy resize chart khi đổi kích thước cửa sổ
-        window.addEventListener('resize', () => {
-            chart.resize(document.querySelector('.chart-container').clientWidth, document.querySelector('.chart-container').clientHeight);
-        });
+        };
     </script>
 </body>
 </html>
