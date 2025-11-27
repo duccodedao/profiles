@@ -3,241 +3,303 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TG Journey</title>
+    <title>System Core</title>
+    <!-- SDKs -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500&family=Lora:ital,wght@1,400;1,600&display=swap" rel="stylesheet">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
         :root {
-            --bg-color: #000000;
+            --bg: #050505;
+            --panel: rgba(20, 20, 25, 0.6);
+            --border: rgba(255, 255, 255, 0.08);
+            --accent: #00f0ff; /* Cyber Cyan */
+            --accent-glow: rgba(0, 240, 255, 0.4);
             --ton-blue: #0098EA;
+            --success: #00ff9d;
+            --error: #ff2a2a;
             --text-main: #ffffff;
-            --text-sub: #8E8E93;
-            --glass: rgba(255, 255, 255, 0.08);
-            --glass-border: 1px solid rgba(255, 255, 255, 0.1);
-            --success: #34c759;
-            --error: #ff3b30;
-            --code-font: 'JetBrains Mono', monospace;
+            --text-dim: #888;
+            --font-tech: 'Rajdhani', sans-serif;
+            --font-body: 'Inter', sans-serif;
         }
 
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
         body {
-            background-color: var(--bg-color);
+            background-color: var(--bg);
             color: var(--text-main);
-            font-family: 'Inter', sans-serif;
+            font-family: var(--font-body);
             margin: 0; padding: 0;
             height: 100vh; overflow: hidden;
             display: flex; flex-direction: column;
         }
 
-        /* UTILS */
-        .hidden { display: none !important; }
-        .fade-in { animation: fadeIn 0.5s ease forwards; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* --- BACKGROUND FX --- */
+        #bg-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; opacity: 0.6;
+        }
+        .scanline {
+            position: fixed; top: 0; left: 0; width: 100%; height: 2px;
+            background: rgba(0, 240, 255, 0.1);
+            animation: scan 3s linear infinite; z-index: 0; pointer-events: none;
+        }
+        @keyframes scan { 0% {top: -10%;} 100% {top: 110%;} }
 
-        /* LOADER */
+        /* --- LOADER --- */
         #loader {
             position: fixed; inset: 0; z-index: 9999;
             background: #000; display: flex;
             flex-direction: column; align-items: center; justify-content: center;
         }
-        .spinner {
-            width: 40px; height: 40px; border: 3px solid var(--glass);
-            border-top-color: var(--ton-blue); border-radius: 50%;
-            animation: spin 1s linear infinite;
+        .system-spinner {
+            width: 60px; height: 60px; border: 2px solid #222;
+            border-top: 2px solid var(--accent); border-radius: 50%;
+            animation: spin 0.8s linear infinite; box-shadow: 0 0 20px var(--accent-glow);
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        .boot-text {
+            margin-top: 20px; font-family: var(--font-tech); color: var(--accent);
+            letter-spacing: 2px; font-size: 14px; animation: blink 1s infinite;
+        }
+        @keyframes spin { to {transform: rotate(360deg);} }
+        @keyframes blink { 50% {opacity: 0.5;} }
 
-        /* SLIDES */
+        /* --- SLIDES SYSTEM --- */
+        .slide-container { position: relative; width: 100%; height: 100%; z-index: 2; }
+        
         .slide {
-            position: absolute; inset: 0; padding: 20px;
+            position: absolute; inset: 0; padding: 20px 20px 100px 20px;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none; transform: scale(0.95);
-            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-            text-align: center; overflow-y: auto;
+            opacity: 0; pointer-events: none; transform: scale(0.9) translateY(20px);
+            transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            text-align: center;
         }
-        .slide.active { opacity: 1; pointer-events: auto; transform: scale(1); }
+        .slide.active { opacity: 1; pointer-events: auto; transform: scale(1) translateY(0); }
 
-        h1 { font-family: 'Lora', serif; font-size: 32px; font-weight: 600; margin-bottom: 10px; font-style: italic; }
-        .big-number { font-size: 48px; font-weight: 800; color: var(--ton-blue); margin: 15px 0; letter-spacing: -1px; }
-        .chapter-label { font-size: 11px; letter-spacing: 2px; color: #555; text-transform: uppercase; margin-bottom: 5px; }
-
-        /* CAPTCHA BOX */
-        .captcha-box {
-            background: rgba(255,255,255,0.05); border: 1px solid var(--ton-blue);
-            border-radius: 12px; padding: 20px; margin-top: 20px;
-            width: 100%; max-width: 300px; text-align: center;
+        /* TYPOGRAPHY & ELEMENTS */
+        h1 {
+            font-family: var(--font-tech); font-weight: 700; font-size: 32px;
+            text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px;
+            text-shadow: 0 0 10px rgba(255,255,255,0.2);
         }
-        .captcha-display {
-            font-family: var(--code-font); font-size: 24px; letter-spacing: 5px;
-            background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px;
-            color: var(--ton-blue); margin-bottom: 15px; user-select: none;
-            text-decoration: line-through;
+        .subtitle { font-size: 12px; color: var(--accent); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 20px; }
+        
+        .data-display {
+            font-family: var(--font-tech); font-size: 56px; font-weight: 600;
+            color: var(--text-main); margin: 10px 0;
+            background: linear-gradient(180deg, #fff, #888);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        
+        .score-badge {
+            background: rgba(0, 240, 255, 0.05); border: 1px solid var(--accent);
+            color: var(--accent); padding: 8px 16px; border-radius: 4px;
+            font-family: var(--font-tech); font-weight: 600; font-size: 14px;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.1);
+        }
+
+        /* --- CAPTCHA GATE --- */
+        .security-gate {
+            background: var(--panel); border: 1px solid var(--border);
+            border-radius: 16px; padding: 25px; width: 100%; max-width: 320px;
+            backdrop-filter: blur(10px); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .captcha-screen {
+            background: #000; border: 1px solid #333; padding: 15px;
+            font-family: 'Courier New', monospace; letter-spacing: 8px; font-weight: bold;
+            font-size: 24px; color: var(--accent); text-align: center;
+            margin-bottom: 15px; text-decoration: line-through; opacity: 0.8;
+            border-radius: 4px;
         }
         .captcha-input {
-            width: 100%; padding: 12px; background: #222; border: 1px solid #444;
-            color: white; border-radius: 8px; text-align: center; font-size: 16px;
-            font-family: var(--code-font); margin-bottom: 10px; outline: none;
+            width: 100%; background: transparent; border: 1px solid #444; color: white;
+            padding: 12px; text-align: center; font-family: var(--font-tech); font-size: 18px;
+            border-radius: 4px; margin-bottom: 15px; outline: none; transition: 0.3s;
         }
-        .captcha-input:focus { border-color: var(--ton-blue); }
-        
-        .btn-verify {
-            width: 100%; padding: 12px; background: white; color: black;
-            border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
-        }
-        .btn-verify:active { transform: scale(0.98); }
+        .captcha-input:focus { border-color: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
 
-        /* WALLET DASHBOARD */
-        #view-wallet {
-            background: radial-gradient(circle at center top, #111 0%, #000 100%);
-            justify-content: flex-start; padding-top: 60px;
-        }
-        .token-card {
-            background: var(--glass); border: var(--glass-border);
-            border-radius: 20px; padding: 30px; width: 100%; max-width: 340px;
-            margin-bottom: 20px; text-align: center;
-        }
-        .token-amount { font-size: 50px; font-weight: 800; margin: 10px 0; }
+        /* --- DASHBOARD --- */
+        #view-dashboard { justify-content: flex-start; padding-top: 50px; }
         
-        .wallet-manager {
+        .balance-card {
             width: 100%; max-width: 340px;
-            background: rgba(255,255,255,0.03); border-radius: 12px; padding: 15px;
-            margin-bottom: 20px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
+            border: 1px solid var(--border); border-radius: 20px; padding: 25px;
+            text-align: center; margin-bottom: 25px; position: relative; overflow: hidden;
         }
-        .status-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #444; display: inline-block; margin-right: 5px; }
-        .status-dot.connected { background: var(--success); box-shadow: 0 0 10px var(--success); }
-        
-        .btn-disconnect {
-            background: rgba(255, 59, 48, 0.1); color: var(--error); border: 1px solid var(--error);
-            padding: 8px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;
+        .balance-card::after {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
         }
+        .token-val { font-family: var(--font-tech); font-size: 48px; font-weight: 700; color: white; margin: 10px 0; }
+        .token-lbl { color: var(--accent); font-size: 12px; letter-spacing: 2px; font-weight: bold; }
 
-        .history-log {
-            font-family: var(--code-font); font-size: 10px; color: #666;
-            text-align: left; max-height: 80px; overflow-y: auto;
-            background: #000; padding: 10px; border-radius: 6px; margin-top: 10px;
+        /* WALLET MANAGER */
+        .connection-box {
+            width: 100%; max-width: 340px;
+            background: #0a0a0a; border: 1px solid #222; border-radius: 12px;
+            padding: 15px; margin-bottom: 20px;
         }
-        .log-entry { margin-bottom: 4px; border-bottom: 1px solid #222; padding-bottom: 2px; }
+        .status-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .status-indicator { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #666; font-family: var(--font-tech); text-transform: uppercase; }
+        .dot { width: 8px; height: 8px; background: #333; border-radius: 50%; }
+        .dot.active { background: var(--success); box-shadow: 0 0 8px var(--success); }
+        .btn-disconnect { background: transparent; border: 1px solid #333; color: #666; font-size: 10px; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
 
-        .deadline-box {
-            margin-top: 10px; font-size: 11px; color: #ff9f0a; 
-            border: 1px solid #ff9f0a; padding: 5px; border-radius: 4px; display: inline-block;
+        .log-terminal {
+            background: #000; border: 1px solid #111; padding: 10px; border-radius: 6px;
+            height: 80px; overflow-y: auto; font-family: 'Courier New', monospace;
+            font-size: 10px; color: #444; text-align: left;
         }
+        .log-line { margin-bottom: 2px; }
 
-        /* FOOTER */
-        .bottom-action {
+        /* WITHDRAW LOCK */
+        .withdraw-lock {
+            width: 100%; max-width: 340px;
+            background: repeating-linear-gradient(45deg, #111, #111 10px, #161616 10px, #161616 20px);
+            border: 1px solid #333; border-radius: 12px; padding: 20px;
+            text-align: center; cursor: not-allowed; transition: 0.2s;
+            position: relative; overflow: hidden;
+        }
+        .withdraw-lock:active { transform: scale(0.98); }
+        .lock-icon { font-size: 24px; color: #555; margin-bottom: 10px; }
+        .lock-text { color: #666; font-family: var(--font-tech); font-weight: bold; letter-spacing: 1px; }
+        .lock-date { font-size: 10px; color: #444; margin-top: 5px; }
+
+        /* ACTIONS */
+        .action-bar {
             position: fixed; bottom: 30px; left: 0; width: 100%;
             display: flex; justify-content: center; z-index: 50;
         }
-        .btn-next {
-            background: white; color: black; border: none;
-            padding: 14px 40px; border-radius: 30px; font-weight: bold;
-            width: 80%; max-width: 300px;
+        .btn-primary {
+            background: var(--text-main); color: #000; border: none;
+            padding: 16px 50px; border-radius: 4px; /* Sharp corners for tech look */
+            font-family: var(--font-tech); font-weight: 700; font-size: 18px;
+            letter-spacing: 1px; clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+            transition: all 0.2s; box-shadow: 0 0 20px rgba(255,255,255,0.1);
         }
+        .btn-primary:active { transform: scale(0.95); background: var(--accent); }
+
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
+    <div class="scanline"></div>
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- LOADING SCREEN -->
     <div id="loader">
-        <div class="spinner"></div>
+        <div class="system-spinner"></div>
+        <div class="boot-text">SYSTEM BOOT SEQUENCE...</div>
     </div>
 
-    <!-- STORY & VERIFICATION -->
-    <div id="story-container">
-        <!-- Story Slides 1-4 -->
-        <div class="slide" id="slide-1">
-            <i class="fab fa-telegram fa-4x" style="color: white; margin-bottom: 30px;"></i>
-            <h1 class="fade-in">The Digital Archives</h1>
-            <p style="color:var(--text-sub)">Analyzing your footprint...</p>
-        </div>
-        <div class="slide" id="slide-2">
-            <div class="chapter-label">CHAPTER I</div>
-            <h1>The Origin</h1>
-            <div class="big-number" id="val-year">...</div>
-            <div class="points-badge" id="score-age">+0 PTS</div>
-        </div>
-        <div class="slide" id="slide-3">
-            <div class="chapter-label">CHAPTER II</div>
-            <h1>The Elite</h1>
-            <div style="font-size: 60px; margin: 20px 0;"><i class="fas fa-star" style="color:#333" id="icon-premium"></i></div>
-            <div class="points-badge" id="score-premium">+0 PTS</div>
-        </div>
-        <div class="slide" id="slide-4">
-            <div class="chapter-label">CHAPTER III</div>
-            <h1>The Identity</h1>
-            <img id="user-avatar" src="" style="width:80px; height:80px; border-radius:50%; margin:20px 0;">
-            <div class="points-badge" id="score-identity">+0 PTS</div>
-        </div>
-
-        <!-- SLIDE 5: VERIFICATION -->
-        <div class="slide" id="slide-5">
-            <div class="chapter-label">FINAL STEP</div>
-            <h1>Human Verification</h1>
-            <p style="font-size:12px; color:#777; max-width:280px;">
-                Enter the system code below to prove you are not a bot and unlock your assets.
-            </p>
-
-            <div class="captcha-box">
-                <div class="captcha-display" id="captcha-code">LOADING</div>
-                <input type="text" class="captcha-input" id="captcha-input" placeholder="ENTER CODE" maxlength="6">
-                <button class="btn-verify" onclick="verifyCaptcha()">VERIFY & UNLOCK</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- DASHBOARD (POST-VERIFICATION) -->
-    <div class="slide" id="view-wallet" style="display:none;">
-        <div class="chapter-label" style="margin-top:20px">ASSET MANAGEMENT</div>
+    <!-- MAIN SLIDER -->
+    <div class="slide-container" id="main-container">
         
-        <div class="token-card">
-            <div style="font-size:12px; color:#aaa; margin-bottom:5px">CONVERTED BALANCE</div>
-            <div class="token-amount" id="wallet-balance">0</div>
-            <div style="color: var(--ton-blue); font-weight:bold">$TG TOKEN</div>
+        <!-- 1. INTRO -->
+        <div class="slide" id="slide-1">
+            <div style="width:80px; height:80px; border:1px solid var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:30px; box-shadow:0 0 20px var(--accent-glow)">
+                <i class="fab fa-telegram fa-3x" style="color:white"></i>
+            </div>
+            <div class="subtitle">IDENTITY SCAN</div>
+            <h1>Digital Legacy</h1>
+            <p style="color:var(--text-dim); font-size:14px; margin-top:10px">Initializing historical data analysis...</p>
         </div>
 
-        <!-- WALLET MANAGER -->
-        <div class="wallet-manager">
-            <div class="status-row">
-                <div style="font-size:12px; font-weight:bold">
-                    <span class="status-dot" id="dot-status"></span>
-                    <span id="txt-status">Not Connected</span>
-                </div>
-                <button class="btn-disconnect hidden" id="btn-disconnect" onclick="disconnectWallet()">
-                    Disconnect
-                </button>
-            </div>
+        <!-- 2. ORIGIN -->
+        <div class="slide" id="slide-2">
+            <div class="subtitle">DATA POINT 01</div>
+            <h1>Inception Year</h1>
+            <div class="data-display" id="val-year">0000</div>
+            <div class="score-badge" id="score-age">+0 EXP</div>
+        </div>
 
-            <!-- TON Connect Button Container -->
-            <div id="ton-connect-btn" style="display:flex; justify-content:center; margin-bottom:10px;"></div>
+        <!-- 3. PREMIUM -->
+        <div class="slide" id="slide-3">
+            <div class="subtitle">DATA POINT 02</div>
+            <h1>Account Tier</h1>
+            <i class="fas fa-crown" style="font-size:40px; color:#333; margin:20px 0;" id="icon-premium"></i>
+            <div class="score-badge" id="score-premium">+0 EXP</div>
+        </div>
+
+        <!-- 4. IDENTITY -->
+        <div class="slide" id="slide-4">
+            <div class="subtitle">DATA POINT 03</div>
+            <h1>User Profile</h1>
+            <img id="user-avatar" src="" style="width:80px; height:80px; border-radius:50%; border:2px solid var(--accent); margin:20px 0;">
+            <div class="score-badge" id="score-identity">+0 EXP</div>
+        </div>
+
+        <!-- 5. VERIFICATION -->
+        <div class="slide" id="slide-5">
+            <div class="subtitle">FINAL PROTOCOL</div>
+            <h1>Human Verify</h1>
+            <div style="margin-bottom:20px; color:var(--text-dim); font-size:12px">Authenticate to unlock assets</div>
             
-            <div class="deadline-box">
-                <i class="fas fa-exclamation-triangle"></i> Connect Deadline: <span id="deadline-timer">...</span>
-            </div>
-
-            <div style="margin-top:15px; text-align:left;">
-                <span style="font-size:10px; color:#555; text-transform:uppercase;">Connection Log</span>
-                <div class="history-log" id="history-log">
-                    <!-- Logs go here -->
-                </div>
+            <div class="security-gate">
+                <div class="captcha-screen" id="captcha-code">----</div>
+                <input type="text" class="captcha-input" id="captcha-input" placeholder="INPUT CODE" maxlength="6">
+                <button class="btn-primary" style="width:100%; font-size:14px; padding:12px;" onclick="verifyCaptcha()">AUTHENTICATE</button>
             </div>
         </div>
 
-        <div style="font-size:10px; color:#444; margin-top:20px">WITHDRAWAL OPENS: 31/12/2025</div>
+        <!-- 6. DASHBOARD -->
+        <div class="slide" id="view-dashboard">
+            <div class="subtitle">SYSTEM CORE</div>
+            
+            <div class="balance-card">
+                <div class="token-val" id="wallet-balance">0</div>
+                <div class="token-lbl">$TG ALLOCATION</div>
+            </div>
+
+            <div class="connection-box">
+                <div class="status-header">
+                    <div class="status-indicator">
+                        <span class="dot" id="dot-status"></span>
+                        <span id="txt-status">DISCONNECTED</span>
+                    </div>
+                    <button class="btn-disconnect hidden" id="btn-disconnect" onclick="disconnectWallet()">Unlink</button>
+                </div>
+
+                <div id="ton-connect-btn" style="display:flex; justify-content:center;"></div>
+                
+                <div style="margin-top:15px; text-align:left;">
+                    <div style="display:flex; justify-content:space-between; font-size:10px; color:#555; margin-bottom:5px;">
+                        <span>EVENT LOGS</span>
+                        <span style="color:#ff9f0a" id="deadline-timer">Sync Required</span>
+                    </div>
+                    <div class="log-terminal" id="history-log">
+                        <div class="log-line">> System initialized...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LOCKED BUTTON -->
+            <div class="withdraw-lock" id="btn-withdraw">
+                <div class="lock-icon"><i class="fas fa-lock"></i></div>
+                <div class="lock-text">WITHDRAWAL PROTOCOL</div>
+                <div class="lock-date">UNLOCKS: 31 DEC 2025</div>
+            </div>
+        </div>
+
     </div>
 
-    <!-- FOOTER -->
-    <div class="bottom-action" id="nav-footer">
-        <button class="btn-next" id="btn-action" onclick="nextSlide()">Continue</button>
+    <!-- NAVIGATION -->
+    <div class="action-bar" id="nav-footer">
+        <button class="btn-primary" id="btn-action" onclick="nextSlide()">INITIALIZE</button>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // FIREBASE SETUP
+        // FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
@@ -263,46 +325,72 @@
         let scores = { total: 0 };
         let systemCode = "";
 
-        // INIT
-        async function init() {
-            if (!tg.initData) return document.body.innerHTML = "Access Denied"; // Basic check
-            tg.expand();
-            tg.setHeaderColor('#000000');
-            
-            currentUser = tg.initDataUnsafe.user;
-            if(!currentUser) return; // Handle error
+        // --- PARTICLE BACKGROUND ---
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        const particles = [];
+        for(let i=0; i<40; i++) {
+            particles.push({
+                x: Math.random()*canvas.width, y: Math.random()*canvas.height,
+                vx: (Math.random()-0.5)*0.5, vy: (Math.random()-0.5)*0.5,
+                size: Math.random()*2
+            });
+        }
+        function animateBG() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            ctx.fillStyle = 'rgba(0, 240, 255, 0.3)';
+            particles.forEach(p => {
+                p.x += p.vx; p.y += p.vy;
+                if(p.x<0 || p.x>canvas.width) p.vx*=-1;
+                if(p.y<0 || p.y>canvas.height) p.vy*=-1;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+            });
+            requestAnimationFrame(animateBG);
+        }
+        animateBG();
 
-            calculateScore(currentUser);
-            startDeadlineCountdown();
-            
-            // Generate Code for later
+        // --- INIT ---
+        async function init() {
+            if (!tg.initData) return;
+            tg.expand();
+            tg.setHeaderColor('#050505');
+            currentUser = tg.initDataUnsafe.user;
+            if(!currentUser) return;
+
+            // Generate Captcha
             systemCode = Math.random().toString(36).substring(2, 8).toUpperCase();
             document.getElementById('captcha-code').innerText = systemCode;
 
-            // CHECK DB STATUS
-            await checkUserDB();
+            // Calc Data
+            calculateScore(currentUser);
+            startDeadline();
+
+            // Setup Withdraw Button Haptic
+            document.getElementById('btn-withdraw').addEventListener('click', () => {
+                tg.HapticFeedback.notificationOccurred('error');
+                tg.showAlert("Protocol Locked. unlocks 31/12/2025");
+            });
+
+            await checkDB();
         }
 
-        async function checkUserDB() {
+        async function checkDB() {
             try {
                 const ref = doc(db, "users", currentUser.id.toString());
                 const snap = await getDoc(ref);
-                
                 document.getElementById('loader').style.display = 'none';
 
                 if (snap.exists()) {
                     const data = snap.data();
                     if (data.isAnalyzed) {
-                        // USER EXISTS -> SKIP STORY -> SHOW DASHBOARD
                         scores.total = data.score;
                         loadLogs(data.connectionLogs || []);
                         showDashboard();
                     } else {
-                        // PARTIALLY SAVED -> RESTART STORY
                         document.getElementById('slide-1').classList.add('active');
                     }
                 } else {
-                    // NEW USER -> START STORY
                     document.getElementById('slide-1').classList.add('active');
                 }
             } catch (e) { console.error(e); }
@@ -310,179 +398,159 @@
 
         function calculateScore(user) {
             let year = 2024;
-            const id = user.id;
-            if(id < 500000000) year = 2017;
-            else if(id < 1500000000) year = 2020;
+            if(user.id < 500000000) year = 2017;
+            else if(user.id < 1500000000) year = 2020;
             
-            let agePts = Math.floor((7000000000 - id) / 500000);
+            let agePts = Math.floor((7000000000 - user.id) / 500000);
             if(agePts < 100) agePts = 100;
-            
             let premPts = user.is_premium ? 5000 : 0;
             let idPts = (user.username ? 500 : 0) + (user.photo_url ? 300 : 0);
-            
             scores.total = agePts + premPts + idPts;
 
-            // Fill UI
-            document.getElementById('val-year').innerText = year;
-            document.getElementById('score-age').innerText = `+${agePts}`;
-            document.getElementById('score-premium').innerText = `+${premPts}`;
-            document.getElementById('score-identity').innerText = `+${idPts}`;
-            
-            if(user.is_premium) document.getElementById('icon-premium').style.color = "#FFD700";
+            // UI
+            animateValue('val-year', 0, year, 1000);
+            document.getElementById('score-age').innerText = `+${agePts} EXP`;
+            document.getElementById('score-premium').innerText = `+${premPts} EXP`;
+            document.getElementById('score-identity').innerText = `+${idPts} EXP`;
+            if(user.is_premium) document.getElementById('icon-premium').style.color = "#00f0ff";
             if(user.photo_url) document.getElementById('user-avatar').src = user.photo_url;
         }
 
-        // STORY NAVIGATION
+        // --- NAVIGATION ---
         window.nextSlide = () => {
             if (currentSlide >= 5) return;
+            tg.HapticFeedback.impactOccurred('light'); // Vibration
             
             document.getElementById(`slide-${currentSlide}`).classList.remove('active');
             currentSlide++;
             document.getElementById(`slide-${currentSlide}`).classList.add('active');
 
-            if (currentSlide === 5) {
-                document.getElementById('nav-footer').style.display = 'none'; // Hide continue button
-            }
+            const btn = document.getElementById('btn-action');
+            if (currentSlide === 5) btn.style.display = 'none';
+            else btn.innerText = "PROCEED";
         };
 
-        // CAPTCHA VERIFICATION
+        // --- CAPTCHA ---
         window.verifyCaptcha = async () => {
             const input = document.getElementById('captcha-input').value.toUpperCase();
             if (input === systemCode) {
                 tg.HapticFeedback.notificationOccurred('success');
                 
-                // SAVE USER & SCORE TO DB
                 const ref = doc(db, "users", currentUser.id.toString());
                 await setDoc(ref, {
                     id: currentUser.id,
                     username: currentUser.username || "",
                     score: scores.total,
-                    isAnalyzed: true, // Mark as Analyzed
+                    isAnalyzed: true,
                     lastSeen: serverTimestamp()
                 }, { merge: true });
 
                 showDashboard();
             } else {
                 tg.HapticFeedback.notificationOccurred('error');
-                tg.showAlert("Incorrect Code. Please try again.");
+                const box = document.querySelector('.security-gate');
+                box.style.border = "1px solid red";
+                setTimeout(() => box.style.border = "1px solid rgba(255,255,255,0.1)", 500);
                 document.getElementById('captcha-input').value = "";
             }
         };
 
-        // DASHBOARD LOGIC
         function showDashboard() {
-            document.getElementById('story-container').style.display = 'none';
+            document.getElementById('main-container').style.display = 'none';
             document.getElementById('nav-footer').style.display = 'none';
             
-            const dash = document.getElementById('view-wallet');
-            dash.style.display = 'flex';
+            const dash = document.getElementById('view-dashboard');
             dash.classList.add('active');
             
-            // Set Balance (Ratio 1:10)
-            const tokenBal = Math.floor(scores.total / 10);
-            document.getElementById('wallet-balance').innerText = tokenBal.toLocaleString();
+            const bal = Math.floor(scores.total / 10);
+            animateValue('wallet-balance', 0, bal, 1500);
         }
 
-        // WALLET CONNECTION & HISTORY
+        // --- WALLET & LOGS ---
         tonConnectUI.onStatusChange(async (wallet) => {
             if (wallet) {
-                // CONNECTED
                 const addr = wallet.account.address;
-                const shortAddr = addr.slice(0,4) + '...' + addr.slice(-4);
-                
-                updateStatusUI(true, shortAddr);
-                addLog(`CONNECTED: ${shortAddr}`);
-                
-                // Save log to DB
-                saveLogToDB("CONNECT", addr);
+                const short = addr.slice(0,4)+'...'+addr.slice(-4);
+                updateStatus(true, "LINKED: " + short);
+                addLog(`> LINK ESTABLISHED: ${short}`);
+                saveLog("CONNECT", addr);
             } else {
-                // DISCONNECTED
-                updateStatusUI(false);
+                updateStatus(false, "DISCONNECTED");
             }
         });
 
         window.disconnectWallet = async () => {
+            tg.HapticFeedback.impactOccurred('medium');
             await tonConnectUI.disconnect();
-            addLog("DISCONNECTED");
-            saveLogToDB("DISCONNECT", "N/A");
+            addLog("> LINK TERMINATED");
+            saveLog("DISCONNECT", "N/A");
         };
 
-        function updateStatusUI(isConnected, text = "") {
+        function updateStatus(connected, text) {
             const dot = document.getElementById('dot-status');
             const txt = document.getElementById('txt-status');
             const btn = document.getElementById('btn-disconnect');
-            const tonBtn = document.getElementById('ton-connect-btn');
-
-            if (isConnected) {
-                dot.classList.add('connected');
-                txt.innerText = text;
-                txt.style.color = "var(--ton-blue)";
-                txt.style.fontFamily = "monospace";
+            const ton = document.getElementById('ton-connect-btn');
+            
+            txt.innerText = text;
+            if(connected) {
+                dot.classList.add('active');
+                txt.style.color = "var(--success)";
                 btn.classList.remove('hidden');
-                tonBtn.style.display = 'none'; // Hide connect btn
+                ton.style.display = 'none';
             } else {
-                dot.classList.remove('connected');
-                txt.innerText = "Not Connected";
-                txt.style.color = "#777";
-                txt.style.fontFamily = "inherit";
+                dot.classList.remove('active');
+                txt.style.color = "#666";
                 btn.classList.add('hidden');
-                tonBtn.style.display = 'flex'; // Show connect btn
+                ton.style.display = 'flex';
             }
         }
 
-        function addLog(message) {
+        function addLog(msg) {
             const logBox = document.getElementById('history-log');
-            const time = new Date().toLocaleTimeString();
             const div = document.createElement('div');
-            div.className = 'log-entry';
-            div.innerText = `[${time}] ${message}`;
+            div.className = 'log-line';
+            div.innerText = msg;
             logBox.prepend(div);
         }
 
         function loadLogs(logs) {
-            // Load existing logs from DB on startup
-            if(!logs) return;
             const logBox = document.getElementById('history-log');
-            // Show last 5
-            logs.slice(-5).reverse().forEach(log => {
-                const date = log.timestamp ? new Date(log.timestamp.seconds * 1000).toLocaleTimeString() : "--:--";
+            logs.slice(-5).reverse().forEach(l => {
                 const div = document.createElement('div');
-                div.className = 'log-entry';
-                div.innerText = `[${date}] ${log.type}`;
+                div.className = 'log-line';
+                div.innerText = `> ${l.type} [${new Date(l.timestamp.seconds*1000).toLocaleTimeString()}]`;
                 logBox.appendChild(div);
             });
         }
 
-        async function saveLogToDB(type, address) {
+        async function saveLog(type, addr) {
             const ref = doc(db, "users", currentUser.id.toString());
-            const logEntry = {
-                type: type,
-                address: address,
-                timestamp: new Date()
-            };
-            await updateDoc(ref, {
-                connectionLogs: arrayUnion(logEntry)
-            }).catch(()=>{});
+            await updateDoc(ref, { connectionLogs: arrayUnion({type, address: addr, timestamp: new Date()}) }).catch(()=>{});
         }
 
-        // COUNTDOWN
-        function startDeadlineCountdown() {
-            // Withdraw is Dec 31, 2025. Connection Deadline is Dec 30, 2025.
-            const deadline = new Date("Dec 30, 2025 00:00:00").getTime();
-            
+        // --- UTILS ---
+        function animateValue(id, start, end, duration) {
+            const obj = document.getElementById(id);
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor(progress * (end - start) + start);
+                if (progress < 1) window.requestAnimationFrame(step);
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        function startDeadline() {
+            const end = new Date("Dec 30, 2025").getTime();
             setInterval(() => {
                 const now = new Date().getTime();
-                const dist = deadline - now;
-                
-                if (dist < 0) {
-                    document.getElementById('deadline-timer').innerText = "ENDED";
-                    return;
-                }
-                
-                const d = Math.floor(dist / (1000 * 60 * 60 * 24));
-                const h = Math.floor((dist % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                
-                document.getElementById('deadline-timer').innerText = `${d}d ${h}h left`;
+                const d = end - now;
+                if(d<0) return;
+                const days = Math.floor(d/(1000*60*60*24));
+                const hours = Math.floor((d%(1000*60*60*24))/(1000*60*60));
+                document.getElementById('deadline-timer').innerText = `DEADLINE: ${days}D ${hours}H`;
             }, 1000);
         }
 
