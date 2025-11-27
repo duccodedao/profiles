@@ -1,287 +1,191 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Telegram Super App V3</title>
+    <title>TG Analyzer</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
         :root {
-            --bg-gradient: radial-gradient(circle at top, #1a1a2e, #16213e, #0f3460);
-            --card-bg: rgba(22, 33, 62, 0.6);
-            --glass-border: 1px solid rgba(255, 255, 255, 0.08);
-            --neon-blue: #00f2ff;
-            --neon-purple: #bd00ff;
-            --text-main: #ffffff;
-            --text-sub: #8a8d91;
+            --bg-color: #0e1621;
+            --card-bg: #17212b;
+            --text-primary: #ffffff;
+            --text-secondary: #828a95;
+            --accent: #2b95ff; /* Telegram Blue */
+            --accent-glow: rgba(43, 149, 255, 0.4);
+            --premium: #a665f5;
         }
 
         body {
-            background: var(--bg-gradient);
-            color: var(--text-main);
+            background-color: var(--bg-color);
+            color: var(--text-primary);
             font-family: 'Inter', sans-serif;
             margin: 0;
-            padding: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             min-height: 100vh;
             overflow-x: hidden;
-            -webkit-tap-highlight-color: transparent;
         }
 
-        .container {
-            padding: 20px 20px 100px 20px;
-            max-width: 480px;
-            margin: 0 auto;
+        /* Loading / Scanning Effect */
+        #scan-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color);
+            z-index: 999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            font-family: 'Roboto Mono', monospace;
+        }
+        .scan-line {
+            width: 80%; height: 2px; background: var(--accent);
+            box-shadow: 0 0 15px var(--accent);
+            animation: scan 1.5s infinite alternate;
+        }
+        .scan-text { margin-top: 20px; color: var(--accent); font-size: 14px; }
+        @keyframes scan { from { transform: scaleX(0.2); } to { transform: scaleX(1); } }
+
+        /* Main UI */
+        .container { width: 100%; max-width: 420px; display: none; animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .logo-area { text-align: center; margin-bottom: 20px; }
+        .logo-circle {
+            width: 80px; height: 80px; background: var(--accent);
+            border-radius: 50%; margin: 0 auto 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 32px; font-weight: bold; color: white;
+            box-shadow: 0 0 30px var(--accent-glow);
         }
 
-        /* 1. Header Info */
-        .header-card {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 30px;
-        }
-        .user-block { display: flex; align-items: center; gap: 12px; }
-        .avatar { width: 50px; height: 50px; border-radius: 12px; border: 2px solid var(--neon-blue); box-shadow: 0 0 10px rgba(0, 242, 255, 0.3); }
-        .user-name { font-weight: 700; font-size: 16px; font-family: 'Rajdhani', sans-serif; }
-        .user-id { font-size: 12px; color: var(--text-sub); }
-        .balance-block { text-align: right; }
-        .balance-val { font-size: 24px; font-weight: 800; color: var(--neon-blue); text-shadow: 0 0 10px rgba(0,242,255,0.4); font-family: 'Rajdhani', sans-serif; }
-        .balance-lbl { font-size: 10px; color: var(--text-sub); text-transform: uppercase; }
-
-        /* 2. Mining Section */
-        .mining-card {
+        /* Score Card */
+        .score-card {
             background: var(--card-bg);
-            border: var(--glass-border);
-            backdrop-filter: blur(12px);
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 25px;
-            position: relative;
-            overflow: hidden;
-        }
-        .mining-header { display: flex; justify-content: space-between; margin-bottom: 15px; }
-        .mining-title { font-weight: 600; display: flex; align-items: center; gap: 8px; }
-        .mining-timer { font-family: monospace; color: var(--neon-purple); font-weight: bold; }
-        
-        .progress-track {
-            height: 12px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 6px;
-            overflow: hidden;
-            margin-bottom: 15px;
-        }
-        .progress-bar {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
-            box-shadow: 0 0 10px var(--neon-blue);
-            transition: width 1s linear;
-        }
-
-        .btn-action {
-            width: 100%;
-            padding: 14px;
-            border-radius: 12px;
-            border: none;
-            font-weight: 700;
-            font-size: 16px;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: 0.3s;
-        }
-        
-        .btn-start { background: rgba(0, 242, 255, 0.15); color: var(--neon-blue); border: 1px solid var(--neon-blue); }
-        .btn-claim { background: linear-gradient(90deg, #00f2ff, #0099ff); color: #000; box-shadow: 0 0 20px rgba(0,242,255,0.4); animation: pulse 1.5s infinite; }
-        .btn-disabled { background: rgba(255,255,255,0.05); color: #555; pointer-events: none; }
-
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
-
-        /* 3. Wheel Section */
-        .wheel-container {
-            position: relative;
-            width: 280px;
-            height: 280px;
-            margin: 20px auto;
-        }
-        .wheel {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            border: 4px solid var(--neon-purple);
-            background: conic-gradient(
-                #16213e 0deg 60deg,
-                #0f3460 60deg 120deg,
-                #16213e 120deg 180deg,
-                #0f3460 180deg 240deg,
-                #16213e 240deg 300deg,
-                #0f3460 300deg 360deg
-            );
-            position: relative;
-            transition: transform 4s cubic-bezier(0.25, 0.1, 0.25, 1);
-            box-shadow: 0 0 30px rgba(189, 0, 255, 0.2);
-        }
-        .wheel::before {
-            content: ''; position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 40px; height: 40px;
-            background: #fff; border-radius: 50%;
-            z-index: 2; border: 4px solid var(--neon-purple);
-        }
-        .marker {
-            position: absolute; top: -10px; left: 50%;
-            transform: translateX(-50%);
-            width: 0; height: 0;
-            border-left: 15px solid transparent;
-            border-right: 15px solid transparent;
-            border-top: 25px solid var(--neon-blue);
-            z-index: 5;
-            filter: drop-shadow(0 0 5px var(--neon-blue));
-        }
-        
-        .wheel-item {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform-origin: 0 0;
-            font-size: 14px;
-            font-weight: bold;
-            color: #fff;
-            text-shadow: 0 0 5px #000;
-        }
-
-        /* 4. Task List */
-        .task-row {
-            display: flex; justify-content: space-between; align-items: center;
-            background: rgba(255,255,255,0.03); border-radius: 12px;
-            padding: 12px 15px; margin-bottom: 10px;
+            border-radius: 16px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
             border: 1px solid rgba(255,255,255,0.05);
         }
-        .task-icon { width: 36px; height: 36px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px; }
-        .reward-pill { font-size: 11px; color: var(--neon-blue); background: rgba(0, 242, 255, 0.1); padding: 2px 6px; border-radius: 4px; }
+        .score-title { color: var(--text-secondary); font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+        .score-value { font-size: 48px; font-weight: 800; margin: 10px 0; color: var(--text-primary); }
+        .score-rank { display: inline-block; padding: 4px 12px; border-radius: 20px; background: rgba(255,255,255,0.1); font-size: 12px; }
 
-        /* Nav Bar */
-        .nav-bar {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            width: 85%; max-width: 400px;
-            background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(20px);
-            border-radius: 50px; border: 1px solid rgba(255,255,255,0.1);
-            display: flex; justify-content: space-between; padding: 10px 30px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5); z-index: 100;
+        /* Details List */
+        .detail-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
         }
-        .nav-item { color: #666; font-size: 20px; padding: 10px; border-radius: 50%; transition: 0.3s; position: relative; }
-        .nav-item.active { color: #fff; background: var(--neon-blue); box-shadow: 0 0 15px var(--neon-blue); transform: translateY(-5px); }
-        .nav-item.active i { color: #000; }
+        .detail-row:last-child { border-bottom: none; }
+        .detail-label { color: var(--text-secondary); font-size: 14px; display: flex; align-items: center; gap: 8px; }
+        .detail-val { font-weight: bold; font-family: 'Roboto Mono', monospace; }
+        .premium-text { color: var(--premium); text-shadow: 0 0 10px rgba(166, 101, 245, 0.4); }
 
-        /* Views */
-        .view { display: none; animation: fadeUp 0.3s ease; }
-        .view.active { display: block; }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Referral & Buttons */
+        .invite-card {
+            background: linear-gradient(135deg, #17212b, #1f2c3a);
+            border-radius: 16px; padding: 20px;
+            margin-bottom: 25px; text-align: center;
+            border: 1px solid rgba(43, 149, 255, 0.2);
+        }
+        .invite-btn {
+            background: var(--accent); color: white; border: none;
+            padding: 14px; width: 100%; border-radius: 10px;
+            font-weight: bold; font-size: 16px; cursor: pointer;
+            margin-top: 15px; box-shadow: 0 5px 15px var(--accent-glow);
+        }
+        .invite-btn:active { transform: scale(0.98); }
+
+        /* Leaderboard */
+        .leaderboard-section { margin-top: 20px; }
+        .lb-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        .lb-item {
+            background: var(--card-bg); padding: 15px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .lb-user { display: flex; align-items: center; gap: 10px; }
+        .lb-avatar { width: 32px; height: 32px; border-radius: 50%; background: #333; }
+        .lb-count { color: var(--accent); font-weight: bold; font-family: 'Roboto Mono'; }
+        
+        /* Language badge */
+        .lang-badge { position: absolute; top: 15px; right: 15px; font-size: 10px; opacity: 0.5; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <!-- Header -->
-        <div class="header-card">
-            <div class="user-block">
-                <img id="u-avatar" src="https://via.placeholder.com/50" class="avatar">
-                <div>
-                    <div class="user-name" id="u-name">...</div>
-                    <div class="user-id" id="u-id">ID: ...</div>
-                </div>
-            </div>
-            <div class="balance-block">
-                <div class="balance-lbl">Points</div>
-                <div class="balance-val" id="u-balance">0</div>
-            </div>
-        </div>
-
-        <!-- VIEW: HOME (Mining) -->
-        <div id="view-home" class="view active">
-            <!-- Thẻ Khai thác -->
-            <div class="mining-card">
-                <div class="mining-header">
-                    <div class="mining-title"><i class="fas fa-hammer"></i> Cloud Mining</div>
-                    <div class="mining-timer" id="mining-timer">00:00:00</div>
-                </div>
-                <div class="progress-track">
-                    <div class="progress-bar" id="mining-bar"></div>
-                </div>
-                <p style="font-size: 12px; color: var(--text-sub); margin-bottom: 15px; text-align: center;">
-                    Tốc độ: <span style="color:white">50 Points/giờ</span>
-                </p>
-                <button id="mining-btn" class="btn-action btn-start" onclick="handleMining()">Start Mining</button>
-            </div>
-
-            <!-- Check Analysis (Feature cũ nhưng làm đẹp lại) -->
-             <div class="mining-card" style="padding: 15px;">
-                <div class="mining-title" style="margin-bottom: 10px;"><i class="fas fa-microchip"></i> Account Scan</div>
-                <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">Quét dữ liệu hoạt động để nhận điểm thưởng một lần.</p>
-                <button class="btn-action" style="background:#2a2a3e; color:white; font-size:12px; padding:10px" onclick="analyzeAccount()">Quét Ngay</button>
-            </div>
-        </div>
-
-        <!-- VIEW: GAME (Lucky Wheel) -->
-        <div id="view-game" class="view">
-            <div style="text-align: center; margin-bottom: 20px;">
-                <h2 style="margin: 0;">VÒNG QUAY</h2>
-                <p style="margin: 5px 0; font-size: 12px; color: #aaa;">Thử vận may mỗi ngày</p>
-            </div>
-            
-            <div class="wheel-container">
-                <div class="marker"></div>
-                <div class="wheel" id="wheel">
-                    <!-- Text items được add bằng JS -->
-                </div>
-            </div>
-            
-            <button id="spin-btn" class="btn-action btn-claim" style="margin-top: 20px;" onclick="spinWheel()">QUAY (Free)</button>
-        </div>
-
-        <!-- VIEW: TASKS -->
-        <div id="view-tasks" class="view">
-            <h3 style="margin-bottom: 15px;">Nhiệm vụ</h3>
-            
-            <div class="task-row">
-                <div style="display:flex; align-items:center">
-                    <div class="task-icon"><i class="fab fa-telegram"></i></div>
-                    <div>
-                        <div style="font-weight:600; font-size:14px">Join Channel</div>
-                        <div class="reward-pill">+200</div>
-                    </div>
-                </div>
-                <button class="btn-action" style="width:auto; padding: 6px 12px; font-size:12px" onclick="doTask(this, 200)">Go</button>
-            </div>
-
-            <div class="task-row">
-                <div style="display:flex; align-items:center">
-                    <div class="task-icon"><i class="fab fa-youtube"></i></div>
-                    <div>
-                        <div style="font-weight:600; font-size:14px">Watch Video</div>
-                        <div class="reward-pill">+150</div>
-                    </div>
-                </div>
-                <button class="btn-action" style="width:auto; padding: 6px 12px; font-size:12px" onclick="doTask(this, 150)">Go</button>
-            </div>
-        </div>
-
+    <!-- Màn hình quét -->
+    <div id="scan-screen">
+        <i class="fab fa-telegram fa-3x" style="color: var(--accent); margin-bottom: 20px;"></i>
+        <div class="scan-line"></div>
+        <div class="scan-text" id="scan-status">INITIALIZING...</div>
     </div>
 
-    <!-- Bottom Nav -->
-    <div class="nav-bar">
-        <div class="nav-item active" onclick="switchTab('home', this)"><i class="fas fa-home"></i></div>
-        <div class="nav-item" onclick="switchTab('game', this)"><i class="fas fa-gamepad"></i></div>
-        <div class="nav-item" onclick="switchTab('tasks', this)"><i class="fas fa-clipboard-list"></i></div>
+    <!-- Giao diện chính -->
+    <div class="container" id="main-app">
+        <div class="lang-badge" id="lang-display">EN</div>
+        
+        <div class="logo-area">
+            <div class="logo-circle">TG</div>
+            <h2 id="welcome-text">Account Analyzer</h2>
+        </div>
+
+        <div class="score-card">
+            <div class="score-title" id="lbl-total-score">Điểm cống hiến</div>
+            <div class="score-value" id="user-score">0</div>
+            <div class="score-rank" id="account-rank">Newbie</div>
+            
+            <div style="margin-top: 20px; text-align: left;">
+                <div class="detail-row">
+                    <div class="detail-label"><i class="fas fa-id-card"></i> <span id="lbl-id">ID Telegram</span></div>
+                    <div class="detail-val" id="val-id">---</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label"><i class="fas fa-hourglass-half"></i> <span id="lbl-age">Tuổi thọ</span></div>
+                    <div class="detail-val" id="val-age">+0 PTS</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label"><i class="fas fa-star"></i> Premium</div>
+                    <div class="detail-val" id="val-premium">NO</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label"><i class="fas fa-language"></i> <span id="lbl-lang">Ngôn ngữ</span></div>
+                    <div class="detail-val" id="val-lang">---</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="invite-card">
+            <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 5px;" id="lbl-invite-desc">
+                Mời bạn bè để leo Top Leader
+            </div>
+            <div style="font-size: 24px; font-weight: bold; color: white;">
+                <span id="ref-count">0</span> <span style="font-size: 14px; font-weight: normal; color: #888;">Refs</span>
+            </div>
+            <button class="invite-btn" onclick="inviteFriend()" id="btn-invite">Mời bạn bè</button>
+        </div>
+
+        <div class="leaderboard-section">
+            <div class="lb-title">
+                <i class="fas fa-trophy" style="color: gold;"></i> <span id="lbl-top">Top Leaders</span>
+            </div>
+            <div id="lb-list">
+                <!-- Javascript will load this -->
+                <div style="text-align: center; color: #555; font-size: 12px;">Loading top inviters...</div>
+            </div>
+        </div>
     </div>
 
+    <!-- Firebase SDK & Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, query, orderBy, limit, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Config Firebase cũ của bạn
+        // 1. Cấu hình
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
@@ -296,256 +200,280 @@
         const db = getFirestore(app);
         const tg = window.Telegram.WebApp;
 
-        // Global State
-        let currentUser = null;
-        let userData = { score: 0, miningStart: null, lastSpin: null };
-        const MINING_TIME = 4 * 60 * 60 * 1000; // 4 tiếng (mili giây)
-        const MINING_REWARD = 200; // 200 điểm cho 4 tiếng
-        
-        // Wheel config
-        const wheelValues = [50, 0, 500, 100, 0, 1000]; // 6 phần
-        let currentRotation = 0;
+        // 2. Ngôn ngữ (Language Dictionary)
+        const translations = {
+            vi: {
+                welcome: "Phân Tích Tài Khoản",
+                totalScore: "ĐIỂM CỐNG HIẾN",
+                id: "ID Telegram",
+                age: "Độ lâu đời",
+                premium: "Premium",
+                lang: "Ngôn ngữ",
+                inviteDesc: "Mời bạn bè để đua Top Leader",
+                btnInvite: "Mời Bạn Bè Ngay",
+                top: "Top Trùm Mời",
+                scanning: "ĐANG QUÉT DỮ LIỆU...",
+                rankNew: "Người Mới",
+                rankOld: "Lão Làng",
+                rankOG: "Huyền Thoại",
+                refSuccess: "Đã ghi nhận người giới thiệu!"
+            },
+            en: {
+                welcome: "Account Analyzer",
+                totalScore: "TG SCORE",
+                id: "Telegram ID",
+                age: "Account Age",
+                premium: "Premium",
+                lang: "Language",
+                inviteDesc: "Invite friends to climb the Leaderboard",
+                btnInvite: "Invite Friends",
+                top: "Top Leaders",
+                scanning: "SCANNING DATA...",
+                rankNew: "Newbie",
+                rankOld: "Veteran",
+                rankOG: "Legend",
+                refSuccess: "Referral recorded!"
+            },
+            ru: {
+                welcome: "Анализ аккаунта",
+                totalScore: "TG СЧЕТ",
+                id: "Telegram ID",
+                age: "Возраст аккаунта",
+                premium: "Премиум",
+                lang: "Язык",
+                inviteDesc: "Пригласи друзей в топ",
+                btnInvite: "Пригласить",
+                top: "Топ Лидеров",
+                scanning: "СКАНИРОВАНИЕ...",
+                rankNew: "Новичок",
+                rankOld: "Ветеран",
+                rankOG: "Легенда",
+                refSuccess: "Реферал засчитан!"
+            }
+        };
 
-        // Init
+        let currentLang = 'en';
+        let currentUser = null;
+
+        // 3. Hàm tính điểm cống hiến
+        function calculateScore(user) {
+            let score = 0;
+            const details = { ageScore: 0, premiumScore: 0, id: user.id };
+
+            // A. Tính điểm tuổi thọ dựa trên ID
+            // ID càng nhỏ = càng già. 
+            // Giả sử ID hiện tại ~ 7.5 tỷ. Mỗi 100tr ID thấp hơn = +100 điểm.
+            // Công thức: (7.5 Tỷ - ID) / 500,000
+            const maxId = 7500000000; 
+            let agePoints = Math.floor((maxId - user.id) / 500000); 
+            if (agePoints < 0) agePoints = 100; // User mới tinh vẫn cho chút điểm
+            
+            score += agePoints;
+            details.ageScore = agePoints;
+
+            // B. Premium (+5000 điểm)
+            if (user.is_premium) {
+                score += 5000;
+                details.premiumScore = 5000;
+            }
+
+            // C. Username (+500 điểm)
+            if (user.username) score += 500;
+
+            return { total: score, details };
+        }
+
+        // 4. Khởi tạo & Dịch thuật
+        function setLanguage(langCode) {
+            // Mặc định en nếu không tìm thấy
+            currentLang = translations[langCode] ? langCode : 'en';
+            const t = translations[currentLang];
+            
+            document.getElementById('lang-display').innerText = langCode.toUpperCase();
+            document.getElementById('welcome-text').innerText = t.welcome;
+            document.getElementById('lbl-total-score').innerText = t.totalScore;
+            document.getElementById('lbl-id').innerText = t.id;
+            document.getElementById('lbl-age').innerText = t.age;
+            document.getElementById('lbl-lang').innerText = t.lang;
+            document.getElementById('lbl-invite-desc').innerText = t.inviteDesc;
+            document.getElementById('btn-invite').innerText = t.btnInvite;
+            document.getElementById('lbl-top').innerText = t.top;
+            document.getElementById('scan-status').innerText = t.scanning;
+        }
+
         async function init() {
             tg.expand();
-            tg.setHeaderColor('#1a1a2e');
+            tg.setHeaderColor('#0e1621');
             
+            // Lấy user
             currentUser = tg.initDataUnsafe.user;
-            if(!currentUser) {
-                // Test mode
-                currentUser = { id: 99999, first_name: "Tester", username: "dev" };
-            }
+            // Test user nếu chạy trên browser
+            if (!currentUser) currentUser = { id: 123456789, first_name: "Test", last_name: "User", username: "tester", language_code: "vi", is_premium: true };
 
-            // Render Info
-            document.getElementById('u-name').innerText = currentUser.first_name;
-            document.getElementById('u-id').innerText = "ID: " + currentUser.id;
-            if(currentUser.photo_url) document.getElementById('u-avatar').src = currentUser.photo_url;
+            // Detect Language
+            setLanguage(currentUser.language_code || 'en');
 
-            // Load Data
-            await loadData();
-            
-            // Start Loop UI
-            setInterval(updateMiningUI, 1000);
-            renderWheelItems();
-        }
-
-        async function loadData() {
-            const ref = doc(db, "users", currentUser.id.toString());
-            const snap = await getDoc(ref);
-            
-            if(snap.exists()) {
-                userData = snap.data();
-                // Fix lỗi nếu user cũ thiếu trường miningStart
-                if(!userData.miningStart) userData.miningStart = null;
-            } else {
-                // User mới chưa có data, tạo doc rỗng để tránh lỗi
-                await setDoc(ref, { 
-                    id: currentUser.id, 
-                    score: 0,
-                    firstName: currentUser.first_name
-                }, { merge: true });
-            }
-            updateBalanceUI();
-            updateMiningUI();
-        }
-
-        // --- CORE FUNCTIONS ---
-
-        function updateBalanceUI() {
-            document.getElementById('u-balance').innerText = Math.floor(userData.score).toLocaleString();
-        }
-
-        // 1. MINING LOGIC
-        window.handleMining = async () => {
-            const btn = document.getElementById('mining-btn');
-            const now = Date.now();
-            const ref = doc(db, "users", currentUser.id.toString());
-
-            // Case 1: Start Mining
-            if(!userData.miningStart) {
-                userData.miningStart = now;
-                await updateDoc(ref, { miningStart: now });
-                btn.innerText = "Mining...";
-                btn.className = "btn-action btn-disabled";
-                return;
-            }
-
-            // Case 2: Claim Reward
-            const elapsed = now - userData.miningStart;
-            if(elapsed >= MINING_TIME) {
-                // Claim
-                await updateDoc(ref, {
-                    score: increment(MINING_REWARD),
-                    miningStart: null // Reset
-                });
-                userData.score += MINING_REWARD;
-                userData.miningStart = null;
-                
-                updateBalanceUI();
-                tg.HapticFeedback.notificationOccurred('success');
-                tg.showAlert(`Đã nhận ${MINING_REWARD} điểm!`);
-                
-                // Reset UI
-                updateMiningUI();
-            }
-        };
-
-        function updateMiningUI() {
-            const btn = document.getElementById('mining-btn');
-            const timerEl = document.getElementById('mining-timer');
-            const barEl = document.getElementById('mining-bar');
-
-            if (!userData.miningStart) {
-                // Chưa đào
-                btn.innerText = "START MINING";
-                btn.className = "btn-action btn-start";
-                timerEl.innerText = "00:00:00";
-                barEl.style.width = "0%";
-                return;
-            }
-
-            const now = Date.now();
-            const elapsed = now - userData.miningStart;
-            
-            if (elapsed >= MINING_TIME) {
-                // Đã xong -> Hiện nút Claim
-                btn.innerText = "CLAIM REWARD";
-                btn.className = "btn-action btn-claim";
-                timerEl.innerText = "DONE!";
-                barEl.style.width = "100%";
-            } else {
-                // Đang chạy
-                btn.innerText = "MINING...";
-                btn.className = "btn-action btn-disabled";
-                
-                // Tính %
-                const percent = (elapsed / MINING_TIME) * 100;
-                barEl.style.width = `${percent}%`;
-
-                // Tính giờ còn lại
-                const remain = MINING_TIME - elapsed;
-                const h = Math.floor(remain / (1000 * 60 * 60));
-                const m = Math.floor((remain % (1000 * 60 * 60)) / (1000 * 60));
-                const s = Math.floor((remain % (1000 * 60)) / 1000);
-                timerEl.innerText = `${h}:${m < 10 ? '0'+m : m}:${s < 10 ? '0'+s : s}`;
-            }
-        }
-
-        // 2. LUCKY WHEEL LOGIC
-        function renderWheelItems() {
-            const wheel = document.getElementById('wheel');
-            wheelValues.forEach((val, i) => {
-                const el = document.createElement('div');
-                el.className = 'wheel-item';
-                // Xoay text vào giữa múi (60 độ mỗi múi, offset 30 độ)
-                el.style.transform = `rotate(${i * 60 + 30}deg) translateY(-80px)`;
-                el.innerText = val > 0 ? val : "MISS";
-                wheel.appendChild(el);
-            });
-        }
-
-        window.spinWheel = async () => {
-            const btn = document.getElementById('spin-btn');
-            if(btn.disabled) return;
-            
-            // Check cooldown (giả sử mỗi ngày 1 lần)
-            const today = new Date().toDateString();
-            if(userData.lastSpin === today) {
-                tg.showAlert("Hôm nay bạn đã quay rồi. Quay lại vào ngày mai!");
-                return;
-            }
-
-            btn.disabled = true;
-            
-            // Random kết quả (0-5)
-            const resultIndex = Math.floor(Math.random() * 6); 
-            // Góc quay thêm: 
-            // 6 múi, mỗi múi 60 độ.
-            // Kết quả rơi vào múi index, cần xoay sao cho múi đó nằm trên cùng (0 độ - marker).
-            // Công thức: Xoay ngược chiều kim đồng hồ.
-            const segmentAngle = 60;
-            const randomOffset = Math.floor(Math.random() * 40) - 20; // Random một chút trong múi
-            const rotateAngle = 360 * 5 + (360 - (resultIndex * segmentAngle)) + randomOffset; 
-            
-            currentRotation += rotateAngle;
-            
-            const wheel = document.getElementById('wheel');
-            wheel.style.transform = `rotate(${currentRotation}deg)`;
-            
-            // Đợi quay xong (4s)
+            // Hiệu ứng scan giả lập (2 giây)
             setTimeout(async () => {
-                const points = wheelValues[resultIndex];
-                
-                if(points > 0) {
-                    const ref = doc(db, "users", currentUser.id.toString());
-                    await updateDoc(ref, {
-                        score: increment(points),
-                        lastSpin: today
-                    });
-                    userData.score += points;
-                    userData.lastSpin = today;
-                    updateBalanceUI();
-                    
-                    tg.HapticFeedback.notificationOccurred('success');
-                    tg.showAlert(`Chúc mừng! Bạn nhận được ${points} điểm!`);
-                } else {
-                    tg.HapticFeedback.notificationOccurred('error');
-                    tg.showAlert("Tiếc quá! Chúc may mắn lần sau.");
-                    // Vẫn update lastSpin để chặn quay tiếp
-                    const ref = doc(db, "users", currentUser.id.toString());
-                    await updateDoc(ref, { lastSpin: today });
-                    userData.lastSpin = today;
-                }
-                
-                btn.disabled = false;
-                btn.innerText = "Mai quay tiếp nhé";
-                
-            }, 4000);
-        };
-
-        // 3. SCAN LOGIC (Từ bản cũ, giữ lại để user có điểm khởi đầu)
-        window.analyzeAccount = async () => {
-            if(userData.score > 0) {
-                 tg.showAlert("Bạn đã nhận điểm phân tích rồi!");
-                 return;
-            }
-            // Logic đơn giản
-            let pts = 1000 + (currentUser.is_premium ? 2000 : 0);
-            const ref = doc(db, "users", currentUser.id.toString());
-            await updateDoc(ref, { score: increment(pts) });
-            userData.score += pts;
-            updateBalanceUI();
-            tg.showAlert(`Đã nhận ${pts} điểm từ hồ sơ của bạn!`);
+                await processUser();
+            }, 2000);
         }
 
-        // 4. TASK LOGIC
-        window.doTask = async (btn, reward) => {
-             // Fake delay
-             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-             await new Promise(r => setTimeout(r, 2000));
-             
-             const ref = doc(db, "users", currentUser.id.toString());
-             await updateDoc(ref, { score: increment(reward) });
-             userData.score += reward;
-             updateBalanceUI();
-             
-             btn.innerText = "Done";
-             btn.disabled = true;
-             btn.style.background = "#2ecc71";
-        }
+        // 5. Xử lý Logic chính
+        async function processUser() {
+            document.getElementById('scan-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
 
-        // UI Switcher
-        window.switchTab = (name, el) => {
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.getElementById('view-' + name).classList.add('active');
+            const userRef = doc(db, "users", currentUser.id.toString());
+            const docSnap = await getDoc(userRef);
             
-            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-            el.classList.add('active');
-            tg.HapticFeedback.selectionChanged();
+            const calc = calculateScore(currentUser);
+            let finalScore = calc.total;
+            let referralCount = 0;
+
+            if (!docSnap.exists()) {
+                // --- USER MỚI ---
+                
+                // Xử lý Referral (Nếu có start_param)
+                const startParam = tg.initDataUnsafe.start_param;
+                if (startParam && startParam.startsWith('ref_')) {
+                    const referrerId = startParam.split('_')[1];
+                    if (referrerId && referrerId !== currentUser.id.toString()) {
+                        try {
+                            // Cộng ref cho người mời
+                            const refUserRef = doc(db, "users", referrerId);
+                            await updateDoc(refUserRef, { 
+                                referralCount: increment(1),
+                                score: increment(1000) // Người mời được cộng điểm
+                            });
+                        } catch (e) { console.log("Ref error", e); }
+                    }
+                }
+
+                // Lưu user mới
+                await setDoc(userRef, {
+                    id: currentUser.id,
+                    firstName: currentUser.first_name,
+                    username: currentUser.username || "",
+                    language: currentUser.language_code || "en",
+                    isPremium: currentUser.is_premium || false,
+                    score: finalScore,
+                    referralCount: 0,
+                    joinedAt: serverTimestamp()
+                });
+
+            } else {
+                // --- USER CŨ ---
+                const data = docSnap.data();
+                // Giữ nguyên điểm cũ, chỉ update thông tin mới (nếu cần logic update điểm real-time thì sửa ở đây)
+                // Ở đây mình ưu tiên hiển thị điểm đã lưu + ref count đã lưu
+                // Tuy nhiên nếu user mới mua Premium, cần update lại
+                if(currentUser.is_premium && !data.isPremium) {
+                    finalScore = data.score + 5000;
+                    await updateDoc(userRef, { isPremium: true, score: finalScore });
+                } else {
+                    finalScore = data.score;
+                }
+                referralCount = data.referralCount || 0;
+            }
+
+            // Render dữ liệu ra màn hình
+            updateUI(finalScore, calc.details, referralCount);
+            
+            // Load Leaderboard
+            loadLeaderboard();
+        }
+
+        function updateUI(score, details, refCount) {
+            // Hiệu ứng nhảy số
+            const scoreEl = document.getElementById('user-score');
+            scoreEl.innerText = score.toLocaleString();
+
+            document.getElementById('val-id').innerText = currentUser.id;
+            document.getElementById('val-age').innerText = `+${details.ageScore.toLocaleString()}`;
+            document.getElementById('val-lang').innerText = (currentUser.language_code || 'en').toUpperCase();
+            
+            const premEl = document.getElementById('val-premium');
+            if (currentUser.is_premium) {
+                premEl.innerHTML = '<i class="fas fa-check-circle"></i> YES (+5000)';
+                premEl.classList.add('premium-text');
+            } else {
+                premEl.innerText = "NO";
+            }
+
+            // Set Rank title
+            const t = translations[currentLang];
+            let rank = t.rankNew;
+            if (details.ageScore > 5000) rank = t.rankOld;
+            if (details.ageScore > 10000) rank = t.rankOG;
+            document.getElementById('account-rank').innerText = rank;
+
+            document.getElementById('ref-count').innerText = refCount;
+        }
+
+        // 6. Xử lý mời bạn bè
+        window.inviteFriend = () => {
+            const inviteLink = `https://t.me/YOUR_BOT_USERNAME?start=ref_${currentUser.id}`;
+            const msg = `Check my TG Account Score: ${document.getElementById('user-score').innerText}! Check yours now:`;
+            const url = `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encodeURIComponent(msg)}`;
+            tg.openTelegramLink(url);
         };
 
-        // Run
+        // 7. Load Leaderboard (Chỉ tính theo Referral Count)
+        async function loadLeaderboard() {
+            const lbList = document.getElementById('lb-list');
+            try {
+                // Query: Sort by referralCount DESC, limit 10
+                const q = query(collection(db, "users"), orderBy("referralCount", "desc"), limit(10));
+                const querySnapshot = await getDocs(q);
+                
+                let html = '';
+                let index = 1;
+
+                if (querySnapshot.empty) {
+                    lbList.innerHTML = '<div style="text-align:center; opacity:0.5; padding:10px">Chưa có dữ liệu</div>';
+                    return;
+                }
+
+                querySnapshot.forEach((doc) => {
+                    const u = doc.data();
+                    const isMe = u.id === currentUser.id;
+                    
+                    html += `
+                        <div class="lb-item" style="${isMe ? 'border:1px solid var(--accent)' : ''}">
+                            <div class="lb-user">
+                                <div style="width:20px; text-align:center; font-weight:bold; color:#666">#${index}</div>
+                                <div class="lb-avatar" style="background-color: ${stringToColor(u.firstName)}"></div>
+                                <div>
+                                    <div style="font-weight:600; font-size:14px">${u.firstName}</div>
+                                    <div style="font-size:10px; color:#888">${u.id}</div>
+                                </div>
+                            </div>
+                            <div class="lb-count">
+                                ${u.referralCount || 0} <i class="fas fa-user-friends" style="font-size:10px"></i>
+                            </div>
+                        </div>
+                    `;
+                    index++;
+                });
+                lbList.innerHTML = html;
+            } catch (error) {
+                console.error("LB Error:", error);
+                // Để chạy được orderBy, Firestore đôi khi yêu cầu tạo Index. 
+                // Nếu lỗi, mở Console trình duyệt xem link tạo index.
+                lbList.innerHTML = '<div style="color:red; font-size:10px; text-align:center">Cần tạo Index trên Firestore</div>';
+            }
+        }
+
+        // Helper: Tạo màu từ tên
+        function stringToColor(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+            return '#' + "00000".substring(0, 6 - c.length) + c;
+        }
+
+        // Start
         init();
 
     </script>
