@@ -3,157 +3,296 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Account Analyzer</title>
-    <!-- Telegram Web App SDK -->
+    <title>Telegram Super App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Thêm Font và Icon -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
     <style>
         :root {
-            --tg-theme-bg-color: #1c1c1e;
-            --tg-theme-text-color: #ffffff;
-            --tg-theme-button-color: #2481cc;
-            --tg-theme-button-text-color: #ffffff;
-            --accent: #00ff88;
+            --bg-gradient: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            --card-bg: rgba(255, 255, 255, 0.08);
+            --card-border: 1px solid rgba(255, 255, 255, 0.1);
+            --accent: #00c6ff;
+            --accent-grad: linear-gradient(90deg, #00c6ff, #0072ff);
+            --text-main: #ffffff;
+            --text-sub: #b0b0b0;
         }
 
         body {
-            background-color: var(--tg-theme-bg-color, #1c1c1e);
-            color: var(--tg-theme-text-color, #ffffff);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
             margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            padding: 0;
             min-height: 100vh;
-            overflow: hidden;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        /* Card Style */
-        .card {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            padding: 30px;
-            width: 100%;
-            max-width: 350px;
-            text-align: center;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            position: relative;
-            z-index: 2;
+        /* Layout */
+        .container {
+            padding: 20px 20px 100px 20px; /* Padding bottom cho Nav bar */
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        /* Header Profile */
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
         }
 
         .avatar {
-            width: 80px;
-            height: 80px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
-            margin-bottom: 15px;
-            border: 3px solid var(--accent);
-            box-shadow: 0 0 15px var(--accent);
+            border: 2px solid var(--accent);
+            box-shadow: 0 0 15px rgba(0, 198, 255, 0.3);
             object-fit: cover;
         }
 
-        h1 { font-size: 24px; margin-bottom: 5px; }
-        p { font-size: 14px; opacity: 0.7; margin-top: 0; }
-
-        .score-box {
-            margin: 20px 0;
-            padding: 15px;
-            background: rgba(0, 255, 136, 0.1);
-            border-radius: 12px;
-            border: 1px dashed var(--accent);
-        }
-
-        .score-value {
-            font-size: 36px;
+        .user-info h2 { margin: 0; font-size: 18px; font-weight: 800; }
+        .user-info p { margin: 2px 0 0; color: var(--text-sub); font-size: 12px; }
+        .badge {
+            background: rgba(255, 215, 0, 0.2);
+            color: #ffd700;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
             font-weight: bold;
-            color: var(--accent);
-            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+            display: inline-block;
+            margin-top: 4px;
         }
 
-        .btn {
-            background-color: var(--tg-theme-button-color, #2481cc);
-            color: var(--tg-theme-button-text-color, #fff);
+        /* Main Score Display */
+        .main-score {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: var(--card-border);
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .main-score::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(0,198,255,0.1) 0%, transparent 60%);
+            animation: rotate 10s linear infinite;
+        }
+
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        .score-label { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-sub); }
+        .score-number { font-size: 42px; font-weight: 800; margin: 10px 0; background: var(--accent-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        /* Action Buttons */
+        .btn-grad {
+            background: var(--accent-grad);
             border: none;
-            padding: 14px 20px;
+            color: white;
+            padding: 15px;
             border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
             width: 100%;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 114, 255, 0.3);
             transition: transform 0.2s;
-        }
-
-        .btn:active { transform: scale(0.98); }
-        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-        /* Loading Overlay */
-        #loading {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: #000;
-            z-index: 10;
-            display: none;
-            flex-direction: column;
+            display: flex;
             align-items: center;
             justify-content: center;
+            gap: 10px;
+        }
+        .btn-grad:active { transform: scale(0.97); }
+        .btn-grad.disabled { opacity: 0.6; filter: grayscale(1); pointer-events: none; }
+
+        /* Task List */
+        .section-title { font-size: 18px; margin-bottom: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        
+        .task-item {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: var(--card-border);
+        }
+        .task-left { display: flex; align-items: center; gap: 12px; }
+        .task-icon { width: 32px; height: 32px; background: rgba(255,255,255,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+        .task-reward { font-size: 12px; color: var(--accent); font-weight: bold; }
+        .btn-claim { background: rgba(255,255,255,0.1); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+        .btn-claim.claimed { color: #00ff88; background: rgba(0, 255, 136, 0.1); }
+
+        /* Navigation Bar */
+        .nav-bar {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 400px;
+            background: rgba(20, 20, 30, 0.9);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            display: flex;
+            justify-content: space-around;
+            padding: 15px 0;
+            border: 1px solid rgba(255,255,255,0.1);
+            z-index: 100;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        .loader {
-            width: 50px;
-            height: 50px;
-            border: 3px solid transparent;
-            border-top-color: var(--accent);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        .nav-item {
+            color: var(--text-sub);
+            text-align: center;
+            font-size: 10px;
+            cursor: pointer;
+            transition: color 0.3s;
+            width: 60px;
         }
+        
+        .nav-item i { font-size: 20px; margin-bottom: 4px; display: block; }
+        .nav-item.active { color: var(--accent); }
 
-        .log-text {
-            margin-top: 20px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            color: var(--accent);
-            text-align: left;
-            width: 80%;
+        /* Views Logic */
+        .view-section { display: none; animation: fadeIn 0.4s ease; }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Loader */
+        #loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
+        .matrix-text { color: #00ff88; font-family: monospace; font-size: 12px; margin-top: 15px; }
 
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        .hidden { display: none !important; }
+        /* Leaderboard specific */
+        .rank-item { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .rank-num { width: 30px; font-weight: bold; color: var(--text-sub); }
+        .rank-name { flex-grow: 1; margin-left: 10px; }
+        .rank-score { font-weight: bold; color: var(--accent); }
     </style>
 </head>
 <body>
 
-    <!-- Màn hình chính -->
-    <div class="card" id="main-card">
-        <img id="user-avatar" src="https://via.placeholder.com/80" alt="User" class="avatar">
-        <h1 id="user-name">Guest</h1>
-        <p id="user-id">ID: ---</p>
-
-        <div class="score-box hidden" id="result-box">
-            <div>ĐIỂM TÍN NHIỆM</div>
-            <div class="score-value" id="score">0</div>
-            <p style="font-size: 10px; margin-top: 5px;">Dữ liệu đã lưu vào Firebase</p>
-        </div>
-
-        <button class="btn" id="check-btn" onclick="startAnalysis()">Kiểm tra thông tin</button>
+    <!-- Loading Screen -->
+    <div id="loading-overlay">
+        <i class="fas fa-satellite-dish fa-spin fa-2x" style="color: var(--accent)"></i>
+        <div class="matrix-text" id="loading-text">INITIALIZING SYSTEM...</div>
     </div>
 
-    <!-- Màn hình Loading -->
-    <div id="loading">
-        <div class="loader"></div>
-        <div class="log-text" id="log-console">
-            > Initializing...<br>
+    <div class="container">
+        <!-- VIEW: HOME -->
+        <div id="view-home" class="view-section active">
+            <div class="profile-header">
+                <img id="user-avatar" src="https://via.placeholder.com/60" class="avatar">
+                <div class="user-info">
+                    <h2 id="user-name">Loading...</h2>
+                    <p id="user-id">ID: ---</p>
+                    <span id="premium-badge" class="badge" style="display:none">PREMIUM USER</span>
+                </div>
+            </div>
+
+            <div class="main-score">
+                <div class="score-label">Tổng Điểm Của Bạn</div>
+                <div class="score-number" id="total-score">0</div>
+                <button class="btn-grad" id="check-btn" onclick="analyzeAccount()">
+                    <i class="fas fa-sync-alt"></i> Quét & Cập nhật
+                </button>
+            </div>
+
+            <div class="section-title"><i class="fas fa-calendar-check"></i> Điểm danh hàng ngày</div>
+            <div class="task-item">
+                <div class="task-left">
+                    <div class="task-icon">📅</div>
+                    <div>
+                        <div>Daily Check-in</div>
+                        <div class="task-reward">+100 Points</div>
+                    </div>
+                </div>
+                <button class="btn-claim" id="daily-btn" onclick="claimDaily()">Nhận</button>
+            </div>
+            
+            <div class="section-title"><i class="fas fa-user-friends"></i> Mời bạn bè</div>
+             <div class="task-item" style="display: block; text-align: center;">
+                 <p style="font-size: 12px; color: #ccc; margin-bottom: 10px;">Nhận 10% số điểm từ bạn bè của bạn!</p>
+                 <button class="btn-grad" style="padding: 10px;" onclick="copyReferral()">
+                    <i class="fas fa-copy"></i> Copy Link Mời
+                 </button>
+            </div>
+        </div>
+
+        <!-- VIEW: TASKS -->
+        <div id="view-tasks" class="view-section">
+            <div class="section-title"><i class="fas fa-tasks"></i> Nhiệm vụ khả dụng</div>
+            <div id="task-list">
+                <!-- Task mẫu -->
+                <div class="task-item">
+                    <div class="task-left">
+                        <div class="task-icon"><i class="fab fa-telegram"></i></div>
+                        <div>
+                            <div>Tham gia Channel</div>
+                            <div class="task-reward">+500 PTS</div>
+                        </div>
+                    </div>
+                    <button class="btn-claim" onclick="completeTask(this, 500)">Làm</button>
+                </div>
+                 <div class="task-item">
+                    <div class="task-left">
+                        <div class="task-icon"><i class="fab fa-twitter"></i></div>
+                        <div>
+                            <div>Follow Twitter (X)</div>
+                            <div class="task-reward">+300 PTS</div>
+                        </div>
+                    </div>
+                    <button class="btn-claim" onclick="completeTask(this, 300)">Làm</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: LEADERBOARD -->
+        <div id="view-rank" class="view-section">
+            <div class="section-title"><i class="fas fa-trophy"></i> Top 10 Người Dùng</div>
+            <div class="main-score" style="padding: 15px;">
+                <div class="score-label">Xếp hạng của bạn</div>
+                <div style="font-size: 24px; font-weight: bold; margin-top: 5px;">#<span id="my-rank">--</span></div>
+            </div>
+            <div id="leaderboard-list" style="background: var(--card-bg); border-radius: 12px; border: var(--card-border);">
+                <div style="padding: 20px; text-align: center;">Đang tải dữ liệu...</div>
+            </div>
         </div>
     </div>
 
-    <!-- Firebase SDK (Modular) -->
+    <!-- Bottom Navigation -->
+    <div class="nav-bar">
+        <div class="nav-item active" onclick="switchTab('home', this)">
+            <i class="fas fa-home"></i> Home
+        </div>
+        <div class="nav-item" onclick="switchTab('tasks', this)">
+            <i class="fas fa-scroll"></i> Tasks
+        </div>
+        <div class="nav-item" onclick="switchTab('rank', this)">
+            <i class="fas fa-chart-bar"></i> Rank
+        </div>
+    </div>
+
+    <!-- Firebase Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, orderBy, limit, getDocs, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // 1. Cấu hình Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
@@ -164,132 +303,247 @@
             measurementId: "G-C587M69LZW"
         };
 
-        // Khởi tạo Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
-        // 2. Khởi tạo Telegram Web App
         const tg = window.Telegram.WebApp;
-        tg.expand(); // Mở rộng full màn hình
+        
+        let currentUser = null;
+        let userData = null;
 
-        // Lấy dữ liệu user
-        const user = tg.initDataUnsafe.user;
-
-        // Xử lý giao diện ban đầu
-        if (user) {
-            document.getElementById('user-name').innerText = (user.first_name + ' ' + (user.last_name || '')).trim();
-            document.getElementById('user-id').innerText = `ID: ${user.id}`;
-            if (user.photo_url) {
-                document.getElementById('user-avatar').src = user.photo_url;
-            }
-        } else {
-            document.getElementById('user-name').innerText = "Vui lòng mở trên Telegram";
-            document.getElementById('check-btn').disabled = true;
-        }
-
-        // 3. Hàm tính điểm (Logic quan trọng)
-        function calculateScore(user) {
-            let score = 1000; // Điểm cơ bản
-
-            // Tính điểm tuổi thọ dựa trên ID (ID càng nhỏ -> tạo càng sớm)
-            // Telegram ID hiện tại khoảng 7 tỷ (cho user mới 2024). Các user cũ có ID thấp hơn.
-            // Công thức giả lập:
-            const idFactor = 7000000000 - user.id;
-            if (idFactor > 0) {
-                score += Math.floor(idFactor / 10000000); // Mỗi 10 triệu đơn vị ID thấp hơn được cộng điểm
-            }
-
-            // Cộng điểm Premium (Độ hoạt động/Uy tín)
-            if (user.is_premium) {
-                score += 5000; // Premium được cộng nhiều điểm
-            }
-
-            // Cộng điểm có Username
-            if (user.username) {
-                score += 500;
-            }
-
-            return score;
-        }
-
-        // 4. Hàm chạy hiệu ứng và lưu data
-        window.startAnalysis = async () => {
-            if (!user) return;
-
-            const loadingEl = document.getElementById('loading');
-            const logEl = document.getElementById('log-console');
-            const btn = document.getElementById('check-btn');
-
-            loadingEl.style.display = 'flex';
+        // Init App
+        async function initApp() {
+            tg.expand();
+            tg.enableClosingConfirmation();
             
-            // Hàm helper để tạo delay và log text
-            const log = async (text, delay = 500) => {
-                logEl.innerHTML += `> ${text}<br>`;
-                await new Promise(r => setTimeout(r, delay));
-            };
+            // Lấy theme color từ Telegram để set status bar (nếu cần)
+            tg.setHeaderColor('#0f0c29'); 
+
+            currentUser = tg.initDataUnsafe.user;
+            
+            // Môi trường test nếu không có Telegram
+            if (!currentUser) {
+                currentUser = { id: 123456789, first_name: "Test", last_name: "User", username: "tester", is_premium: true, photo_url: "https://via.placeholder.com/60" };
+            }
+
+            // Render UI cơ bản
+            document.getElementById('user-name').innerText = currentUser.first_name + (currentUser.last_name ? " " + currentUser.last_name : "");
+            document.getElementById('user-id').innerText = `ID: ${currentUser.id}`;
+            if(currentUser.photo_url) document.getElementById('user-avatar').src = currentUser.photo_url;
+            if(currentUser.is_premium) document.getElementById('premium-badge').style.display = 'inline-block';
+
+            // Load Data từ Firebase
+            await loadUserData();
+            
+            // Ẩn loading
+            setTimeout(() => {
+                document.getElementById('loading-overlay').style.display = 'none';
+            }, 1000);
+        }
+
+        // Load User Data
+        async function loadUserData() {
+            const userRef = doc(db, "users", currentUser.id.toString());
+            const docSnap = await getDoc(userRef);
+
+            if (docSnap.exists()) {
+                userData = docSnap.data();
+                document.getElementById('total-score').innerText = userData.score.toLocaleString();
+                checkDailyStatus();
+            } else {
+                // User mới
+                userData = { score: 0, lastCheckin: null };
+                document.getElementById('total-score').innerText = "0";
+                // Tự động phân tích lần đầu cho user mới
+                // analyzeAccount(); -> Để user tự bấm thì hay hơn
+            }
+        }
+
+        // Tính năng 1: Phân tích tài khoản (Core cũ)
+        window.analyzeAccount = async () => {
+            const btn = document.getElementById('check-btn');
+            if(btn.disabled) return;
+            
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang quét...';
+            btn.disabled = true;
+
+            // Logic tính điểm
+            let ageScore = 0;
+            const idFactor = 7000000000 - currentUser.id;
+            if (idFactor > 0) ageScore += Math.floor(idFactor / 10000000); // Ví dụ công thức
+            if (currentUser.is_premium) ageScore += 5000;
+            if (currentUser.username) ageScore += 500;
+            
+            // Giữ lại điểm cũ (nếu có) và cộng thêm điểm ageScore (nếu chưa từng nhận)
+            // Ở đây mình làm đơn giản: Update lại profile và set điểm nếu là lần đầu.
+            // Nếu user đã tồn tại, chỉ update thông tin, không reset điểm.
+            
+            const userRef = doc(db, "users", currentUser.id.toString());
+            
+            let finalScore = userData.score;
+            // Nếu score bằng 0 (user mới) thì cộng điểm tuổi thọ
+            if(userData.score === 0) {
+                finalScore = ageScore + 1000; // 1000 bonus
+            }
 
             try {
-                // Hiệu ứng giả lập quét dữ liệu chuyên nghiệp
-                await log("Connecting to API...", 800);
-                await log(`Detected User ID: ${user.id}`, 600);
-                await log("Analyzing account age...", 1000);
-                
-                if(user.is_premium) {
-                    await log("PREMIUM ACCOUNT DETECTED [+5000]", 800);
-                }
-                
-                await log("Calculating activity metrics...", 1000);
-                await log("Syncing with Firebase Database...", 500);
-
-                // Tính toán thực tế
-                const finalScore = calculateScore(user);
-
-                // Lưu vào Firebase
-                await setDoc(doc(db, "users", user.id.toString()), {
-                    id: user.id,
-                    username: user.username || "No Username",
-                    firstName: user.first_name,
-                    lastName: user.last_name || "",
-                    isPremium: user.is_premium || false,
-                    language: user.language_code,
+                await setDoc(userRef, {
+                    id: currentUser.id,
+                    username: currentUser.username || "",
+                    firstName: currentUser.first_name,
+                    lastName: currentUser.last_name || "",
+                    isPremium: currentUser.is_premium || false,
                     score: finalScore,
-                    analyzedAt: serverTimestamp(),
-                    device: tg.platform
+                    lastActive: serverTimestamp()
+                }, { merge: true }); // Merge để không mất fields khác
+                
+                userData.score = finalScore;
+                animateScore(finalScore);
+                tg.HapticFeedback.notificationOccurred('success');
+                btn.innerHTML = '<i class="fas fa-check"></i> Đã cập nhật';
+            } catch (e) {
+                console.error(e);
+                btn.innerHTML = 'Lỗi';
+            }
+            
+            setTimeout(() => { btn.disabled = false; btn.innerHTML = '<i class="fas fa-sync-alt"></i> Quét & Cập nhật'; }, 3000);
+        };
+
+        // Tính năng 2: Daily Check-in
+        window.claimDaily = async () => {
+            const btn = document.getElementById('daily-btn');
+            if(btn.classList.contains('claimed')) return;
+
+            const today = new Date().toDateString();
+            const userRef = doc(db, "users", currentUser.id.toString());
+
+            try {
+                await updateDoc(userRef, {
+                    score: increment(100),
+                    lastCheckin: today
                 });
-
-                await log("SUCCESS. DATA SAVED.", 500);
-
-                // Tắt loading, hiện kết quả
-                loadingEl.style.display = 'none';
-                btn.classList.add('hidden');
                 
-                const resultBox = document.getElementById('result-box');
-                resultBox.classList.remove('hidden');
+                userData.score += 100;
+                document.getElementById('total-score').innerText = userData.score.toLocaleString();
                 
-                // Hiệu ứng chạy số điểm
-                let currentScore = 0;
-                const scoreEl = document.getElementById('score');
-                const interval = setInterval(() => {
-                    currentScore += 50;
-                    if (currentScore >= finalScore) {
-                        currentScore = finalScore;
-                        clearInterval(interval);
-                        // Haptic feedback (Rung điện thoại)
-                        tg.HapticFeedback.notificationOccurred('success');
-                    }
-                    scoreEl.innerText = currentScore.toLocaleString();
-                }, 10);
-
-            } catch (error) {
-                console.error(error);
-                logEl.innerHTML += `<span style="color:red">> ERROR: ${error.message}</span>`;
-                tg.HapticFeedback.notificationOccurred('error');
-                setTimeout(() => {
-                    loadingEl.style.display = 'none';
-                    alert("Lỗi khi lưu dữ liệu. Kiểm tra Console.");
-                }, 2000);
+                btn.innerText = "Đã nhận";
+                btn.classList.add('claimed');
+                tg.HapticFeedback.notificationOccurred('success');
+                
+                // Show popup effect (đơn giản)
+                tg.showAlert("Bạn đã nhận được 100 điểm!");
+            } catch (e) {
+                console.log("User chưa có trong DB, cần analyze trước");
+                tg.showAlert("Vui lòng Quét tài khoản trước!");
             }
         };
+
+        function checkDailyStatus() {
+            if(!userData.lastCheckin) return;
+            const today = new Date().toDateString();
+            if(userData.lastCheckin === today) {
+                const btn = document.getElementById('daily-btn');
+                btn.innerText = "Đã nhận";
+                btn.classList.add('claimed');
+            }
+        }
+
+        // Tính năng 3: Leaderboard
+        window.loadLeaderboard = async () => {
+            const listDiv = document.getElementById('leaderboard-list');
+            listDiv.innerHTML = '<div style="padding:20px; text-align:center"><i class="fas fa-spinner fa-spin"></i></div>';
+
+            const q = query(collection(db, "users"), orderBy("score", "desc"), limit(10));
+            const querySnapshot = await getDocs(q);
+            
+            let html = '';
+            let index = 1;
+            querySnapshot.forEach((doc) => {
+                const u = doc.data();
+                const isMe = u.id === currentUser.id;
+                if(isMe) document.getElementById('my-rank').innerText = index;
+                
+                html += `
+                    <div class="rank-item" style="${isMe ? 'background:rgba(0,198,255,0.1)' : ''}">
+                        <div class="rank-num" style="color: ${index === 1 ? '#ffd700' : (index === 2 ? '#c0c0c0' : (index === 3 ? '#cd7f32' : 'inherit'))}">${index}</div>
+                        <div class="avatar" style="width:30px; height:30px; border-width:1px; margin-right:10px; background:#333"></div> 
+                        <div class="rank-name">
+                            ${u.firstName} ${u.isPremium ? '<i class="fas fa-star" style="color:#ffd700; font-size:10px"></i>' : ''}
+                        </div>
+                        <div class="rank-score">${u.score.toLocaleString()}</div>
+                    </div>
+                `;
+                index++;
+            });
+            listDiv.innerHTML = html;
+        }
+
+        // UI Helpers
+        window.switchTab = (tabName, el) => {
+            // Update Nav UI
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+
+            // Hide all views
+            document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+            
+            // Show target view
+            document.getElementById(`view-${tabName}`).classList.add('active');
+            
+            // Logic khi chuyển tab
+            if(tabName === 'rank') {
+                loadLeaderboard();
+            }
+            tg.HapticFeedback.selectionChanged();
+        };
+
+        window.completeTask = async (btn, points) => {
+            if(btn.innerText === "Xong") return;
+            
+            // Giả lập mở link
+            // window.open('https://t.me/your_channel', '_blank');
+            
+            // Giả lập delay check
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            await new Promise(r => setTimeout(r, 1500));
+            
+            // Cộng điểm
+            const userRef = doc(db, "users", currentUser.id.toString());
+            try {
+                await updateDoc(userRef, { score: increment(points) });
+                userData.score += points;
+                document.getElementById('total-score').innerText = userData.score.toLocaleString();
+                
+                btn.innerText = "Xong";
+                btn.classList.add('claimed');
+                tg.HapticFeedback.notificationOccurred('success');
+            } catch(e) {
+                tg.showAlert("Vui lòng Quét tài khoản trước!");
+                btn.innerText = "Làm";
+            }
+        };
+
+        window.copyReferral = () => {
+            const link = `https://t.me/YOUR_BOT_NAME?start=ref_${currentUser.id}`;
+            navigator.clipboard.writeText(link);
+            tg.showAlert("Đã copy link mời!");
+        }
+
+        function animateScore(target) {
+            let current = 0;
+            const el = document.getElementById('total-score');
+            const step = target / 50;
+            const interval = setInterval(() => {
+                current += step;
+                if(current >= target) {
+                    current = target;
+                    clearInterval(interval);
+                }
+                el.innerText = Math.floor(current).toLocaleString();
+            }, 10);
+        }
+
+        // Run
+        initApp();
     </script>
 </body>
 </html>
