@@ -9,18 +9,21 @@
     <!-- TON Connect SDK -->
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Lora:ital,wght@1,400;1,600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
         :root {
-            --bg-color: #000000;
+            --bg-color: #050505;
+            --card-bg: #121212;
             --ton-blue: #0098EA;
+            --accent: #7000FF;
             --text-main: #ffffff;
-            --text-sub: #8E8E93;
-            --glass: rgba(255, 255, 255, 0.08);
-            --glass-border: 1px solid rgba(255, 255, 255, 0.1);
-            --success: #34c759;
+            --text-sub: #888;
+            --border: 1px solid rgba(255, 255, 255, 0.1);
+            --glass: rgba(255, 255, 255, 0.05);
+            --success: #00E096;
+            --danger: #FF3B30;
         }
 
         body {
@@ -32,261 +35,241 @@
             display: flex; flex-direction: column;
         }
 
-        /* --- UI COMPONENTS --- */
-        #access-denied, #loader {
+        /* --- UTILS --- */
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.5s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* --- LOADER --- */
+        #loader {
             position: fixed; inset: 0; z-index: 9999;
             background: #000; display: flex;
             flex-direction: column; align-items: center; justify-content: center;
         }
-        #access-denied { display: none; text-align: center; }
         .spinner {
-            width: 40px; height: 40px; border: 3px solid var(--glass);
+            width: 40px; height: 40px; border: 3px solid #333;
             border-top-color: var(--ton-blue); border-radius: 50%;
             animation: spin 1s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* --- SLIDES --- */
+        /* --- STORY VIEW --- */
+        #story-view { position: relative; width: 100%; height: 100%; display: none; }
+        
         .slide {
-            position: absolute; inset: 0;
-            padding: 20px;
+            position: absolute; inset: 0; padding: 20px;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             opacity: 0; pointer-events: none; transform: scale(0.95);
-            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-            text-align: center; overflow-y: auto;
+            transition: all 0.5s ease; text-align: center;
         }
         .slide.active { opacity: 1; pointer-events: auto; transform: scale(1); }
 
-        h1 { font-family: 'Lora', serif; font-size: 32px; font-weight: 600; margin: 0 0 10px 0; font-style: italic; }
-        .big-number { font-size: 48px; font-weight: 800; color: var(--ton-blue); margin: 15px 0; letter-spacing: -1px; }
-        .description { font-size: 15px; color: var(--text-sub); line-height: 1.5; max-width: 300px; margin: 0 auto; }
-        .chapter-label { font-size: 11px; letter-spacing: 2px; color: #555; text-transform: uppercase; margin-bottom: 5px; }
-
-        .points-badge {
-            background: rgba(0, 152, 234, 0.15); color: var(--ton-blue);
-            padding: 6px 14px; border-radius: 20px; font-weight: bold;
-            margin-top: 15px; display: inline-block; border: 1px solid rgba(0, 152, 234, 0.3);
-        }
-
-        /* --- TASK SECTION --- */
-        .task-box {
-            width: 100%; max-width: 320px;
-            background: rgba(0, 152, 234, 0.05); border: 1px solid var(--ton-blue);
-            border-radius: 12px; padding: 15px; margin-top: 20px;
-            text-align: left; position: relative;
-        }
-        .verified-badge {
-            position: absolute; top: -10px; right: -5px;
-            background: var(--success); color: white; padding: 4px 8px;
-            border-radius: 10px; font-size: 10px; font-weight: bold;
-            box-shadow: 0 4px 10px rgba(52, 199, 89, 0.4); display: none;
-        }
-        .btn-check {
-            background: var(--ton-blue); color: white; border: none;
-            width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;
-            margin-top: 10px; transition: 0.2s; font-size: 14px;
-        }
-        .btn-check:disabled { opacity: 0.6; cursor: not-allowed; }
-
-        /* --- WALLET DASHBOARD --- */
-        #view-wallet {
-            background: radial-gradient(circle at center top, #1a222e 0%, #000 100%);
-            justify-content: flex-start; padding-top: 60px;
-        }
+        .big-number { font-family: 'Rajdhani', sans-serif; font-size: 50px; font-weight: 700; color: var(--ton-blue); margin: 10px 0; }
+        .chapter { font-size: 10px; letter-spacing: 3px; color: #555; text-transform: uppercase; margin-bottom: 5px; }
         
-        .token-card {
-            background: var(--glass); border: var(--glass-border);
-            border-radius: 20px; padding: 30px; width: 100%; max-width: 340px;
-            margin-bottom: 20px; position: relative; overflow: hidden;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        /* CODE INPUT STYLE */
+        .code-box {
+            background: var(--card-bg); border: var(--border);
+            padding: 20px; border-radius: 16px; width: 100%; max-width: 300px;
+            margin-top: 20px;
         }
-        .token-card::before {
-            content: ''; position: absolute; top: -50px; left: -50px; width: 100px; height: 100px;
-            background: var(--ton-blue); filter: blur(60px); opacity: 0.4;
+        .code-input {
+            width: 100%; padding: 12px; background: #000; border: 1px solid #333;
+            color: white; text-align: center; letter-spacing: 2px;
+            font-size: 16px; border-radius: 8px; margin-bottom: 10px;
+            text-transform: uppercase; outline: none;
         }
-        .token-amount { font-size: 56px; font-weight: 800; color: white; margin: 10px 0; text-shadow: 0 0 20px rgba(0, 152, 234, 0.5); }
-        .token-symbol { font-size: 18px; color: var(--ton-blue); font-weight: bold; letter-spacing: 1px; }
-
-        /* TOKENOMICS INFO */
-        .info-card {
-            width: 100%; max-width: 340px;
-            background: rgba(255,255,255,0.03); border-radius: 12px;
-            padding: 15px; margin-bottom: 20px;
-            display: flex; justify-content: space-between;
-        }
-        .info-item { text-align: center; width: 48%; }
-        .info-val { font-size: 16px; font-weight: bold; color: white; margin-bottom: 4px; }
-        .info-lbl { font-size: 10px; color: #777; text-transform: uppercase; }
-
-        /* TON CONNECT STYLES */
-        .connect-wrapper {
-            width: 100%; max-width: 340px;
-            margin-bottom: 20px; display: flex; justify-content: center;
+        .code-input:focus { border-color: var(--ton-blue); }
+        .btn-verify {
+            width: 100%; padding: 12px; background: var(--ton-blue); color: white;
+            border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
         }
 
-        .wallet-details {
-            width: 100%; max-width: 340px;
-            background: rgba(0, 152, 234, 0.1); border: 1px solid var(--ton-blue);
-            border-radius: 12px; padding: 15px;
-            display: none; /* Show when connected */
-            align-items: center; gap: 12px;
-        }
-        .wallet-icon { width: 40px; height: 40px; background: #fff; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
-        .wallet-info { text-align: left; }
-        .w-name { font-weight: bold; font-size: 14px; color: white; }
-        .w-addr { font-family: monospace; font-size: 12px; color: var(--ton-blue); }
-
-        .withdraw-btn {
-            background: #222; color: #555; width: 100%; padding: 16px;
-            border-radius: 12px; border: 1px solid #333;
-            margin-top: 10px; font-weight: bold; display: flex; justify-content: center; align-items: center; gap: 10px;
-            cursor: not-allowed; max-width: 340px;
+        /* --- DASHBOARD VIEW (NEW) --- */
+        #dashboard-view {
+            display: none; flex-direction: column; height: 100%;
+            padding: 20px; overflow-y: auto;
+            background: radial-gradient(circle at top right, #1a1a2e 0%, #000 60%);
         }
 
-        /* --- FOOTER --- */
-        .bottom-action {
-            position: fixed; bottom: 30px; left: 0; width: 100%;
-            display: flex; justify-content: center; z-index: 50;
-            flex-direction: column; align-items: center; gap: 10px;
+        .dash-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; padding-top: 10px;
         }
-        .btn-next {
+        .user-badge {
+            display: flex; align-items: center; gap: 10px;
+            background: var(--glass); padding: 5px 12px 5px 5px; border-radius: 30px; border: var(--border);
+        }
+        .u-avatar { width: 28px; height: 28px; border-radius: 50%; }
+        .u-name { font-size: 12px; font-weight: 600; }
+
+        /* BALANCE CARD */
+        .balance-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 24px; padding: 30px 20px;
+            text-align: center; position: relative; overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .balance-label { font-size: 11px; color: var(--text-sub); letter-spacing: 1px; text-transform: uppercase; }
+        .balance-val { font-family: 'Rajdhani', sans-serif; font-size: 48px; font-weight: 700; color: white; margin: 5px 0; text-shadow: 0 0 20px rgba(0, 152, 234, 0.3); }
+        .balance-est { font-size: 12px; color: var(--ton-blue); background: rgba(0, 152, 234, 0.1); padding: 4px 10px; border-radius: 12px; display: inline-block; }
+
+        /* DEADLINE COUNTER */
+        .deadline-box {
+            margin-top: 20px; background: rgba(255, 59, 48, 0.05);
+            border: 1px solid rgba(255, 59, 48, 0.2); border-radius: 12px;
+            padding: 15px; text-align: center;
+        }
+        .deadline-lbl { color: var(--danger); font-size: 10px; font-weight: bold; margin-bottom: 5px; }
+        .deadline-timer { font-family: monospace; font-size: 16px; font-weight: bold; color: white; }
+
+        /* WALLET SECTION */
+        .wallet-panel {
+            margin-top: 20px; background: var(--card-bg);
+            border: var(--border); border-radius: 16px; padding: 20px;
+        }
+        .wp-title { font-size: 14px; font-weight: 600; margin-bottom: 15px; display: flex; justify-content: space-between; }
+        
+        /* Connected State */
+        .wallet-active {
+            display: none; flex-direction: column; gap: 10px;
+        }
+        .w-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+        .w-val { font-family: monospace; color: var(--ton-blue); }
+        .w-log { font-size: 10px; color: #555; margin-top: 10px; padding-top: 10px; border-top: 1px solid #222; }
+
+        .btn-disconnect {
+            background: rgba(255, 59, 48, 0.1); color: var(--danger);
+            border: 1px solid rgba(255, 59, 48, 0.3);
+            width: 100%; padding: 10px; border-radius: 8px; font-size: 12px; cursor: pointer;
+            margin-top: 10px;
+        }
+
+        /* Not Connected State */
+        .wallet-inactive { display: block; text-align: center; }
+        .ton-btn-wrap { display: flex; justify-content: center; margin-top: 10px; }
+
+        /* FOOTER NAV */
+        .nav-btn {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
             background: white; color: black; border: none;
-            padding: 14px 40px; border-radius: 30px;
-            font-size: 16px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 5px 20px rgba(255,255,255,0.15);
-            transition: transform 0.2s; width: 80%; max-width: 300px;
+            padding: 14px 40px; border-radius: 30px; font-weight: bold;
+            box-shadow: 0 5px 20px rgba(255,255,255,0.1);
+            cursor: pointer; z-index: 100;
         }
-        .btn-next:active { transform: scale(0.95); }
 
-        .fade-in-up { animation: fadeInUp 0.8s ease forwards; opacity: 0; transform: translateY(20px); }
-        @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
-        .delay-1 { animation-delay: 0.2s; } .delay-2 { animation-delay: 0.5s; } .delay-3 { animation-delay: 0.8s; }
-        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-    <div id="access-denied">
-        <i class="fas fa-lock" style="font-size:40px; color:#ff3b30; margin-bottom:20px"></i>
-        <div style="font-weight:bold; color:#ff3b30">MOBILE ACCESS ONLY</div>
-    </div>
-
+    <!-- LOADER -->
     <div id="loader">
         <div class="spinner"></div>
+        <div style="margin-top:15px; font-size:10px; color:#666; letter-spacing:2px">LOADING DATA...</div>
     </div>
 
-    <div id="progress-wrap" style="position:fixed; top:0; left:0; width:100%; height:4px; background:rgba(255,255,255,0.1); z-index:100;">
-        <div id="progress" style="height:100%; width:0%; background:var(--ton-blue); transition:width 0.5s;"></div>
-    </div>
-
-    <!-- STORY SLIDES (1-5) -->
-    <div class="slide" id="slide-1">
-        <i class="fab fa-telegram fa-4x fade-in-up" style="color: white; margin-bottom: 30px;"></i>
-        <h1 class="fade-in-up delay-1">The Digital Archives</h1>
-        <p class="description fade-in-up delay-2">Let's uncover your legacy.</p>
-    </div>
-    <div class="slide" id="slide-2">
-        <div class="chapter-label fade-in-up">CHAPTER I</div>
-        <h1 class="fade-in-up">The Origin</h1>
-        <div class="big-number fade-in-up delay-1" id="val-year">...</div>
-        <div class="points-badge fade-in-up delay-3" id="score-age">+0 PTS</div>
-    </div>
-    <div class="slide" id="slide-3">
-        <div class="chapter-label fade-in-up">CHAPTER II</div>
-        <h1 class="fade-in-up">The Elite</h1>
-        <div id="icon-premium" class="fade-in-up delay-1" style="font-size: 60px; margin: 20px 0;"><i class="fas fa-star" style="color:#333"></i></div>
-        <div class="points-badge fade-in-up delay-3" id="score-premium">+0 PTS</div>
-    </div>
-    <div class="slide" id="slide-4">
-        <div class="chapter-label fade-in-up">CHAPTER III</div>
-        <h1 class="fade-in-up">The Identity</h1>
-        <img id="user-avatar" src="" style="width:80px; height:80px; border-radius:50%; border:2px solid white; margin:20px 0;" class="fade-in-up delay-1">
-        <div class="points-badge fade-in-up delay-3" id="score-identity">+0 PTS</div>
-    </div>
-    <div class="slide" id="slide-5">
-        <div class="chapter-label fade-in-up">SUMMARY</div>
-        <h1 class="fade-in-up" style="font-size:32px; color:var(--ton-blue)">TOTAL SCORE</h1>
-        <div class="big-number fade-in-up delay-1" id="final-score" style="font-size:54px">0</div>
-        
-        <div class="rank-box fade-in-up delay-2" style="background: var(--glass); border: 1px solid var(--border); border-radius: 12px; padding: 10px; width: 100%; max-width: 280px; margin-top: 10px;">
-            <div style="font-size:10px; color:#888; letter-spacing:1px">GLOBAL RANK</div>
-            <div id="user-rank" style="font-size:20px; font-weight:bold; margin-top:5px">CALCULATING...</div>
+    <!-- VIEW 1: STORY MODE -->
+    <div id="story-view">
+        <div class="slide active" id="slide-1">
+            <i class="fab fa-telegram fa-4x" style="color:white; margin-bottom:20px"></i>
+            <h1>The Journey</h1>
+            <p style="color:#888; font-size:14px">Your legacy on Telegram.</p>
         </div>
-
-        <div class="task-box fade-in-up delay-3" id="task-container">
-            <div class="verified-badge" id="badge-verified"><i class="fas fa-check"></i> VERIFIED</div>
-            <div style="font-weight:bold; margin-bottom:5px; display:flex; justify-content:space-between;">
-                <span><i class="fab fa-telegram-plane"></i> Follow @durov</span>
-                <span style="color:var(--success)">+10,000</span>
-            </div>
-            <p style="font-size:11px; color:#aaa; margin-bottom:10px;">Mandatory to unlock $TG conversion.</p>
-            <button class="btn-check" id="btn-do-task" onclick="openChannel()">1. JOIN CHANNEL</button>
-            <button class="btn-check" id="btn-check-task" onclick="checkMembership()" style="background:#222; border:1px solid #444">2. VERIFY & UNLOCK</button>
+        <div class="slide" id="slide-2">
+            <div class="chapter">CHAPTER I</div>
+            <h1>The Origin</h1>
+            <div class="big-number" id="val-year">...</div>
+            <div style="color:var(--ton-blue)" id="score-age">+0</div>
         </div>
-
-        <button id="btn-convert-trigger" class="btn-check fade-in-up delay-3 hidden" onclick="handleConvert()" style="margin-top:20px; width:100%; max-width:320px; background:white; color:black;">
-            <i class="fas fa-exchange-alt"></i> CONVERT TO $TG
-        </button>
-    </div>
-
-    <!-- VIEW: WALLET DASHBOARD -->
-    <div class="slide" id="view-wallet" style="display:none; padding-top:40px;">
-        <div class="chapter-label">WEB3 DASHBOARD</div>
-        
-        <div class="token-card fade-in-up">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:12px; color:#aaa;">AVAILABLE BALANCE</span>
-                <i class="fas fa-wallet" style="color:#aaa"></i>
-            </div>
-            <div class="token-amount" id="wallet-balance">0</div>
-            <div class="token-symbol">$TG TOKEN</div>
-            <div style="font-size:10px; color:#666; margin-top:10px;">The Open Network (TON)</div>
+        <div class="slide" id="slide-3">
+            <div class="chapter">CHAPTER II</div>
+            <h1>The Status</h1>
+            <div class="big-number" id="val-prem">BASIC</div>
+            <div style="color:var(--ton-blue)" id="score-prem">+0</div>
         </div>
-
-        <!-- Tokenomics Info -->
-        <div class="info-card fade-in-up delay-1">
-            <div class="info-item" style="border-right: 1px solid rgba(255,255,255,0.1)">
-                <div class="info-val">10,000,000,000</div>
-                <div class="info-lbl">Total Supply</div>
-            </div>
-            <div class="info-item">
-                <div class="info-val" style="color: var(--ton-blue)">75%</div>
-                <div class="info-lbl">Community</div>
+        <div class="slide" id="slide-4">
+            <div class="chapter">CHAPTER III</div>
+            <h1>The Identity</h1>
+            <img id="u-avatar" src="" style="width:80px; height:80px; border-radius:50%; margin:10px 0; border:2px solid white">
+            <div id="u-username" style="font-weight:bold">...</div>
+            <div style="color:var(--ton-blue)" id="score-id">+0</div>
+        </div>
+        <div class="slide" id="slide-5">
+            <div class="chapter">VERIFICATION</div>
+            <h1>Final Step</h1>
+            <div class="big-number" id="total-score-story">0</div>
+            
+            <div class="code-box">
+                <div style="font-size:12px; margin-bottom:10px; color:#aaa">ENTER SECRET CODE</div>
+                <input type="text" id="code-input" class="code-input" placeholder="CODE">
+                <button class="btn-verify" onclick="verifyCode()">VERIFY & UNLOCK</button>
             </div>
         </div>
 
-        <!-- TON Connect Button (Standard) -->
-        <div class="connect-wrapper fade-in-up delay-2">
-            <div id="ton-connect"></div>
+        <button class="nav-btn" id="story-btn" onclick="nextSlide()">START</button>
+    </div>
+
+    <!-- VIEW 2: DASHBOARD MODE (Final Destination) -->
+    <div id="dashboard-view">
+        <div class="dash-header">
+            <div class="user-badge">
+                <img id="dash-avatar" src="" class="u-avatar">
+                <div class="u-name" id="dash-name">User</div>
+            </div>
+            <div style="font-size:10px; color:#444">VERIFIED <i class="fas fa-check-circle" style="color:var(--success)"></i></div>
         </div>
 
-        <!-- Wallet Connected Details (Hidden by default) -->
-        <div class="wallet-details fade-in-up delay-2" id="wallet-info-box">
-            <div class="wallet-icon" id="w-icon"><i class="fas fa-wallet" style="color:black"></i></div>
-            <div class="wallet-info">
-                <div class="w-name" id="w-app-name">Wallet</div>
-                <div class="w-addr" id="w-address">UQ...</div>
+        <div class="balance-card">
+            <div class="balance-label">Available Balance</div>
+            <div class="balance-val" id="dash-balance">0</div>
+            <div class="balance-est">$TG TOKEN</div>
+        </div>
+
+        <div class="deadline-box">
+            <div class="deadline-lbl">CONNECT WALLET DEADLINE</div>
+            <div class="deadline-timer" id="deadline-timer">00d 00h 00m 00s</div>
+            <div style="font-size:10px; color:#666; margin-top:5px">Withdraw starts: 31/12/2025</div>
+        </div>
+
+        <div class="wallet-panel">
+            <div class="wp-title">
+                <span><i class="fas fa-wallet"></i> Web3 Wallet</span>
+                <span id="w-status" style="font-size:10px; color:#666">NOT CONNECTED</span>
+            </div>
+
+            <!-- Not Connected -->
+            <div id="wallet-inactive" class="wallet-inactive">
+                <p style="font-size:12px; color:#777; margin-bottom:15px">Connect your TON wallet to receive airdrop.</p>
+                <div class="ton-btn-wrap">
+                    <div id="ton-connect"></div>
+                </div>
+            </div>
+
+            <!-- Connected -->
+            <div id="wallet-active" class="wallet-active">
+                <div class="w-row">
+                    <span>Provider</span>
+                    <span style="color:white" id="w-app">...</span>
+                </div>
+                <div class="w-row">
+                    <span>Address</span>
+                    <span class="w-val" id="w-addr">...</span>
+                </div>
+                <button class="btn-disconnect" onclick="disconnectWallet()">
+                    <i class="fas fa-unlink"></i> DISCONNECT
+                </button>
+                <div class="w-log" id="w-history">No history.</div>
             </div>
         </div>
 
-        <div style="background:#111; padding:10px; border-radius:8px; font-family:monospace; color:var(--ton-blue); font-weight:bold; margin-top:10px; width:100%; max-width:340px;">
-            <span id="countdown">00d 00h 00m 00s</span>
-        </div>
-
-        <button class="withdraw-btn fade-in-up delay-3" onclick="featureLocked()">
-            <i class="fas fa-clock"></i> WITHDRAWAL PENDING
-        </button>
-    </div>
-
-    <div class="bottom-action" id="main-nav">
-        <button class="btn-next" id="btn-action" onclick="handleAction()">Start Journey</button>
-        <div style="font-size:9px; color:#444; letter-spacing:1px; margin-top:10px;">SECURED BY TON</div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, query, where, getCountFromServer, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // FIREBASE CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
@@ -301,216 +284,218 @@
         const db = getFirestore(app);
         const tg = window.Telegram.WebApp;
 
-        // --- TON CONNECT SETUP ---
+        // TON CONNECT
         const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-            manifestUrl: 'https://ton-connect.github.io/demo-dapp-with-react-ui/tonconnect-manifest.json', // Placeholder manifest
+            manifestUrl: 'https://ton-connect.github.io/demo-dapp-with-react-ui/tonconnect-manifest.json',
             buttonRootId: 'ton-connect'
         });
 
-        // Handle Wallet Connection
-        tonConnectUI.onStatusChange((wallet) => {
-            if (wallet) {
-                // Wallet Connected
-                document.getElementById('ton-connect').style.display = 'none'; // Hide connect button
-                const detailsBox = document.getElementById('wallet-info-box');
-                detailsBox.style.display = 'flex'; // Show details
-
-                const appName = wallet.device.appName || "Web3 Wallet";
-                const rawAddress = wallet.account.address;
-                // Format Address: 0:1234...abcd -> UQ12...abcd (Mock user-friendly logic)
-                const shortAddr = rawAddress.slice(0, 4) + "..." + rawAddress.slice(-4);
-                
-                document.getElementById('w-app-name').innerText = appName.charAt(0).toUpperCase() + appName.slice(1);
-                document.getElementById('w-address').innerText = shortAddr;
-                
-                // Save wallet to DB (optional)
-                if(userData) {
-                    updateDoc(doc(db, "users", userData.id.toString()), { 
-                        walletAddress: rawAddress,
-                        walletApp: appName
-                    }).catch(()=>{});
-                }
-            } else {
-                // Wallet Disconnected
-                document.getElementById('ton-connect').style.display = 'block';
-                document.getElementById('wallet-info-box').style.display = 'none';
-            }
-        });
-
-        // --- CORE LOGIC ---
-        let currentSlide = 1;
-        const totalSlides = 5;
+        // STATE
         let userData = null;
         let scores = { total: 0 };
-        let isVerified = false;
+        let currentSlide = 1;
+        const totalSlides = 5;
 
+        // --- INIT ---
         async function init() {
             if (!tg.initData) {
-                document.getElementById('loader').style.display = 'none';
-                document.getElementById('access-denied').style.display = 'flex';
-                document.querySelector('.bottom-action').style.display = 'none';
+                document.body.innerHTML = '<div style="color:red; text-align:center; padding:50px">Mobile Access Only</div>';
                 return;
             }
 
             tg.expand();
             tg.setHeaderColor('#000000');
             userData = tg.initDataUnsafe.user;
-            if(!userData) return;
+            // userData = { id: 123456, first_name: "Test", username: "dev", is_premium: true, photo_url: "" }; // Mock
 
-            calculateData(userData);
+            calculateScore(userData);
             startCountdown();
-            await checkUser();
+
+            // Check DB Status
+            await checkUserDB();
         }
 
-        function calculateData(user) {
+        // --- DATA & LOGIC ---
+        function calculateScore(user) {
             const id = user.id;
             let year = 2024;
-            if(id < 100000000) year = 2015;
-            else if(id < 500000000) year = 2017;
-            else if(id < 1000000000) year = 2020;
-            else if(id < 5000000000) year = 2022;
+            let ageScore = 100;
 
-            let ageScore = Math.floor((7000000000 - id) / 500000); 
-            if(ageScore < 100) ageScore = 100;
+            if(id < 1000000000) { year = 2020; ageScore = 1000; }
+            if(id < 500000000) { year = 2017; ageScore = 3000; }
             
-            let premiumScore = user.is_premium ? 5000 : 0;
-            let identityScore = (user.username ? 500 : 0) + (user.photo_url ? 300 : 0);
-            scores.total = ageScore + premiumScore + identityScore;
+            const premScore = user.is_premium ? 5000 : 0;
+            const idScore = (user.username ? 500 : 0) + (user.photo_url ? 300 : 0);
+            scores.total = ageScore + premScore + idScore;
 
-            document.getElementById('val-year').innerText = `Year ${year}`;
-            document.getElementById('score-age').innerText = `+${ageScore.toLocaleString()} PTS`;
-            if(user.is_premium) document.getElementById('score-premium').innerText = `+${premiumScore.toLocaleString()} PTS`;
-            document.getElementById('score-identity').innerText = `+${identityScore.toLocaleString()} PTS`;
+            // Render Story Data
+            document.getElementById('val-year').innerText = year;
+            document.getElementById('score-age').innerText = `+${ageScore}`;
+            document.getElementById('val-prem').innerText = user.is_premium ? "PREMIUM" : "BASIC";
+            document.getElementById('score-prem').innerText = `+${premScore}`;
+            if(user.photo_url) document.getElementById('u-avatar').src = user.photo_url;
+            document.getElementById('u-username').innerText = user.username || user.first_name;
+            document.getElementById('score-id').innerText = `+${idScore}`;
+            document.getElementById('total-score-story').innerText = scores.total;
+
+            // Render Dashboard Data
+            if(user.photo_url) document.getElementById('dash-avatar').src = user.photo_url;
+            document.getElementById('dash-name').innerText = user.first_name;
         }
 
-        async function checkUser() {
+        async function checkUserDB() {
             try {
                 const docRef = doc(db, "users", userData.id.toString());
                 const snap = await getDoc(docRef);
+                
                 document.getElementById('loader').style.display = 'none';
 
-                if(snap.exists()) {
+                if(snap.exists() && snap.data().isAnalyzed) {
+                    // USER EXISTS -> SKIP STORY -> GOTO DASHBOARD
                     const data = snap.data();
-                    if(data.isVerified) {
-                        isVerified = true;
-                        scores.total = data.score;
-                        document.getElementById('final-score').innerText = scores.total.toLocaleString();
-                        if(data.isAnalyzed) switchToWalletView();
-                        else {
-                            updateVerificationUI();
-                            document.getElementById('slide-5').classList.add('active');
-                            currentSlide = 5;
-                        }
-                    } else document.getElementById('slide-1').classList.add('active');
-                } else document.getElementById('slide-1').classList.add('active');
+                    const convertedScore = Math.floor(data.score / 10); // Ratio 1:10
+                    document.getElementById('dash-balance').innerText = convertedScore.toLocaleString();
+                    
+                    if(data.lastWalletAction) {
+                        document.getElementById('w-history').innerText = "Last update: " + data.lastWalletAction;
+                    }
+                    
+                    showDashboard();
+                } else {
+                    // NEW USER -> SHOW STORY
+                    document.getElementById('story-view').style.display = 'block';
+                }
             } catch(e) { console.error(e); }
         }
 
-        window.handleAction = async () => {
+        // --- STORY NAVIGATION ---
+        window.nextSlide = () => {
             if(currentSlide >= totalSlides) return;
-            tg.HapticFeedback.impactOccurred('medium');
+            
+            tg.HapticFeedback.impactOccurred('light');
             document.getElementById(`slide-${currentSlide}`).classList.remove('active');
             currentSlide++;
-            document.getElementById('progress').style.width = `${((currentSlide-1)/(totalSlides-1))*100}%`;
             document.getElementById(`slide-${currentSlide}`).classList.add('active');
-            
+
             if(currentSlide === 5) {
-                document.getElementById('btn-action').style.display = 'none';
-                animateScore();
-                calculateRank();
-                if(isVerified) updateVerificationUI();
+                document.getElementById('story-btn').style.display = 'none';
             } else {
-                document.getElementById('btn-action').innerText = "Continue";
+                document.getElementById('story-btn').innerText = "NEXT";
             }
         }
 
-        window.openChannel = () => { tg.openTelegramLink("https://t.me/durov"); }
-        
-        window.checkMembership = async () => {
-            const btn = document.getElementById('btn-check-task');
-            btn.innerText = "Verifying...";
-            btn.disabled = true;
-            setTimeout(async () => {
-                const reward = 10000;
-                scores.total += reward;
-                isVerified = true;
-                const ref = doc(db, "users", userData.id.toString());
-                await setDoc(ref, { score: scores.total, isVerified: true, firstName: userData.first_name }, { merge: true });
+        // --- VERIFICATION ---
+        window.verifyCode = async () => {
+            const input = document.getElementById('code-input').value.trim().toUpperCase();
+            if(input === "ILOVETG") {
                 tg.HapticFeedback.notificationOccurred('success');
-                document.getElementById('final-score').innerText = scores.total.toLocaleString();
-                updateVerificationUI();
-            }, 1500);
-        };
+                
+                // Save to DB
+                const ref = doc(db, "users", userData.id.toString());
+                await setDoc(ref, {
+                    id: userData.id,
+                    username: userData.username || "",
+                    score: scores.total,
+                    isAnalyzed: true, // Mark as analyzed/verified
+                    isVerified: true,
+                    lastSeen: serverTimestamp()
+                }, { merge: true });
 
-        function updateVerificationUI() {
-            document.getElementById('badge-verified').style.display = 'block';
-            document.getElementById('btn-do-task').style.display = 'none';
-            document.getElementById('task-container').style.opacity = '0.5';
-            document.getElementById('task-container').innerHTML = '<div style="text-align:center; color:#34c759; font-weight:bold"><i class="fas fa-check-circle"></i> COMPLETED</div>';
-            document.getElementById('btn-convert-trigger').classList.remove('hidden');
+                // Convert & Go to Dashboard
+                const converted = Math.floor(scores.total / 10);
+                document.getElementById('dash-balance').innerText = converted.toLocaleString();
+                
+                document.getElementById('story-view').classList.add('fade-out'); // simple transition
+                setTimeout(() => {
+                    document.getElementById('story-view').style.display = 'none';
+                    showDashboard();
+                }, 500);
+
+            } else {
+                tg.HapticFeedback.notificationOccurred('error');
+                tg.showAlert("Invalid Code. Hint: ILOVETG");
+            }
         }
 
-        window.handleConvert = async () => {
-            const ref = doc(db, "users", userData.id.toString());
-            await setDoc(ref, { isAnalyzed: true, lastSeen: serverTimestamp() }, { merge: true });
-            switchToWalletView();
+        function showDashboard() {
+            const dash = document.getElementById('dashboard-view');
+            dash.style.display = 'flex';
+            dash.classList.add('fade-in');
         }
 
-        function switchToWalletView() {
-            document.querySelectorAll('.slide').forEach(s => s.style.display = 'none');
-            document.getElementById('progress-wrap').style.display = 'none';
-            document.getElementById('main-nav').style.display = 'none';
+        // --- WALLET LOGIC ---
+        // 1. Monitor Connection
+        tonConnectUI.onStatusChange(async (wallet) => {
+            const activeDiv = document.getElementById('wallet-active');
+            const inactiveDiv = document.getElementById('wallet-inactive');
+            const statusLbl = document.getElementById('w-status');
+
+            if(wallet) {
+                // CONNECTED
+                inactiveDiv.style.display = 'none';
+                activeDiv.style.display = 'flex';
+                statusLbl.innerText = "CONNECTED";
+                statusLbl.style.color = "var(--success)";
+
+                const raw = wallet.account.address;
+                const short = raw.slice(0,4) + "..." + raw.slice(-4);
+                const appName = wallet.device.appName || "Wallet";
+
+                document.getElementById('w-app').innerText = appName;
+                document.getElementById('w-addr').innerText = short;
+
+                // Log History (Connect)
+                await logWalletAction(`Connected ${appName}`);
+
+            } else {
+                // DISCONNECTED
+                activeDiv.style.display = 'none';
+                inactiveDiv.style.display = 'block';
+                statusLbl.innerText = "NOT CONNECTED";
+                statusLbl.style.color = "#666";
+            }
+        });
+
+        // 2. Disconnect Action
+        window.disconnectWallet = async () => {
+            await tonConnectUI.disconnect();
+            await logWalletAction("Disconnected Wallet");
+        }
+
+        // 3. Log History Helper
+        async function logWalletAction(action) {
+            const time = new Date().toLocaleString();
+            document.getElementById('w-history').innerText = `${action} at ${time}`;
             
-            const walletView = document.getElementById('view-wallet');
-            walletView.style.display = 'flex';
-            walletView.classList.add('active');
-            const tokens = Math.floor(scores.total / 10);
-            animateValue('wallet-balance', 0, tokens, 1500);
+            // Save to DB
+            try {
+                const ref = doc(db, "users", userData.id.toString());
+                await updateDoc(ref, {
+                    lastWalletAction: `${action} at ${time}`
+                });
+            } catch(e) {}
         }
 
-        window.featureLocked = () => {
-            tg.HapticFeedback.notificationOccurred('error');
-            tg.showAlert("Withdrawals open on 31/12/2025");
-        };
-
+        // --- COUNTDOWN TIMER (Connect Deadline) ---
+        // Deadline: 30/12/2025 (1 day before withdraw 31/12)
         function startCountdown() {
-            const target = new Date("Dec 31, 2025 00:00:00").getTime();
+            const deadline = new Date("Dec 30, 2025 00:00:00").getTime();
             setInterval(() => {
                 const now = new Date().getTime();
-                const d = target - now;
-                if (d < 0) { document.getElementById("countdown").innerHTML = "LIVE"; return; }
-                const days = Math.floor(d / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((d % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                document.getElementById("countdown").innerHTML = `${days}d ${hours}h ${Math.floor((d%(1000*60*60))/(1000*60))}m ${Math.floor((d%(1000*60))/1000)}s`;
+                const dist = deadline - now;
+                
+                if(dist < 0) {
+                    document.getElementById('deadline-timer').innerText = "ENDED";
+                    return;
+                }
+
+                const d = Math.floor(dist / (1000 * 60 * 60 * 24));
+                const h = Math.floor((dist % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const m = Math.floor((dist % (1000 * 60 * 60)) / (1000 * 60));
+                const s = Math.floor((dist % (1000 * 60)) / 1000);
+
+                document.getElementById('deadline-timer').innerText = `${d}d ${h}h ${m}m ${s}s`;
             }, 1000);
-        }
-
-        async function calculateRank() {
-            try {
-                const q = query(collection(db, "users"), where("score", ">", scores.total));
-                const snap = await getCountFromServer(q);
-                document.getElementById('user-rank').innerText = `#${(snap.data().count + 1).toLocaleString()}`;
-            } catch(e) { document.getElementById('user-rank').innerText = "TOP 1%"; }
-        }
-
-        function animateScore() {
-            let cur = 0; const el = document.getElementById('final-score');
-            const step = Math.ceil(scores.total / 40);
-            const t = setInterval(() => {
-                cur += step; if(cur >= scores.total) { cur = scores.total; clearInterval(t); } el.innerText = cur.toLocaleString();
-            }, 20);
-        }
-
-        function animateValue(id, start, end, duration) {
-            const obj = document.getElementById(id);
-            let startTimestamp = null;
-            const step = (timestamp) => {
-                if (!startTimestamp) startTimestamp = timestamp;
-                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-                obj.innerHTML = Math.floor(progress * (end - start) + start).toLocaleString();
-                if (progress < 1) window.requestAnimationFrame(step);
-            };
-            window.requestAnimationFrame(step);
         }
 
         init();
