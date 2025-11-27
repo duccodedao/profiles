@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TG Journey</title>
+    <!-- Telegram SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- TON Connect SDK -->
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Lora:ital,wght@1,400;1,600&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
@@ -17,9 +21,6 @@
             --glass: rgba(255, 255, 255, 0.08);
             --glass-border: 1px solid rgba(255, 255, 255, 0.1);
             --success: #34c759;
-            --binance: #F3BA2F;
-            --bybit: #181A20;
-            --okx: #fff;
         }
 
         body {
@@ -87,7 +88,7 @@
         }
         .btn-check:disabled { opacity: 0.6; cursor: not-allowed; }
 
-        /* --- WALLET DASHBOARD (NEW VIEW) --- */
+        /* --- WALLET DASHBOARD --- */
         #view-wallet {
             background: radial-gradient(circle at center top, #1a222e 0%, #000 100%);
             justify-content: flex-start; padding-top: 60px;
@@ -96,48 +97,51 @@
         .token-card {
             background: var(--glass); border: var(--glass-border);
             border-radius: 20px; padding: 30px; width: 100%; max-width: 340px;
-            margin-bottom: 30px; position: relative; overflow: hidden;
+            margin-bottom: 20px; position: relative; overflow: hidden;
             box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
         .token-card::before {
             content: ''; position: absolute; top: -50px; left: -50px; width: 100px; height: 100px;
             background: var(--ton-blue); filter: blur(60px); opacity: 0.4;
         }
-
         .token-amount { font-size: 56px; font-weight: 800; color: white; margin: 10px 0; text-shadow: 0 0 20px rgba(0, 152, 234, 0.5); }
         .token-symbol { font-size: 18px; color: var(--ton-blue); font-weight: bold; letter-spacing: 1px; }
 
-        /* EXCHANGE GRID */
-        .exchange-section { width: 100%; max-width: 340px; text-align: left; }
-        .section-title { font-size: 12px; color: #777; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
-        
-        .ex-grid {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+        /* TOKENOMICS INFO */
+        .info-card {
+            width: 100%; max-width: 340px;
+            background: rgba(255,255,255,0.03); border-radius: 12px;
+            padding: 15px; margin-bottom: 20px;
+            display: flex; justify-content: space-between;
         }
-        .ex-item {
-            background: var(--glass); border: var(--glass-border);
-            border-radius: 12px; padding: 15px 10px;
-            display: flex; flex-direction: column; align-items: center; gap: 8px;
-            opacity: 0.5; transition: 0.3s;
+        .info-item { text-align: center; width: 48%; }
+        .info-val { font-size: 16px; font-weight: bold; color: white; margin-bottom: 4px; }
+        .info-lbl { font-size: 10px; color: #777; text-transform: uppercase; }
+
+        /* TON CONNECT STYLES */
+        .connect-wrapper {
+            width: 100%; max-width: 340px;
+            margin-bottom: 20px; display: flex; justify-content: center;
         }
-        .ex-item:hover { opacity: 1; border-color: var(--ton-blue); }
-        .ex-logo { width: 32px; height: 32px; border-radius: 50%; background: #333; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; color: white; }
-        
-        .ex-name { font-size: 10px; font-weight: 600; }
-        
+
+        .wallet-details {
+            width: 100%; max-width: 340px;
+            background: rgba(0, 152, 234, 0.1); border: 1px solid var(--ton-blue);
+            border-radius: 12px; padding: 15px;
+            display: none; /* Show when connected */
+            align-items: center; gap: 12px;
+        }
+        .wallet-icon { width: 40px; height: 40px; background: #fff; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .wallet-info { text-align: left; }
+        .w-name { font-weight: bold; font-size: 14px; color: white; }
+        .w-addr { font-family: monospace; font-size: 12px; color: var(--ton-blue); }
+
         .withdraw-btn {
             background: #222; color: #555; width: 100%; padding: 16px;
             border-radius: 12px; border: 1px solid #333;
-            margin-top: 30px; font-weight: bold; display: flex; justify-content: center; align-items: center; gap: 10px;
-            cursor: not-allowed;
+            margin-top: 10px; font-weight: bold; display: flex; justify-content: center; align-items: center; gap: 10px;
+            cursor: not-allowed; max-width: 340px;
         }
-
-        /* LOGOS COLOR MOCKUP */
-        .bg-binance { background: #F3BA2F; color: black; }
-        .bg-bybit { background: #17181e; }
-        .bg-okx { background: white; color: black; }
-        .bg-kucoin { background: #0093dd; }
-        .bg-bitget { background: #00f0e2; color: black; }
 
         /* --- FOOTER --- */
         .bottom-action {
@@ -154,35 +158,28 @@
         }
         .btn-next:active { transform: scale(0.95); }
 
-        /* ANIMATION */
         .fade-in-up { animation: fadeInUp 0.8s ease forwards; opacity: 0; transform: translateY(20px); }
         @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
         .delay-1 { animation-delay: 0.2s; } .delay-2 { animation-delay: 0.5s; } .delay-3 { animation-delay: 0.8s; }
-
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-    <!-- SCREEN 1: ACCESS DENIED -->
     <div id="access-denied">
         <i class="fas fa-lock" style="font-size:40px; color:#ff3b30; margin-bottom:20px"></i>
         <div style="font-weight:bold; color:#ff3b30">MOBILE ACCESS ONLY</div>
     </div>
 
-    <!-- SCREEN 2: LOADER -->
     <div id="loader">
         <div class="spinner"></div>
     </div>
 
-    <!-- CONTENT WRAPPER -->
-    
-    <!-- PROGRESS (Only for Story) -->
     <div id="progress-wrap" style="position:fixed; top:0; left:0; width:100%; height:4px; background:rgba(255,255,255,0.1); z-index:100;">
         <div id="progress" style="height:100%; width:0%; background:var(--ton-blue); transition:width 0.5s;"></div>
     </div>
 
-    <!-- SLIDE 1-4 (Story) -->
+    <!-- STORY SLIDES (1-5) -->
     <div class="slide" id="slide-1">
         <i class="fab fa-telegram fa-4x fade-in-up" style="color: white; margin-bottom: 30px;"></i>
         <h1 class="fade-in-up delay-1">The Digital Archives</h1>
@@ -206,19 +203,16 @@
         <img id="user-avatar" src="" style="width:80px; height:80px; border-radius:50%; border:2px solid white; margin:20px 0;" class="fade-in-up delay-1">
         <div class="points-badge fade-in-up delay-3" id="score-identity">+0 PTS</div>
     </div>
-
-    <!-- SLIDE 5: SUMMARY & VERIFICATION -->
     <div class="slide" id="slide-5">
         <div class="chapter-label fade-in-up">SUMMARY</div>
         <h1 class="fade-in-up" style="font-size:32px; color:var(--ton-blue)">TOTAL SCORE</h1>
         <div class="big-number fade-in-up delay-1" id="final-score" style="font-size:54px">0</div>
         
-        <div class="rank-box fade-in-up delay-2">
+        <div class="rank-box fade-in-up delay-2" style="background: var(--glass); border: 1px solid var(--border); border-radius: 12px; padding: 10px; width: 100%; max-width: 280px; margin-top: 10px;">
             <div style="font-size:10px; color:#888; letter-spacing:1px">GLOBAL RANK</div>
             <div id="user-rank" style="font-size:20px; font-weight:bold; margin-top:5px">CALCULATING...</div>
         </div>
 
-        <!-- TASK BOX -->
         <div class="task-box fade-in-up delay-3" id="task-container">
             <div class="verified-badge" id="badge-verified"><i class="fas fa-check"></i> VERIFIED</div>
             <div style="font-weight:bold; margin-bottom:5px; display:flex; justify-content:space-between;">
@@ -226,74 +220,64 @@
                 <span style="color:var(--success)">+10,000</span>
             </div>
             <p style="font-size:11px; color:#aaa; margin-bottom:10px;">Mandatory to unlock $TG conversion.</p>
-            
             <button class="btn-check" id="btn-do-task" onclick="openChannel()">1. JOIN CHANNEL</button>
             <button class="btn-check" id="btn-check-task" onclick="checkMembership()" style="background:#222; border:1px solid #444">2. VERIFY & UNLOCK</button>
         </div>
 
-        <!-- PRE-CONVERT BUTTON -->
         <button id="btn-convert-trigger" class="btn-check fade-in-up delay-3 hidden" onclick="handleConvert()" style="margin-top:20px; width:100%; max-width:320px; background:white; color:black;">
             <i class="fas fa-exchange-alt"></i> CONVERT TO $TG
         </button>
     </div>
 
-    <!-- VIEW: TOKEN DASHBOARD (New Permanent View) -->
+    <!-- VIEW: WALLET DASHBOARD -->
     <div class="slide" id="view-wallet" style="display:none; padding-top:40px;">
-        <div class="chapter-label">WALLET DASHBOARD</div>
+        <div class="chapter-label">WEB3 DASHBOARD</div>
         
         <div class="token-card fade-in-up">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:12px; color:#aaa;">TOTAL BALANCE</span>
-                <i class="fas fa-eye" style="color:#aaa"></i>
+                <span style="font-size:12px; color:#aaa;">AVAILABLE BALANCE</span>
+                <i class="fas fa-wallet" style="color:#aaa"></i>
             </div>
             <div class="token-amount" id="wallet-balance">0</div>
             <div class="token-symbol">$TG TOKEN</div>
-            <div style="font-size:10px; color:#666; margin-top:10px;">Network: TON (The Open Network)</div>
+            <div style="font-size:10px; color:#666; margin-top:10px;">The Open Network (TON)</div>
         </div>
 
-        <div class="exchange-section fade-in-up delay-1">
-            <div class="section-title">Withdrawal Partners</div>
-            <div class="ex-grid">
-                <div class="ex-item">
-                    <div class="ex-logo bg-binance"><i class="fas fa-cube"></i></div>
-                    <div class="ex-name">Binance</div>
-                </div>
-                <div class="ex-item">
-                    <div class="ex-logo bg-okx">OKX</div>
-                    <div class="ex-name">OKX</div>
-                </div>
-                <div class="ex-item">
-                    <div class="ex-logo bg-bybit">By</div>
-                    <div class="ex-name">Bybit</div>
-                </div>
-                <div class="ex-item">
-                    <div class="ex-logo bg-bitget"><i class="fas fa-arrow-right"></i></div>
-                    <div class="ex-name">Bitget</div>
-                </div>
-                <div class="ex-item">
-                    <div class="ex-logo bg-kucoin">K</div>
-                    <div class="ex-name">Kucoin</div>
-                </div>
-                <div class="ex-item">
-                    <div class="ex-logo" style="background:#0044cc">M</div>
-                    <div class="ex-name">Mexc</div>
-                </div>
+        <!-- Tokenomics Info -->
+        <div class="info-card fade-in-up delay-1">
+            <div class="info-item" style="border-right: 1px solid rgba(255,255,255,0.1)">
+                <div class="info-val">10,000,000,000</div>
+                <div class="info-lbl">Total Supply</div>
+            </div>
+            <div class="info-item">
+                <div class="info-val" style="color: var(--ton-blue)">75%</div>
+                <div class="info-lbl">Community</div>
             </div>
         </div>
 
-        <div class="exchange-section fade-in-up delay-2" style="margin-top:20px;">
-            <div class="section-title">Listing Countdown</div>
-            <div style="background:#111; padding:10px; border-radius:8px; font-family:monospace; color:var(--ton-blue); text-align:center; font-weight:bold;">
-                <span id="countdown">00d 00h 00m 00s</span>
+        <!-- TON Connect Button (Standard) -->
+        <div class="connect-wrapper fade-in-up delay-2">
+            <div id="ton-connect"></div>
+        </div>
+
+        <!-- Wallet Connected Details (Hidden by default) -->
+        <div class="wallet-details fade-in-up delay-2" id="wallet-info-box">
+            <div class="wallet-icon" id="w-icon"><i class="fas fa-wallet" style="color:black"></i></div>
+            <div class="wallet-info">
+                <div class="w-name" id="w-app-name">Wallet</div>
+                <div class="w-addr" id="w-address">UQ...</div>
             </div>
+        </div>
+
+        <div style="background:#111; padding:10px; border-radius:8px; font-family:monospace; color:var(--ton-blue); font-weight:bold; margin-top:10px; width:100%; max-width:340px;">
+            <span id="countdown">00d 00h 00m 00s</span>
         </div>
 
         <button class="withdraw-btn fade-in-up delay-3" onclick="featureLocked()">
-            <i class="fas fa-lock"></i> WITHDRAWAL LOCKED
+            <i class="fas fa-clock"></i> WITHDRAWAL PENDING
         </button>
     </div>
 
-    <!-- FOOTER NAV -->
     <div class="bottom-action" id="main-nav">
         <button class="btn-next" id="btn-action" onclick="handleAction()">Start Journey</button>
         <div style="font-size:9px; color:#444; letter-spacing:1px; margin-top:10px;">SECURED BY TON</div>
@@ -303,7 +287,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, query, where, getCountFromServer, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
@@ -318,13 +301,48 @@
         const db = getFirestore(app);
         const tg = window.Telegram.WebApp;
 
-        // STATE
+        // --- TON CONNECT SETUP ---
+        const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+            manifestUrl: 'https://ton-connect.github.io/demo-dapp-with-react-ui/tonconnect-manifest.json', // Placeholder manifest
+            buttonRootId: 'ton-connect'
+        });
+
+        // Handle Wallet Connection
+        tonConnectUI.onStatusChange((wallet) => {
+            if (wallet) {
+                // Wallet Connected
+                document.getElementById('ton-connect').style.display = 'none'; // Hide connect button
+                const detailsBox = document.getElementById('wallet-info-box');
+                detailsBox.style.display = 'flex'; // Show details
+
+                const appName = wallet.device.appName || "Web3 Wallet";
+                const rawAddress = wallet.account.address;
+                // Format Address: 0:1234...abcd -> UQ12...abcd (Mock user-friendly logic)
+                const shortAddr = rawAddress.slice(0, 4) + "..." + rawAddress.slice(-4);
+                
+                document.getElementById('w-app-name').innerText = appName.charAt(0).toUpperCase() + appName.slice(1);
+                document.getElementById('w-address').innerText = shortAddr;
+                
+                // Save wallet to DB (optional)
+                if(userData) {
+                    updateDoc(doc(db, "users", userData.id.toString()), { 
+                        walletAddress: rawAddress,
+                        walletApp: appName
+                    }).catch(()=>{});
+                }
+            } else {
+                // Wallet Disconnected
+                document.getElementById('ton-connect').style.display = 'block';
+                document.getElementById('wallet-info-box').style.display = 'none';
+            }
+        });
+
+        // --- CORE LOGIC ---
         let currentSlide = 1;
         const totalSlides = 5;
         let userData = null;
         let scores = { total: 0 };
         let isVerified = false;
-        let isConverted = false;
 
         async function init() {
             if (!tg.initData) {
@@ -357,14 +375,11 @@
             
             let premiumScore = user.is_premium ? 5000 : 0;
             let identityScore = (user.username ? 500 : 0) + (user.photo_url ? 300 : 0);
-            
             scores.total = ageScore + premiumScore + identityScore;
 
-            // Render
             document.getElementById('val-year').innerText = `Year ${year}`;
             document.getElementById('score-age').innerText = `+${ageScore.toLocaleString()} PTS`;
             if(user.is_premium) document.getElementById('score-premium').innerText = `+${premiumScore.toLocaleString()} PTS`;
-            if(user.photo_url) document.getElementById('user-avatar').src = user.photo_url;
             document.getElementById('score-identity').innerText = `+${identityScore.toLocaleString()} PTS`;
         }
 
@@ -376,79 +391,52 @@
 
                 if(snap.exists()) {
                     const data = snap.data();
-                    
                     if(data.isVerified) {
                         isVerified = true;
-                        scores.total = data.score; // Use DB score (includes bonus)
+                        scores.total = data.score;
                         document.getElementById('final-score').innerText = scores.total.toLocaleString();
-                        
-                        // If already converted (or returning user who finished story)
-                        if(data.isAnalyzed) {
-                            switchToWalletView();
-                        } else {
-                            // Verify done but not converted/analyzed? Unusual but handle it
+                        if(data.isAnalyzed) switchToWalletView();
+                        else {
                             updateVerificationUI();
                             document.getElementById('slide-5').classList.add('active');
                             currentSlide = 5;
                         }
-                    } else {
-                        // User exists but not verified
-                        document.getElementById('slide-1').classList.add('active');
-                    }
-                } else {
-                    document.getElementById('slide-1').classList.add('active');
-                }
+                    } else document.getElementById('slide-1').classList.add('active');
+                } else document.getElementById('slide-1').classList.add('active');
             } catch(e) { console.error(e); }
         }
 
-        // NAVIGATION
         window.handleAction = async () => {
             if(currentSlide >= totalSlides) return;
-
             tg.HapticFeedback.impactOccurred('medium');
             document.getElementById(`slide-${currentSlide}`).classList.remove('active');
             currentSlide++;
             document.getElementById('progress').style.width = `${((currentSlide-1)/(totalSlides-1))*100}%`;
             document.getElementById(`slide-${currentSlide}`).classList.add('active');
-
-            const btn = document.getElementById('btn-action');
-
+            
             if(currentSlide === 5) {
-                btn.style.display = 'none';
+                document.getElementById('btn-action').style.display = 'none';
                 animateScore();
                 calculateRank();
-                // Ensure UI is updated if verified
                 if(isVerified) updateVerificationUI();
             } else {
-                btn.innerText = "Continue";
+                document.getElementById('btn-action').innerText = "Continue";
             }
         }
 
-        // TASKS & VERIFICATION
         window.openChannel = () => { tg.openTelegramLink("https://t.me/durov"); }
-
+        
         window.checkMembership = async () => {
             const btn = document.getElementById('btn-check-task');
             btn.innerText = "Verifying...";
             btn.disabled = true;
-
-            // SIMULATION FIX: Fake delay then success
             setTimeout(async () => {
                 const reward = 10000;
                 scores.total += reward;
                 isVerified = true;
-
-                // Update DB
                 const ref = doc(db, "users", userData.id.toString());
-                await setDoc(ref, { 
-                    score: scores.total, 
-                    isVerified: true,
-                    firstName: userData.first_name // Ensure basic data
-                }, { merge: true });
-
+                await setDoc(ref, { score: scores.total, isVerified: true, firstName: userData.first_name }, { merge: true });
                 tg.HapticFeedback.notificationOccurred('success');
-                tg.showAlert(`Success! +${reward.toLocaleString()} Points`);
-                
                 document.getElementById('final-score').innerText = scores.total.toLocaleString();
                 updateVerificationUI();
             }, 1500);
@@ -458,44 +446,28 @@
             document.getElementById('badge-verified').style.display = 'block';
             document.getElementById('btn-do-task').style.display = 'none';
             document.getElementById('task-container').style.opacity = '0.5';
-            document.getElementById('task-container').innerHTML = '<div style="text-align:center; color:#34c759; font-weight:bold"><i class="fas fa-check-circle"></i> VERIFIED & REWARDED</div>';
-            
-            const btnConvert = document.getElementById('btn-convert-trigger');
-            btnConvert.classList.remove('hidden');
+            document.getElementById('task-container').innerHTML = '<div style="text-align:center; color:#34c759; font-weight:bold"><i class="fas fa-check-circle"></i> COMPLETED</div>';
+            document.getElementById('btn-convert-trigger').classList.remove('hidden');
         }
 
-        // CONVERSION
         window.handleConvert = async () => {
-            // Save final state
             const ref = doc(db, "users", userData.id.toString());
-            await setDoc(ref, { 
-                isAnalyzed: true, // Marker for returning users
-                lastSeen: serverTimestamp()
-            }, { merge: true });
-
+            await setDoc(ref, { isAnalyzed: true, lastSeen: serverTimestamp() }, { merge: true });
             switchToWalletView();
         }
 
         function switchToWalletView() {
-            // Hide all slides
-            document.querySelectorAll('.slide').forEach(s => {
-                s.style.display = 'none';
-                s.classList.remove('active');
-            });
+            document.querySelectorAll('.slide').forEach(s => s.style.display = 'none');
             document.getElementById('progress-wrap').style.display = 'none';
-            document.getElementById('main-nav').style.display = 'none'; // Hide footer nav
-
-            // Show Wallet
+            document.getElementById('main-nav').style.display = 'none';
+            
             const walletView = document.getElementById('view-wallet');
             walletView.style.display = 'flex';
             walletView.classList.add('active');
-
-            // Set Token Balance (1:10 Ratio)
             const tokens = Math.floor(scores.total / 10);
             animateValue('wallet-balance', 0, tokens, 1500);
         }
 
-        // FEATURES
         window.featureLocked = () => {
             tg.HapticFeedback.notificationOccurred('error');
             tg.showAlert("Withdrawals open on 31/12/2025");
@@ -525,9 +497,7 @@
             let cur = 0; const el = document.getElementById('final-score');
             const step = Math.ceil(scores.total / 40);
             const t = setInterval(() => {
-                cur += step;
-                if(cur >= scores.total) { cur = scores.total; clearInterval(t); }
-                el.innerText = cur.toLocaleString();
+                cur += step; if(cur >= scores.total) { cur = scores.total; clearInterval(t); } el.innerText = cur.toLocaleString();
             }, 20);
         }
 
