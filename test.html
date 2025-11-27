@@ -3,189 +3,296 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TG Analyzer</title>
+    <title>TG SYSTEM V4</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Fonts: Orbitron (Sci-fi) & Rajdhani (Tech) -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
         :root {
-            --bg-color: #0e1621;
-            --card-bg: #17212b;
-            --text-primary: #ffffff;
-            --text-secondary: #828a95;
-            --accent: #2b95ff; /* Telegram Blue */
-            --accent-glow: rgba(43, 149, 255, 0.4);
-            --premium: #a665f5;
+            --bg-deep: #050505;
+            --neon-cyan: #00f3ff;
+            --neon-purple: #bc13fe;
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+            --text-main: #ffffff;
+            --text-dim: #888888;
         }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: 'Rajdhani', sans-serif;
             margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            overflow-x: hidden;
+            padding: 0;
+            overflow: hidden; /* Chặn scroll body để xử lý trong container */
+            height: 100vh;
         }
 
-        /* Loading / Scanning Effect */
-        #scan-screen {
+        /* CANVAS BACKGROUND */
+        #particles {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg-color);
-            z-index: 999;
+            z-index: -1;
+            background: radial-gradient(circle at center, #1a0b2e 0%, #000000 100%);
+        }
+
+        /* LOADING SCREEN */
+        #loader {
+            position: fixed; inset: 0; z-index: 9999;
+            background: #000;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            font-family: 'Roboto Mono', monospace;
         }
-        .scan-line {
-            width: 80%; height: 2px; background: var(--accent);
-            box-shadow: 0 0 15px var(--accent);
-            animation: scan 1.5s infinite alternate;
+        .scanner-line {
+            width: 100%; height: 4px; background: var(--neon-cyan);
+            box-shadow: 0 0 20px var(--neon-cyan);
+            animation: scanDown 2s ease-in-out infinite;
+            position: absolute; top: 0;
         }
-        .scan-text { margin-top: 20px; color: var(--accent); font-size: 14px; }
-        @keyframes scan { from { transform: scaleX(0.2); } to { transform: scaleX(1); } }
+        @keyframes scanDown { 0% {top: 0; opacity: 0;} 50% {opacity: 1;} 100% {top: 100%; opacity: 0;} }
+        
+        .glitch-text {
+            font-family: 'Orbitron', sans-serif; font-size: 24px; font-weight: bold;
+            position: relative; color: white; letter-spacing: 4px;
+        }
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        }
+        .glitch-text::before { left: 2px; text-shadow: -1px 0 red; clip: rect(24px, 550px, 90px, 0); animation: glitch-anim-2 3s infinite linear alternate-reverse; }
+        .glitch-text::after { left: -2px; text-shadow: -1px 0 blue; clip: rect(85px, 550px, 140px, 0); animation: glitch-anim 2.5s infinite linear alternate-reverse; }
+        @keyframes glitch-anim { 0% { clip: rect(10px, 9999px, 31px, 0); } 100% { clip: rect(70px, 9999px, 98px, 0); } }
 
-        /* Main UI */
-        .container { width: 100%; max-width: 420px; display: none; animation: fadeIn 0.5s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        .logo-area { text-align: center; margin-bottom: 20px; }
-        .logo-circle {
-            width: 80px; height: 80px; background: var(--accent);
-            border-radius: 50%; margin: 0 auto 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 32px; font-weight: bold; color: white;
-            box-shadow: 0 0 30px var(--accent-glow);
+        /* MAIN LAYOUT */
+        .app-container {
+            height: 100vh; display: flex; flex-direction: column;
+            padding: 20px 20px 100px 20px; /* Bottom padding for nav */
+            box-sizing: border-box;
+            overflow-y: auto;
+            position: relative; z-index: 2;
         }
 
-        /* Score Card */
-        .score-card {
-            background: var(--card-bg);
-            border-radius: 16px;
-            padding: 25px;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            margin-bottom: 20px;
-            border: 1px solid rgba(255,255,255,0.05);
+        /* HEADER PROFILE */
+        .profile-card {
+            display: flex; align-items: center; gap: 20px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(90deg, rgba(0,0,0,0.8), transparent);
+            border-left: 4px solid var(--neon-cyan);
         }
-        .score-title { color: var(--text-secondary); font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
-        .score-value { font-size: 48px; font-weight: 800; margin: 10px 0; color: var(--text-primary); }
-        .score-rank { display: inline-block; padding: 4px 12px; border-radius: 20px; background: rgba(255,255,255,0.1); font-size: 12px; }
-
-        /* Details List */
-        .detail-row {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+        .avatar-frame {
+            position: relative; width: 80px; height: 80px;
         }
-        .detail-row:last-child { border-bottom: none; }
-        .detail-label { color: var(--text-secondary); font-size: 14px; display: flex; align-items: center; gap: 8px; }
-        .detail-val { font-weight: bold; font-family: 'Roboto Mono', monospace; }
-        .premium-text { color: var(--premium); text-shadow: 0 0 10px rgba(166, 101, 245, 0.4); }
+        .avatar-img {
+            width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
+            border: 2px solid var(--border);
+        }
+        .avatar-glow {
+            position: absolute; inset: -5px; border-radius: 50%;
+            border: 2px dashed var(--neon-cyan);
+            animation: rotate 10s linear infinite;
+        }
+        @keyframes rotate { to { transform: rotate(360deg); } }
+        
+        .user-meta h1 { margin: 0; font-family: 'Orbitron'; font-size: 20px; text-transform: uppercase; }
+        .user-meta p { margin: 5px 0 0; color: var(--neon-cyan); font-family: monospace; font-size: 12px; }
 
-        /* Referral & Buttons */
-        .invite-card {
-            background: linear-gradient(135deg, #17212b, #1f2c3a);
-            border-radius: 16px; padding: 20px;
-            margin-bottom: 25px; text-align: center;
-            border: 1px solid rgba(43, 149, 255, 0.2);
+        /* SCORE BIG DISPLAY */
+        .score-display {
+            text-align: center; margin: 20px 0;
+            position: relative;
+        }
+        .score-val {
+            font-family: 'Orbitron'; font-size: 60px; font-weight: 900;
+            background: -webkit-linear-gradient(#fff, #888);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(255,255,255,0.2);
+        }
+        .score-label { font-size: 14px; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; }
+
+        /* DATA GRID (SYSTEM DUMP) */
+        .data-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;
+        }
+        .data-box {
+            background: var(--glass); border: 1px solid var(--border);
+            padding: 15px; border-radius: 12px;
+            backdrop-filter: blur(10px);
+            transition: 0.3s;
+        }
+        .data-box:hover { border-color: var(--neon-purple); box-shadow: 0 0 15px rgba(188, 19, 254, 0.2); }
+        .db-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; display: block; margin-bottom: 5px; }
+        .db-value { font-size: 16px; font-weight: bold; color: white; word-break: break-all; }
+        
+        .full-width { grid-column: span 2; }
+        .highlight { color: var(--neon-cyan); }
+        .premium-glow { color: #ffd700; text-shadow: 0 0 10px #ffd700; }
+
+        /* INVITE SECTION */
+        .invite-box {
+            background: linear-gradient(135deg, #1a0b2e, #000);
+            border: 1px solid var(--neon-purple);
+            padding: 20px; border-radius: 16px; text-align: center;
         }
         .invite-btn {
-            background: var(--accent); color: white; border: none;
-            padding: 14px; width: 100%; border-radius: 10px;
-            font-weight: bold; font-size: 16px; cursor: pointer;
-            margin-top: 15px; box-shadow: 0 5px 15px var(--accent-glow);
+            background: var(--neon-purple); color: white; border: none;
+            width: 100%; padding: 15px; border-radius: 8px;
+            font-family: 'Orbitron'; font-weight: bold; font-size: 16px;
+            cursor: pointer; margin-top: 10px;
+            box-shadow: 0 0 20px rgba(188, 19, 254, 0.4);
+            transition: 0.2s;
         }
         .invite-btn:active { transform: scale(0.98); }
 
-        /* Leaderboard */
-        .leaderboard-section { margin-top: 20px; }
-        .lb-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
-        .lb-item {
-            background: var(--card-bg); padding: 15px; border-radius: 10px;
-            display: flex; align-items: center; justify-content: space-between;
-            margin-bottom: 8px;
+        /* TAB NAVIGATION */
+        .nav-bar {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 300px; height: 60px;
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 30px;
+            border: 1px solid var(--border);
+            display: flex; justify-content: space-between; padding: 5px;
+            z-index: 100;
         }
-        .lb-user { display: flex; align-items: center; gap: 10px; }
-        .lb-avatar { width: 32px; height: 32px; border-radius: 50%; background: #333; }
-        .lb-count { color: var(--accent); font-weight: bold; font-family: 'Roboto Mono'; }
+        .nav-item {
+            width: 48%; height: 100%; border-radius: 25px;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            color: var(--text-dim); cursor: pointer; transition: 0.3s;
+            font-family: 'Orbitron'; font-size: 12px;
+        }
+        .nav-item.active {
+            background: var(--neon-cyan); color: #000; font-weight: bold;
+            box-shadow: 0 0 15px var(--neon-cyan);
+        }
+        .nav-item.active.alt { /* Leaderboard color */
+            background: var(--neon-purple); color: white;
+            box-shadow: 0 0 15px var(--neon-purple);
+        }
+
+        /* LEADERBOARD TAB */
+        .tab-content { display: none; animation: fadeIn 0.4s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from {opacity: 0; transform: translateY(10px);} to {opacity: 1; transform: translateY(0);} }
+
+        .lb-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 15px; margin-bottom: 10px;
+            background: var(--glass); border-radius: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .rank-badge {
+            width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+            font-weight: bold; border-radius: 50%; background: #222;
+        }
+        .rank-1 { background: #ffd700; color: #000; box-shadow: 0 0 10px #ffd700; }
+        .rank-2 { background: #c0c0c0; color: #000; }
+        .rank-3 { background: #cd7f32; color: #000; }
         
-        /* Language badge */
-        .lang-badge { position: absolute; top: 15px; right: 15px; font-size: 10px; opacity: 0.5; }
     </style>
 </head>
 <body>
 
-    <!-- Màn hình quét -->
-    <div id="scan-screen">
-        <i class="fab fa-telegram fa-3x" style="color: var(--accent); margin-bottom: 20px;"></i>
-        <div class="scan-line"></div>
-        <div class="scan-text" id="scan-status">INITIALIZING...</div>
+    <!-- BACKGROUND EFFECT -->
+    <canvas id="particles"></canvas>
+
+    <!-- LOADING SCREEN -->
+    <div id="loader">
+        <div class="glitch-text" data-text="SYSTEM_BREACH">SYSTEM_BREACH</div>
+        <div style="margin-top: 10px; font-family: monospace; color: var(--neon-cyan);">INITIALIZING CONNECTION...</div>
+        <div class="scanner-line"></div>
     </div>
 
-    <!-- Giao diện chính -->
-    <div class="container" id="main-app">
-        <div class="lang-badge" id="lang-display">EN</div>
+    <!-- MAIN APP -->
+    <div class="app-container">
         
-        <div class="logo-area">
-            <div class="logo-circle">TG</div>
-            <h2 id="welcome-text">Account Analyzer</h2>
-        </div>
-
-        <div class="score-card">
-            <div class="score-title" id="lbl-total-score">Điểm cống hiến</div>
-            <div class="score-value" id="user-score">0</div>
-            <div class="score-rank" id="account-rank">Newbie</div>
+        <!-- TAB 1: PROFILE / SYSTEM DUMP -->
+        <div id="tab-profile" class="tab-content active">
             
-            <div style="margin-top: 20px; text-align: left;">
-                <div class="detail-row">
-                    <div class="detail-label"><i class="fas fa-id-card"></i> <span id="lbl-id">ID Telegram</span></div>
-                    <div class="detail-val" id="val-id">---</div>
+            <div class="profile-card">
+                <div class="avatar-frame">
+                    <div class="avatar-glow"></div>
+                    <img id="user-pfp" src="" class="avatar-img" onerror="this.src='https://via.placeholder.com/80/000000/FFFFFF/?text=TG'">
                 </div>
-                <div class="detail-row">
-                    <div class="detail-label"><i class="fas fa-hourglass-half"></i> <span id="lbl-age">Tuổi thọ</span></div>
-                    <div class="detail-val" id="val-age">+0 PTS</div>
+                <div class="user-meta">
+                    <h1 id="display-name">UNKNOWN</h1>
+                    <p>STATUS: <span style="color:#0f0">ONLINE</span></p>
+                    <p id="join-date">JOINED: calculating...</p>
                 </div>
-                <div class="detail-row">
-                    <div class="detail-label"><i class="fas fa-star"></i> Premium</div>
-                    <div class="detail-val" id="val-premium">NO</div>
+            </div>
+
+            <div class="score-display">
+                <div class="score-label">CONTRIBUTION SCORE</div>
+                <div class="score-val" id="score-counter">0</div>
+            </div>
+
+            <!-- RAW DATA DUMP -->
+            <div style="font-family:'Orbitron'; font-size:12px; margin-bottom:10px; color:var(--neon-cyan)">> SYSTEM_DATA_DUMP:</div>
+            <div class="data-grid">
+                <div class="data-box">
+                    <span class="db-label">TELEGRAM ID</span>
+                    <span class="db-value highlight" id="raw-id">---</span>
                 </div>
-                <div class="detail-row">
-                    <div class="detail-label"><i class="fas fa-language"></i> <span id="lbl-lang">Ngôn ngữ</span></div>
-                    <div class="detail-val" id="val-lang">---</div>
+                <div class="data-box">
+                    <span class="db-label">USERNAME</span>
+                    <span class="db-value" id="raw-username">@NONE</span>
                 </div>
+                <div class="data-box">
+                    <span class="db-label">LANGUAGE</span>
+                    <span class="db-value" id="raw-lang">---</span>
+                </div>
+                <div class="data-box">
+                    <span class="db-label">PREMIUM</span>
+                    <span class="db-value" id="raw-premium">FALSE</span>
+                </div>
+                <div class="data-box full-width">
+                    <span class="db-label">DEVICE / PLATFORM</span>
+                    <span class="db-value" id="raw-device">DETECTING...</span>
+                </div>
+                <div class="data-box full-width">
+                    <span class="db-label">ACCOUNT TIER (BASED ON AGE)</span>
+                    <span class="db-value" id="raw-tier" style="color: var(--neon-purple)">---</span>
+                </div>
+            </div>
+
+            <div class="invite-box">
+                <div style="color:white; font-size:14px; margin-bottom:5px">REFERRAL PROGRAM</div>
+                <div style="color:var(--text-dim); font-size:12px; margin-bottom:15px">Invite users to dominate the Leaderboard</div>
+                <div style="font-size:30px; font-weight:bold; color:var(--neon-cyan); margin-bottom:10px" id="ref-count">0</div>
+                <button class="invite-btn" onclick="invite()">COPY INVITE LINK</button>
             </div>
         </div>
 
-        <div class="invite-card">
-            <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 5px;" id="lbl-invite-desc">
-                Mời bạn bè để leo Top Leader
+        <!-- TAB 2: LEADERBOARD -->
+        <div id="tab-leaderboard" class="tab-content">
+            <div style="text-align:center; margin-bottom:30px">
+                <h1 style="font-family:'Orbitron'; color:var(--neon-purple); font-size:28px">TOP LEADERS</h1>
+                <p style="color:var(--text-dim); font-size:12px">RANKED BY REFERRALS</p>
             </div>
-            <div style="font-size: 24px; font-weight: bold; color: white;">
-                <span id="ref-count">0</span> <span style="font-size: 14px; font-weight: normal; color: #888;">Refs</span>
+            
+            <div id="lb-container">
+                <!-- Javascript fills this -->
+                <div style="text-align:center; color:#555; padding:20px;">Fetching Data...</div>
             </div>
-            <button class="invite-btn" onclick="inviteFriend()" id="btn-invite">Mời bạn bè</button>
         </div>
 
-        <div class="leaderboard-section">
-            <div class="lb-title">
-                <i class="fas fa-trophy" style="color: gold;"></i> <span id="lbl-top">Top Leaders</span>
-            </div>
-            <div id="lb-list">
-                <!-- Javascript will load this -->
-                <div style="text-align: center; color: #555; font-size: 12px;">Loading top inviters...</div>
-            </div>
+    </div>
+
+    <!-- NAVIGATION -->
+    <div class="nav-bar">
+        <div class="nav-item active" onclick="switchTab('profile', this)">
+            <i class="fas fa-id-card"></i> SYSTEM
+        </div>
+        <div class="nav-item" onclick="switchTab('leaderboard', this)">
+            <i class="fas fa-trophy"></i> RANK
         </div>
     </div>
 
-    <!-- Firebase SDK & Logic -->
+    <!-- SCRIPT -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, query, orderBy, limit, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // 1. Cấu hình
+        // FIREBASE CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
@@ -200,281 +307,266 @@
         const db = getFirestore(app);
         const tg = window.Telegram.WebApp;
 
-        // 2. Ngôn ngữ (Language Dictionary)
-        const translations = {
-            vi: {
-                welcome: "Phân Tích Tài Khoản",
-                totalScore: "ĐIỂM CỐNG HIẾN",
-                id: "ID Telegram",
-                age: "Độ lâu đời",
-                premium: "Premium",
-                lang: "Ngôn ngữ",
-                inviteDesc: "Mời bạn bè để đua Top Leader",
-                btnInvite: "Mời Bạn Bè Ngay",
-                top: "Top Trùm Mời",
-                scanning: "ĐANG QUÉT DỮ LIỆU...",
-                rankNew: "Người Mới",
-                rankOld: "Lão Làng",
-                rankOG: "Huyền Thoại",
-                refSuccess: "Đã ghi nhận người giới thiệu!"
-            },
-            en: {
-                welcome: "Account Analyzer",
-                totalScore: "TG SCORE",
-                id: "Telegram ID",
-                age: "Account Age",
-                premium: "Premium",
-                lang: "Language",
-                inviteDesc: "Invite friends to climb the Leaderboard",
-                btnInvite: "Invite Friends",
-                top: "Top Leaders",
-                scanning: "SCANNING DATA...",
-                rankNew: "Newbie",
-                rankOld: "Veteran",
-                rankOG: "Legend",
-                refSuccess: "Referral recorded!"
-            },
-            ru: {
-                welcome: "Анализ аккаунта",
-                totalScore: "TG СЧЕТ",
-                id: "Telegram ID",
-                age: "Возраст аккаунта",
-                premium: "Премиум",
-                lang: "Язык",
-                inviteDesc: "Пригласи друзей в топ",
-                btnInvite: "Пригласить",
-                top: "Топ Лидеров",
-                scanning: "СКАНИРОВАНИЕ...",
-                rankNew: "Новичок",
-                rankOld: "Ветеран",
-                rankOG: "Легенда",
-                refSuccess: "Реферал засчитан!"
-            }
-        };
-
-        let currentLang = 'en';
         let currentUser = null;
 
-        // 3. Hàm tính điểm cống hiến
-        function calculateScore(user) {
-            let score = 0;
-            const details = { ageScore: 0, premiumScore: 0, id: user.id };
+        // --- PARTICLE BACKGROUND SYSTEM ---
+        const canvas = document.getElementById('particles');
+        const ctx = canvas.getContext('2d');
+        let particlesArray;
 
-            // A. Tính điểm tuổi thọ dựa trên ID
-            // ID càng nhỏ = càng già. 
-            // Giả sử ID hiện tại ~ 7.5 tỷ. Mỗi 100tr ID thấp hơn = +100 điểm.
-            // Công thức: (7.5 Tỷ - ID) / 500,000
-            const maxId = 7500000000; 
-            let agePoints = Math.floor((maxId - user.id) / 500000); 
-            if (agePoints < 0) agePoints = 100; // User mới tinh vẫn cho chút điểm
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2;
+                this.speedX = (Math.random() * 0.5) - 0.25;
+                this.speedY = (Math.random() * 0.5) - 0.25;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if (this.x > canvas.width || this.x < 0) this.speedX = -this.speedX;
+                if (this.y > canvas.height || this.y < 0) this.speedY = -this.speedY;
+            }
+            draw() {
+                ctx.fillStyle = 'rgba(0, 243, 255, 0.5)'; // Neon Cyan
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function initParticles() {
+            particlesArray = [];
+            for (let i = 0; i < 50; i++) {
+                particlesArray.push(new Particle());
+            }
+        }
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = 0; i < particlesArray.length; i++) {
+                particlesArray[i].update();
+                particlesArray[i].draw();
+                // Connect lines
+                for (let j = i; j < particlesArray.length; j++) {
+                    const dx = particlesArray[i].x - particlesArray[j].x;
+                    const dy = particlesArray[i].y - particlesArray[j].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < 100) {
+                        ctx.strokeStyle = `rgba(188, 19, 254, ${1 - distance/100})`; // Purple lines
+                        ctx.lineWidth = 0.5;
+                        ctx.beginPath();
+                        ctx.moveTo(particlesArray[i].x, particlesArray[i].y);
+                        ctx.lineTo(particlesArray[j].x, particlesArray[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(animateParticles);
+        }
+        initParticles();
+        animateParticles();
+
+        // --- APP LOGIC ---
+
+        async function initApp() {
+            tg.expand();
+            tg.setHeaderColor('#050505'); // Match bg
+            tg.enableClosingConfirmation();
+
+            // Get User Data
+            currentUser = tg.initDataUnsafe.user;
             
-            score += agePoints;
-            details.ageScore = agePoints;
-
-            // B. Premium (+5000 điểm)
-            if (user.is_premium) {
-                score += 5000;
-                details.premiumScore = 5000;
+            // Fallback for browser testing
+            if (!currentUser) {
+                currentUser = { 
+                    id: 100000000, 
+                    first_name: "Test", 
+                    last_name: "Subject", 
+                    username: "tester_001", 
+                    language_code: "en", 
+                    is_premium: true 
+                };
             }
 
-            // C. Username (+500 điểm)
-            if (user.username) score += 500;
-
-            return { total: score, details };
-        }
-
-        // 4. Khởi tạo & Dịch thuật
-        function setLanguage(langCode) {
-            // Mặc định en nếu không tìm thấy
-            currentLang = translations[langCode] ? langCode : 'en';
-            const t = translations[currentLang];
+            // Render Info Immediately (Raw Data)
+            document.getElementById('display-name').innerText = (currentUser.first_name + ' ' + (currentUser.last_name || '')).toUpperCase();
+            if(currentUser.photo_url) document.getElementById('user-pfp').src = currentUser.photo_url;
             
-            document.getElementById('lang-display').innerText = langCode.toUpperCase();
-            document.getElementById('welcome-text').innerText = t.welcome;
-            document.getElementById('lbl-total-score').innerText = t.totalScore;
-            document.getElementById('lbl-id').innerText = t.id;
-            document.getElementById('lbl-age').innerText = t.age;
-            document.getElementById('lbl-lang').innerText = t.lang;
-            document.getElementById('lbl-invite-desc').innerText = t.inviteDesc;
-            document.getElementById('btn-invite').innerText = t.btnInvite;
-            document.getElementById('lbl-top').innerText = t.top;
-            document.getElementById('scan-status').innerText = t.scanning;
-        }
-
-        async function init() {
-            tg.expand();
-            tg.setHeaderColor('#0e1621');
+            document.getElementById('raw-id').innerText = currentUser.id;
+            document.getElementById('raw-username').innerText = currentUser.username ? '@' + currentUser.username : 'UNDEFINED';
+            document.getElementById('raw-lang').innerText = (currentUser.language_code || 'en').toUpperCase();
+            document.getElementById('raw-device').innerText = (tg.platform || 'unknown').toUpperCase();
             
-            // Lấy user
-            currentUser = tg.initDataUnsafe.user;
-            // Test user nếu chạy trên browser
-            if (!currentUser) currentUser = { id: 123456789, first_name: "Test", last_name: "User", username: "tester", language_code: "vi", is_premium: true };
+            const premEl = document.getElementById('raw-premium');
+            if(currentUser.is_premium) {
+                premEl.innerText = "TRUE (VERIFIED)";
+                premEl.classList.add('premium-glow');
+            } else {
+                premEl.innerText = "FALSE";
+            }
 
-            // Detect Language
-            setLanguage(currentUser.language_code || 'en');
+            // Estimate Join Date / Tier based on ID
+            // ID 100M ~ 2015. ID 7B ~ 2024.
+            const id = currentUser.id;
+            let tier = "RECRUIT (NEW)";
+            let joinYear = "2024";
+            if (id < 500000000) { tier = "FOUNDER (OG)"; joinYear = "< 2017"; }
+            else if (id < 1500000000) { tier = "VETERAN"; joinYear = "2018-2020"; }
+            else if (id < 5000000000) { tier = "CITIZEN"; joinYear = "2021-2023"; }
+            
+            document.getElementById('raw-tier').innerText = tier;
+            document.getElementById('join-date').innerText = `EST. JOIN: ${joinYear}`;
 
-            // Hiệu ứng scan giả lập (2 giây)
+            // Handle Database Logic
             setTimeout(async () => {
-                await processUser();
-            }, 2000);
+                await processDatabase();
+                // Hide Loader
+                document.getElementById('loader').style.display = 'none';
+            }, 1500); // Fake delay for cool loading effect
         }
 
-        // 5. Xử lý Logic chính
-        async function processUser() {
-            document.getElementById('scan-screen').style.display = 'none';
-            document.getElementById('main-app').style.display = 'block';
-
+        async function processDatabase() {
             const userRef = doc(db, "users", currentUser.id.toString());
             const docSnap = await getDoc(userRef);
             
-            const calc = calculateScore(currentUser);
-            let finalScore = calc.total;
-            let referralCount = 0;
+            // Calculate Score
+            let score = Math.floor((8000000000 - currentUser.id) / 100000); // Algorithm
+            if(score < 0) score = 100;
+            if(currentUser.is_premium) score += 5000;
+            if(currentUser.username) score += 500;
 
-            if (!docSnap.exists()) {
-                // --- USER MỚI ---
-                
-                // Xử lý Referral (Nếu có start_param)
+            let finalScore = score;
+            let referrals = 0;
+
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                // Always take higher score (if re-calculated) or preserve stored score
+                // To keep it simple: we update static info, keep accumulated ref count
+                referrals = data.referralCount || 0;
+                await updateDoc(userRef, {
+                    firstName: currentUser.first_name,
+                    username: currentUser.username || "",
+                    isPremium: currentUser.is_premium || false,
+                    lastActive: serverTimestamp()
+                    // Don't overwrite score if you want to keep mining/game points from prev versions
+                });
+            } else {
+                // New User + Check Referral
                 const startParam = tg.initDataUnsafe.start_param;
                 if (startParam && startParam.startsWith('ref_')) {
-                    const referrerId = startParam.split('_')[1];
-                    if (referrerId && referrerId !== currentUser.id.toString()) {
+                    const refId = startParam.split('_')[1];
+                    if (refId && refId !== currentUser.id.toString()) {
                         try {
-                            // Cộng ref cho người mời
-                            const refUserRef = doc(db, "users", referrerId);
-                            await updateDoc(refUserRef, { 
-                                referralCount: increment(1),
-                                score: increment(1000) // Người mời được cộng điểm
-                            });
-                        } catch (e) { console.log("Ref error", e); }
+                            const inviteRef = doc(db, "users", refId);
+                            await updateDoc(inviteRef, { referralCount: increment(1) });
+                        } catch(e) {}
                     }
                 }
 
-                // Lưu user mới
                 await setDoc(userRef, {
                     id: currentUser.id,
                     firstName: currentUser.first_name,
                     username: currentUser.username || "",
-                    language: currentUser.language_code || "en",
-                    isPremium: currentUser.is_premium || false,
-                    score: finalScore,
+                    score: score,
                     referralCount: 0,
                     joinedAt: serverTimestamp()
                 });
-
-            } else {
-                // --- USER CŨ ---
-                const data = docSnap.data();
-                // Giữ nguyên điểm cũ, chỉ update thông tin mới (nếu cần logic update điểm real-time thì sửa ở đây)
-                // Ở đây mình ưu tiên hiển thị điểm đã lưu + ref count đã lưu
-                // Tuy nhiên nếu user mới mua Premium, cần update lại
-                if(currentUser.is_premium && !data.isPremium) {
-                    finalScore = data.score + 5000;
-                    await updateDoc(userRef, { isPremium: true, score: finalScore });
-                } else {
-                    finalScore = data.score;
-                }
-                referralCount = data.referralCount || 0;
             }
-
-            // Render dữ liệu ra màn hình
-            updateUI(finalScore, calc.details, referralCount);
+            
+            // Update UI
+            animateValue("score-counter", 0, finalScore, 1500);
+            document.getElementById('ref-count').innerText = referrals;
             
             // Load Leaderboard
             loadLeaderboard();
         }
 
-        function updateUI(score, details, refCount) {
-            // Hiệu ứng nhảy số
-            const scoreEl = document.getElementById('user-score');
-            scoreEl.innerText = score.toLocaleString();
-
-            document.getElementById('val-id').innerText = currentUser.id;
-            document.getElementById('val-age').innerText = `+${details.ageScore.toLocaleString()}`;
-            document.getElementById('val-lang').innerText = (currentUser.language_code || 'en').toUpperCase();
-            
-            const premEl = document.getElementById('val-premium');
-            if (currentUser.is_premium) {
-                premEl.innerHTML = '<i class="fas fa-check-circle"></i> YES (+5000)';
-                premEl.classList.add('premium-text');
-            } else {
-                premEl.innerText = "NO";
-            }
-
-            // Set Rank title
-            const t = translations[currentLang];
-            let rank = t.rankNew;
-            if (details.ageScore > 5000) rank = t.rankOld;
-            if (details.ageScore > 10000) rank = t.rankOG;
-            document.getElementById('account-rank').innerText = rank;
-
-            document.getElementById('ref-count').innerText = refCount;
-        }
-
-        // 6. Xử lý mời bạn bè
-        window.inviteFriend = () => {
-            const inviteLink = `https://t.me/YOUR_BOT_USERNAME?start=ref_${currentUser.id}`;
-            const msg = `Check my TG Account Score: ${document.getElementById('user-score').innerText}! Check yours now:`;
-            const url = `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encodeURIComponent(msg)}`;
-            tg.openTelegramLink(url);
-        };
-
-        // 7. Load Leaderboard (Chỉ tính theo Referral Count)
+        // Leaderboard Function
         async function loadLeaderboard() {
-            const lbList = document.getElementById('lb-list');
+            const lbContainer = document.getElementById('lb-container');
             try {
-                // Query: Sort by referralCount DESC, limit 10
                 const q = query(collection(db, "users"), orderBy("referralCount", "desc"), limit(10));
                 const querySnapshot = await getDocs(q);
                 
                 let html = '';
-                let index = 1;
-
-                if (querySnapshot.empty) {
-                    lbList.innerHTML = '<div style="text-align:center; opacity:0.5; padding:10px">Chưa có dữ liệu</div>';
-                    return;
-                }
-
+                let rank = 1;
+                
                 querySnapshot.forEach((doc) => {
                     const u = doc.data();
-                    const isMe = u.id === currentUser.id;
-                    
+                    let rankClass = '';
+                    if(rank === 1) rankClass = 'rank-1';
+                    else if(rank === 2) rankClass = 'rank-2';
+                    else if(rank === 3) rankClass = 'rank-3';
+
                     html += `
-                        <div class="lb-item" style="${isMe ? 'border:1px solid var(--accent)' : ''}">
-                            <div class="lb-user">
-                                <div style="width:20px; text-align:center; font-weight:bold; color:#666">#${index}</div>
-                                <div class="lb-avatar" style="background-color: ${stringToColor(u.firstName)}"></div>
+                        <div class="lb-row">
+                            <div style="display:flex; align-items:center; gap:10px">
+                                <div class="rank-badge ${rankClass}">${rank}</div>
                                 <div>
-                                    <div style="font-weight:600; font-size:14px">${u.firstName}</div>
-                                    <div style="font-size:10px; color:#888">${u.id}</div>
+                                    <div style="font-weight:bold; color:white">${u.firstName}</div>
+                                    <div style="font-size:10px; color:#888">ID: ${u.id}</div>
                                 </div>
                             </div>
-                            <div class="lb-count">
-                                ${u.referralCount || 0} <i class="fas fa-user-friends" style="font-size:10px"></i>
-                            </div>
+                            <div style="font-family:'Orbitron'; color:var(--neon-cyan)">${u.referralCount || 0} REFS</div>
                         </div>
                     `;
-                    index++;
+                    rank++;
                 });
-                lbList.innerHTML = html;
-            } catch (error) {
-                console.error("LB Error:", error);
-                // Để chạy được orderBy, Firestore đôi khi yêu cầu tạo Index. 
-                // Nếu lỗi, mở Console trình duyệt xem link tạo index.
-                lbList.innerHTML = '<div style="color:red; font-size:10px; text-align:center">Cần tạo Index trên Firestore</div>';
+                
+                if(html === '') html = '<div style="text-align:center; padding:20px">No data available</div>';
+                lbContainer.innerHTML = html;
+
+            } catch(e) {
+                console.log(e);
+                lbContainer.innerHTML = '<div style="text-align:center; color:red">Need Firestore Indexing</div>';
             }
         }
 
-        // Helper: Tạo màu từ tên
-        function stringToColor(str) {
-            let hash = 0;
-            for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
-            const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
-            return '#' + "00000".substring(0, 6 - c.length) + c;
+        // --- UTILS & EXPORTS ---
+
+        window.invite = () => {
+            const link = `https://t.me/YOUR_BOT_NAME?start=ref_${currentUser.id}`;
+            const text = `Check my System Stats! Score: ${document.getElementById('score-counter').innerText}`;
+            const url = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`;
+            tg.openTelegramLink(url);
+        };
+
+        window.switchTab = (tab, el) => {
+            // UI Switch
+            document.querySelectorAll('.nav-item').forEach(n => {
+                n.classList.remove('active');
+                n.classList.remove('alt');
+            });
+            el.classList.add('active');
+            if(tab === 'leaderboard') el.classList.add('alt');
+
+            // Content Switch
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            
+            tg.HapticFeedback.selectionChanged();
+        };
+
+        function animateValue(id, start, end, duration) {
+            const obj = document.getElementById(id);
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor(progress * (end - start) + start).toLocaleString();
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
         }
 
         // Start
-        init();
+        initApp();
 
     </script>
 </body>
