@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TG Journey</title>
+    <title>TG Journey Fix</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     
@@ -11,245 +11,136 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
-        :root {
-            --bg-color: #050505;
-            --ton-blue: #0098EA;
-            --text-main: #ffffff;
-            --glass: rgba(255, 255, 255, 0.05);
-            --border: 1px solid rgba(255, 255, 255, 0.1);
-            --success: #00ff9d;
-            --error: #ff3b30;
-            --mono: 'JetBrains Mono', monospace;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: 'Inter', sans-serif;
-            margin: 0; padding: 0;
-            height: 100vh; overflow: hidden;
-            display: flex; flex-direction: column;
-        }
-
-        /* --- ANIMATIONS --- */
-        .slide {
-            position: absolute; inset: 0; padding: 20px;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none; transform: scale(1.1);
-            transition: opacity 0.8s ease, transform 0.8s ease;
-            text-align: center;
-        }
+        :root { --bg-color: #050505; --ton-blue: #0098EA; --text-main: #ffffff; --glass: rgba(255, 255, 255, 0.05); --error: #ff3b30; --mono: 'JetBrains Mono', monospace; }
+        body { background-color: var(--bg-color); color: var(--text-main); font-family: 'Inter', sans-serif; margin: 0; padding: 0; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        
+        /* DEBUG CONSOLE */
+        #debug-console { position: fixed; top: 0; left: 0; width: 100%; background: rgba(0,0,0,0.8); color: lime; font-family: var(--mono); font-size: 10px; padding: 5px; z-index: 20000; pointer-events: none; max-height: 100px; overflow: hidden; display: none; }
+        
+        /* ANIMATIONS */
+        .slide { position: absolute; inset: 0; padding: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transform: scale(1.1); transition: opacity 0.5s ease, transform 0.5s ease; text-align: center; }
         .slide.active { opacity: 1; pointer-events: auto; transform: scale(1); }
         .slide.exit { opacity: 0; transform: scale(0.9); }
-
-        .fade-up { animation: fadeInUp 1s ease forwards; opacity: 0; transform: translateY(20px); }
-        .delay-1 { animation-delay: 0.3s; }
-        .delay-2 { animation-delay: 0.6s; }
-        .delay-3 { animation-delay: 0.9s; }
+        .fade-up { animation: fadeInUp 0.8s ease forwards; opacity: 0; transform: translateY(20px); }
         @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
 
-        /* --- BAN SCREEN --- */
-        #ban-screen {
-            position: fixed; inset: 0; z-index: 10000;
-            background: #000; display: none;
-            flex-direction: column; align-items: center; justify-content: center;
-            text-align: center; padding: 30px;
-        }
-        .ban-icon { font-size: 60px; color: var(--error); margin-bottom: 20px; }
+        /* UI ELEMENTS */
+        #loader { position: fixed; inset: 0; z-index: 9000; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .spinner { width: 40px; height: 40px; border: 3px solid #333; border-top-color: var(--ton-blue); border-radius: 50%; animation: spin 1s infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* --- UI ELEMENTS --- */
-        h1 { font-family: 'Cinzel', serif; font-size: 28px; letter-spacing: 2px; margin-bottom: 10px; color: #eee; }
+        /* BAN SCREEN */
+        #ban-screen { position: fixed; inset: 0; z-index: 10000; background: #000; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 30px; }
+
+        /* DASHBOARD */
         .big-number { font-size: 42px; font-weight: 800; color: var(--ton-blue); margin: 15px 0; font-family: var(--mono); }
-        .chapter-label { font-size: 10px; letter-spacing: 4px; color: #666; text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
-
-        /* SECURITY INPUT (NEW) */
-        .security-box {
-            background: rgba(0, 152, 234, 0.05); border: 1px solid var(--ton-blue);
-            border-radius: 16px; padding: 25px; width: 100%; max-width: 320px;
-            box-shadow: 0 0 30px rgba(0, 152, 234, 0.1);
-            position: relative; overflow: hidden;
-        }
-        .security-box::before {
-            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
-            background: linear-gradient(90deg, transparent, var(--ton-blue), transparent);
-            animation: scan 2s linear infinite;
-        }
-        @keyframes scan { 0% {transform: translateX(-100%);} 100% {transform: translateX(100%);} }
-
-        .sec-code-display {
-            font-family: var(--mono); font-size: 28px; letter-spacing: 5px;
-            color: var(--ton-blue); margin: 15px 0; font-weight: bold;
-            text-shadow: 0 0 10px var(--ton-blue);
-            user-select: none;
-        }
-        .sec-input {
-            background: #111; border: 1px solid #333; color: white;
-            padding: 15px; border-radius: 8px; width: 100%;
-            text-align: center; font-size: 18px; font-family: var(--mono);
-            outline: none; transition: 0.3s;
-        }
-        .sec-input:focus { border-color: var(--ton-blue); box-shadow: 0 0 15px rgba(0, 152, 234, 0.3); }
-
-        /* TOKENOMICS (NEW) */
-        .distribution-card {
-            background: var(--glass); border: var(--border);
-            border-radius: 16px; padding: 20px; width: 100%; max-width: 340px;
-            margin-top: 20px;
-        }
-        .dist-bar {
-            height: 10px; width: 100%; background: #222; border-radius: 5px;
-            margin: 10px 0; overflow: hidden; display: flex;
-        }
-        .dist-fill { height: 100%; background: var(--ton-blue); width: 75%; box-shadow: 0 0 10px var(--ton-blue); }
-        .dist-legend { display: flex; justify-content: space-between; font-size: 11px; color: #888; }
+        .security-box { background: rgba(0, 152, 234, 0.05); border: 1px solid var(--ton-blue); border-radius: 16px; padding: 25px; width: 100%; max-width: 320px; position: relative; overflow: hidden; }
+        .sec-code-display { font-family: var(--mono); font-size: 28px; letter-spacing: 5px; color: var(--ton-blue); margin: 15px 0; font-weight: bold; }
+        .sec-input { background: #111; border: 1px solid #333; color: white; padding: 15px; border-radius: 8px; width: 100%; text-align: center; font-size: 18px; font-family: var(--mono); outline: none; }
         
-        /* WITHDRAW BUTTON */
-        .btn-withdraw {
-            width: 100%; max-width: 340px;
-            background: rgba(255,255,255,0.05); color: #555;
-            border: 1px dashed #444; padding: 16px;
-            border-radius: 12px; margin-top: 15px;
-            font-weight: bold; display: flex; justify-content: center; align-items: center; gap: 10px;
-            cursor: not-allowed; position: relative;
-        }
-        .lock-badge {
-            background: #222; color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 4px;
-        }
+        .btn-next { background: white; color: black; border: none; padding: 16px 40px; border-radius: 30px; font-weight: 800; width: 80%; max-width: 300px; cursor: pointer; box-shadow: 0 0 20px rgba(255,255,255,0.2); }
+        .bottom-action { position: fixed; bottom: 30px; left: 0; width: 100%; display: flex; justify-content: center; z-index: 50; }
 
-        /* NAVIGATION */
-        .bottom-action {
-            position: fixed; bottom: 30px; left: 0; width: 100%;
-            display: flex; justify-content: center; z-index: 50;
-        }
-        .btn-next {
-            background: white; color: black; border: none;
-            padding: 16px 40px; border-radius: 30px; font-weight: 800;
-            width: 80%; max-width: 300px; cursor: pointer;
-            box-shadow: 0 0 20px rgba(255,255,255,0.2);
-            transition: transform 0.2s;
-        }
-        .btn-next:active { transform: scale(0.95); }
-
+        .distribution-card { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 20px; width: 100%; max-width: 340px; margin-top: 20px; }
+        .dist-bar { height: 10px; width: 100%; background: #222; border-radius: 5px; margin: 10px 0; overflow: hidden; }
+        .dist-fill { height: 100%; background: var(--ton-blue); width: 75%; }
+        
+        .btn-withdraw { width: 100%; max-width: 340px; background: rgba(255,255,255,0.05); color: #555; border: 1px dashed #444; padding: 16px; border-radius: 12px; margin-top: 15px; font-weight: bold; display: flex; justify-content: center; align-items: center; gap: 10px; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
-    <!-- BANNED SCREEN -->
+    <!-- DEBUG CONSOLE -->
+    <div id="debug-console"></div>
+
+    <!-- BAN SCREEN -->
     <div id="ban-screen">
-        <i class="fas fa-ban ban-icon"></i>
+        <i class="fas fa-ban" style="font-size: 60px; color: var(--error); margin-bottom: 20px;"></i>
         <h2 style="color:var(--error); margin:0;">DEVICE LOCKED</h2>
-        <p style="color:#888; font-size:13px; margin-top:10px;">
-            Security Violation: Multiple accounts detected on this device.
-            <br>Only the original account owner can access this app.
-        </p>
-        <div style="margin-top:20px; font-family:var(--mono); background:#222; padding:5px; border-radius:4px; font-size:12px;">
-            REF: MULTI_ACC_DETECTED
-        </div>
+        <p style="color:#888; font-size:13px; margin-top:10px;">Multiple accounts detected.</p>
     </div>
 
     <!-- LOADER -->
-    <div id="loader" style="position:fixed; inset:0; z-index:9000; background:#000; display:flex; align-items:center; justify-content:center;">
-        <div style="width:40px; height:40px; border:3px solid #333; border-top-color:var(--ton-blue); border-radius:50%; animation:spin 1s infinite;"></div>
+    <div id="loader">
+        <div class="spinner"></div>
+        <div style="margin-top: 10px; font-size: 10px; color: #666">LOADING SYSTEM...</div>
     </div>
 
-    <!-- STORY CONTAINER -->
+    <!-- STORY -->
     <div id="story-container">
-        
         <!-- Slide 1 -->
         <div class="slide" id="slide-1">
             <i class="fab fa-telegram fa-4x fade-up" style="color: white; margin-bottom: 30px;"></i>
-            <h1 class="fade-up delay-1">The Archives</h1>
-            <p class="fade-up delay-2" style="color:var(--text-sub)">Analyzing your digital footprint...</p>
+            <h1 class="fade-up">The Archives</h1>
+            <p class="fade-up" style="color:#888">Analyzing footprint...</p>
         </div>
-
         <!-- Slide 2 -->
         <div class="slide" id="slide-2">
-            <div class="chapter-label fade-up">TIMELINE</div>
+            <div style="font-size:10px; letter-spacing:4px; color:#666; margin-bottom:10px;">TIMELINE</div>
             <h1 class="fade-up">The Origin</h1>
-            <div class="big-number fade-up delay-1" id="val-year">...</div>
-            <div class="fade-up delay-2" style="font-size:12px; color:#666">JOINED TELEGRAM</div>
+            <div class="big-number fade-up" id="val-year">...</div>
         </div>
-
         <!-- Slide 3 -->
         <div class="slide" id="slide-3">
-            <div class="chapter-label fade-up">STATUS</div>
+            <div style="font-size:10px; letter-spacing:4px; color:#666; margin-bottom:10px;">STATUS</div>
             <h1 class="fade-up">The Elite</h1>
-            <div class="fade-up delay-1" style="font-size: 60px; margin: 20px 0;"><i class="fas fa-star" style="color:#333" id="icon-premium"></i></div>
-            <p class="fade-up delay-2" id="txt-premium" style="color:#888; font-size:12px">Standard User</p>
+            <div style="font-size: 60px; margin: 20px 0;"><i class="fas fa-star" style="color:#333" id="icon-premium"></i></div>
+            <p id="txt-premium" style="color:#888; font-size:12px">Standard User</p>
         </div>
-
-        <!-- Slide 4: Verification -->
+        <!-- Slide 4: Verify -->
         <div class="slide" id="slide-4">
-            <div class="chapter-label fade-up">SECURITY CHECK</div>
+            <div style="font-size:10px; letter-spacing:4px; color:#666; margin-bottom:10px;">SECURITY</div>
             <h1 class="fade-up">Verification</h1>
-            
-            <div class="security-box fade-up delay-1">
-                <div style="font-size:10px; color:#888; text-transform:uppercase;">System Code</div>
+            <div class="security-box fade-up">
+                <div style="font-size:10px; color:#888;">SYSTEM CODE</div>
                 <div class="sec-code-display" id="sec-code">...</div>
                 <input type="text" class="sec-input" id="sec-input" placeholder="ENTER CODE" maxlength="6">
             </div>
-            
-            <p class="fade-up delay-2" style="font-size:11px; color:#555; margin-top:20px; max-width:280px;">
-                Input the generated code above to verify humanity and generate your token allocation.
-            </p>
         </div>
     </div>
 
-    <!-- DASHBOARD (Wallet View) -->
+    <!-- DASHBOARD -->
     <div class="slide" id="view-wallet" style="display:none; justify-content:flex-start; padding-top:60px; background: radial-gradient(circle at top, #111, #000);">
-        <div class="chapter-label">YOUR ASSETS</div>
-        
-        <!-- Balance Card -->
+        <div style="font-size:10px; letter-spacing:4px; color:#666; margin-bottom:10px;">ASSETS</div>
         <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:20px; padding:30px; width:100%; max-width:340px; text-align:center;">
-            <div style="font-size:12px; color:#888;">TOTAL BALANCE</div>
+            <div style="font-size:12px; color:#888;">BALANCE</div>
             <div class="big-number" style="margin:10px 0; font-size:48px;" id="wallet-balance">0</div>
             <div style="font-weight:bold; color:var(--ton-blue)">$TG TOKEN</div>
         </div>
 
-        <!-- Tokenomics -->
         <div class="distribution-card">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <span style="font-size:12px; font-weight:bold;">Token Distribution</span>
-                <span style="font-size:10px; color:#666;">Total: 10B</span>
+                <span style="font-size:10px; color:#666;">75% Community</span>
             </div>
-            <div class="dist-bar">
-                <div class="dist-fill"></div>
-            </div>
-            <div class="dist-legend">
-                <span style="color:var(--ton-blue)">● 75% Community</span>
-                <span>● 25% Team/Liq</span>
-            </div>
+            <div class="dist-bar"><div class="dist-fill"></div></div>
         </div>
 
-        <!-- Wallet Connect -->
-        <div style="margin-top:20px; width:100%; max-width:340px;">
-             <div id="ton-connect-btn" style="display:flex; justify-content:center;"></div>
+        <div style="margin-top:20px; width:100%; max-width:340px; display:flex; justify-content:center;">
+             <div id="ton-connect-btn"></div>
         </div>
 
-        <!-- Withdraw Button -->
-        <button class="btn-withdraw" onclick="handleWithdraw()">
-            <span class="lock-badge"><i class="fas fa-lock"></i></span>
-            <span>WITHDRAW</span>
-            <span style="font-size:10px; margin-left:auto; color:#666">Opens 31/12</span>
+        <button class="btn-withdraw">
+            <i class="fas fa-lock"></i> WITHDRAW (Opens 31/12)
         </button>
-        
-        <!-- Connection Log -->
-        <div style="margin-top:20px; width:100%; max-width:340px; text-align:left;">
-             <div style="font-size:10px; color:#444; margin-bottom:5px;">ACTIVITY LOG</div>
-             <div id="activity-log" style="font-family:var(--mono); font-size:10px; color:#666; height:60px; overflow-y:auto; background:#111; padding:10px; border-radius:8px;"></div>
-        </div>
     </div>
 
-    <!-- FOOTER NAV -->
     <div class="bottom-action" id="nav-footer">
         <button class="btn-next" id="btn-action">START</button>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion, serverTimestamp, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // FIREBASE CONFIG
+        // DEBUG LOGGER
+        function log(msg) {
+            const el = document.getElementById('debug-console');
+            el.style.display = 'block';
+            el.innerHTML += `> ${msg}<br>`;
+            console.log(msg);
+        }
+
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
@@ -259,145 +150,150 @@
             appId: "1:914980131889:web:72f8da15c42dbee671b110",
             measurementId: "G-C587M69LZW"
         };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const tg = window.Telegram.WebApp;
 
-        // TON CONNECT
+        let app, db, tg;
+        let currentUser = null;
+        let currentSlide = 1;
+        let scores = { total: 0 };
+        let systemCode = "";
+        let currentIP = "unknown";
+
         const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
             manifestUrl: 'https://ton-connect.github.io/demo-dapp-with-react-ui/tonconnect-manifest.json',
             buttonRootId: 'ton-connect-btn'
         });
 
-        // STATE
-        let currentUser = null;
-        let currentSlide = 1;
-        let scores = { total: 0 };
-        let systemCode = "";
-        let currentIP = "";
-
-        // HAPTIC
-        function haptic(type = 'medium') {
-            if(tg.HapticFeedback) {
-                if(type === 'error') tg.HapticFeedback.notificationOccurred('error');
-                else if(type === 'success') tg.HapticFeedback.notificationOccurred('success');
-                else tg.HapticFeedback.impactOccurred(type);
-            }
-        }
-
         async function init() {
-            if (!tg.initData) return document.body.innerHTML = "Access Denied";
-            tg.expand();
-            tg.setHeaderColor('#000000');
-            
-            currentUser = tg.initDataUnsafe.user;
-            // Testing (Remove in prod)
-            // if(!currentUser) currentUser = { id: 111111, first_name: "Test", username: "tester", is_premium: false };
-            if(!currentUser) return;
-
-            // Get IP
             try {
-                const res = await fetch('https://api.ipify.org?format=json');
-                const json = await res.json();
-                currentIP = json.ip;
-            } catch(e) { currentIP = "unknown"; }
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                tg = window.Telegram.WebApp;
+                tg.expand();
+                tg.setHeaderColor('#000000');
 
-            // 1. SECURITY CHECK (CRITICAL)
-            const isBanned = await checkSecurity();
-            if(isBanned) return; 
+                // 1. Lấy User (Tự tạo mock nếu lỗi)
+                currentUser = tg.initDataUnsafe.user;
+                if (!currentUser) {
+                    log("User not found. Running in Test Mode.");
+                    currentUser = { id: 888888, first_name: "TestUser", username: "tester", is_premium: true }; 
+                }
+                log(`User ID: ${currentUser.id}`);
 
-            // 2. Setup
-            calculateScore(currentUser);
-            setupCode();
-            
-            // 3. Logic
-            await loadUserData();
-            
-            // Events
-            document.getElementById('btn-action').onclick = nextSlide;
+                // 2. Lấy IP (Try/Catch để không bị treo)
+                try {
+                    const res = await fetch('https://api.ipify.org?format=json');
+                    const json = await res.json();
+                    currentIP = json.ip;
+                    log(`IP: ${currentIP}`);
+                } catch (e) {
+                    log("IP Fetch Failed. Continuing...");
+                }
+
+                // 3. Security Check
+                const banned = await checkSecurity();
+                if (banned) return;
+
+                // 4. Setup Data
+                setupCode();
+                calculateScore(currentUser);
+
+                // 5. Check DB for existing user
+                await checkUserDB();
+
+                // 6. Bind Events
+                document.getElementById('btn-action').onclick = nextSlide;
+
+            } catch (err) {
+                log(`CRITICAL ERROR: ${err.message}`);
+                // Tắt loader nếu lỗi để user thấy thông báo
+                document.getElementById('loader').style.display = 'none';
+                alert("Lỗi hệ thống. Vui lòng kiểm tra Debug Console trên cùng.");
+            }
         }
 
         async function checkSecurity() {
-            // A. DEVICE CHECK (LocalStorage)
-            const storedOwner = localStorage.getItem('tg_app_owner');
-            
-            if (!storedOwner) {
-                // First time on this device -> Claim ownership
-                localStorage.setItem('tg_app_owner', currentUser.id);
-            } else {
-                // Device has an owner. Is it me?
-                if (storedOwner != currentUser.id) {
-                    // Not me! I am an intruder on this device.
-                    await banUser("Device Conflict: Logged in on another user's device.");
+            try {
+                // A. Check LocalStorage
+                const storedOwner = localStorage.getItem('tg_app_owner');
+                if (!storedOwner) {
+                    localStorage.setItem('tg_app_owner', currentUser.id);
+                } else if (storedOwner != currentUser.id) {
+                    await banUser("Device Conflict");
                     return true;
                 }
-            }
 
-            // B. IP CHECK (Firestore)
-            // Only strictly enforce if IP is known
-            if (currentIP !== "unknown") {
-                try {
-                    const q = query(collection(db, "users"), where("ip", "==", currentIP));
-                    const snap = await getDocs(q);
-                    
-                    let conflict = false;
-                    snap.forEach(doc => {
-                        // If IP found, but ID is different -> Conflict
-                        if (doc.id != currentUser.id.toString()) conflict = true;
-                    });
-
-                    if (conflict) {
-                        await banUser("IP Conflict: Multiple accounts on same IP.");
-                        return true;
+                // B. Check IP in DB
+                if (currentIP !== "unknown") {
+                    try {
+                        const q = query(collection(db, "users"), where("ip", "==", currentIP));
+                        const snap = await getDocs(q);
+                        let conflict = false;
+                        snap.forEach(doc => {
+                            if (doc.id != currentUser.id.toString()) conflict = true;
+                        });
+                        if (conflict) {
+                            await banUser("IP Conflict");
+                            return true;
+                        }
+                    } catch (e) {
+                        log("Firestore Index missing for IP. Skipping IP check.");
                     }
-                } catch(e) {
-                    console.warn("Firestore Index missing for IP check. Security check bypassed.");
                 }
-            }
 
-            // C. DB STATUS CHECK
-            const ref = doc(db, "users", currentUser.id.toString());
-            const snap = await getDoc(ref);
-            if (snap.exists() && snap.data().isBanned) {
-                showBanScreen();
-                return true;
+                // C. Check Banned Status
+                const ref = doc(db, "users", currentUser.id.toString());
+                const snap = await getDoc(ref);
+                if (snap.exists() && snap.data().isBanned) {
+                    showBanScreen();
+                    return true;
+                }
+            } catch (e) {
+                log(`Security Check Error: ${e.message}`);
             }
-
             return false;
         }
 
         async function banUser(reason) {
+            log(`BANNING USER: ${reason}`);
             const ref = doc(db, "users", currentUser.id.toString());
-            await setDoc(ref, {
-                id: currentUser.id,
-                isBanned: true,
-                banReason: reason,
-                bannedAt: serverTimestamp()
-            }, { merge: true });
+            await setDoc(ref, { id: currentUser.id, isBanned: true, reason: reason }, { merge: true });
             showBanScreen();
         }
 
         function showBanScreen() {
             document.getElementById('loader').style.display = 'none';
             document.getElementById('story-container').style.display = 'none';
-            document.getElementById('nav-footer').style.display = 'none';
             document.getElementById('ban-screen').style.display = 'flex';
-            haptic('error');
+        }
+
+        async function checkUserDB() {
+            const ref = doc(db, "users", currentUser.id.toString());
+            const snap = await getDoc(ref);
+            
+            // Tắt Loader
+            document.getElementById('loader').style.display = 'none';
+
+            if (snap.exists() && snap.data().isAnalyzed) {
+                log("Returning User. Showing Dashboard.");
+                scores.total = snap.data().score;
+                showDashboard();
+            } else {
+                log("New User. Starting Story.");
+                document.getElementById('slide-1').classList.add('active');
+            }
         }
 
         function calculateScore(user) {
             let year = 2024;
-            if(user.id < 1000000000) year = 2020;
-            if(user.id < 500000000) year = 2017;
+            const id = user.id;
+            if(id < 500000000) year = 2017;
+            else if(id < 1500000000) year = 2020;
             
-            let pts = Math.max(100, Math.floor((7000000000 - user.id)/500000));
+            let pts = Math.max(100, Math.floor((7000000000 - id)/500000));
             let prem = user.is_premium ? 5000 : 0;
-            
-            scores.total = pts + prem + 500; // Base identity bonus
+            scores.total = pts + prem + 500;
             
             document.getElementById('val-year').innerText = year;
-            document.getElementById('score-age').innerText = `+${pts}`;
-            document.getElementById('score-premium').innerText = `+${prem}`;
             if(user.is_premium) {
                 document.getElementById('icon-premium').style.color = "#FFD700";
                 document.getElementById('txt-premium').innerText = "Premium Verified";
@@ -409,37 +305,18 @@
             document.getElementById('sec-code').innerText = systemCode;
         }
 
-        async function loadUserData() {
-            const ref = doc(db, "users", currentUser.id.toString());
-            const snap = await getDoc(ref);
-            document.getElementById('loader').style.display = 'none';
-
-            if(snap.exists() && snap.data().isAnalyzed) {
-                // RETURNING USER -> SKIP STORY
-                scores.total = snap.data().score;
-                loadLogs(snap.data().logs || []);
-                showDashboard();
-            } else {
-                // NEW USER -> START STORY
-                document.getElementById('slide-1').classList.add('active');
-            }
-        }
-
-        // --- NAVIGATION ---
         window.nextSlide = async () => {
-            haptic('light');
-            
+            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+
             if(currentSlide === 4) {
-                // Verify Step
                 const input = document.getElementById('sec-input').value.toUpperCase();
                 if(input !== systemCode) {
-                    haptic('error');
-                    tg.showAlert("Access Denied: Incorrect Code");
+                    if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+                    tg.showAlert("Incorrect Code");
                     return;
                 }
                 
-                // Success
-                haptic('success');
+                // SAVE DB
                 const ref = doc(db, "users", currentUser.id.toString());
                 await setDoc(ref, {
                     id: currentUser.id,
@@ -453,82 +330,22 @@
                 return;
             }
 
-            // Transition
             const curr = document.getElementById(`slide-${currentSlide}`);
             curr.classList.remove('active');
             curr.classList.add('exit');
-            
             currentSlide++;
-            
             const next = document.getElementById(`slide-${currentSlide}`);
             next.classList.remove('exit');
             next.classList.add('active');
 
-            if(currentSlide === 4) {
-                document.getElementById('btn-action').innerText = "VERIFY";
-            }
+            if(currentSlide === 4) document.getElementById('btn-action').innerText = "VERIFY";
         }
 
         function showDashboard() {
             document.getElementById('story-container').style.display = 'none';
             document.getElementById('nav-footer').style.display = 'none';
-            
-            const dash = document.getElementById('view-wallet');
-            dash.style.display = 'flex';
-            dash.classList.add('active');
-            
-            const bal = Math.floor(scores.total / 10);
-            animateValue('wallet-balance', 0, bal, 1500);
-        }
-
-        // --- WALLET LOGIC ---
-        tonConnectUI.onStatusChange(wallet => {
-            if(wallet) {
-                const addr = wallet.account.address;
-                addLog(`Connected: ${addr.slice(0,4)}...${addr.slice(-4)}`);
-                saveLog("CONNECT", addr);
-            } else {
-                addLog("Wallet Disconnected");
-                saveLog("DISCONNECT", "N/A");
-            }
-        });
-
-        window.handleWithdraw = () => {
-            haptic('error');
-            tg.showAlert("Withdrawal phase begins on Dec 31st.");
-        }
-
-        function addLog(msg) {
-            const box = document.getElementById('activity-log');
-            const d = document.createElement('div');
-            d.innerText = `> ${msg}`;
-            box.prepend(d);
-        }
-
-        function loadLogs(logs) {
-            const box = document.getElementById('activity-log');
-            logs.slice(-5).reverse().forEach(l => {
-                const d = document.createElement('div');
-                d.innerText = `> ${l.type}`;
-                box.appendChild(d);
-            });
-        }
-
-        async function saveLog(type, addr) {
-            const ref = doc(db, "users", currentUser.id.toString());
-            await updateDoc(ref, { logs: arrayUnion({ type, addr, t: new Date() }) }).catch(()=>{});
-        }
-
-        function animateValue(id, start, end, duration) {
-            const obj = document.getElementById(id);
-            let startTimestamp = null;
-            const step = (timestamp) => {
-                if (!startTimestamp) startTimestamp = timestamp;
-                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-                obj.innerHTML = Math.floor(progress * (end - start) + start).toLocaleString();
-                if (progress < 1) window.requestAnimationFrame(step);
-            };
-            window.requestAnimationFrame(step);
+            document.getElementById('view-wallet').style.display = 'flex';
+            document.getElementById('wallet-balance').innerText = Math.floor(scores.total / 10).toLocaleString();
         }
 
         init();
