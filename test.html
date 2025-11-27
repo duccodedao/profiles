@@ -4,26 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TG Journey</title>
-    <!-- Telegram SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- TON Connect SDK -->
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500&family=Lora:ital,wght@1,400;1,600&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
         :root {
-            --bg-color: #050505;
-            --card-bg: #121212;
+            --bg-color: #000000;
             --ton-blue: #0098EA;
-            --accent: #7000FF;
             --text-main: #ffffff;
-            --text-sub: #888;
-            --border: 1px solid rgba(255, 255, 255, 0.1);
-            --glass: rgba(255, 255, 255, 0.05);
-            --success: #00E096;
-            --danger: #FF3B30;
+            --text-sub: #8E8E93;
+            --glass: rgba(255, 255, 255, 0.08);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+            --success: #34c759;
+            --error: #ff3b30;
+            --code-font: 'JetBrains Mono', monospace;
         }
 
         body {
@@ -35,241 +32,212 @@
             display: flex; flex-direction: column;
         }
 
-        /* --- UTILS --- */
+        /* UTILS */
         .hidden { display: none !important; }
         .fade-in { animation: fadeIn 0.5s ease forwards; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* --- LOADER --- */
+        /* LOADER */
         #loader {
             position: fixed; inset: 0; z-index: 9999;
             background: #000; display: flex;
             flex-direction: column; align-items: center; justify-content: center;
         }
         .spinner {
-            width: 40px; height: 40px; border: 3px solid #333;
+            width: 40px; height: 40px; border: 3px solid var(--glass);
             border-top-color: var(--ton-blue); border-radius: 50%;
             animation: spin 1s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* --- STORY VIEW --- */
-        #story-view { position: relative; width: 100%; height: 100%; display: none; }
-        
+        /* SLIDES */
         .slide {
             position: absolute; inset: 0; padding: 20px;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             opacity: 0; pointer-events: none; transform: scale(0.95);
-            transition: all 0.5s ease; text-align: center;
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            text-align: center; overflow-y: auto;
         }
         .slide.active { opacity: 1; pointer-events: auto; transform: scale(1); }
 
-        .big-number { font-family: 'Rajdhani', sans-serif; font-size: 50px; font-weight: 700; color: var(--ton-blue); margin: 10px 0; }
-        .chapter { font-size: 10px; letter-spacing: 3px; color: #555; text-transform: uppercase; margin-bottom: 5px; }
+        h1 { font-family: 'Lora', serif; font-size: 32px; font-weight: 600; margin-bottom: 10px; font-style: italic; }
+        .big-number { font-size: 48px; font-weight: 800; color: var(--ton-blue); margin: 15px 0; letter-spacing: -1px; }
+        .chapter-label { font-size: 11px; letter-spacing: 2px; color: #555; text-transform: uppercase; margin-bottom: 5px; }
+
+        /* CAPTCHA BOX */
+        .captcha-box {
+            background: rgba(255,255,255,0.05); border: 1px solid var(--ton-blue);
+            border-radius: 12px; padding: 20px; margin-top: 20px;
+            width: 100%; max-width: 300px; text-align: center;
+        }
+        .captcha-display {
+            font-family: var(--code-font); font-size: 24px; letter-spacing: 5px;
+            background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px;
+            color: var(--ton-blue); margin-bottom: 15px; user-select: none;
+            text-decoration: line-through;
+        }
+        .captcha-input {
+            width: 100%; padding: 12px; background: #222; border: 1px solid #444;
+            color: white; border-radius: 8px; text-align: center; font-size: 16px;
+            font-family: var(--code-font); margin-bottom: 10px; outline: none;
+        }
+        .captcha-input:focus { border-color: var(--ton-blue); }
         
-        /* CODE INPUT STYLE */
-        .code-box {
-            background: var(--card-bg); border: var(--border);
-            padding: 20px; border-radius: 16px; width: 100%; max-width: 300px;
-            margin-top: 20px;
-        }
-        .code-input {
-            width: 100%; padding: 12px; background: #000; border: 1px solid #333;
-            color: white; text-align: center; letter-spacing: 2px;
-            font-size: 16px; border-radius: 8px; margin-bottom: 10px;
-            text-transform: uppercase; outline: none;
-        }
-        .code-input:focus { border-color: var(--ton-blue); }
         .btn-verify {
-            width: 100%; padding: 12px; background: var(--ton-blue); color: white;
+            width: 100%; padding: 12px; background: white; color: black;
             border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
         }
+        .btn-verify:active { transform: scale(0.98); }
 
-        /* --- DASHBOARD VIEW (NEW) --- */
-        #dashboard-view {
-            display: none; flex-direction: column; height: 100%;
-            padding: 20px; overflow-y: auto;
-            background: radial-gradient(circle at top right, #1a1a2e 0%, #000 60%);
+        /* WALLET DASHBOARD */
+        #view-wallet {
+            background: radial-gradient(circle at center top, #111 0%, #000 100%);
+            justify-content: flex-start; padding-top: 60px;
         }
-
-        .dash-header {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 20px; padding-top: 10px;
+        .token-card {
+            background: var(--glass); border: var(--glass-border);
+            border-radius: 20px; padding: 30px; width: 100%; max-width: 340px;
+            margin-bottom: 20px; text-align: center;
         }
-        .user-badge {
-            display: flex; align-items: center; gap: 10px;
-            background: var(--glass); padding: 5px 12px 5px 5px; border-radius: 30px; border: var(--border);
-        }
-        .u-avatar { width: 28px; height: 28px; border-radius: 50%; }
-        .u-name { font-size: 12px; font-weight: 600; }
-
-        /* BALANCE CARD */
-        .balance-card {
-            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 24px; padding: 30px 20px;
-            text-align: center; position: relative; overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        .balance-label { font-size: 11px; color: var(--text-sub); letter-spacing: 1px; text-transform: uppercase; }
-        .balance-val { font-family: 'Rajdhani', sans-serif; font-size: 48px; font-weight: 700; color: white; margin: 5px 0; text-shadow: 0 0 20px rgba(0, 152, 234, 0.3); }
-        .balance-est { font-size: 12px; color: var(--ton-blue); background: rgba(0, 152, 234, 0.1); padding: 4px 10px; border-radius: 12px; display: inline-block; }
-
-        /* DEADLINE COUNTER */
-        .deadline-box {
-            margin-top: 20px; background: rgba(255, 59, 48, 0.05);
-            border: 1px solid rgba(255, 59, 48, 0.2); border-radius: 12px;
-            padding: 15px; text-align: center;
-        }
-        .deadline-lbl { color: var(--danger); font-size: 10px; font-weight: bold; margin-bottom: 5px; }
-        .deadline-timer { font-family: monospace; font-size: 16px; font-weight: bold; color: white; }
-
-        /* WALLET SECTION */
-        .wallet-panel {
-            margin-top: 20px; background: var(--card-bg);
-            border: var(--border); border-radius: 16px; padding: 20px;
-        }
-        .wp-title { font-size: 14px; font-weight: 600; margin-bottom: 15px; display: flex; justify-content: space-between; }
+        .token-amount { font-size: 50px; font-weight: 800; margin: 10px 0; }
         
-        /* Connected State */
-        .wallet-active {
-            display: none; flex-direction: column; gap: 10px;
+        .wallet-manager {
+            width: 100%; max-width: 340px;
+            background: rgba(255,255,255,0.03); border-radius: 12px; padding: 15px;
+            margin-bottom: 20px;
         }
-        .w-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
-        .w-val { font-family: monospace; color: var(--ton-blue); }
-        .w-log { font-size: 10px; color: #555; margin-top: 10px; padding-top: 10px; border-top: 1px solid #222; }
-
+        .status-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #444; display: inline-block; margin-right: 5px; }
+        .status-dot.connected { background: var(--success); box-shadow: 0 0 10px var(--success); }
+        
         .btn-disconnect {
-            background: rgba(255, 59, 48, 0.1); color: var(--danger);
-            border: 1px solid rgba(255, 59, 48, 0.3);
-            width: 100%; padding: 10px; border-radius: 8px; font-size: 12px; cursor: pointer;
-            margin-top: 10px;
+            background: rgba(255, 59, 48, 0.1); color: var(--error); border: 1px solid var(--error);
+            padding: 8px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;
         }
 
-        /* Not Connected State */
-        .wallet-inactive { display: block; text-align: center; }
-        .ton-btn-wrap { display: flex; justify-content: center; margin-top: 10px; }
+        .history-log {
+            font-family: var(--code-font); font-size: 10px; color: #666;
+            text-align: left; max-height: 80px; overflow-y: auto;
+            background: #000; padding: 10px; border-radius: 6px; margin-top: 10px;
+        }
+        .log-entry { margin-bottom: 4px; border-bottom: 1px solid #222; padding-bottom: 2px; }
 
-        /* FOOTER NAV */
-        .nav-btn {
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+        .deadline-box {
+            margin-top: 10px; font-size: 11px; color: #ff9f0a; 
+            border: 1px solid #ff9f0a; padding: 5px; border-radius: 4px; display: inline-block;
+        }
+
+        /* FOOTER */
+        .bottom-action {
+            position: fixed; bottom: 30px; left: 0; width: 100%;
+            display: flex; justify-content: center; z-index: 50;
+        }
+        .btn-next {
             background: white; color: black; border: none;
             padding: 14px 40px; border-radius: 30px; font-weight: bold;
-            box-shadow: 0 5px 20px rgba(255,255,255,0.1);
-            cursor: pointer; z-index: 100;
+            width: 80%; max-width: 300px;
         }
-
     </style>
 </head>
 <body>
 
-    <!-- LOADER -->
     <div id="loader">
         <div class="spinner"></div>
-        <div style="margin-top:15px; font-size:10px; color:#666; letter-spacing:2px">LOADING DATA...</div>
     </div>
 
-    <!-- VIEW 1: STORY MODE -->
-    <div id="story-view">
-        <div class="slide active" id="slide-1">
-            <i class="fab fa-telegram fa-4x" style="color:white; margin-bottom:20px"></i>
-            <h1>The Journey</h1>
-            <p style="color:#888; font-size:14px">Your legacy on Telegram.</p>
+    <!-- STORY & VERIFICATION -->
+    <div id="story-container">
+        <!-- Story Slides 1-4 -->
+        <div class="slide" id="slide-1">
+            <i class="fab fa-telegram fa-4x" style="color: white; margin-bottom: 30px;"></i>
+            <h1 class="fade-in">The Digital Archives</h1>
+            <p style="color:var(--text-sub)">Analyzing your footprint...</p>
         </div>
         <div class="slide" id="slide-2">
-            <div class="chapter">CHAPTER I</div>
+            <div class="chapter-label">CHAPTER I</div>
             <h1>The Origin</h1>
             <div class="big-number" id="val-year">...</div>
-            <div style="color:var(--ton-blue)" id="score-age">+0</div>
+            <div class="points-badge" id="score-age">+0 PTS</div>
         </div>
         <div class="slide" id="slide-3">
-            <div class="chapter">CHAPTER II</div>
-            <h1>The Status</h1>
-            <div class="big-number" id="val-prem">BASIC</div>
-            <div style="color:var(--ton-blue)" id="score-prem">+0</div>
+            <div class="chapter-label">CHAPTER II</div>
+            <h1>The Elite</h1>
+            <div style="font-size: 60px; margin: 20px 0;"><i class="fas fa-star" style="color:#333" id="icon-premium"></i></div>
+            <div class="points-badge" id="score-premium">+0 PTS</div>
         </div>
         <div class="slide" id="slide-4">
-            <div class="chapter">CHAPTER III</div>
+            <div class="chapter-label">CHAPTER III</div>
             <h1>The Identity</h1>
-            <img id="u-avatar" src="" style="width:80px; height:80px; border-radius:50%; margin:10px 0; border:2px solid white">
-            <div id="u-username" style="font-weight:bold">...</div>
-            <div style="color:var(--ton-blue)" id="score-id">+0</div>
-        </div>
-        <div class="slide" id="slide-5">
-            <div class="chapter">VERIFICATION</div>
-            <h1>Final Step</h1>
-            <div class="big-number" id="total-score-story">0</div>
-            
-            <div class="code-box">
-                <div style="font-size:12px; margin-bottom:10px; color:#aaa">ENTER SECRET CODE</div>
-                <input type="text" id="code-input" class="code-input" placeholder="CODE">
-                <button class="btn-verify" onclick="verifyCode()">VERIFY & UNLOCK</button>
-            </div>
+            <img id="user-avatar" src="" style="width:80px; height:80px; border-radius:50%; margin:20px 0;">
+            <div class="points-badge" id="score-identity">+0 PTS</div>
         </div>
 
-        <button class="nav-btn" id="story-btn" onclick="nextSlide()">START</button>
+        <!-- SLIDE 5: VERIFICATION -->
+        <div class="slide" id="slide-5">
+            <div class="chapter-label">FINAL STEP</div>
+            <h1>Human Verification</h1>
+            <p style="font-size:12px; color:#777; max-width:280px;">
+                Enter the system code below to prove you are not a bot and unlock your assets.
+            </p>
+
+            <div class="captcha-box">
+                <div class="captcha-display" id="captcha-code">LOADING</div>
+                <input type="text" class="captcha-input" id="captcha-input" placeholder="ENTER CODE" maxlength="6">
+                <button class="btn-verify" onclick="verifyCaptcha()">VERIFY & UNLOCK</button>
+            </div>
+        </div>
     </div>
 
-    <!-- VIEW 2: DASHBOARD MODE (Final Destination) -->
-    <div id="dashboard-view">
-        <div class="dash-header">
-            <div class="user-badge">
-                <img id="dash-avatar" src="" class="u-avatar">
-                <div class="u-name" id="dash-name">User</div>
-            </div>
-            <div style="font-size:10px; color:#444">VERIFIED <i class="fas fa-check-circle" style="color:var(--success)"></i></div>
+    <!-- DASHBOARD (POST-VERIFICATION) -->
+    <div class="slide" id="view-wallet" style="display:none;">
+        <div class="chapter-label" style="margin-top:20px">ASSET MANAGEMENT</div>
+        
+        <div class="token-card">
+            <div style="font-size:12px; color:#aaa; margin-bottom:5px">CONVERTED BALANCE</div>
+            <div class="token-amount" id="wallet-balance">0</div>
+            <div style="color: var(--ton-blue); font-weight:bold">$TG TOKEN</div>
         </div>
 
-        <div class="balance-card">
-            <div class="balance-label">Available Balance</div>
-            <div class="balance-val" id="dash-balance">0</div>
-            <div class="balance-est">$TG TOKEN</div>
-        </div>
-
-        <div class="deadline-box">
-            <div class="deadline-lbl">CONNECT WALLET DEADLINE</div>
-            <div class="deadline-timer" id="deadline-timer">00d 00h 00m 00s</div>
-            <div style="font-size:10px; color:#666; margin-top:5px">Withdraw starts: 31/12/2025</div>
-        </div>
-
-        <div class="wallet-panel">
-            <div class="wp-title">
-                <span><i class="fas fa-wallet"></i> Web3 Wallet</span>
-                <span id="w-status" style="font-size:10px; color:#666">NOT CONNECTED</span>
-            </div>
-
-            <!-- Not Connected -->
-            <div id="wallet-inactive" class="wallet-inactive">
-                <p style="font-size:12px; color:#777; margin-bottom:15px">Connect your TON wallet to receive airdrop.</p>
-                <div class="ton-btn-wrap">
-                    <div id="ton-connect"></div>
+        <!-- WALLET MANAGER -->
+        <div class="wallet-manager">
+            <div class="status-row">
+                <div style="font-size:12px; font-weight:bold">
+                    <span class="status-dot" id="dot-status"></span>
+                    <span id="txt-status">Not Connected</span>
                 </div>
-            </div>
-
-            <!-- Connected -->
-            <div id="wallet-active" class="wallet-active">
-                <div class="w-row">
-                    <span>Provider</span>
-                    <span style="color:white" id="w-app">...</span>
-                </div>
-                <div class="w-row">
-                    <span>Address</span>
-                    <span class="w-val" id="w-addr">...</span>
-                </div>
-                <button class="btn-disconnect" onclick="disconnectWallet()">
-                    <i class="fas fa-unlink"></i> DISCONNECT
+                <button class="btn-disconnect hidden" id="btn-disconnect" onclick="disconnectWallet()">
+                    Disconnect
                 </button>
-                <div class="w-log" id="w-history">No history.</div>
+            </div>
+
+            <!-- TON Connect Button Container -->
+            <div id="ton-connect-btn" style="display:flex; justify-content:center; margin-bottom:10px;"></div>
+            
+            <div class="deadline-box">
+                <i class="fas fa-exclamation-triangle"></i> Connect Deadline: <span id="deadline-timer">...</span>
+            </div>
+
+            <div style="margin-top:15px; text-align:left;">
+                <span style="font-size:10px; color:#555; text-transform:uppercase;">Connection Log</span>
+                <div class="history-log" id="history-log">
+                    <!-- Logs go here -->
+                </div>
             </div>
         </div>
 
+        <div style="font-size:10px; color:#444; margin-top:20px">WITHDRAWAL OPENS: 31/12/2025</div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="bottom-action" id="nav-footer">
+        <button class="btn-next" id="btn-action" onclick="nextSlide()">Continue</button>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // FIREBASE CONFIG
+        // FIREBASE SETUP
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
@@ -279,7 +247,6 @@
             appId: "1:914980131889:web:72f8da15c42dbee671b110",
             measurementId: "G-C587M69LZW"
         };
-
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const tg = window.Telegram.WebApp;
@@ -287,214 +254,235 @@
         // TON CONNECT
         const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
             manifestUrl: 'https://ton-connect.github.io/demo-dapp-with-react-ui/tonconnect-manifest.json',
-            buttonRootId: 'ton-connect'
+            buttonRootId: 'ton-connect-btn'
         });
 
         // STATE
-        let userData = null;
-        let scores = { total: 0 };
+        let currentUser = null;
         let currentSlide = 1;
-        const totalSlides = 5;
+        let scores = { total: 0 };
+        let systemCode = "";
 
-        // --- INIT ---
+        // INIT
         async function init() {
-            if (!tg.initData) {
-                document.body.innerHTML = '<div style="color:red; text-align:center; padding:50px">Mobile Access Only</div>';
-                return;
-            }
-
+            if (!tg.initData) return document.body.innerHTML = "Access Denied"; // Basic check
             tg.expand();
             tg.setHeaderColor('#000000');
-            userData = tg.initDataUnsafe.user;
-            // userData = { id: 123456, first_name: "Test", username: "dev", is_premium: true, photo_url: "" }; // Mock
-
-            calculateScore(userData);
-            startCountdown();
-
-            // Check DB Status
-            await checkUserDB();
-        }
-
-        // --- DATA & LOGIC ---
-        function calculateScore(user) {
-            const id = user.id;
-            let year = 2024;
-            let ageScore = 100;
-
-            if(id < 1000000000) { year = 2020; ageScore = 1000; }
-            if(id < 500000000) { year = 2017; ageScore = 3000; }
             
-            const premScore = user.is_premium ? 5000 : 0;
-            const idScore = (user.username ? 500 : 0) + (user.photo_url ? 300 : 0);
-            scores.total = ageScore + premScore + idScore;
+            currentUser = tg.initDataUnsafe.user;
+            if(!currentUser) return; // Handle error
 
-            // Render Story Data
-            document.getElementById('val-year').innerText = year;
-            document.getElementById('score-age').innerText = `+${ageScore}`;
-            document.getElementById('val-prem').innerText = user.is_premium ? "PREMIUM" : "BASIC";
-            document.getElementById('score-prem').innerText = `+${premScore}`;
-            if(user.photo_url) document.getElementById('u-avatar').src = user.photo_url;
-            document.getElementById('u-username').innerText = user.username || user.first_name;
-            document.getElementById('score-id').innerText = `+${idScore}`;
-            document.getElementById('total-score-story').innerText = scores.total;
+            calculateScore(currentUser);
+            startDeadlineCountdown();
+            
+            // Generate Code for later
+            systemCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+            document.getElementById('captcha-code').innerText = systemCode;
 
-            // Render Dashboard Data
-            if(user.photo_url) document.getElementById('dash-avatar').src = user.photo_url;
-            document.getElementById('dash-name').innerText = user.first_name;
+            // CHECK DB STATUS
+            await checkUserDB();
         }
 
         async function checkUserDB() {
             try {
-                const docRef = doc(db, "users", userData.id.toString());
-                const snap = await getDoc(docRef);
+                const ref = doc(db, "users", currentUser.id.toString());
+                const snap = await getDoc(ref);
                 
                 document.getElementById('loader').style.display = 'none';
 
-                if(snap.exists() && snap.data().isAnalyzed) {
-                    // USER EXISTS -> SKIP STORY -> GOTO DASHBOARD
+                if (snap.exists()) {
                     const data = snap.data();
-                    const convertedScore = Math.floor(data.score / 10); // Ratio 1:10
-                    document.getElementById('dash-balance').innerText = convertedScore.toLocaleString();
-                    
-                    if(data.lastWalletAction) {
-                        document.getElementById('w-history').innerText = "Last update: " + data.lastWalletAction;
+                    if (data.isAnalyzed) {
+                        // USER EXISTS -> SKIP STORY -> SHOW DASHBOARD
+                        scores.total = data.score;
+                        loadLogs(data.connectionLogs || []);
+                        showDashboard();
+                    } else {
+                        // PARTIALLY SAVED -> RESTART STORY
+                        document.getElementById('slide-1').classList.add('active');
                     }
-                    
-                    showDashboard();
                 } else {
-                    // NEW USER -> SHOW STORY
-                    document.getElementById('story-view').style.display = 'block';
+                    // NEW USER -> START STORY
+                    document.getElementById('slide-1').classList.add('active');
                 }
-            } catch(e) { console.error(e); }
+            } catch (e) { console.error(e); }
         }
 
-        // --- STORY NAVIGATION ---
-        window.nextSlide = () => {
-            if(currentSlide >= totalSlides) return;
+        function calculateScore(user) {
+            let year = 2024;
+            const id = user.id;
+            if(id < 500000000) year = 2017;
+            else if(id < 1500000000) year = 2020;
             
-            tg.HapticFeedback.impactOccurred('light');
+            let agePts = Math.floor((7000000000 - id) / 500000);
+            if(agePts < 100) agePts = 100;
+            
+            let premPts = user.is_premium ? 5000 : 0;
+            let idPts = (user.username ? 500 : 0) + (user.photo_url ? 300 : 0);
+            
+            scores.total = agePts + premPts + idPts;
+
+            // Fill UI
+            document.getElementById('val-year').innerText = year;
+            document.getElementById('score-age').innerText = `+${agePts}`;
+            document.getElementById('score-premium').innerText = `+${premPts}`;
+            document.getElementById('score-identity').innerText = `+${idPts}`;
+            
+            if(user.is_premium) document.getElementById('icon-premium').style.color = "#FFD700";
+            if(user.photo_url) document.getElementById('user-avatar').src = user.photo_url;
+        }
+
+        // STORY NAVIGATION
+        window.nextSlide = () => {
+            if (currentSlide >= 5) return;
+            
             document.getElementById(`slide-${currentSlide}`).classList.remove('active');
             currentSlide++;
             document.getElementById(`slide-${currentSlide}`).classList.add('active');
 
-            if(currentSlide === 5) {
-                document.getElementById('story-btn').style.display = 'none';
-            } else {
-                document.getElementById('story-btn').innerText = "NEXT";
+            if (currentSlide === 5) {
+                document.getElementById('nav-footer').style.display = 'none'; // Hide continue button
             }
-        }
+        };
 
-        // --- VERIFICATION ---
-        window.verifyCode = async () => {
-            const input = document.getElementById('code-input').value.trim().toUpperCase();
-            if(input === "ILOVETG") {
+        // CAPTCHA VERIFICATION
+        window.verifyCaptcha = async () => {
+            const input = document.getElementById('captcha-input').value.toUpperCase();
+            if (input === systemCode) {
                 tg.HapticFeedback.notificationOccurred('success');
                 
-                // Save to DB
-                const ref = doc(db, "users", userData.id.toString());
+                // SAVE USER & SCORE TO DB
+                const ref = doc(db, "users", currentUser.id.toString());
                 await setDoc(ref, {
-                    id: userData.id,
-                    username: userData.username || "",
+                    id: currentUser.id,
+                    username: currentUser.username || "",
                     score: scores.total,
-                    isAnalyzed: true, // Mark as analyzed/verified
-                    isVerified: true,
+                    isAnalyzed: true, // Mark as Analyzed
                     lastSeen: serverTimestamp()
                 }, { merge: true });
 
-                // Convert & Go to Dashboard
-                const converted = Math.floor(scores.total / 10);
-                document.getElementById('dash-balance').innerText = converted.toLocaleString();
-                
-                document.getElementById('story-view').classList.add('fade-out'); // simple transition
-                setTimeout(() => {
-                    document.getElementById('story-view').style.display = 'none';
-                    showDashboard();
-                }, 500);
-
+                showDashboard();
             } else {
                 tg.HapticFeedback.notificationOccurred('error');
-                tg.showAlert("Invalid Code. Hint: ILOVETG");
+                tg.showAlert("Incorrect Code. Please try again.");
+                document.getElementById('captcha-input').value = "";
             }
-        }
+        };
 
+        // DASHBOARD LOGIC
         function showDashboard() {
-            const dash = document.getElementById('dashboard-view');
+            document.getElementById('story-container').style.display = 'none';
+            document.getElementById('nav-footer').style.display = 'none';
+            
+            const dash = document.getElementById('view-wallet');
             dash.style.display = 'flex';
-            dash.classList.add('fade-in');
+            dash.classList.add('active');
+            
+            // Set Balance (Ratio 1:10)
+            const tokenBal = Math.floor(scores.total / 10);
+            document.getElementById('wallet-balance').innerText = tokenBal.toLocaleString();
         }
 
-        // --- WALLET LOGIC ---
-        // 1. Monitor Connection
+        // WALLET CONNECTION & HISTORY
         tonConnectUI.onStatusChange(async (wallet) => {
-            const activeDiv = document.getElementById('wallet-active');
-            const inactiveDiv = document.getElementById('wallet-inactive');
-            const statusLbl = document.getElementById('w-status');
-
-            if(wallet) {
+            if (wallet) {
                 // CONNECTED
-                inactiveDiv.style.display = 'none';
-                activeDiv.style.display = 'flex';
-                statusLbl.innerText = "CONNECTED";
-                statusLbl.style.color = "var(--success)";
-
-                const raw = wallet.account.address;
-                const short = raw.slice(0,4) + "..." + raw.slice(-4);
-                const appName = wallet.device.appName || "Wallet";
-
-                document.getElementById('w-app').innerText = appName;
-                document.getElementById('w-addr').innerText = short;
-
-                // Log History (Connect)
-                await logWalletAction(`Connected ${appName}`);
-
+                const addr = wallet.account.address;
+                const shortAddr = addr.slice(0,4) + '...' + addr.slice(-4);
+                
+                updateStatusUI(true, shortAddr);
+                addLog(`CONNECTED: ${shortAddr}`);
+                
+                // Save log to DB
+                saveLogToDB("CONNECT", addr);
             } else {
                 // DISCONNECTED
-                activeDiv.style.display = 'none';
-                inactiveDiv.style.display = 'block';
-                statusLbl.innerText = "NOT CONNECTED";
-                statusLbl.style.color = "#666";
+                updateStatusUI(false);
             }
         });
 
-        // 2. Disconnect Action
         window.disconnectWallet = async () => {
             await tonConnectUI.disconnect();
-            await logWalletAction("Disconnected Wallet");
+            addLog("DISCONNECTED");
+            saveLogToDB("DISCONNECT", "N/A");
+        };
+
+        function updateStatusUI(isConnected, text = "") {
+            const dot = document.getElementById('dot-status');
+            const txt = document.getElementById('txt-status');
+            const btn = document.getElementById('btn-disconnect');
+            const tonBtn = document.getElementById('ton-connect-btn');
+
+            if (isConnected) {
+                dot.classList.add('connected');
+                txt.innerText = text;
+                txt.style.color = "var(--ton-blue)";
+                txt.style.fontFamily = "monospace";
+                btn.classList.remove('hidden');
+                tonBtn.style.display = 'none'; // Hide connect btn
+            } else {
+                dot.classList.remove('connected');
+                txt.innerText = "Not Connected";
+                txt.style.color = "#777";
+                txt.style.fontFamily = "inherit";
+                btn.classList.add('hidden');
+                tonBtn.style.display = 'flex'; // Show connect btn
+            }
         }
 
-        // 3. Log History Helper
-        async function logWalletAction(action) {
-            const time = new Date().toLocaleString();
-            document.getElementById('w-history').innerText = `${action} at ${time}`;
-            
-            // Save to DB
-            try {
-                const ref = doc(db, "users", userData.id.toString());
-                await updateDoc(ref, {
-                    lastWalletAction: `${action} at ${time}`
-                });
-            } catch(e) {}
+        function addLog(message) {
+            const logBox = document.getElementById('history-log');
+            const time = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = 'log-entry';
+            div.innerText = `[${time}] ${message}`;
+            logBox.prepend(div);
         }
 
-        // --- COUNTDOWN TIMER (Connect Deadline) ---
-        // Deadline: 30/12/2025 (1 day before withdraw 31/12)
-        function startCountdown() {
+        function loadLogs(logs) {
+            // Load existing logs from DB on startup
+            if(!logs) return;
+            const logBox = document.getElementById('history-log');
+            // Show last 5
+            logs.slice(-5).reverse().forEach(log => {
+                const date = log.timestamp ? new Date(log.timestamp.seconds * 1000).toLocaleTimeString() : "--:--";
+                const div = document.createElement('div');
+                div.className = 'log-entry';
+                div.innerText = `[${date}] ${log.type}`;
+                logBox.appendChild(div);
+            });
+        }
+
+        async function saveLogToDB(type, address) {
+            const ref = doc(db, "users", currentUser.id.toString());
+            const logEntry = {
+                type: type,
+                address: address,
+                timestamp: new Date()
+            };
+            await updateDoc(ref, {
+                connectionLogs: arrayUnion(logEntry)
+            }).catch(()=>{});
+        }
+
+        // COUNTDOWN
+        function startDeadlineCountdown() {
+            // Withdraw is Dec 31, 2025. Connection Deadline is Dec 30, 2025.
             const deadline = new Date("Dec 30, 2025 00:00:00").getTime();
+            
             setInterval(() => {
                 const now = new Date().getTime();
                 const dist = deadline - now;
                 
-                if(dist < 0) {
+                if (dist < 0) {
                     document.getElementById('deadline-timer').innerText = "ENDED";
                     return;
                 }
-
+                
                 const d = Math.floor(dist / (1000 * 60 * 60 * 24));
                 const h = Math.floor((dist % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const m = Math.floor((dist % (1000 * 60 * 60)) / (1000 * 60));
-                const s = Math.floor((dist % (1000 * 60)) / 1000);
-
-                document.getElementById('deadline-timer').innerText = `${d}d ${h}h ${m}m ${s}s`;
+                
+                document.getElementById('deadline-timer').innerText = `${d}d ${h}h left`;
             }, 1000);
         }
 
