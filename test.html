@@ -6,302 +6,274 @@
     <title>TG Journey</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+    <!-- FingerprintJS cho định danh thiết bị -->
+    <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
     
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500&family=Playfair+Display:ital,wght@1,600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500&family=Cinzel:wght@600&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
         :root {
             --bg-color: #050505;
-            --ton-blue: #0098EA;
-            --ton-grad: linear-gradient(135deg, #0098EA, #0052cc);
-            --text-main: #ffffff;
+            --primary: #0098EA;
+            --accent: #FFD700;
+            --danger: #FF3B30;
             --glass: rgba(255, 255, 255, 0.05);
             --border: 1px solid rgba(255, 255, 255, 0.1);
-            --error: #ff3b30;
-            --font-mono: 'JetBrains Mono', monospace;
-            --font-serif: 'Playfair Display', serif;
+            --font-main: 'Inter', sans-serif;
+            --font-code: 'JetBrains Mono', monospace;
         }
 
         body {
             background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: 'Inter', sans-serif;
+            color: #fff;
+            font-family: var(--font-main);
             margin: 0; padding: 0;
             height: 100vh; overflow: hidden;
             display: flex; flex-direction: column;
         }
 
-        /* --- BANNED SCREEN --- */
-        #ban-screen {
-            position: fixed; inset: 0; z-index: 10000;
-            background: #000; display: none;
-            flex-direction: column; align-items: center; justify-content: center;
-            text-align: center; padding: 30px;
+        /* --- ANIMATIONS --- */
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(50px) scale(0.9); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
-        .ban-icon { font-size: 60px; color: var(--error); margin-bottom: 20px; animation: shake 0.5s; }
-        .ban-id { font-family: var(--font-mono); background: #222; padding: 5px 10px; border-radius: 4px; color: #fff; margin-top:20px}
-        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-5px);} 75% {transform: translateX(5px);} }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
 
-        /* --- LOADER --- */
-        #loader {
-            position: fixed; inset: 0; z-index: 9999;
-            background: #000; display: flex;
-            align-items: center; justify-content: center;
-        }
-        .spinner {
-            width: 40px; height: 40px; border: 3px solid var(--glass);
-            border-top-color: var(--ton-blue); border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* --- STORYTELLING ANIMATIONS --- */
-        .slide {
-            position: absolute; inset: 0; padding: 20px;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none; transform: scale(0.9);
-            transition: all 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+        /* --- SCREENS --- */
+        .screen {
+            position: fixed; inset: 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: var(--bg-color); z-index: 100;
             text-align: center;
         }
-        .slide.active { opacity: 1; pointer-events: auto; transform: scale(1); }
-
-        /* Elements Animation */
-        .slide.active .anim-up { animation: fadeInUp 0.8s forwards; opacity: 0; }
-        .slide.active .anim-scale { animation: scaleIn 0.8s forwards; opacity: 0; }
-        .delay-1 { animation-delay: 0.2s; }
-        .delay-2 { animation-delay: 0.4s; }
-        .delay-3 { animation-delay: 0.6s; }
-
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes scaleIn { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
-
-        h1 { font-family: var(--font-serif); font-size: 36px; margin-bottom: 5px; font-style: italic; }
-        .big-val { font-size: 50px; font-weight: 800; color: var(--ton-blue); margin: 10px 0; letter-spacing: -2px; }
-        .badge { background: rgba(0, 152, 234, 0.1); color: var(--ton-blue); padding: 8px 16px; border-radius: 30px; border: 1px solid rgba(0, 152, 234, 0.3); font-weight: bold; }
-
-        /* --- VERIFICATION UI --- */
-        .security-card {
-            background: #0a0a0a; border: 1px solid #333;
-            border-radius: 16px; padding: 25px; width: 100%; max-width: 320px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            position: relative; overflow: hidden;
-        }
-        .security-card::before {
-            content: ''; position: absolute; top:0; left:0; width:100%; height:2px;
-            background: linear-gradient(90deg, transparent, var(--ton-blue), transparent);
-            animation: scan 2s infinite linear;
-        }
-        @keyframes scan { 0% {transform: translateX(-100%)} 100% {transform: translateX(100%)} }
-
-        .code-display {
-            font-family: var(--font-mono); font-size: 28px; letter-spacing: 4px;
-            background: #111; padding: 15px; border-radius: 8px; margin: 20px 0;
-            color: var(--ton-blue); text-shadow: 0 0 10px rgba(0, 152, 234, 0.5);
-            user-select: none;
-        }
-        .code-input {
-            width: 100%; background: #222; border: 1px solid #444; color: white;
-            padding: 15px; text-align: center; font-size: 18px; border-radius: 8px;
-            font-family: var(--font-mono); outline: none; margin-bottom: 15px;
-            text-transform: uppercase; transition: 0.3s;
-        }
-        .code-input:focus { border-color: var(--ton-blue); box-shadow: 0 0 15px rgba(0,152,234,0.2); }
-
-        /* --- DASHBOARD UI --- */
-        #view-dashboard {
-            background: radial-gradient(circle at top, #1a202c 0%, #000 80%);
-            justify-content: flex-start; padding-top: 50px;
-        }
-
-        .balance-card {
-            width: 100%; max-width: 340px; height: 180px;
-            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
-            border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px);
-            border-radius: 20px; padding: 25px;
-            display: flex; flex-direction: column; justify-content: space-between;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5); margin-bottom: 25px;
-            position: relative; overflow: hidden;
-        }
-        /* Shine Effect */
-        .balance-card::after {
-            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.05), transparent);
-            transform: rotate(45deg); animation: shine 6s infinite;
-        }
-        @keyframes shine { 0% {transform: translateY(-100%) rotate(45deg);} 100% {transform: translateY(100%) rotate(45deg);} }
-
-        .bal-label { font-size: 12px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
-        .bal-amount { font-size: 42px; font-weight: 800; color: white; }
-        .bal-unit { font-size: 14px; color: var(--ton-blue); font-weight: bold; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 6px; }
-
-        /* ACTION GRID */
-        .action-grid { display: grid; grid-template-columns: 1fr; gap: 12px; width: 100%; max-width: 340px; }
-        
-        /* WITHDRAW BUTTON */
-        .btn-withdraw {
-            background: #1a1a1a; border: 1px solid #333;
-            padding: 18px; border-radius: 14px; color: #666;
-            display: flex; justify-content: space-between; align-items: center;
-            font-weight: 600; cursor: not-allowed; transition: 0.2s;
-        }
-        .btn-withdraw.active { background: var(--ton-blue); color: white; cursor: pointer; border: none; }
-        .btn-withdraw i { font-size: 20px; }
-        
-        .timer-badge { font-family: var(--font-mono); font-size: 11px; background: #2a2a2a; padding: 4px 8px; border-radius: 4px; color: #ff9f0a; }
-
-        /* WALLET SECTION */
-        .wallet-box {
-            margin-top: 20px; width: 100%; max-width: 340px;
-            background: rgba(255,255,255,0.03); border-radius: 12px; padding: 15px;
-            display: flex; flex-direction: column; gap: 10px;
-        }
-        
-        .btn-disconnect {
-            background: rgba(255, 59, 48, 0.1); color: var(--error);
-            border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; align-self: flex-end;
-        }
-
-        /* NAVIGATION BUTTON */
-        .nav-footer { position: fixed; bottom: 30px; left: 0; width: 100%; display: flex; justify-content: center; z-index: 50; }
-        .btn-main {
-            background: white; color: black; border: none;
-            padding: 16px 40px; border-radius: 40px; font-weight: 800;
-            width: 80%; max-width: 300px; cursor: pointer;
-            box-shadow: 0 5px 25px rgba(255,255,255,0.2); transition: transform 0.2s;
-        }
-        .btn-main:active { transform: scale(0.96); }
-        .btn-verify { width: 100%; background: var(--ton-blue); color: white; border:none; padding:14px; border-radius:8px; font-weight:bold; cursor:pointer; box-shadow: 0 0 15px rgba(0,152,234,0.4); }
-
         .hidden { display: none !important; }
+
+        /* BANNED SCREEN */
+        #banned-screen { z-index: 99999; background: #1a0000; }
+        .banned-icon { font-size: 60px; color: var(--danger); margin-bottom: 20px; animation: glitch 0.5s infinite; }
+        .banned-text { color: var(--danger); font-family: var(--font-code); font-weight: bold; letter-spacing: 2px; }
+
+        /* STORY SLIDES */
+        .slide {
+            position: absolute; inset: 0; padding: 30px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+        .slide.active { opacity: 1; pointer-events: auto; }
+        
+        .slide-content { animation: slideIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        
+        h1 { font-family: 'Cinzel', serif; font-size: 28px; margin-bottom: 10px; color: var(--primary); }
+        .big-stat { font-size: 48px; font-weight: 900; margin: 15px 0; text-shadow: 0 0 20px rgba(0, 152, 234, 0.5); }
+        
+        /* CODE INPUT UI */
+        .security-box {
+            background: rgba(16, 20, 24, 0.8); border: 1px solid var(--primary);
+            border-radius: 16px; padding: 25px; width: 100%; max-width: 320px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 30px rgba(0, 152, 234, 0.1);
+        }
+        .security-code {
+            font-family: var(--font-code); font-size: 28px; letter-spacing: 5px;
+            color: var(--primary); margin: 20px 0; padding: 10px;
+            background: rgba(0, 152, 234, 0.1); border-radius: 8px;
+            position: relative; overflow: hidden;
+        }
+        .security-code::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: translateX(-100%); animation: shine 2s infinite;
+        }
+        @keyframes shine { 100% { transform: translateX(100%); } }
+        
+        .input-field {
+            background: #000; border: 1px solid #333; color: white;
+            width: 100%; padding: 15px; border-radius: 8px;
+            text-align: center; font-size: 18px; letter-spacing: 2px;
+            outline: none; margin-bottom: 15px; text-transform: uppercase;
+        }
+        .input-field:focus { border-color: var(--primary); }
+
+        /* TOKEN DASHBOARD */
+        .dashboard-header { margin-top: 60px; width: 100%; padding: 0 20px; }
+        .token-card {
+            background: linear-gradient(135deg, #1a1f25 0%, #0a0c10 100%);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px; padding: 25px;
+            position: relative; overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .token-card::before {
+            content: ''; position: absolute; top: -50px; right: -50px;
+            width: 150px; height: 150px; background: var(--primary);
+            filter: blur(80px); opacity: 0.2;
+        }
+        .balance-label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+        .balance-val { font-size: 42px; font-weight: bold; margin: 10px 0; font-family: var(--font-code); }
+        .token-tag { background: rgba(0, 152, 234, 0.2); color: var(--primary); padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+
+        /* WITHDRAW BUTTON */
+        .withdraw-area {
+            margin-top: 20px; width: 100%; display: flex; gap: 10px;
+        }
+        .btn-withdraw {
+            flex: 1; padding: 15px; border-radius: 12px; border: none;
+            background: #1a1a1a; color: #666; font-weight: bold;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            cursor: not-allowed; position: relative; overflow: hidden;
+        }
+        .btn-withdraw.locked::after {
+            content: 'LOCKED UNTIL 31/12/2025';
+            position: absolute; inset: 0; background: rgba(0,0,0,0.8);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; color: var(--danger); font-weight: bold;
+            opacity: 0; transition: 0.3s;
+        }
+        .btn-withdraw.locked:active::after { opacity: 1; }
+
+        /* COMMON BUTTONS */
+        .btn-primary {
+            background: white; color: black; border: none; width: 100%;
+            padding: 16px; border-radius: 12px; font-weight: 800; font-size: 16px;
+            cursor: pointer; box-shadow: 0 0 20px rgba(255,255,255,0.1);
+            transition: transform 0.1s;
+        }
+        .btn-primary:active { transform: scale(0.96); }
+
+        .footer { position: fixed; bottom: 30px; left: 0; width: 100%; display: flex; justify-content: center; padding: 0 20px; }
     </style>
 </head>
 <body>
 
+    <!-- SCREEN: LOADER -->
+    <div id="loader" class="screen">
+        <div style="width: 40px; height: 40px; border: 3px solid #333; border-top-color: #fff; border-radius: 50%; animation: spin 1s infinite;"></div>
+        <div style="margin-top: 15px; font-size: 10px; letter-spacing: 2px;">SECURITY CHECK...</div>
+    </div>
+
     <!-- SCREEN: BANNED -->
-    <div id="ban-screen">
-        <i class="fas fa-ban ban-icon"></i>
-        <h2 style="color:var(--error)">DEVICE RESTRICTED</h2>
-        <p style="color:#888; font-size:14px; margin-bottom:20px">
-            Multiple accounts detected on this device.<br>
-            To prevent farming, this ID has been locked.
+    <div id="banned-screen" class="screen hidden">
+        <i class="fas fa-ban banned-icon"></i>
+        <h2 style="color: white; margin: 0;">ACCESS DENIED</h2>
+        <p class="banned-text">MULTI-ACCOUNT DETECTED</p>
+        <p style="font-size: 12px; color: #888; max-width: 280px; margin-top: 10px;">
+            System detected multiple accounts on this device (ID: <span id="device-id-display">---</span>).
+            <br>This account has been permanently locked.
         </p>
-        <div class="ban-id" id="ban-id">ID: ---</div>
     </div>
 
-    <!-- LOADER -->
-    <div id="loader">
-        <div class="spinner"></div>
-    </div>
-
-    <!-- STORY CONTAINER -->
-    <div id="story-container">
+    <!-- SCREEN: MAIN APP -->
+    <div id="app-container" class="hidden">
         
         <!-- SLIDE 1: INTRO -->
-        <div class="slide" id="slide-1">
-            <i class="fab fa-telegram fa-4x anim-up" style="color: white; margin-bottom: 30px;"></i>
-            <h1 class="anim-up delay-1">The Archives</h1>
-            <p class="anim-up delay-2" style="color:var(--text-sub)">Analyzing your digital footprint...</p>
+        <div class="slide active" id="slide-1">
+            <div class="slide-content" style="text-align: center;">
+                <i class="fab fa-telegram fa-5x" style="color: white; margin-bottom: 20px; animation: float 3s ease-in-out infinite;"></i>
+                <h1>TG LEGACY</h1>
+                <p style="color: #888;">Analyzing your digital footprint...</p>
+            </div>
         </div>
 
         <!-- SLIDE 2: AGE -->
         <div class="slide" id="slide-2">
-            <div class="chapter-label anim-up">CHAPTER I</div>
-            <h1 class="anim-up">The Origin</h1>
-            <div class="big-val anim-scale delay-1" id="val-year">...</div>
-            <div class="badge anim-up delay-2" id="score-age">+0 PTS</div>
+            <div class="slide-content" style="text-align: center;">
+                <div style="font-size: 12px; letter-spacing: 2px; color: var(--primary);">STATISTIC I</div>
+                <h1>TIMELINE</h1>
+                <div class="big-stat" id="val-year">...</div>
+                <div style="background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; display: inline-block;">
+                    <span id="score-age">0</span> PTS
+                </div>
+            </div>
         </div>
 
         <!-- SLIDE 3: PREMIUM -->
         <div class="slide" id="slide-3">
-            <div class="chapter-label anim-up">CHAPTER II</div>
-            <h1 class="anim-up">The Status</h1>
-            <div class="anim-scale delay-1" style="font-size: 80px; margin: 20px 0;">
-                <i class="fas fa-star" id="icon-premium" style="color:#333"></i>
-            </div>
-            <div class="badge anim-up delay-2" id="score-premium">+0 PTS</div>
-        </div>
-
-        <!-- SLIDE 4: IDENTITY -->
-        <div class="slide" id="slide-4">
-            <div class="chapter-label anim-up">CHAPTER III</div>
-            <h1 class="anim-up">Identity</h1>
-            <img id="user-avatar" src="" class="anim-scale delay-1" style="width:100px; height:100px; border-radius:50%; margin:20px 0; border: 2px solid white;">
-            <div class="badge anim-up delay-2" id="score-identity">+0 PTS</div>
-        </div>
-
-        <!-- SLIDE 5: VERIFICATION (New Design) -->
-        <div class="slide" id="slide-5">
-            <div class="chapter-label anim-up">FINAL SECURITY CHECK</div>
-            <div class="security-card anim-up delay-1">
-                <i class="fas fa-shield-alt" style="font-size:30px; color:var(--ton-blue); margin-bottom:10px"></i>
-                <div style="font-size:12px; color:#aaa; margin-bottom:15px">Verify you are human to unlock assets</div>
-                
-                <div class="code-display" id="captcha-display">---</div>
-                
-                <input type="text" class="code-input" id="captcha-input" placeholder="ENTER CODE" maxlength="6">
-                
-                <button class="btn-verify" onclick="verifyCode()">UNLOCK DASHBOARD</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- DASHBOARD CONTAINER -->
-    <div class="slide" id="view-dashboard" style="display:none;">
-        
-        <!-- TOKEN CARD -->
-        <div class="balance-card anim-up">
-            <div style="display:flex; justify-content:space-between; width:100%">
-                <span class="bal-label">Total Allocation</span>
-                <i class="fab fa-telegram" style="color:white; opacity:0.5; font-size:24px"></i>
-            </div>
-            <div style="margin: auto 0;">
-                <div class="bal-amount" id="dashboard-balance">0</div>
-                <span class="bal-unit">$TG TOKEN</span>
-            </div>
-            <div class="bal-label" style="margin-top:auto">Network: TON</div>
-        </div>
-
-        <!-- WITHDRAWAL SECTION -->
-        <div class="action-grid anim-up delay-1">
-            <div class="btn-withdraw" onclick="handleWithdraw()">
-                <div style="display:flex; align-items:center; gap:12px">
-                    <i class="fas fa-wallet"></i>
-                    <div style="text-align:left">
-                        <div style="font-size:14px; color:white">Withdraw</div>
-                        <div style="font-size:10px; color:#666">Transfer to Wallet</div>
-                    </div>
+            <div class="slide-content" style="text-align: center;">
+                <div style="font-size: 12px; letter-spacing: 2px; color: var(--accent);">STATISTIC II</div>
+                <h1>STATUS</h1>
+                <i class="fas fa-star" style="font-size: 60px; color: #333; margin: 20px 0;" id="icon-premium"></i>
+                <div>
+                    <span id="score-premium">0</span> PTS
                 </div>
-                <div class="timer-badge" id="countdown">31/12/2025</div>
             </div>
         </div>
 
-        <!-- WALLET CONNECT -->
-        <div class="wallet-box anim-up delay-2">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
-                <span style="font-size:12px; font-weight:bold; color:white"><i class="fas fa-link"></i> Web3 Connect</span>
-                <button class="btn-disconnect hidden" id="btn-disconnect" onclick="disconnectWallet()">Unlink</button>
-            </div>
-            
-            <div id="ton-connect-btn" style="width:100%; display:flex; justify-content:center;"></div>
-            
-            <div id="wallet-status" style="font-size:11px; color:#555; text-align:center; margin-top:5px">
-                No wallet linked
+        <!-- SLIDE 4: SECURITY CHECK (CAPTCHA) -->
+        <div class="slide" id="slide-4">
+            <div class="slide-content security-box">
+                <h2 style="margin: 0 0 15px 0; font-size: 18px;">HUMAN VERIFICATION</h2>
+                <p style="font-size: 12px; color: #888;">Enter the secure code below to claim your allocation.</p>
+                
+                <div class="security-code" id="captcha-display">LOADING</div>
+                <input type="text" class="input-field" id="captcha-input" placeholder="INPUT CODE" maxlength="6">
+                
+                <button class="btn-primary" onclick="verifyCode()" style="background: var(--primary); color: white;">
+                    VERIFY IDENTITY
+                </button>
             </div>
         </div>
 
-    </div>
+        <!-- SLIDE 5: DASHBOARD (FINAL) -->
+        <div class="slide" id="dashboard-view" style="justify-content: flex-start;">
+            <div class="dashboard-header slide-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div style="font-weight: bold; font-size: 18px;">MY ASSETS</div>
+                    <div style="font-size: 12px; color: var(--primary);">VERIFIED <i class="fas fa-check-circle"></i></div>
+                </div>
 
-    <!-- FOOTER -->
-    <div class="nav-footer" id="nav-footer">
-        <button class="btn-main" id="btn-main" onclick="nextSlide()">START ANALYSIS</button>
+                <div class="token-card">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span class="balance-label">Total Balance</span>
+                        <span class="token-tag">TON CHAIN</span>
+                    </div>
+                    <div class="balance-val" id="final-balance">0</div>
+                    <div style="font-size: 14px; font-weight: bold;">$TG TOKEN</div>
+                </div>
+
+                <div class="withdraw-area">
+                    <button class="btn-withdraw locked" onclick="triggerLocked()">
+                        <i class="fas fa-arrow-down"></i> Withdraw
+                    </button>
+                    <button class="btn-withdraw locked" onclick="triggerLocked()">
+                        <i class="fas fa-exchange-alt"></i> Swap
+                    </button>
+                </div>
+                
+                <div style="margin-top: 30px; border-top: 1px solid #333; padding-top: 20px;">
+                     <div style="font-size: 12px; margin-bottom: 10px;">WALLET CONNECTION</div>
+                     <div id="ton-connect-btn"></div>
+                </div>
+
+                <div style="margin-top: 20px; font-size: 10px; color: #444; text-align: center;">
+                    UserID: <span id="uid-display"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- FOOTER NAV (Only for Story) -->
+        <div class="footer" id="nav-footer">
+            <button class="btn-primary" id="btn-next" onclick="nextSlide()">START ANALYSIS</button>
+        </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
@@ -315,7 +287,7 @@
         const db = getFirestore(app);
         const tg = window.Telegram.WebApp;
 
-        // TON Connect
+        // TON CONNECT
         const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
             manifestUrl: 'https://ton-connect.github.io/demo-dapp-with-react-ui/tonconnect-manifest.json',
             buttonRootId: 'ton-connect-btn'
@@ -323,215 +295,232 @@
 
         // STATE
         let currentUser = null;
+        let deviceId = null;
         let currentSlide = 1;
         let scores = { total: 0 };
         let generatedCode = "";
 
-        // INIT
-        async function init() {
-            if(!tg.initData) return;
-            tg.expand();
-            tg.setHeaderColor('#050505');
-
-            currentUser = tg.initDataUnsafe.user;
-            if(!currentUser) return; // Error handling
-
-            // 1. ANTI-CHEAT CHECK (Refined)
-            if(checkBanStatus()) return;
-
-            // 2. Generate Data
-            calculateScores(currentUser);
-            generatedCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-            document.getElementById('captcha-display').innerText = generatedCode;
-
-            // 3. Countdown
-            startCountdown();
-
-            // 4. DB Check
-            await checkUserDB();
+        // UTILS: HAPTIC
+        function haptic() {
+            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
         }
-
-        // --- SECURITY LOGIC ---
-        function checkBanStatus() {
-            const storedOwner = localStorage.getItem('tg_device_owner');
-            
-            if(!storedOwner) {
-                // First time on device: Claim ownership
-                localStorage.setItem('tg_device_owner', currentUser.id);
-            } else if (storedOwner != currentUser.id) {
-                // DEVICE OWNER MISMATCH -> This is a 2nd account -> BAN THIS NEW ONE
-                showBanScreen();
-                return true; 
-            }
-            return false;
-        }
-
-        function showBanScreen() {
-            document.getElementById('loader').style.display = 'none';
-            document.getElementById('story-container').style.display = 'none';
-            document.getElementById('nav-footer').style.display = 'none';
-            document.getElementById('ban-screen').style.display = 'flex';
-            document.getElementById('ban-id').innerText = `ID: ${currentUser.id}`;
+        function hapticError() {
             if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
         }
+        function hapticSuccess() {
+            if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        }
 
-        // --- MAIN LOGIC ---
-        async function checkUserDB() {
+        async function init() {
+            tg.expand();
+            tg.setHeaderColor('#050505');
+            
+            // 1. Get User
+            currentUser = tg.initDataUnsafe.user;
+            // Testing only: if(!currentUser) currentUser = { id: 11111, first_name: "Test", username: "user" }; 
+            
+            if(!currentUser) {
+                document.body.innerHTML = "Access via Telegram Only";
+                return;
+            }
+            document.getElementById('uid-display').innerText = currentUser.id;
+
+            // 2. Get Device Fingerprint
+            const fpPromise = FingerprintJS.load();
+            const fp = await fpPromise;
+            const result = await fp.get();
+            deviceId = result.visitorId;
+            document.getElementById('device-id-display').innerText = deviceId;
+
+            // 3. Security Check (Anti-Cheat)
+            await checkSecurity();
+        }
+
+        async function checkSecurity() {
             try {
-                const ref = doc(db, "users", currentUser.id.toString());
-                const snap = await getDoc(ref);
-                document.getElementById('loader').style.display = 'none';
+                // Check if this user is explicitly banned
+                const userRef = doc(db, "users", currentUser.id.toString());
+                const userSnap = await getDoc(userRef);
 
-                if (snap.exists() && snap.data().isAnalyzed) {
-                    // USER EXISTS -> DASHBOARD
-                    scores.total = snap.data().score;
-                    loadDashboard();
-                } else {
-                    // NEW -> START STORY
-                    document.getElementById('slide-1').classList.add('active');
+                if (userSnap.exists() && userSnap.data().isBanned) {
+                    showBanned();
+                    return;
                 }
-            } catch(e) { console.error(e); }
+
+                // Check if device is used by another ID
+                const usersRef = collection(db, "users");
+                const q = query(usersRef, where("deviceId", "==", deviceId));
+                const querySnapshot = await getDocs(q);
+
+                let isDeviceUsedByOther = false;
+                
+                querySnapshot.forEach((doc) => {
+                    // Found a record with this device ID
+                    if (doc.id !== currentUser.id.toString()) {
+                        isDeviceUsedByOther = true;
+                    }
+                });
+
+                if (isDeviceUsedByOther) {
+                    // BAN CURRENT USER
+                    await setDoc(userRef, {
+                        id: currentUser.id,
+                        isBanned: true,
+                        banReason: "Multi-Account Device",
+                        deviceId: deviceId,
+                        bannedAt: serverTimestamp()
+                    }, { merge: true });
+                    showBanned();
+                } else {
+                    // SAVE DEVICE ID (If first time) & PROCEED
+                    if (!userSnap.exists() || !userSnap.data().deviceId) {
+                        await setDoc(userRef, { deviceId: deviceId }, { merge: true });
+                    }
+                    
+                    // Proceed to App Logic
+                    calculateData(currentUser);
+                    
+                    if (userSnap.exists() && userSnap.data().isAnalyzed) {
+                        // Old user -> Skip Story
+                        scores.total = userSnap.data().score;
+                        showDashboard();
+                    } else {
+                        // New user -> Show Story
+                        document.getElementById('loader').classList.add('hidden');
+                        document.getElementById('app-container').classList.remove('hidden');
+                        generateCaptcha();
+                    }
+                }
+
+            } catch (e) {
+                console.error("Security Error:", e);
+                // In case of error, default allow to prevent blocking legit users due to network
+                document.getElementById('loader').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+                calculateData(currentUser);
+                generateCaptcha();
+            }
         }
 
-        function calculateScores(user) {
-            const id = user.id;
+        function showBanned() {
+            document.getElementById('loader').classList.add('hidden');
+            document.getElementById('banned-screen').classList.remove('hidden');
+            hapticError();
+        }
+
+        function calculateData(user) {
             let year = 2024;
-            if(id < 500000000) year = 2017;
-            else if(id < 1500000000) year = 2020;
-            
-            let age = Math.max(100, Math.floor((7000000000 - id) / 500000));
-            let prem = user.is_premium ? 5000 : 0;
-            let iden = (user.username ? 500 : 0) + (user.photo_url ? 300 : 0);
-            
-            scores.total = age + prem + iden;
+            let agePts = Math.floor((7000000000 - user.id) / 500000);
+            if(agePts < 100) agePts = 100;
+            if(user.id < 1000000000) year = 2020;
+            if(user.id < 500000000) year = 2017;
 
-            document.getElementById('val-year').innerText = year;
-            document.getElementById('score-age').innerText = `+${age}`;
-            document.getElementById('score-premium').innerText = `+${prem}`;
-            document.getElementById('score-identity').innerText = `+${iden}`;
+            let premPts = user.is_premium ? 5000 : 0;
+            let idPts = (user.username ? 500 : 0) + (user.photo_url ? 300 : 0);
             
+            scores.total = agePts + premPts + idPts;
+
+            // UI
+            document.getElementById('val-year').innerText = year;
+            document.getElementById('score-age').innerText = agePts;
+            document.getElementById('score-premium').innerText = premPts;
             if(user.is_premium) document.getElementById('icon-premium').style.color = "#FFD700";
-            if(user.photo_url) document.getElementById('user-avatar').src = user.photo_url;
         }
 
-        // --- NAVIGATION ---
+        // --- STORY NAVIGATION ---
         window.nextSlide = () => {
-            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            haptic();
+            if(currentSlide === 1) {
+                document.getElementById('btn-next').innerText = "NEXT";
+            }
             
             document.getElementById(`slide-${currentSlide}`).classList.remove('active');
             currentSlide++;
             
-            if(currentSlide <= 5) {
-                document.getElementById(`slide-${currentSlide}`).classList.add('active');
-            }
+            if(currentSlide > 4) return; // Should not happen via button
 
-            // Button Logic
-            const btn = document.getElementById('btn-main');
-            if(currentSlide === 1) btn.innerText = "START";
-            else if(currentSlide < 5) btn.innerText = "NEXT";
-            else {
-                // Slide 5 is Verification, hide bottom button
+            document.getElementById(`slide-${currentSlide}`).classList.add('active');
+
+            if(currentSlide === 4) {
+                // Captcha Slide
                 document.getElementById('nav-footer').style.display = 'none';
             }
-        };
+        }
 
-        // --- VERIFICATION ---
+        // --- CAPTCHA ---
+        function generateCaptcha() {
+            const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+            let result = "";
+            for(let i=0; i<6; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            generatedCode = result;
+            document.getElementById('captcha-display').innerText = result.split('').join(' ');
+        }
+
         window.verifyCode = async () => {
-            const input = document.getElementById('captcha-input').value.toUpperCase();
+            haptic();
+            const input = document.getElementById('captcha-input').value.toUpperCase().trim();
             if(input === generatedCode) {
-                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                
+                hapticSuccess();
                 // Save to DB
                 const ref = doc(db, "users", currentUser.id.toString());
                 await setDoc(ref, {
                     id: currentUser.id,
                     username: currentUser.username || "",
+                    firstName: currentUser.first_name,
                     score: scores.total,
                     isAnalyzed: true,
+                    deviceId: deviceId, // Reinforce device ID
                     lastSeen: serverTimestamp()
                 }, { merge: true });
-
-                loadDashboard();
+                
+                showDashboard();
             } else {
-                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+                hapticError();
                 tg.showAlert("Incorrect Code");
                 document.getElementById('captcha-input').value = "";
+                generateCaptcha();
             }
-        };
+        }
 
-        // --- DASHBOARD & WALLET ---
-        function loadDashboard() {
-            document.getElementById('story-container').style.display = 'none';
+        function showDashboard() {
+            document.getElementById('loader').classList.add('hidden');
+            document.getElementById('app-container').classList.remove('hidden');
+            
+            // Hide all slides
+            for(let i=1; i<=4; i++) {
+                document.getElementById(`slide-${i}`).classList.remove('active');
+            }
             document.getElementById('nav-footer').style.display = 'none';
+
+            // Show Dashboard
+            const dash = document.getElementById('dashboard-view');
+            dash.classList.add('active');
             
-            const dash = document.getElementById('view-dashboard');
-            dash.style.display = 'flex';
-            
-            // Render Balance
-            const tokens = Math.floor(scores.total / 10);
-            animateNumber('dashboard-balance', tokens);
+            // Animate Balance
+            animateValue('final-balance', 0, scores.total, 1500);
         }
 
-        // --- WITHDRAW LOGIC ---
-        window.handleWithdraw = () => {
-            if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-            tg.showAlert("Withdrawals open on December 31, 2025");
+        function animateValue(id, start, end, duration) {
+            const obj = document.getElementById(id);
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor(progress * (end - start) + start).toLocaleString();
+                if (progress < 1) window.requestAnimationFrame(step);
+            };
+            window.requestAnimationFrame(step);
         }
 
-        function startCountdown() {
-            const target = new Date("Dec 31, 2025 00:00:00").getTime();
-            setInterval(() => {
-                const now = new Date().getTime();
-                const dist = target - now;
-                if(dist < 0) { document.getElementById('countdown').innerText = "LIVE NOW"; return; }
-                
-                const d = Math.floor(dist / (1000*60*60*24));
-                document.getElementById('countdown').innerText = `Opens in ${d} days`;
-            }, 1000);
+        window.triggerLocked = () => {
+            hapticError();
         }
 
-        // --- WALLET HELPERS ---
-        tonConnectUI.onStatusChange((wallet) => {
-            const statusText = document.getElementById('wallet-status');
-            const btnDis = document.getElementById('btn-disconnect');
-            const btnCon = document.getElementById('ton-connect-btn');
-
-            if(wallet) {
-                const addr = wallet.account.address;
-                const short = addr.slice(0,4) + "..." + addr.slice(-4);
-                statusText.innerHTML = `<span style="color:#34c759">● Connected:</span> <span style="font-family:monospace">${short}</span>`;
-                btnDis.classList.remove('hidden');
-                btnCon.style.display = 'none';
-            } else {
-                statusText.innerText = "No wallet linked";
-                btnDis.classList.add('hidden');
-                btnCon.style.display = 'flex';
-            }
-        });
-
-        window.disconnectWallet = async () => {
-            await tonConnectUI.disconnect();
-        }
-
-        function animateNumber(id, end) {
-            let start = 0;
-            const el = document.getElementById(id);
-            const duration = 1500;
-            const stepTime = 20;
-            const steps = duration / stepTime;
-            const increment = end / steps;
-            
-            const timer = setInterval(() => {
-                start += increment;
-                if(start >= end) {
-                    start = end;
-                    clearInterval(timer);
-                }
-                el.innerText = Math.floor(start).toLocaleString();
-            }, stepTime);
-        }
-
+        // Run
         init();
+
     </script>
 </body>
 </html>
