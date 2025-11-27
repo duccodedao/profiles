@@ -4,276 +4,308 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TG Journey</title>
+    
+    <!-- Telegram & TON SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
-    <!-- FingerprintJS cho định danh thiết bị -->
+    <!-- FingerprintJS (Phiên bản ổn định) -->
     <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
     
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500&family=Cinzel:wght@600&display=swap" rel="stylesheet">
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500&family=Cinzel:wght@700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
         :root {
-            --bg-color: #050505;
-            --primary: #0098EA;
-            --accent: #FFD700;
-            --danger: #FF3B30;
-            --glass: rgba(255, 255, 255, 0.05);
-            --border: 1px solid rgba(255, 255, 255, 0.1);
+            --bg-color: #080808;
+            --surface: #121212;
+            --primary: #29b6f6;
+            --primary-glow: rgba(41, 182, 246, 0.4);
+            --accent: #ffd700;
+            --danger: #ef5350;
+            --text-main: #ffffff;
+            --text-muted: #888888;
             --font-main: 'Inter', sans-serif;
             --font-code: 'JetBrains Mono', monospace;
         }
 
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
         body {
             background-color: var(--bg-color);
-            color: #fff;
+            background-image: radial-gradient(circle at 50% 0%, #1a1f2e 0%, var(--bg-color) 70%);
+            color: var(--text-main);
             font-family: var(--font-main);
             margin: 0; padding: 0;
             height: 100vh; overflow: hidden;
             display: flex; flex-direction: column;
         }
 
+        /* --- UTILS --- */
+        .hidden { display: none !important; }
+        .flex-center { display: flex; align-items: center; justify-content: center; }
+        
         /* --- ANIMATIONS --- */
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(50px) scale(0.9); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-            100% { transform: translateY(0px); }
-        }
-        @keyframes glitch {
-            0% { transform: translate(0); }
-            20% { transform: translate(-2px, 2px); }
-            40% { transform: translate(-2px, -2px); }
-            60% { transform: translate(2px, 2px); }
-            80% { transform: translate(2px, -2px); }
-            100% { transform: translate(0); }
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 var(--primary-glow); } 70% { box-shadow: 0 0 20px 10px rgba(0,0,0,0); } 100% { box-shadow: 0 0 0 0 rgba(0,0,0,0); } }
 
         /* --- SCREENS --- */
         .screen {
             position: fixed; inset: 0;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: var(--bg-color); z-index: 100;
-            text-align: center;
+            z-index: 100;
+            background: var(--bg-color);
+            flex-direction: column;
         }
-        .hidden { display: none !important; }
 
-        /* BANNED SCREEN */
-        #banned-screen { z-index: 99999; background: #1a0000; }
-        .banned-icon { font-size: 60px; color: var(--danger); margin-bottom: 20px; animation: glitch 0.5s infinite; }
-        .banned-text { color: var(--danger); font-family: var(--font-code); font-weight: bold; letter-spacing: 2px; }
+        /* LOADER */
+        #loader { text-align: center; }
+        .spinner {
+            width: 50px; height: 50px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* STORY SLIDES */
+        /* BANNED */
+        #banned-screen { background: #0f0505; text-align: center; padding: 20px; }
+        .banned-icon { font-size: 50px; color: var(--danger); margin-bottom: 20px; }
+
+        /* --- MAIN SLIDES --- */
         .slide {
-            position: absolute; inset: 0; padding: 30px;
+            position: absolute; inset: 0; padding: 20px;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none;
-            transition: opacity 0.5s ease;
+            opacity: 0; pointer-events: none; transform: scale(0.95);
+            transition: opacity 0.4s ease, transform 0.4s ease;
         }
-        .slide.active { opacity: 1; pointer-events: auto; }
+        .slide.active { opacity: 1; pointer-events: auto; transform: scale(1); }
         
-        .slide-content { animation: slideIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-        
-        h1 { font-family: 'Cinzel', serif; font-size: 28px; margin-bottom: 10px; color: var(--primary); }
-        .big-stat { font-size: 48px; font-weight: 900; margin: 15px 0; text-shadow: 0 0 20px rgba(0, 152, 234, 0.5); }
-        
-        /* CODE INPUT UI */
-        .security-box {
-            background: rgba(16, 20, 24, 0.8); border: 1px solid var(--primary);
-            border-radius: 16px; padding: 25px; width: 100%; max-width: 320px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 0 30px rgba(0, 152, 234, 0.1);
-        }
-        .security-code {
-            font-family: var(--font-code); font-size: 28px; letter-spacing: 5px;
-            color: var(--primary); margin: 20px 0; padding: 10px;
-            background: rgba(0, 152, 234, 0.1); border-radius: 8px;
-            position: relative; overflow: hidden;
-        }
-        .security-code::after {
-            content: ''; position: absolute; inset: 0;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-            transform: translateX(-100%); animation: shine 2s infinite;
-        }
-        @keyframes shine { 100% { transform: translateX(100%); } }
-        
-        .input-field {
-            background: #000; border: 1px solid #333; color: white;
-            width: 100%; padding: 15px; border-radius: 8px;
-            text-align: center; font-size: 18px; letter-spacing: 2px;
-            outline: none; margin-bottom: 15px; text-transform: uppercase;
-        }
-        .input-field:focus { border-color: var(--primary); }
+        h1 { font-family: 'Cinzel', serif; font-size: 32px; margin: 0 0 10px 0; background: linear-gradient(to right, #fff, #aaa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .subtitle { color: var(--text-muted); font-size: 14px; letter-spacing: 1px; margin-bottom: 20px; text-transform: uppercase; }
 
-        /* TOKEN DASHBOARD */
-        .dashboard-header { margin-top: 60px; width: 100%; padding: 0 20px; }
-        .token-card {
-            background: linear-gradient(135deg, #1a1f25 0%, #0a0c10 100%);
+        /* STATS */
+        .stat-circle {
+            width: 160px; height: 160px;
+            border-radius: 50%;
             border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 20px; padding: 25px;
-            position: relative; overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            background: radial-gradient(circle, rgba(41,182,246,0.1) 0%, transparent 70%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            margin: 30px 0;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            position: relative;
         }
-        .token-card::before {
-            content: ''; position: absolute; top: -50px; right: -50px;
-            width: 150px; height: 150px; background: var(--primary);
-            filter: blur(80px); opacity: 0.2;
+        .stat-circle::before {
+            content: ''; position: absolute; inset: -5px; border-radius: 50%;
+            border: 1px dashed rgba(41,182,246,0.3); animation: spin 10s linear infinite;
         }
-        .balance-label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
-        .balance-val { font-size: 42px; font-weight: bold; margin: 10px 0; font-family: var(--font-code); }
-        .token-tag { background: rgba(0, 152, 234, 0.2); color: var(--primary); padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+        .big-val { font-size: 42px; font-weight: 800; font-family: var(--font-code); text-shadow: 0 0 15px var(--primary-glow); }
+        .stat-badge { background: #1a1a1a; border: 1px solid #333; padding: 8px 16px; border-radius: 20px; font-size: 14px; color: var(--primary); font-weight: bold; }
 
-        /* WITHDRAW BUTTON */
-        .withdraw-area {
-            margin-top: 20px; width: 100%; display: flex; gap: 10px;
+        /* SECURITY INPUT */
+        .captcha-box {
+            background: #141414; border: 1px solid #2a2a2a;
+            border-radius: 16px; padding: 30px 20px; width: 100%; max-width: 340px;
+            text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
         }
-        .btn-withdraw {
-            flex: 1; padding: 15px; border-radius: 12px; border: none;
-            background: #1a1a1a; color: #666; font-weight: bold;
+        .captcha-code {
+            font-family: var(--font-code); font-size: 32px; letter-spacing: 8px;
+            color: var(--text-main); margin: 20px 0;
+            text-shadow: 2px 2px 0px rgba(255,255,255,0.1);
+            user-select: none;
+        }
+        input.clean-input {
+            width: 100%; background: #000; border: 1px solid #333;
+            color: white; padding: 16px; border-radius: 12px;
+            font-size: 18px; text-align: center; outline: none;
+            font-family: var(--font-code); text-transform: uppercase;
+            transition: border 0.3s;
+        }
+        input.clean-input:focus { border-color: var(--primary); }
+
+        /* DASHBOARD */
+        .dashboard-container {
+            width: 100%; height: 100%;
+            padding: 80px 20px 100px 20px; /* Safe area padding */
+            overflow-y: auto;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        
+        .asset-card {
+            width: 100%;
+            background: linear-gradient(145deg, #1a1a1a 0%, #0a0a0a 100%);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 24px; padding: 25px;
+            text-align: center; position: relative; overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+        .asset-card::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
+            background: linear-gradient(90deg, var(--primary), transparent);
+        }
+        .balance-title { font-size: 13px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+        .final-balance { font-size: 48px; font-weight: 800; color: #fff; margin: 5px 0; font-family: var(--font-code); }
+        .token-ticker { font-size: 14px; color: var(--primary); font-weight: 600; background: rgba(41,182,246,0.1); padding: 4px 10px; border-radius: 6px; display: inline-block; }
+
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; margin-top: 25px; }
+        .btn-action {
+            background: #1a1a1a; border: 1px solid #333; color: #666;
+            padding: 16px; border-radius: 16px; font-weight: 600;
             display: flex; align-items: center; justify-content: center; gap: 8px;
-            cursor: not-allowed; position: relative; overflow: hidden;
+            cursor: pointer; transition: 0.2s;
         }
-        .btn-withdraw.locked::after {
-            content: 'LOCKED UNTIL 31/12/2025';
-            position: absolute; inset: 0; background: rgba(0,0,0,0.8);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 10px; color: var(--danger); font-weight: bold;
-            opacity: 0; transition: 0.3s;
-        }
-        .btn-withdraw.locked:active::after { opacity: 1; }
+        .btn-action:active { transform: scale(0.98); background: #222; }
 
-        /* COMMON BUTTONS */
-        .btn-primary {
-            background: white; color: black; border: none; width: 100%;
-            padding: 16px; border-radius: 12px; font-weight: 800; font-size: 16px;
-            cursor: pointer; box-shadow: 0 0 20px rgba(255,255,255,0.1);
-            transition: transform 0.1s;
+        .wallet-section {
+            margin-top: 30px; width: 100%;
+            background: rgba(255,255,255,0.03); border-radius: 16px; padding: 20px;
+            display: flex; flex-direction: column; align-items: center;
+            border: 1px solid rgba(255,255,255,0.05);
         }
-        .btn-primary:active { transform: scale(0.96); }
+        .wallet-label { font-size: 12px; margin-bottom: 15px; color: #888; }
+        
+        /* FOOTER BUTTON */
+        .footer-nav {
+            position: fixed; bottom: 30px; left: 0; right: 0;
+            padding: 0 20px; z-index: 50;
+            display: flex; justify-content: center;
+        }
+        .btn-main {
+            width: 100%; max-width: 400px;
+            background: var(--text-main); color: #000;
+            border: none; padding: 18px; border-radius: 16px;
+            font-size: 16px; font-weight: 800; letter-spacing: 0.5px;
+            box-shadow: 0 5px 20px rgba(255,255,255,0.15);
+            cursor: pointer; transition: transform 0.1s;
+        }
+        .btn-main:active { transform: scale(0.96); }
 
-        .footer { position: fixed; bottom: 30px; left: 0; width: 100%; display: flex; justify-content: center; padding: 0 20px; }
+        /* Custom Ton Connect Style */
+        #ton-connect-btn { width: 100%; display: flex; justify-content: center; }
+        /* Tinh chỉnh nút tonconnect mặc định */
+        button[class^="go"] { width: 100% !important; justify-content: center; font-weight: 600; }
+
     </style>
 </head>
 <body>
 
     <!-- SCREEN: LOADER -->
-    <div id="loader" class="screen">
-        <div style="width: 40px; height: 40px; border: 3px solid #333; border-top-color: #fff; border-radius: 50%; animation: spin 1s infinite;"></div>
-        <div style="margin-top: 15px; font-size: 10px; letter-spacing: 2px;">SECURITY CHECK...</div>
+    <div id="loader" class="screen flex-center">
+        <div class="spinner"></div>
+        <div style="font-size: 12px; letter-spacing: 2px; color: #666;">INITIALIZING SYSTEM</div>
     </div>
 
     <!-- SCREEN: BANNED -->
-    <div id="banned-screen" class="screen hidden">
+    <div id="banned-screen" class="screen hidden flex-center">
         <i class="fas fa-ban banned-icon"></i>
-        <h2 style="color: white; margin: 0;">ACCESS DENIED</h2>
-        <p class="banned-text">MULTI-ACCOUNT DETECTED</p>
-        <p style="font-size: 12px; color: #888; max-width: 280px; margin-top: 10px;">
-            System detected multiple accounts on this device (ID: <span id="device-id-display">---</span>).
-            <br>This account has been permanently locked.
+        <h2 style="color: white; margin: 0;">ACCESS RESTRICTED</h2>
+        <p style="color: #888; margin-top: 10px; font-size: 14px;">
+            Suspicious activity detected on this device.
         </p>
     </div>
 
-    <!-- SCREEN: MAIN APP -->
-    <div id="app-container" class="hidden">
+    <!-- APP CONTAINER -->
+    <div id="app-container" class="hidden" style="width: 100%; height: 100%;">
         
         <!-- SLIDE 1: INTRO -->
         <div class="slide active" id="slide-1">
-            <div class="slide-content" style="text-align: center;">
-                <i class="fab fa-telegram fa-5x" style="color: white; margin-bottom: 20px; animation: float 3s ease-in-out infinite;"></i>
-                <h1>TG LEGACY</h1>
-                <p style="color: #888;">Analyzing your digital footprint...</p>
-            </div>
+            <i class="fab fa-telegram fa-4x" style="color: var(--primary); margin-bottom: 30px; filter: drop-shadow(0 0 20px var(--primary-glow));"></i>
+            <h1>TG JOURNEY</h1>
+            <p class="subtitle">Checking your digital footprint</p>
         </div>
 
-        <!-- SLIDE 2: AGE -->
+        <!-- SLIDE 2: ACCOUNT AGE -->
         <div class="slide" id="slide-2">
-            <div class="slide-content" style="text-align: center;">
-                <div style="font-size: 12px; letter-spacing: 2px; color: var(--primary);">STATISTIC I</div>
-                <h1>TIMELINE</h1>
-                <div class="big-stat" id="val-year">...</div>
-                <div style="background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; display: inline-block;">
-                    <span id="score-age">0</span> PTS
-                </div>
+            <p class="subtitle" style="color: var(--primary);">ACCOUNT ANALYSIS</p>
+            <h1>CREATION DATE</h1>
+            <div class="stat-circle">
+                <div class="big-val" id="val-year">...</div>
+                <div style="font-size: 12px; color: #888; margin-top: 5px;">ESTIMATED</div>
             </div>
+            <div class="stat-badge">+<span id="score-age">0</span> POINTS</div>
         </div>
 
-        <!-- SLIDE 3: PREMIUM -->
+        <!-- SLIDE 3: PREMIUM STATUS -->
         <div class="slide" id="slide-3">
-            <div class="slide-content" style="text-align: center;">
-                <div style="font-size: 12px; letter-spacing: 2px; color: var(--accent);">STATISTIC II</div>
-                <h1>STATUS</h1>
-                <i class="fas fa-star" style="font-size: 60px; color: #333; margin: 20px 0;" id="icon-premium"></i>
-                <div>
-                    <span id="score-premium">0</span> PTS
-                </div>
-            </div>
+            <p class="subtitle" style="color: var(--accent);">VIP STATUS</p>
+            <h1>PREMIUM</h1>
+            <i class="fas fa-star" id="icon-premium" style="font-size: 80px; color: #333; margin: 40px 0; transition: 0.3s;"></i>
+            <div class="stat-badge">+<span id="score-premium">0</span> POINTS</div>
         </div>
 
-        <!-- SLIDE 4: SECURITY CHECK (CAPTCHA) -->
+        <!-- SLIDE 4: VERIFICATION -->
         <div class="slide" id="slide-4">
-            <div class="slide-content security-box">
-                <h2 style="margin: 0 0 15px 0; font-size: 18px;">HUMAN VERIFICATION</h2>
-                <p style="font-size: 12px; color: #888;">Enter the secure code below to claim your allocation.</p>
+            <div class="captcha-box">
+                <i class="fas fa-shield-alt" style="font-size: 30px; color: var(--primary); margin-bottom: 15px;"></i>
+                <h3 style="margin: 0; font-size: 20px;">HUMAN CHECK</h3>
+                <p style="font-size: 12px; color: #888; margin-bottom: 20px;">Enter the code below to verify.</p>
                 
-                <div class="security-code" id="captcha-display">LOADING</div>
-                <input type="text" class="input-field" id="captcha-input" placeholder="INPUT CODE" maxlength="6">
+                <div class="captcha-code" id="captcha-display">LOADING</div>
+                <input type="text" class="clean-input" id="captcha-input" placeholder="ENTER CODE" maxlength="6" autocomplete="off">
                 
-                <button class="btn-primary" onclick="verifyCode()" style="background: var(--primary); color: white;">
-                    VERIFY IDENTITY
+                <button onclick="verifyCode()" style="background: var(--primary); color: #000; border: none; width: 100%; padding: 15px; border-radius: 12px; font-weight: bold; margin-top: 20px; font-size: 16px;">
+                    VERIFY & CLAIM
                 </button>
             </div>
         </div>
 
-        <!-- SLIDE 5: DASHBOARD (FINAL) -->
-        <div class="slide" id="dashboard-view" style="justify-content: flex-start;">
-            <div class="dashboard-header slide-content">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <div style="font-weight: bold; font-size: 18px;">MY ASSETS</div>
-                    <div style="font-size: 12px; color: var(--primary);">VERIFIED <i class="fas fa-check-circle"></i></div>
-                </div>
-
-                <div class="token-card">
-                    <div style="display: flex; justify-content: space-between;">
-                        <span class="balance-label">Total Balance</span>
-                        <span class="token-tag">TON CHAIN</span>
-                    </div>
-                    <div class="balance-val" id="final-balance">0</div>
-                    <div style="font-size: 14px; font-weight: bold;">$TG TOKEN</div>
-                </div>
-
-                <div class="withdraw-area">
-                    <button class="btn-withdraw locked" onclick="triggerLocked()">
-                        <i class="fas fa-arrow-down"></i> Withdraw
-                    </button>
-                    <button class="btn-withdraw locked" onclick="triggerLocked()">
-                        <i class="fas fa-exchange-alt"></i> Swap
-                    </button>
-                </div>
+        <!-- SLIDE 5: DASHBOARD -->
+        <div class="slide" id="dashboard-view" style="justify-content: flex-start; padding: 0;">
+            <div class="dashboard-container">
                 
-                <div style="margin-top: 30px; border-top: 1px solid #333; padding-top: 20px;">
-                     <div style="font-size: 12px; margin-bottom: 10px;">WALLET CONNECTION</div>
-                     <div id="ton-connect-btn"></div>
+                <!-- Profile Header -->
+                <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 40px; height: 40px; background: #222; border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                             <i class="fas fa-user" style="color: #666;"></i>
+                             <!-- Avatar Img can go here -->
+                        </div>
+                        <div>
+                            <div style="font-weight: bold; font-size: 14px;" id="user-name">User</div>
+                            <div style="font-size: 10px; color: var(--primary);">VERIFIED ID</div>
+                        </div>
+                    </div>
+                    <div style="font-size: 12px; color: #666;">#<span id="uid-display"></span></div>
                 </div>
 
-                <div style="margin-top: 20px; font-size: 10px; color: #444; text-align: center;">
-                    UserID: <span id="uid-display"></span>
+                <!-- Main Balance Card -->
+                <div class="asset-card">
+                    <div class="balance-title">Available Allocation</div>
+                    <div class="final-balance" id="final-balance">0</div>
+                    <div class="token-ticker">$TG TOKEN</div>
                 </div>
+
+                <!-- Action Buttons -->
+                <div class="action-grid">
+                    <div class="btn-action" onclick="showLocked()">
+                        <i class="fas fa-arrow-down" style="color: var(--text-muted);"></i> Withdraw
+                    </div>
+                    <div class="btn-action" onclick="showLocked()">
+                        <i class="fas fa-exchange-alt" style="color: var(--text-muted);"></i> Swap
+                    </div>
+                </div>
+
+                <!-- Wallet Connect -->
+                <div class="wallet-section">
+                    <div class="wallet-label">CONNECT TON WALLET</div>
+                    <div id="ton-connect-btn"></div>
+                </div>
+
             </div>
         </div>
 
-        <!-- FOOTER NAV (Only for Story) -->
-        <div class="footer" id="nav-footer">
-            <button class="btn-primary" id="btn-next" onclick="nextSlide()">START ANALYSIS</button>
+        <!-- NAV BUTTON (Only for Slides 1-3) -->
+        <div class="footer-nav" id="nav-footer">
+            <button class="btn-main" id="btn-next" onclick="nextSlide()">START ANALYSIS</button>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
@@ -283,122 +315,187 @@
             appId: "1:914980131889:web:72f8da15c42dbee671b110",
             measurementId: "G-C587M69LZW"
         };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const tg = window.Telegram.WebApp;
 
-        // TON CONNECT
+        // INIT SERVICES
+        let db;
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+        } catch (err) {
+            console.error("Firebase Init Error", err);
+        }
+
+        const tg = window.Telegram.WebApp;
+        
+        // TON CONNECT UI CUSTOMIZATION
         const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
             manifestUrl: 'https://ton-connect.github.io/demo-dapp-with-react-ui/tonconnect-manifest.json',
-            buttonRootId: 'ton-connect-btn'
+            buttonRootId: 'ton-connect-btn',
+            uiPreferences: {
+                theme: 'DARK',
+                borderRadius: 'm',
+                colorsSet: {
+                    connectButton: {
+                        background: '#29b6f6', // Màu primary của mình
+                        foreground: '#000000'
+                    }
+                }
+            }
         });
 
-        // STATE
+        // STATE VARIABLES
         let currentUser = null;
-        let deviceId = null;
+        let deviceId = "unknown_device_" + Math.random().toString(36).substring(7);
         let currentSlide = 1;
         let scores = { total: 0 };
         let generatedCode = "";
+        let appLoaded = false;
 
-        // UTILS: HAPTIC
-        function haptic() {
-            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-        }
-        function hapticError() {
-            if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-        }
-        function hapticSuccess() {
-            if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-        }
+        // UTILITIES
+        function haptic() { if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); }
+        function hapticSuccess() { if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); }
+        function hapticError() { if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error'); }
 
+        // MAIN STARTUP
         async function init() {
+            tg.ready();
             tg.expand();
-            tg.setHeaderColor('#050505');
-            
-            // 1. Get User
+            tg.setHeaderColor('#080808');
+            tg.setBackgroundColor('#080808');
+
+            // 1. Get TG User
             currentUser = tg.initDataUnsafe.user;
-            // Testing only: if(!currentUser) currentUser = { id: 11111, first_name: "Test", username: "user" }; 
             
+            // Fallback for testing (remove in prod if needed)
             if(!currentUser) {
-                document.body.innerHTML = "Access via Telegram Only";
-                return;
+                // currentUser = { id: 123456, first_name: "Tester", username: "test_user", is_premium: true }; // Uncomment to test in browser
+                if(!currentUser) {
+                    document.body.innerHTML = "<div style='color:white; text-align:center; padding-top:50px;'>Please open in Telegram</div>";
+                    return;
+                }
             }
+            
             document.getElementById('uid-display').innerText = currentUser.id;
+            document.getElementById('user-name').innerText = currentUser.first_name;
 
-            // 2. Get Device Fingerprint
-            const fpPromise = FingerprintJS.load();
-            const fp = await fpPromise;
-            const result = await fp.get();
-            deviceId = result.visitorId;
-            document.getElementById('device-id-display').innerText = deviceId;
+            // 2. Safety Timeout (Fix loading forever issue)
+            setTimeout(() => {
+                if (!appLoaded) {
+                    console.log("Loading timeout - forcing entry");
+                    startAppLogic(true); // Force start even if checks fail
+                }
+            }, 6000); // 6 seconds timeout
 
-            // 3. Security Check (Anti-Cheat)
-            await checkSecurity();
+            // 3. Get Device ID (Robust way)
+            try {
+                if (window.FingerprintJS) {
+                    const fp = await FingerprintJS.load();
+                    const result = await fp.get();
+                    deviceId = result.visitorId;
+                }
+            } catch (e) {
+                console.warn("Fingerprint blocked", e);
+                // Keep the random deviceId generated at top
+            }
+
+            // 4. Check Database
+            await checkSecurityAndLoad();
         }
 
-        async function checkSecurity() {
+        async function checkSecurityAndLoad() {
+            if (!db) { startAppLogic(true); return; }
+
             try {
-                // Check if this user is explicitly banned
                 const userRef = doc(db, "users", currentUser.id.toString());
                 const userSnap = await getDoc(userRef);
 
+                // Check Ban
                 if (userSnap.exists() && userSnap.data().isBanned) {
+                    appLoaded = true;
                     showBanned();
                     return;
                 }
 
-                // Check if device is used by another ID
-                const usersRef = collection(db, "users");
-                const q = query(usersRef, where("deviceId", "==", deviceId));
-                const querySnapshot = await getDocs(q);
-
-                let isDeviceUsedByOther = false;
-                
-                querySnapshot.forEach((doc) => {
-                    // Found a record with this device ID
-                    if (doc.id !== currentUser.id.toString()) {
-                        isDeviceUsedByOther = true;
-                    }
-                });
-
-                if (isDeviceUsedByOther) {
-                    // BAN CURRENT USER
-                    await setDoc(userRef, {
-                        id: currentUser.id,
-                        isBanned: true,
-                        banReason: "Multi-Account Device",
-                        deviceId: deviceId,
-                        bannedAt: serverTimestamp()
-                    }, { merge: true });
-                    showBanned();
-                } else {
-                    // SAVE DEVICE ID (If first time) & PROCEED
-                    if (!userSnap.exists() || !userSnap.data().deviceId) {
-                        await setDoc(userRef, { deviceId: deviceId }, { merge: true });
-                    }
+                // Check Multi-account
+                // Note: Only check if we have a real deviceId
+                if (!deviceId.startsWith("unknown")) {
+                    const usersRef = collection(db, "users");
+                    const q = query(usersRef, where("deviceId", "==", deviceId));
+                    const querySnapshot = await getDocs(q);
                     
-                    // Proceed to App Logic
-                    calculateData(currentUser);
-                    
-                    if (userSnap.exists() && userSnap.data().isAnalyzed) {
-                        // Old user -> Skip Story
-                        scores.total = userSnap.data().score;
-                        showDashboard();
-                    } else {
-                        // New user -> Show Story
-                        document.getElementById('loader').classList.add('hidden');
-                        document.getElementById('app-container').classList.remove('hidden');
-                        generateCaptcha();
+                    let isMultiAccount = false;
+                    querySnapshot.forEach((doc) => {
+                        if (doc.id !== currentUser.id.toString()) isMultiAccount = true;
+                    });
+
+                    if (isMultiAccount) {
+                        await setDoc(userRef, {
+                            id: currentUser.id, isBanned: true, banReason: "Multi-Account", deviceId: deviceId, bannedAt: serverTimestamp()
+                        }, { merge: true });
+                        appLoaded = true;
+                        showBanned();
+                        return;
                     }
                 }
 
-            } catch (e) {
-                console.error("Security Error:", e);
-                // In case of error, default allow to prevent blocking legit users due to network
-                document.getElementById('loader').classList.add('hidden');
-                document.getElementById('app-container').classList.remove('hidden');
+                // Save/Update User
+                if (!userSnap.exists() || !userSnap.data().deviceId) {
+                    await setDoc(userRef, { deviceId: deviceId }, { merge: true });
+                }
+
+                // Logic Decision
                 calculateData(currentUser);
-                generateCaptcha();
+                appLoaded = true;
+
+                if (userSnap.exists() && userSnap.data().isAnalyzed) {
+                    // Old User -> Dashboard
+                    scores.total = userSnap.data().score || scores.total;
+                    showDashboard(false); // false = no animation
+                } else {
+                    // New User -> Story
+                    showSlideScreen();
+                    generateCaptcha();
+                }
+
+            } catch (e) {
+                console.error("DB Check Error", e);
+                startAppLogic(true); // Fail safe -> Let user in
+            }
+        }
+
+        function startAppLogic(force) {
+            if(appLoaded && !force) return;
+            appLoaded = true;
+            calculateData(currentUser);
+            showSlideScreen();
+            generateCaptcha();
+        }
+
+        function calculateData(user) {
+            let year = 2024;
+            let id = user.id;
+            let agePts = 0;
+
+            // Simple logic for year estimation
+            if (id < 500000000) year = 2016;
+            else if (id < 1000000000) year = 2019;
+            else if (id < 5000000000) year = 2021;
+            
+            agePts = Math.floor((7000000000 - id) / 400000); // Tweak formula
+            if(agePts < 100) agePts = 150;
+            if(agePts > 10000) agePts = 9999;
+
+            let premPts = user.is_premium ? 2500 : 0;
+            scores.total = agePts + premPts + 500; // Base 500
+
+            // Update UI
+            document.getElementById('val-year').innerText = year;
+            document.getElementById('score-age').innerText = agePts;
+            document.getElementById('score-premium').innerText = premPts;
+            
+            if(user.is_premium) {
+                document.getElementById('icon-premium').style.color = "#FFD700";
+                document.getElementById('icon-premium').classList.add('fa-beat');
             }
         }
 
@@ -408,98 +505,80 @@
             hapticError();
         }
 
-        function calculateData(user) {
-            let year = 2024;
-            let agePts = Math.floor((7000000000 - user.id) / 500000);
-            if(agePts < 100) agePts = 100;
-            if(user.id < 1000000000) year = 2020;
-            if(user.id < 500000000) year = 2017;
-
-            let premPts = user.is_premium ? 5000 : 0;
-            let idPts = (user.username ? 500 : 0) + (user.photo_url ? 300 : 0);
-            
-            scores.total = agePts + premPts + idPts;
-
-            // UI
-            document.getElementById('val-year').innerText = year;
-            document.getElementById('score-age').innerText = agePts;
-            document.getElementById('score-premium').innerText = premPts;
-            if(user.is_premium) document.getElementById('icon-premium').style.color = "#FFD700";
+        function showSlideScreen() {
+            document.getElementById('loader').classList.add('hidden');
+            document.getElementById('app-container').classList.remove('hidden');
         }
 
-        // --- STORY NAVIGATION ---
+        // --- NAVIGATION ---
         window.nextSlide = () => {
             haptic();
-            if(currentSlide === 1) {
-                document.getElementById('btn-next').innerText = "NEXT";
-            }
-            
+            if(currentSlide === 1) document.getElementById('btn-next').innerText = "CONTINUE";
+            if(currentSlide === 2) document.getElementById('btn-next').innerText = "VERIFY";
+
             document.getElementById(`slide-${currentSlide}`).classList.remove('active');
             currentSlide++;
-            
-            if(currentSlide > 4) return; // Should not happen via button
 
-            document.getElementById(`slide-${currentSlide}`).classList.add('active');
-
-            if(currentSlide === 4) {
-                // Captcha Slide
-                document.getElementById('nav-footer').style.display = 'none';
+            if(currentSlide <= 3) {
+                document.getElementById(`slide-${currentSlide}`).classList.add('active');
+            } else if (currentSlide === 4) {
+                document.getElementById(`slide-${currentSlide}`).classList.add('active');
+                document.getElementById('nav-footer').style.display = 'none'; // Hide footer for captcha
             }
-        }
+        };
 
         // --- CAPTCHA ---
         function generateCaptcha() {
             const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-            let result = "";
-            for(let i=0; i<6; i++) {
-                result += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            generatedCode = result;
-            document.getElementById('captcha-display').innerText = result.split('').join(' ');
+            generatedCode = "";
+            for(let i=0; i<6; i++) generatedCode += chars.charAt(Math.floor(Math.random() * chars.length));
+            document.getElementById('captcha-display').innerText = generatedCode.split('').join(' ');
         }
 
         window.verifyCode = async () => {
             haptic();
             const input = document.getElementById('captcha-input').value.toUpperCase().trim();
+            
             if(input === generatedCode) {
                 hapticSuccess();
-                // Save to DB
-                const ref = doc(db, "users", currentUser.id.toString());
-                await setDoc(ref, {
-                    id: currentUser.id,
-                    username: currentUser.username || "",
-                    firstName: currentUser.first_name,
-                    score: scores.total,
-                    isAnalyzed: true,
-                    deviceId: deviceId, // Reinforce device ID
-                    lastSeen: serverTimestamp()
-                }, { merge: true });
-                
-                showDashboard();
+                // Save Data
+                if(db) {
+                    try {
+                        const ref = doc(db, "users", currentUser.id.toString());
+                        await setDoc(ref, {
+                            id: currentUser.id,
+                            firstName: currentUser.first_name,
+                            score: scores.total,
+                            isAnalyzed: true,
+                            lastSeen: serverTimestamp()
+                        }, { merge: true });
+                    } catch(e) { console.log("Save error", e); }
+                }
+                showDashboard(true);
             } else {
                 hapticError();
-                tg.showAlert("Incorrect Code");
+                tg.showAlert("Wrong code. Try again.");
                 document.getElementById('captcha-input').value = "";
                 generateCaptcha();
             }
-        }
+        };
 
-        function showDashboard() {
+        function showDashboard(animate) {
             document.getElementById('loader').classList.add('hidden');
             document.getElementById('app-container').classList.remove('hidden');
             
             // Hide all slides
-            for(let i=1; i<=4; i++) {
-                document.getElementById(`slide-${i}`).classList.remove('active');
-            }
+            document.querySelectorAll('.slide').forEach(el => el.classList.remove('active'));
             document.getElementById('nav-footer').style.display = 'none';
 
-            // Show Dashboard
             const dash = document.getElementById('dashboard-view');
             dash.classList.add('active');
-            
-            // Animate Balance
-            animateValue('final-balance', 0, scores.total, 1500);
+
+            if(animate) {
+                animateValue('final-balance', 0, scores.total, 1500);
+            } else {
+                document.getElementById('final-balance').innerText = scores.total.toLocaleString();
+            }
         }
 
         function animateValue(id, start, end, duration) {
@@ -514,13 +593,17 @@
             window.requestAnimationFrame(step);
         }
 
-        window.triggerLocked = () => {
+        window.showLocked = () => {
             hapticError();
-        }
+            tg.showPopup({
+                title: "Locked",
+                message: "Transfers are locked until TGE (Token Generation Event).",
+                buttons: [{type: "close"}]
+            });
+        };
 
-        // Run
+        // START
         init();
-
     </script>
 </body>
 </html>
