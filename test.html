@@ -14,6 +14,8 @@
             --ton-blue: #0098EA;
             --text-main: #ffffff;
             --text-sub: #8E8E93;
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
         }
 
         body {
@@ -25,197 +27,204 @@
             display: flex; flex-direction: column;
         }
 
-        /* --- 1. ACCESS DENIED SCREEN --- */
-        #access-denied {
+        /* --- UI COMPONENTS --- */
+        #access-denied, #loader {
             position: fixed; inset: 0; z-index: 9999;
-            background: #000;
-            display: none; /* JS toggles this */
+            background: #000; display: flex;
             flex-direction: column; align-items: center; justify-content: center;
-            text-align: center;
         }
-        .lock-icon { font-size: 40px; color: #ff3b30; margin-bottom: 20px; }
-        .denied-text { font-family: 'Inter', sans-serif; font-weight: bold; font-size: 18px; color: #ff3b30; }
-        .denied-sub { color: #555; font-size: 14px; margin-top: 10px; }
-
-        /* --- 2. LOADER --- */
-        #loader {
-            position: fixed; inset: 0; z-index: 5000;
-            background: #000;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 0.5s ease;
-        }
+        #access-denied { display: none; text-align: center; }
         .spinner {
-            width: 50px; height: 50px;
-            border: 3px solid rgba(255,255,255,0.1);
-            border-top-color: var(--ton-blue);
-            border-radius: 50%;
+            width: 40px; height: 40px; border: 3px solid var(--glass);
+            border-top-color: var(--ton-blue); border-radius: 50%;
             animation: spin 1s linear infinite;
         }
-        .loading-msg { margin-top: 15px; font-size: 12px; letter-spacing: 2px; color: var(--text-sub); text-transform: uppercase; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* --- 3. STORY UI --- */
-        .progress-container {
-            position: fixed; top: 0; left: 0; width: 100%; height: 4px;
-            background: rgba(255,255,255,0.1); z-index: 100;
-        }
-        .progress-bar {
-            height: 100%; width: 0%; background: var(--ton-blue);
-            transition: width 0.5s ease;
-            box-shadow: 0 0 10px var(--ton-blue);
-        }
-
+        /* --- SLIDES --- */
         .slide {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            padding: 40px 24px; box-sizing: border-box;
+            position: absolute; inset: 0;
+            padding: 40px 20px 100px 20px; /* Padding bottom for footer */
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             opacity: 0; pointer-events: none; transform: scale(0.95);
             transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-            text-align: center;
+            text-align: center; overflow-y: auto; /* Allow scroll on small screens */
         }
         .slide.active { opacity: 1; pointer-events: auto; transform: scale(1); }
 
-        h1 { font-family: 'Lora', serif; font-size: 32px; font-weight: 600; margin-bottom: 10px; font-style: italic; }
-        .big-number { font-size: 48px; font-weight: 800; color: var(--ton-blue); margin: 20px 0; letter-spacing: -1px; }
-        .description { font-size: 16px; color: var(--text-sub); line-height: 1.6; max-width: 300px; margin: 0 auto; }
+        h1 { font-family: 'Lora', serif; font-size: 32px; font-weight: 600; margin: 0 0 10px 0; font-style: italic; }
+        .big-number { font-size: 48px; font-weight: 800; color: var(--ton-blue); margin: 15px 0; letter-spacing: -1px; }
+        .description { font-size: 15px; color: var(--text-sub); line-height: 1.5; max-width: 300px; margin: 0 auto; }
+        .chapter-label { font-size: 11px; letter-spacing: 2px; color: #555; text-transform: uppercase; margin-bottom: 5px; }
+
         .points-badge {
             background: rgba(0, 152, 234, 0.15); color: var(--ton-blue);
-            padding: 8px 16px; border-radius: 20px; font-weight: bold;
-            margin-top: 15px; display: inline-block;
-            border: 1px solid rgba(0, 152, 234, 0.3);
+            padding: 6px 14px; border-radius: 20px; font-weight: bold;
+            margin-top: 15px; display: inline-block; border: 1px solid rgba(0, 152, 234, 0.3);
         }
 
-        .chapter-label { font-size: 12px; letter-spacing: 2px; color: #555; text-transform: uppercase; margin-bottom: 5px; }
-
-        /* RANK DISPLAY (New) */
+        /* --- RANK BOX --- */
         .rank-box {
-            margin-top: 30px;
-            padding: 15px 30px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px;
-            text-align: center;
-            animation: fadeInUp 1s ease forwards;
+            margin-top: 20px; padding: 10px 20px; width: 100%; max-width: 280px;
+            background: var(--glass); border: 1px solid var(--border);
+            border-radius: 12px; text-align: center;
         }
-        .rank-title { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
-        .rank-value { font-size: 24px; font-weight: bold; color: white; margin-top: 5px; }
 
-        /* FOOTER ACTIONS */
+        /* --- NEW: TOKEN & WITHDRAW SECTION --- */
+        .token-section {
+            width: 100%; max-width: 320px; margin-top: 25px;
+            border-top: 1px solid var(--border);
+            padding-top: 20px;
+        }
+        
+        .countdown-timer {
+            font-family: 'Courier New', monospace;
+            color: var(--ton-blue); font-size: 14px; letter-spacing: 1px;
+            margin-bottom: 15px; font-weight: bold;
+            background: rgba(0, 152, 234, 0.1); padding: 5px 10px; border-radius: 4px;
+            display: inline-block;
+        }
+        .listing-lbl { font-size: 10px; color: #666; text-transform: uppercase; margin-bottom: 5px; letter-spacing: 1px; }
+
+        .grid-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        
+        .btn-feature {
+            background: var(--glass); border: 1px solid var(--border);
+            border-radius: 12px; padding: 12px;
+            color: #777; /* Dimmed color */
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            font-size: 11px; font-weight: 600;
+            cursor: not-allowed; position: relative; overflow: hidden;
+            transition: 0.2s;
+        }
+        
+        /* Lock overlay effect */
+        .btn-feature::after {
+            content: "\f023"; /* FontAwesome Lock */
+            font-family: "Font Awesome 6 Free"; font-weight: 900;
+            position: absolute; top: 5px; right: 8px; font-size: 10px; opacity: 0.5;
+        }
+
+        .btn-feature:active { transform: scale(0.98); }
+        .btn-feature i { font-size: 18px; margin-bottom: 2px; }
+
+        /* --- FOOTER --- */
         .bottom-action {
-            position: fixed; bottom: 40px; left: 0; width: 100%;
+            position: fixed; bottom: 30px; left: 0; width: 100%;
             display: flex; justify-content: center; z-index: 50;
-            flex-direction: column; align-items: center; gap: 15px;
+            flex-direction: column; align-items: center; gap: 10px;
         }
         .btn-next {
             background: white; color: black; border: none;
-            padding: 16px 40px; border-radius: 30px;
+            padding: 14px 40px; border-radius: 30px;
             font-size: 16px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 5px 20px rgba(255,255,255,0.2);
-            transition: transform 0.2s;
-            width: 80%; max-width: 300px;
+            box-shadow: 0 5px 20px rgba(255,255,255,0.15);
+            transition: transform 0.2s; width: 80%; max-width: 300px;
             display: flex; align-items: center; justify-content: center; gap: 8px;
         }
         .btn-next:active { transform: scale(0.95); }
         .btn-share { background: var(--ton-blue); color: white; box-shadow: 0 5px 20px rgba(0, 152, 234, 0.4); }
 
-        /* ANIMATIONS */
+        /* Animation */
         .fade-in-up { animation: fadeInUp 0.8s ease forwards; opacity: 0; transform: translateY(20px); }
         @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
-        .delay-1 { animation-delay: 0.2s; }
-        .delay-2 { animation-delay: 0.5s; }
-        .delay-3 { animation-delay: 0.8s; }
+        .delay-1 { animation-delay: 0.2s; } .delay-2 { animation-delay: 0.5s; } .delay-3 { animation-delay: 0.8s; }
 
     </style>
 </head>
 <body>
 
-    <!-- SCREEN 1: ACCESS DENIED (For Web Browsers) -->
+    <!-- SCREEN 1: ACCESS DENIED -->
     <div id="access-denied">
-        <div class="lock-icon"><i class="fas fa-lock"></i></div>
-        <div class="denied-text">MOBILE ACCESS ONLY</div>
-        <div class="denied-sub">Please open this app inside Telegram.</div>
+        <i class="fas fa-lock" style="font-size:40px; color:#ff3b30; margin-bottom:20px"></i>
+        <div style="font-weight:bold; color:#ff3b30">MOBILE ACCESS ONLY</div>
     </div>
 
     <!-- SCREEN 2: LOADER -->
     <div id="loader">
         <div class="spinner"></div>
-        <div class="loading-msg">CONNECTING TO DATABASE...</div>
     </div>
 
-    <!-- SCREEN 3: APP CONTENT -->
-    <div class="progress-container" id="progress-wrap">
-        <div class="progress-bar" id="progress"></div>
+    <!-- CONTENT -->
+    <div id="progress-wrap" style="position:fixed; top:0; left:0; width:100%; height:4px; background:rgba(255,255,255,0.1); z-index:100;">
+        <div id="progress" style="height:100%; width:0%; background:var(--ton-blue); transition:width 0.5s;"></div>
     </div>
 
     <!-- SLIDE 1: INTRO -->
     <div class="slide" id="slide-1">
         <i class="fab fa-telegram fa-4x fade-in-up" style="color: white; margin-bottom: 30px;"></i>
         <h1 class="fade-in-up delay-1">The Digital Archives</h1>
-        <p class="description fade-in-up delay-2">
-            Every journey leaves a trace.<br>Let's uncover your legacy on Telegram.
-        </p>
+        <p class="description fade-in-up delay-2">Every journey leaves a trace. Let's uncover your legacy.</p>
     </div>
 
-    <!-- SLIDE 2: THE ORIGIN -->
+    <!-- SLIDE 2: ORIGIN -->
     <div class="slide" id="slide-2">
         <div class="chapter-label fade-in-up">CHAPTER I</div>
         <h1 class="fade-in-up">The Origin</h1>
         <div class="big-number fade-in-up delay-1" id="val-year">...</div>
-        <p class="description fade-in-up delay-2">
-            You joined the network early. A true pioneer of the digital era.
-        </p>
+        <p class="description fade-in-up delay-2">You joined the network early. A true pioneer.</p>
         <div class="points-badge fade-in-up delay-3" id="score-age">+0 PTS</div>
     </div>
 
-    <!-- SLIDE 3: THE ELITE -->
+    <!-- SLIDE 3: ELITE -->
     <div class="slide" id="slide-3">
         <div class="chapter-label fade-in-up">CHAPTER II</div>
         <h1 class="fade-in-up">The Elite</h1>
-        <div id="icon-premium" class="fade-in-up delay-1" style="font-size: 60px; margin: 20px 0;">
-            <i class="fas fa-star" style="color: #333;"></i>
-        </div>
-        <p class="description fade-in-up delay-2" id="text-premium">
-            Checking your contribution to the ecosystem.
-        </p>
+        <div id="icon-premium" class="fade-in-up delay-1" style="font-size: 60px; margin: 20px 0;"><i class="fas fa-star" style="color:#333"></i></div>
+        <p class="description fade-in-up delay-2" id="text-premium">Checking contribution tier.</p>
         <div class="points-badge fade-in-up delay-3" id="score-premium">+0 PTS</div>
     </div>
 
-    <!-- SLIDE 4: THE IDENTITY -->
+    <!-- SLIDE 4: IDENTITY -->
     <div class="slide" id="slide-4">
         <div class="chapter-label fade-in-up">CHAPTER III</div>
         <h1 class="fade-in-up">The Identity</h1>
-        <img id="user-avatar" src="" style="width: 80px; height: 80px; border-radius: 50%; border: 2px solid white; margin: 20px 0;" class="fade-in-up delay-1">
-        <p class="description fade-in-up delay-2">
-            Your identity is verified.<br><span style="color:white" id="user-username">@username</span>
-        </p>
+        <img id="user-avatar" src="" style="width:80px; height:80px; border-radius:50%; border:2px solid white; margin:20px 0;" class="fade-in-up delay-1">
+        <p class="description fade-in-up delay-2">Identity Verified: <span style="color:white" id="user-username">...</span></p>
         <div class="points-badge fade-in-up delay-3" id="score-identity">+0 PTS</div>
     </div>
 
-    <!-- SLIDE 5: FINALE (DASHBOARD) -->
+    <!-- SLIDE 5: DASHBOARD (FINAL) -->
     <div class="slide" id="slide-5">
         <div class="chapter-label fade-in-up">SUMMARY</div>
-        <h1 class="fade-in-up" style="font-size: 36px; color: var(--ton-blue);">TOTAL SCORE</h1>
-        <div class="big-number fade-in-up delay-1" id="final-score" style="font-size: 60px;">0</div>
+        <h1 class="fade-in-up" style="font-size:32px; color:var(--ton-blue)">TOTAL SCORE</h1>
+        <div class="big-number fade-in-up delay-1" id="final-score" style="font-size:54px">0</div>
         
-        <!-- RANK DISPLAY -->
-        <div class="rank-box fade-in-up delay-2" id="rank-container">
-            <div class="rank-title">YOUR GLOBAL RANK</div>
-            <div class="rank-value" id="user-rank">CALCULATING...</div>
+        <!-- RANK -->
+        <div class="rank-box fade-in-up delay-2">
+            <div style="font-size:10px; color:#888; letter-spacing:1px">GLOBAL RANK</div>
+            <div id="user-rank" style="font-size:20px; font-weight:bold; margin-top:5px">CALCULATING...</div>
+        </div>
+
+        <!-- NEW: TOKEN SECTION -->
+        <div class="token-section fade-in-up delay-3">
+            <div class="listing-lbl">LISTING COUNTDOWN</div>
+            <div id="countdown" class="countdown-timer">00d 00h 00m 00s</div>
+            
+            <div class="grid-actions">
+                <button class="btn-feature" onclick="featureLocked()">
+                    <i class="fas fa-coins"></i>
+                    <span>Convert to $TG</span>
+                </button>
+                <button class="btn-feature" onclick="featureLocked()">
+                    <i class="fas fa-wallet"></i>
+                    <span>Withdraw</span>
+                </button>
+            </div>
         </div>
     </div>
 
-    <!-- BUTTONS -->
+    <!-- FOOTER BTN -->
     <div class="bottom-action">
         <button class="btn-next" id="btn-action" onclick="handleAction()">Start Journey</button>
-        <div class="powered-by" style="font-size: 10px; color: #444; text-transform: uppercase; margin-top:10px;">
-            Secured by TON
-        </div>
+        <div style="font-size:9px; color:#444; letter-spacing:1px">SECURED BY TON</div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, query, where, getCountFromServer, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
@@ -234,12 +243,10 @@
         let currentSlide = 1;
         const totalSlides = 5;
         let userData = null;
-        let calculatedScores = { age: 0, premium: 0, identity: 0, total: 0 };
-        let joinYear = 2024;
-        let isReturningUser = false;
+        let scores = { total: 0 };
+        let isReturning = false;
 
         async function init() {
-            // 1. SECURITY: Block Web Browsers
             if (!tg.initData) {
                 document.getElementById('loader').style.display = 'none';
                 document.getElementById('access-denied').style.display = 'flex';
@@ -249,230 +256,191 @@
 
             tg.expand();
             tg.setHeaderColor('#000000');
+            userData = tg.initDataUnsafe.user;
             
-            // Get User
-            let user = tg.initDataUnsafe.user;
-            // Testing (Remove in Production)
-            // if(!user) user = { id: 12345678, first_name: "Test", username: "tester", is_premium: true, photo_url: "https://via.placeholder.com/100" };
-            
-            if(!user) return; // Should be blocked by initData check, but safety first
-            userData = user;
+            // Testing (Remove line below in Prod)
+            // if(!userData) userData = { id: 9999999, first_name: "Tester", username: "dev", is_premium: true };
 
-            // Pre-calculate Data
-            calculateData(user);
-            
-            // Check Database for status
-            await checkUserStatus();
+            if(!userData) return;
+
+            calculateData(userData);
+            startCountdown();
+            await checkUser();
         }
 
         function calculateData(user) {
             const id = user.id;
+            let year = 2024;
+            // Calcs
+            if(id < 100000000) year = 2015;
+            else if(id < 500000000) year = 2017;
+            else if(id < 1000000000) year = 2020;
+            else if(id < 5000000000) year = 2022;
+
+            let ageScore = Math.floor((7000000000 - id) / 500000); 
+            if(ageScore < 100) ageScore = 100;
             
-            // Estimate Year
-            if(id < 100000000) joinYear = 2015;
-            else if(id < 300000000) joinYear = 2017;
-            else if(id < 1000000000) joinYear = 2020;
-            else if(id < 5000000000) joinYear = 2022;
-            else joinYear = 2024;
+            let premiumScore = user.is_premium ? 5000 : 0;
+            let identityScore = (user.username ? 500 : 0) + (user.photo_url ? 300 : 0);
+            
+            scores.total = ageScore + premiumScore + identityScore;
 
-            // Scores
-            calculatedScores.age = Math.floor((7000000000 - id) / 500000); 
-            if(calculatedScores.age < 100) calculatedScores.age = 100;
-            if(user.is_premium) calculatedScores.premium = 5000;
-            if(user.username) calculatedScores.identity += 500;
-            if(user.photo_url) calculatedScores.identity += 300;
-            if(user.last_name) calculatedScores.identity += 200;
-
-            calculatedScores.total = calculatedScores.age + calculatedScores.premium + calculatedScores.identity;
-
-            // Render Text
-            document.getElementById('val-year').innerText = `Year ${joinYear}`;
-            document.getElementById('score-age').innerText = `+${calculatedScores.age.toLocaleString()} PTS`;
+            // Render
+            document.getElementById('val-year').innerText = `Year ${year}`;
+            document.getElementById('score-age').innerText = `+${ageScore.toLocaleString()} PTS`;
             
             if(user.is_premium) {
-                document.getElementById('icon-premium').innerHTML = '<i class="fas fa-star" style="color: #FFD700; text-shadow: 0 0 20px #FFD700;"></i>';
-                document.getElementById('text-premium').innerText = "Premium Account Verified.";
-                document.getElementById('score-premium').innerText = `+${calculatedScores.premium.toLocaleString()} PTS`;
-            } else {
-                document.getElementById('text-premium').innerText = "Standard Account.";
+                document.getElementById('icon-premium').innerHTML = '<i class="fas fa-star" style="color:#FFD700; text-shadow:0 0 15px #FFD700"></i>';
+                document.getElementById('text-premium').innerText = "Premium Verified.";
+                document.getElementById('score-premium').innerText = `+${premiumScore.toLocaleString()} PTS`;
             }
 
             if(user.photo_url) document.getElementById('user-avatar').src = user.photo_url;
             document.getElementById('user-username').innerText = user.username ? `@${user.username}` : user.first_name;
-            document.getElementById('score-identity').innerText = `+${calculatedScores.identity.toLocaleString()} PTS`;
+            document.getElementById('score-identity').innerText = `+${identityScore.toLocaleString()} PTS`;
         }
 
-        async function checkUserStatus() {
+        async function checkUser() {
             try {
-                const userRef = doc(db, "users", userData.id.toString());
-                const snap = await getDoc(userRef);
+                const docRef = doc(db, "users", userData.id.toString());
+                const snap = await getDoc(docRef);
+                
+                document.getElementById('loader').style.display = 'none';
 
-                // Hide Loader
-                document.getElementById('loader').style.opacity = '0';
-                setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
-
-                if (snap.exists() && snap.data().isAnalyzed) {
-                    // USER EXISTS & ANALYZED -> SKIP STORY
-                    isReturningUser = true;
-                    showDashboard(true); // True = Instant Show
+                if(snap.exists() && snap.data().isAnalyzed) {
+                    isReturning = true;
+                    showDashboard();
                 } else {
-                    // NEW USER -> START STORY
                     document.getElementById('slide-1').classList.add('active');
                 }
-            } catch (e) {
-                console.error(e);
-            }
+            } catch(e) { console.error(e); }
         }
 
-        // NAVIGATION LOGIC
         window.handleAction = async () => {
-            if (isReturningUser) {
-                // If user is returning (on dashboard), button is "Share"
-                shareStory();
-                return;
-            }
-            
-            // Story Mode Logic
-            if(currentSlide >= totalSlides) {
-                // Final slide reached -> Change to Share
-                shareStory();
-                return;
-            }
+            if(isReturning) { shareStory(); return; }
+
+            if(currentSlide >= totalSlides) { shareStory(); return; }
 
             tg.HapticFeedback.impactOccurred('medium');
-
-            // Hide current
-            document.getElementById(`slide-${currentSlide}`).classList.remove('active');
             
-            // Increment
+            document.getElementById(`slide-${currentSlide}`).classList.remove('active');
             currentSlide++;
             
-            // Update Progress
-            const progressPct = ((currentSlide - 1) / (totalSlides - 1)) * 100;
-            document.getElementById('progress').style.width = `${progressPct}%`;
-
-            // Show next
-            const nextEl = document.getElementById(`slide-${currentSlide}`);
-            nextEl.classList.add('active');
+            // Progress
+            document.getElementById('progress').style.width = `${((currentSlide-1)/(totalSlides-1))*100}%`;
+            document.getElementById(`slide-${currentSlide}`).classList.add('active');
 
             const btn = document.getElementById('btn-action');
 
-            if (currentSlide === 5) {
-                // FINALE REACHED
-                btn.style.display = 'none'; // Hide temporarily while loading
+            if(currentSlide === 5) {
+                btn.style.display = 'none';
+                await saveDB();
+                animateScore();
+                calculateRank();
                 
-                await saveToFirebase();
-                animateScore(calculatedScores.total);
-                calculateRank(calculatedScores.total); // Calculate Rank
-                
-                // Set Button to Share Mode
-                isReturningUser = true; // Flag as done
+                isReturning = true;
                 btn.innerHTML = '<i class="fas fa-share-alt"></i> Share Story';
                 btn.classList.add('btn-share');
                 btn.style.display = 'flex';
-                
-                // Hide Progress bar for clean look
                 document.getElementById('progress-wrap').style.opacity = 0;
             } else {
                 btn.innerText = "Continue";
             }
-        };
+        }
 
-        function showDashboard(instant) {
-            // Remove active from all slides, show slide 5
+        async function saveDB() {
+            const ref = doc(db, "users", userData.id.toString());
+            // Ref check
+            const startParam = tg.initDataUnsafe.start_param;
+            if(startParam && startParam.startsWith('ref_')) {
+                const refId = startParam.split('_')[1];
+                if(refId !== userData.id.toString()) {
+                    updateDoc(doc(db, "users", refId), { referralCount: increment(1) }).catch(()=>{});
+                }
+            }
+            await setDoc(ref, {
+                id: userData.id,
+                firstName: userData.first_name,
+                username: userData.username || "",
+                score: scores.total,
+                isAnalyzed: true,
+                isPremium: userData.is_premium || false,
+                lastSeen: serverTimestamp()
+            }, { merge: true });
+        }
+
+        function showDashboard() {
             document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
-            const dashboard = document.getElementById('slide-5');
-            dashboard.classList.add('active');
-            
-            // Hide progress
+            document.getElementById('slide-5').classList.add('active');
             document.getElementById('progress-wrap').style.display = 'none';
+            
+            document.getElementById('final-score').innerText = scores.total.toLocaleString();
+            calculateRank();
 
-            // Set Data
-            document.getElementById('final-score').innerText = calculatedScores.total.toLocaleString();
-            calculateRank(calculatedScores.total);
-
-            // Set Button
             const btn = document.getElementById('btn-action');
             btn.innerHTML = '<i class="fas fa-share-alt"></i> Share Story';
             btn.classList.add('btn-share');
             btn.style.display = 'flex';
         }
 
-        async function saveToFirebase() {
-            try {
-                const userRef = doc(db, "users", userData.id.toString());
-                
-                // Check Referral Param
-                const startParam = tg.initDataUnsafe.start_param;
-                if (startParam && startParam.startsWith('ref_')) {
-                    const refId = startParam.split('_')[1];
-                    if (refId && refId !== userData.id.toString()) {
-                         const refUser = doc(db, "users", refId);
-                         // Just increment count, no point update needed here
-                         await updateDoc(refUser, { referralCount: increment(1) }).catch(()=>{});
-                    }
+        // --- NEW FEATURES ---
+
+        function startCountdown() {
+            const targetDate = new Date("Dec 31, 2025 00:00:00").getTime();
+            
+            setInterval(() => {
+                const now = new Date().getTime();
+                const dist = targetDate - now;
+
+                if (dist < 0) {
+                    document.getElementById("countdown").innerHTML = "TGE LIVE NOW";
+                    return;
                 }
 
-                await setDoc(userRef, {
-                    id: userData.id,
-                    firstName: userData.first_name,
-                    username: userData.username || "",
-                    score: calculatedScores.total,
-                    isPremium: userData.is_premium || false,
-                    isAnalyzed: true, // Mark as done
-                    lastSeen: serverTimestamp()
-                }, { merge: true });
+                const d = Math.floor(dist / (1000 * 60 * 60 * 24));
+                const h = Math.floor((dist % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const m = Math.floor((dist % (1000 * 60 * 60)) / (1000 * 60));
+                const s = Math.floor((dist % (1000 * 60)) / 1000);
 
-            } catch (e) {
-                console.error("Save Error", e);
-            }
+                document.getElementById("countdown").innerHTML = 
+                    `${d}d ${h < 10 ? '0'+h : h}h ${m < 10 ? '0'+m : m}m ${s < 10 ? '0'+s : s}s`;
+            }, 1000);
         }
 
-        async function calculateRank(myScore) {
-            const rankEl = document.getElementById('user-rank');
+        window.featureLocked = () => {
+            tg.HapticFeedback.notificationOccurred('error');
+            tg.showAlert("Coming Soon! Listing Date: 31/12/2025");
+        };
+
+        async function calculateRank() {
             try {
-                // Count users with score > myScore
-                const coll = collection(db, "users");
-                const q = query(coll, where("score", ">", myScore));
-                const snapshot = await getCountFromServer(q);
-                
-                // Rank = (Users above me) + 1
-                const rank = snapshot.data().count + 1;
-                rankEl.innerText = `#${rank.toLocaleString()}`;
-                
-            } catch(e) {
-                console.error("Rank Error", e);
-                // If index is missing, show simplified text or create index in Firebase Console
-                rankEl.innerText = "TOP 1%";
+                const q = query(collection(db, "users"), where("score", ">", scores.total));
+                const snap = await getCountFromServer(q);
+                document.getElementById('user-rank').innerText = `#${(snap.data().count + 1).toLocaleString()}`;
+            } catch(e) { 
+                document.getElementById('user-rank').innerText = "TOP 1%";
             }
         }
 
-        function animateScore(target) {
-            let current = 0;
+        function animateScore() {
+            let cur = 0;
             const el = document.getElementById('final-score');
-            const step = Math.ceil(target / 40);
-            const timer = setInterval(() => {
-                current += step;
-                if(current >= target) {
-                    current = target;
-                    clearInterval(timer);
-                    tg.HapticFeedback.notificationOccurred('success');
-                }
-                el.innerText = current.toLocaleString();
+            const step = Math.ceil(scores.total / 40);
+            const t = setInterval(() => {
+                cur += step;
+                if(cur >= scores.total) { cur = scores.total; clearInterval(t); tg.HapticFeedback.notificationOccurred('success'); }
+                el.innerText = cur.toLocaleString();
             }, 20);
         }
 
         window.shareStory = () => {
-            const rankText = document.getElementById('user-rank').innerText;
-            const link = `https://t.me/YOUR_BOT_NAME`; // THAY USERNAME BOT CỦA BẠN VÀO ĐÂY
-            const text = `I just analyzed my TG Journey.\n🌟 Score: ${calculatedScores.total}\n🏆 Rank: ${rankText}\nCheck yours now:`;
-            const url = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`;
-            tg.openTelegramLink(url);
-        };
+            const r = document.getElementById('user-rank').innerText;
+            const link = "https://t.me/YOUR_BOT_NAME"; // !!! REPLACE THIS
+            const txt = `TG Journey Analysis 📊\n💎 Points: ${scores.total}\n🏆 Rank: ${r}\nAre you an OG? Check now:`;
+            tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(txt)}`);
+        }
 
-        // Run
         init();
-
     </script>
 </body>
 </html>
