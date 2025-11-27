@@ -3,200 +3,219 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TG Legacy</title>
+    <title>TG Journey</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Lora:ital,wght@1,400;1,600&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
         :root {
             --bg-color: #000000;
-            --accent: #0088cc; /* TG Blue */
-            --accent-glow: rgba(0, 136, 204, 0.4);
+            --ton-blue: #0098EA;
             --text-main: #ffffff;
-            --text-dim: #555555;
-            --font-head: 'Syncopate', sans-serif;
-            --font-body: 'Inter', sans-serif;
+            --text-sub: #8E8E93;
         }
-
-        * { box-sizing: border-box; }
 
         body {
             background-color: var(--bg-color);
             color: var(--text-main);
-            font-family: var(--font-body);
+            font-family: 'Inter', sans-serif;
             margin: 0; padding: 0;
             height: 100vh; overflow: hidden;
             display: flex; flex-direction: column;
         }
 
-        /* --- 1. BLOCKED SCREEN (WEB ACCESS) --- */
-        #blocked-screen {
+        /* --- 1. ACCESS DENIED SCREEN --- */
+        #access-denied {
             position: fixed; inset: 0; z-index: 9999;
-            background: #050505;
-            display: none; /* JS will toggle this */
+            background: #000;
+            display: none; /* JS toggles this */
             flex-direction: column; align-items: center; justify-content: center;
-            text-align: center; padding: 20px;
+            text-align: center;
         }
-        .lock-icon { font-size: 50px; color: #ff3333; margin-bottom: 20px; }
-        .blocked-title { font-family: var(--font-head); font-weight: 700; margin-bottom: 10px; color: #ff3333; }
+        .lock-icon { font-size: 40px; color: #ff3b30; margin-bottom: 20px; }
+        .denied-text { font-family: 'Inter', sans-serif; font-weight: bold; font-size: 18px; color: #ff3b30; }
+        .denied-sub { color: #555; font-size: 14px; margin-top: 10px; }
 
-        /* --- 2. LOADING SCREEN --- */
+        /* --- 2. LOADER --- */
         #loader {
             position: fixed; inset: 0; z-index: 5000;
             background: #000;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.5s ease;
         }
-        .pulse-ring {
-            width: 80px; height: 80px; border-radius: 50%;
-            border: 2px solid var(--accent);
-            box-shadow: 0 0 20px var(--accent-glow);
-            animation: pulse 2s infinite;
-            display: flex; align-items: center; justify-content: center;
+        .spinner {
+            width: 50px; height: 50px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: var(--ton-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
-        .pulse-ring i { font-size: 30px; color: var(--accent); }
-        .loading-text {
-            margin-top: 20px; font-family: var(--font-head); font-size: 12px; letter-spacing: 3px;
-            color: var(--accent); animation: blink 1s infinite;
-        }
-        @keyframes pulse { 0% {box-shadow: 0 0 0 0 rgba(0,136,204, 0.7);} 70% {box-shadow: 0 0 0 20px rgba(0,136,204, 0);} 100% {box-shadow: 0 0 0 0 rgba(0,136,204, 0);} }
-        @keyframes blink { 50% { opacity: 0.5; } }
+        .loading-msg { margin-top: 15px; font-size: 12px; letter-spacing: 2px; color: var(--text-sub); text-transform: uppercase; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* --- 3. STORY SLIDES --- */
-        #story-container {
-            position: relative; width: 100%; height: 100%;
-            display: none; /* Active via JS */
+        /* --- 3. STORY UI --- */
+        .progress-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 4px;
+            background: rgba(255,255,255,0.1); z-index: 100;
         }
+        .progress-bar {
+            height: 100%; width: 0%; background: var(--ton-blue);
+            transition: width 0.5s ease;
+            box-shadow: 0 0 10px var(--ton-blue);
+        }
+
         .slide {
-            position: absolute; inset: 0;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            padding: 40px 24px; box-sizing: border-box;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            padding: 30px; text-align: center;
-            opacity: 0; pointer-events: none; transform: translateY(20px);
-            transition: 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+            opacity: 0; pointer-events: none; transform: scale(0.95);
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            text-align: center;
         }
-        .slide.active { opacity: 1; pointer-events: auto; transform: translateY(0); }
-        
-        .slide-subtitle { font-size: 10px; letter-spacing: 4px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 15px; }
-        .slide-title { font-family: var(--font-head); font-size: 28px; font-weight: 700; margin-bottom: 20px; text-transform: uppercase; line-height: 1.2; }
-        .slide-desc { color: #888; font-size: 14px; line-height: 1.6; max-width: 300px; }
-        .highlight { color: var(--accent); font-weight: bold; }
+        .slide.active { opacity: 1; pointer-events: auto; transform: scale(1); }
 
-        /* --- 4. DASHBOARD (FINAL RESULT) --- */
-        #dashboard {
-            display: none; /* Active via JS */
-            flex-direction: column; align-items: center; justify-content: center;
-            height: 100%; padding: 20px;
-            background: radial-gradient(circle at center, #111 0%, #000 100%);
+        h1 { font-family: 'Lora', serif; font-size: 32px; font-weight: 600; margin-bottom: 10px; font-style: italic; }
+        .big-number { font-size: 48px; font-weight: 800; color: var(--ton-blue); margin: 20px 0; letter-spacing: -1px; }
+        .description { font-size: 16px; color: var(--text-sub); line-height: 1.6; max-width: 300px; margin: 0 auto; }
+        .points-badge {
+            background: rgba(0, 152, 234, 0.15); color: var(--ton-blue);
+            padding: 8px 16px; border-radius: 20px; font-weight: bold;
+            margin-top: 15px; display: inline-block;
+            border: 1px solid rgba(0, 152, 234, 0.3);
         }
-        
-        .rank-card {
+
+        .chapter-label { font-size: 12px; letter-spacing: 2px; color: #555; text-transform: uppercase; margin-bottom: 5px; }
+
+        /* RANK DISPLAY (New) */
+        .rank-box {
+            margin-top: 30px;
+            padding: 15px 30px;
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 20px;
-            padding: 30px 20px;
-            width: 100%; max-width: 340px;
+            border-radius: 12px;
             text-align: center;
-            backdrop-filter: blur(10px);
-            margin-bottom: 30px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            animation: fadeInUp 1s ease forwards;
         }
+        .rank-title { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+        .rank-value { font-size: 24px; font-weight: bold; color: white; margin-top: 5px; }
 
-        .score-val { font-family: var(--font-head); font-size: 48px; color: var(--text-main); margin: 10px 0; text-shadow: 0 0 20px var(--accent-glow); }
-        .score-lbl { font-size: 12px; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; }
-        
-        .rank-badge {
-            display: inline-flex; align-items: center; gap: 10px;
-            background: #1a1a1a; padding: 8px 16px; border-radius: 30px;
-            border: 1px solid #333; margin-top: 15px;
+        /* FOOTER ACTIONS */
+        .bottom-action {
+            position: fixed; bottom: 40px; left: 0; width: 100%;
+            display: flex; justify-content: center; z-index: 50;
+            flex-direction: column; align-items: center; gap: 15px;
         }
-        .rank-num { color: var(--accent); font-weight: bold; font-family: var(--font-head); }
-
-        .btn-main {
-            background: var(--text-main); color: #000;
-            border: none; padding: 16px 32px; border-radius: 12px;
-            font-weight: 600; font-size: 16px; width: 100%; max-width: 300px;
-            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
-            transition: 0.2s; box-shadow: 0 0 20px rgba(255,255,255,0.1);
+        .btn-next {
+            background: white; color: black; border: none;
+            padding: 16px 40px; border-radius: 30px;
+            font-size: 16px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 5px 20px rgba(255,255,255,0.2);
+            transition: transform 0.2s;
+            width: 80%; max-width: 300px;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
         }
-        .btn-main:active { transform: scale(0.98); }
-        .btn-story { background: var(--accent); color: white; box-shadow: 0 0 20px var(--accent-glow); }
+        .btn-next:active { transform: scale(0.95); }
+        .btn-share { background: var(--ton-blue); color: white; box-shadow: 0 5px 20px rgba(0, 152, 234, 0.4); }
 
-        /* Fade effects */
-        .fade-in { animation: fadeIn 1s ease forwards; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* ANIMATIONS */
+        .fade-in-up { animation: fadeInUp 0.8s ease forwards; opacity: 0; transform: translateY(20px); }
+        @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+        .delay-1 { animation-delay: 0.2s; }
+        .delay-2 { animation-delay: 0.5s; }
+        .delay-3 { animation-delay: 0.8s; }
 
     </style>
 </head>
 <body>
 
-    <!-- 1. BLOCKED (For Web Browsers) -->
-    <div id="blocked-screen">
+    <!-- SCREEN 1: ACCESS DENIED (For Web Browsers) -->
+    <div id="access-denied">
         <div class="lock-icon"><i class="fas fa-lock"></i></div>
-        <div class="blocked-title">ACCESS DENIED</div>
-        <p style="color: #666; font-size: 14px;">This application only runs inside the Telegram secure environment.</p>
-        <a href="https://t.me/YOUR_BOT_USERNAME" style="color: var(--accent); margin-top: 20px; text-decoration: none;">Open Telegram Bot</a>
+        <div class="denied-text">MOBILE ACCESS ONLY</div>
+        <div class="denied-sub">Please open this app inside Telegram.</div>
     </div>
 
-    <!-- 2. LOADER -->
+    <!-- SCREEN 2: LOADER -->
     <div id="loader">
-        <div class="pulse-ring"><i class="fab fa-telegram-plane"></i></div>
-        <div class="loading-text">ESTABLISHING UPLINK...</div>
+        <div class="spinner"></div>
+        <div class="loading-msg">CONNECTING TO DATABASE...</div>
     </div>
 
-    <!-- 3. STORY MODE -->
-    <div id="story-container">
-        <!-- Slide 1 -->
-        <div class="slide active" id="slide-1">
-            <div class="slide-subtitle">Chapter I</div>
-            <div class="slide-title">The<br>Beginning</div>
-            <p class="slide-desc">You joined the network in <span class="highlight" id="year-text">...</span>. A true pioneer of the digital age.</p>
-            <button class="btn-main" style="margin-top: 30px; width: auto;" onclick="nextSlide(2)">Continue</button>
-        </div>
-        <!-- Slide 2 -->
-        <div class="slide" id="slide-2">
-            <div class="slide-subtitle">Chapter II</div>
-            <div class="slide-title">Status<br>Check</div>
-            <div id="prem-icon" style="font-size: 50px; margin: 20px 0; color: #333;"><i class="fas fa-star"></i></div>
-            <p class="slide-desc" id="prem-text">Analyzing your contribution tier...</p>
-            <button class="btn-main" style="margin-top: 30px; width: auto;" onclick="finishStory()">Reveal Results</button>
-        </div>
+    <!-- SCREEN 3: APP CONTENT -->
+    <div class="progress-container" id="progress-wrap">
+        <div class="progress-bar" id="progress"></div>
     </div>
 
-    <!-- 4. DASHBOARD (RESULT) -->
-    <div id="dashboard">
-        <div class="slide-subtitle">ANALYSIS COMPLETE</div>
+    <!-- SLIDE 1: INTRO -->
+    <div class="slide" id="slide-1">
+        <i class="fab fa-telegram fa-4x fade-in-up" style="color: white; margin-bottom: 30px;"></i>
+        <h1 class="fade-in-up delay-1">The Digital Archives</h1>
+        <p class="description fade-in-up delay-2">
+            Every journey leaves a trace.<br>Let's uncover your legacy on Telegram.
+        </p>
+    </div>
+
+    <!-- SLIDE 2: THE ORIGIN -->
+    <div class="slide" id="slide-2">
+        <div class="chapter-label fade-in-up">CHAPTER I</div>
+        <h1 class="fade-in-up">The Origin</h1>
+        <div class="big-number fade-in-up delay-1" id="val-year">...</div>
+        <p class="description fade-in-up delay-2">
+            You joined the network early. A true pioneer of the digital era.
+        </p>
+        <div class="points-badge fade-in-up delay-3" id="score-age">+0 PTS</div>
+    </div>
+
+    <!-- SLIDE 3: THE ELITE -->
+    <div class="slide" id="slide-3">
+        <div class="chapter-label fade-in-up">CHAPTER II</div>
+        <h1 class="fade-in-up">The Elite</h1>
+        <div id="icon-premium" class="fade-in-up delay-1" style="font-size: 60px; margin: 20px 0;">
+            <i class="fas fa-star" style="color: #333;"></i>
+        </div>
+        <p class="description fade-in-up delay-2" id="text-premium">
+            Checking your contribution to the ecosystem.
+        </p>
+        <div class="points-badge fade-in-up delay-3" id="score-premium">+0 PTS</div>
+    </div>
+
+    <!-- SLIDE 4: THE IDENTITY -->
+    <div class="slide" id="slide-4">
+        <div class="chapter-label fade-in-up">CHAPTER III</div>
+        <h1 class="fade-in-up">The Identity</h1>
+        <img id="user-avatar" src="" style="width: 80px; height: 80px; border-radius: 50%; border: 2px solid white; margin: 20px 0;" class="fade-in-up delay-1">
+        <p class="description fade-in-up delay-2">
+            Your identity is verified.<br><span style="color:white" id="user-username">@username</span>
+        </p>
+        <div class="points-badge fade-in-up delay-3" id="score-identity">+0 PTS</div>
+    </div>
+
+    <!-- SLIDE 5: FINALE (DASHBOARD) -->
+    <div class="slide" id="slide-5">
+        <div class="chapter-label fade-in-up">SUMMARY</div>
+        <h1 class="fade-in-up" style="font-size: 36px; color: var(--ton-blue);">TOTAL SCORE</h1>
+        <div class="big-number fade-in-up delay-1" id="final-score" style="font-size: 60px;">0</div>
         
-        <div class="rank-card">
-            <div class="score-lbl">Total Contribution</div>
-            <div class="score-val" id="final-score">0</div>
-            
-            <div class="rank-badge">
-                <span style="color: #666; font-size: 10px;">GLOBAL RANK</span>
-                <span class="rank-num" id="my-rank">CALCULATING...</span>
-            </div>
-            
-            <div style="margin-top: 20px; font-size: 12px; color: #555; border-top: 1px solid #222; padding-top: 10px;">
-                <div style="display:flex; justify-content:space-between; margin-bottom: 5px;">
-                    <span>ID Tier</span> <span style="color:white" id="res-age">---</span>
-                </div>
-                <div style="display:flex; justify-content:space-between;">
-                    <span>Premium</span> <span style="color:white" id="res-prem">---</span>
-                </div>
-            </div>
+        <!-- RANK DISPLAY -->
+        <div class="rank-box fade-in-up delay-2" id="rank-container">
+            <div class="rank-title">YOUR GLOBAL RANK</div>
+            <div class="rank-value" id="user-rank">CALCULATING...</div>
         </div>
-
-        <button class="btn-main btn-story" onclick="shareStory()">
-            <i class="fas fa-share-alt"></i> Share Result
-        </button>
-        <div style="font-size: 10px; color: #333; margin-top: 20px;">TG LEGACY v1.0</div>
     </div>
 
-    <!-- SCRIPT -->
+    <!-- BUTTONS -->
+    <div class="bottom-action">
+        <button class="btn-next" id="btn-action" onclick="handleAction()">Start Journey</button>
+        <div class="powered-by" style="font-size: 10px; color: #444; text-transform: uppercase; margin-top:10px;">
+            Secured by TON
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, query, where, getCountFromServer, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // FIREBASE CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
@@ -212,168 +231,246 @@
         const tg = window.Telegram.WebApp;
 
         // STATE
-        let currentUser = null;
-        let scoreData = { total: 0, age: 0, premium: 0 };
+        let currentSlide = 1;
+        const totalSlides = 5;
+        let userData = null;
+        let calculatedScores = { age: 0, premium: 0, identity: 0, total: 0 };
+        let joinYear = 2024;
+        let isReturningUser = false;
 
-        // --- CORE LOGIC ---
-
-        function init() {
-            // 1. SECURITY CHECK (No Web Access)
-            // Telegram WebApp platform is 'unknown' if opened in standard browser without initData
+        async function init() {
+            // 1. SECURITY: Block Web Browsers
             if (!tg.initData) {
-                document.getElementById('blocked-screen').style.display = 'flex';
                 document.getElementById('loader').style.display = 'none';
-                return; // STOP EXECUTION
+                document.getElementById('access-denied').style.display = 'flex';
+                document.querySelector('.bottom-action').style.display = 'none';
+                return;
             }
 
             tg.expand();
             tg.setHeaderColor('#000000');
             
-            currentUser = tg.initDataUnsafe.user;
-            // Only for dev testing (Remove in production if strict)
-            // if (!currentUser) currentUser = { id: 123456, first_name: "Dev", username: "dev", is_premium: true };
+            // Get User
+            let user = tg.initDataUnsafe.user;
+            // Testing (Remove in Production)
+            // if(!user) user = { id: 12345678, first_name: "Test", username: "tester", is_premium: true, photo_url: "https://via.placeholder.com/100" };
+            
+            if(!user) return; // Should be blocked by initData check, but safety first
+            userData = user;
 
-            if (!currentUser) {
-                document.getElementById('blocked-screen').style.display = 'flex';
-                return;
-            }
-
-            // Calculate Score Locally first
-            calculateScore();
-
-            // Check DB
-            checkUserStatus();
+            // Pre-calculate Data
+            calculateData(user);
+            
+            // Check Database for status
+            await checkUserStatus();
         }
 
-        function calculateScore() {
-            // Age Score
-            const id = currentUser.id;
-            let year = 2024;
-            let agePts = 100;
-
-            if (id < 100000000) { year = 2015; agePts = 5000; }
-            else if (id < 500000000) { year = 2018; agePts = 3000; }
-            else if (id < 1500000000) { year = 2020; agePts = 1500; }
-            else if (id < 5000000000) { year = 2022; agePts = 500; }
-
-            // Premium
-            const premPts = currentUser.is_premium ? 5000 : 0;
-            const userPts = currentUser.username ? 500 : 0;
-
-            scoreData = {
-                year: year,
-                age: agePts,
-                premium: premPts,
-                total: agePts + premPts + userPts
-            };
-
-            // Prep UI Text
-            document.getElementById('year-text').innerText = year;
-            document.getElementById('res-age').innerText = `+${agePts}`;
-            document.getElementById('res-prem').innerText = currentUser.is_premium ? "YES (+5000)" : "NO";
+        function calculateData(user) {
+            const id = user.id;
             
-            if(currentUser.is_premium) {
-                document.getElementById('prem-icon').innerHTML = '<i class="fas fa-star" style="color:#ffd700; text-shadow:0 0 15px #ffd700"></i>';
-                document.getElementById('prem-text').innerText = "Verified Premium Member. Maximum Tier.";
+            // Estimate Year
+            if(id < 100000000) joinYear = 2015;
+            else if(id < 300000000) joinYear = 2017;
+            else if(id < 1000000000) joinYear = 2020;
+            else if(id < 5000000000) joinYear = 2022;
+            else joinYear = 2024;
+
+            // Scores
+            calculatedScores.age = Math.floor((7000000000 - id) / 500000); 
+            if(calculatedScores.age < 100) calculatedScores.age = 100;
+            if(user.is_premium) calculatedScores.premium = 5000;
+            if(user.username) calculatedScores.identity += 500;
+            if(user.photo_url) calculatedScores.identity += 300;
+            if(user.last_name) calculatedScores.identity += 200;
+
+            calculatedScores.total = calculatedScores.age + calculatedScores.premium + calculatedScores.identity;
+
+            // Render Text
+            document.getElementById('val-year').innerText = `Year ${joinYear}`;
+            document.getElementById('score-age').innerText = `+${calculatedScores.age.toLocaleString()} PTS`;
+            
+            if(user.is_premium) {
+                document.getElementById('icon-premium').innerHTML = '<i class="fas fa-star" style="color: #FFD700; text-shadow: 0 0 20px #FFD700;"></i>';
+                document.getElementById('text-premium').innerText = "Premium Account Verified.";
+                document.getElementById('score-premium').innerText = `+${calculatedScores.premium.toLocaleString()} PTS`;
             } else {
-                document.getElementById('prem-text').innerText = "Standard Member.";
+                document.getElementById('text-premium').innerText = "Standard Account.";
             }
+
+            if(user.photo_url) document.getElementById('user-avatar').src = user.photo_url;
+            document.getElementById('user-username').innerText = user.username ? `@${user.username}` : user.first_name;
+            document.getElementById('score-identity').innerText = `+${calculatedScores.identity.toLocaleString()} PTS`;
         }
 
         async function checkUserStatus() {
             try {
-                const userRef = doc(db, "users", currentUser.id.toString());
+                const userRef = doc(db, "users", userData.id.toString());
                 const snap = await getDoc(userRef);
 
-                // Simulate network delay for effect
-                setTimeout(async () => {
-                    document.getElementById('loader').style.display = 'none';
+                // Hide Loader
+                document.getElementById('loader').style.opacity = '0';
+                setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
 
-                    if (snap.exists() && snap.data().isAnalyzed) {
-                        // USER EXISTS & DONE STORY -> JUMP TO DASHBOARD
-                        showDashboard(true);
-                    } else {
-                        // NEW USER -> START STORY
-                        document.getElementById('story-container').style.display = 'block';
-                    }
-                }, 1500);
-
+                if (snap.exists() && snap.data().isAnalyzed) {
+                    // USER EXISTS & ANALYZED -> SKIP STORY
+                    isReturningUser = true;
+                    showDashboard(true); // True = Instant Show
+                } else {
+                    // NEW USER -> START STORY
+                    document.getElementById('slide-1').classList.add('active');
+                }
             } catch (e) {
                 console.error(e);
-                alert("Connection Error");
             }
         }
 
-        // --- STORY NAVIGATION ---
+        // NAVIGATION LOGIC
+        window.handleAction = async () => {
+            if (isReturningUser) {
+                // If user is returning (on dashboard), button is "Share"
+                shareStory();
+                return;
+            }
+            
+            // Story Mode Logic
+            if(currentSlide >= totalSlides) {
+                // Final slide reached -> Change to Share
+                shareStory();
+                return;
+            }
 
-        window.nextSlide = (slideNum) => {
-            tg.HapticFeedback.selectionChanged();
+            tg.HapticFeedback.impactOccurred('medium');
+
+            // Hide current
+            document.getElementById(`slide-${currentSlide}`).classList.remove('active');
+            
+            // Increment
+            currentSlide++;
+            
+            // Update Progress
+            const progressPct = ((currentSlide - 1) / (totalSlides - 1)) * 100;
+            document.getElementById('progress').style.width = `${progressPct}%`;
+
+            // Show next
+            const nextEl = document.getElementById(`slide-${currentSlide}`);
+            nextEl.classList.add('active');
+
+            const btn = document.getElementById('btn-action');
+
+            if (currentSlide === 5) {
+                // FINALE REACHED
+                btn.style.display = 'none'; // Hide temporarily while loading
+                
+                await saveToFirebase();
+                animateScore(calculatedScores.total);
+                calculateRank(calculatedScores.total); // Calculate Rank
+                
+                // Set Button to Share Mode
+                isReturningUser = true; // Flag as done
+                btn.innerHTML = '<i class="fas fa-share-alt"></i> Share Story';
+                btn.classList.add('btn-share');
+                btn.style.display = 'flex';
+                
+                // Hide Progress bar for clean look
+                document.getElementById('progress-wrap').style.opacity = 0;
+            } else {
+                btn.innerText = "Continue";
+            }
+        };
+
+        function showDashboard(instant) {
+            // Remove active from all slides, show slide 5
             document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
-            document.getElementById(`slide-${slideNum}`).classList.add('active');
-        };
-
-        window.finishStory = async () => {
-            tg.HapticFeedback.notificationOccurred('success');
+            const dashboard = document.getElementById('slide-5');
+            dashboard.classList.add('active');
             
-            // Save to DB
-            const userRef = doc(db, "users", currentUser.id.toString());
-            await setDoc(userRef, {
-                id: currentUser.id,
-                firstName: currentUser.first_name,
-                username: currentUser.username || "",
-                score: scoreData.total,
-                isPremium: currentUser.is_premium || false,
-                isAnalyzed: true, // Marker to skip story next time
-                lastActive: serverTimestamp()
-            }, { merge: true });
+            // Hide progress
+            document.getElementById('progress-wrap').style.display = 'none';
 
-            showDashboard(false);
-        };
+            // Set Data
+            document.getElementById('final-score').innerText = calculatedScores.total.toLocaleString();
+            calculateRank(calculatedScores.total);
 
-        // --- DASHBOARD & RANK LOGIC ---
-
-        function showDashboard(isInstant) {
-            document.getElementById('story-container').style.display = 'none';
-            const dash = document.getElementById('dashboard');
-            dash.style.display = 'flex';
-            if(!isInstant) dash.classList.add('fade-in');
-
-            // Animate Score
-            const scoreEl = document.getElementById('final-score');
-            scoreEl.innerText = scoreData.total.toLocaleString(); // Static update
-            
-            // Calculate Rank
-            calculateRank();
+            // Set Button
+            const btn = document.getElementById('btn-action');
+            btn.innerHTML = '<i class="fas fa-share-alt"></i> Share Story';
+            btn.classList.add('btn-share');
+            btn.style.display = 'flex';
         }
 
-        async function calculateRank() {
-            // Count users with score > my score
+        async function saveToFirebase() {
             try {
-                const coll = collection(db, "users");
-                const q = query(coll, where("score", ">", scoreData.total));
-                const snapshot = await getCountFromServer(q);
-                const count = snapshot.data().count;
+                const userRef = doc(db, "users", userData.id.toString());
                 
-                // My Rank = count + 1
-                const myRank = count + 1;
-                document.getElementById('my-rank').innerText = `#${myRank}`;
-                
+                // Check Referral Param
+                const startParam = tg.initDataUnsafe.start_param;
+                if (startParam && startParam.startsWith('ref_')) {
+                    const refId = startParam.split('_')[1];
+                    if (refId && refId !== userData.id.toString()) {
+                         const refUser = doc(db, "users", refId);
+                         // Just increment count, no point update needed here
+                         await updateDoc(refUser, { referralCount: increment(1) }).catch(()=>{});
+                    }
+                }
+
+                await setDoc(userRef, {
+                    id: userData.id,
+                    firstName: userData.first_name,
+                    username: userData.username || "",
+                    score: calculatedScores.total,
+                    isPremium: userData.is_premium || false,
+                    isAnalyzed: true, // Mark as done
+                    lastSeen: serverTimestamp()
+                }, { merge: true });
+
             } catch (e) {
-                document.getElementById('my-rank').innerText = "N/A";
-                console.log("Rank Error (requires Index):", e);
+                console.error("Save Error", e);
             }
         }
 
-        // --- SHARE ---
+        async function calculateRank(myScore) {
+            const rankEl = document.getElementById('user-rank');
+            try {
+                // Count users with score > myScore
+                const coll = collection(db, "users");
+                const q = query(coll, where("score", ">", myScore));
+                const snapshot = await getCountFromServer(q);
+                
+                // Rank = (Users above me) + 1
+                const rank = snapshot.data().count + 1;
+                rankEl.innerText = `#${rank.toLocaleString()}`;
+                
+            } catch(e) {
+                console.error("Rank Error", e);
+                // If index is missing, show simplified text or create index in Firebase Console
+                rankEl.innerText = "TOP 1%";
+            }
+        }
+
+        function animateScore(target) {
+            let current = 0;
+            const el = document.getElementById('final-score');
+            const step = Math.ceil(target / 40);
+            const timer = setInterval(() => {
+                current += step;
+                if(current >= target) {
+                    current = target;
+                    clearInterval(timer);
+                    tg.HapticFeedback.notificationOccurred('success');
+                }
+                el.innerText = current.toLocaleString();
+            }, 20);
+        }
 
         window.shareStory = () => {
-            const link = `https://t.me/YOUR_BOT_NAME`;
-            const text = `I just analyzed my Telegram Legacy. \n🏆 Global Rank: ${document.getElementById('my-rank').innerText}\n⭐ Score: ${scoreData.total}\nCheck yours now:`;
+            const rankText = document.getElementById('user-rank').innerText;
+            const link = `https://t.me/YOUR_BOT_NAME`; // THAY USERNAME BOT CỦA BẠN VÀO ĐÂY
+            const text = `I just analyzed my TG Journey.\n🌟 Score: ${calculatedScores.total}\n🏆 Rank: ${rankText}\nCheck yours now:`;
             const url = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`;
             tg.openTelegramLink(url);
         };
 
-        // RUN
+        // Run
         init();
 
     </script>
