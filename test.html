@@ -3,31 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TG Elite Journey</title>
+    <title>TG Elite Admin</title>
     
     <!-- CORE SDKs -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
     
-    <!-- ANIMATION ENGINE (GSAP) -->
+    <!-- ANIMATION & UTILS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-
-    <!-- FONTS & ICONS -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;800&family=Rajdhani:wght@500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
         :root {
             --bg-dark: #050505;
-            --primary: #00f2ea; /* Cyan Neon */
+            --primary: #00f2ea;
             --primary-dim: rgba(0, 242, 234, 0.1);
-            --secondary: #7000ff; /* Electric Purple */
+            --secondary: #7000ff;
+            --danger: #ff2d55;
+            --success: #32d74b;
             --glass: rgba(255, 255, 255, 0.05);
+            --glass-solid: rgba(20, 20, 20, 0.95);
             --border: rgba(255, 255, 255, 0.1);
-            --text-main: #ffffff;
-            --text-muted: #8b9bb4;
-            
             --font-head: 'Rajdhani', sans-serif;
             --font-body: 'Inter', sans-serif;
             --font-code: 'JetBrains Mono', monospace;
@@ -37,263 +35,268 @@
 
         body {
             background-color: var(--bg-dark);
-            color: var(--text-main);
-            font-family: var(--font-body);
-            margin: 0; padding: 0;
-            height: 100vh; overflow: hidden;
+            color: #fff; font-family: var(--font-body);
+            margin: 0; padding: 0; height: 100vh; overflow: hidden;
             display: flex; flex-direction: column;
         }
 
-        /* --- BACKGROUND FX --- */
+        /* --- BACKGROUND --- */
         .ambient-glow {
-            position: fixed; top: -20%; left: -20%; width: 140%; height: 140%;
+            position: fixed; inset: -20%;
             background: radial-gradient(circle at 50% 50%, rgba(112, 0, 255, 0.15), transparent 60%);
             z-index: 0; pointer-events: none;
             animation: pulseBg 10s ease-in-out infinite alternate;
         }
-        @keyframes pulseBg { 0% { opacity: 0.5; transform: scale(1); } 100% { opacity: 1; transform: scale(1.1); } }
+        @keyframes pulseBg { 0% { transform: scale(1); } 100% { transform: scale(1.1); } }
 
-        /* --- LAYOUT UTILS --- */
-        .screen {
-            position: fixed; inset: 0; z-index: 10;
-            background: var(--bg-dark);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
+        /* --- UI COMPONENTS --- */
+        .screen { position: fixed; inset: 0; z-index: 10; background: var(--bg-dark); display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .hidden { display: none !important; }
+        
         .glass-panel {
-            background: var(--glass);
-            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--border);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            background: var(--glass); backdrop-filter: blur(16px);
+            border: 1px solid var(--border); box-shadow: 0 8px 32px rgba(0,0,0,0.5);
         }
 
-        /* --- LOADER --- */
+        /* LOADER */
         .loader-ring {
-            width: 60px; height: 60px;
-            border: 4px solid var(--glass); border-top: 4px solid var(--primary);
-            border-radius: 50%; animation: spin 1s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+            width: 50px; height: 50px; border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: var(--primary); border-radius: 50%;
+            animation: spin 1s infinite linear;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* --- SLIDES --- */
+        /* SLIDES */
         .slide-container {
-            position: fixed; inset: 0; z-index: 20; padding: 24px;
+            position: fixed; inset: 0; z-index: 20; padding: 20px;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            opacity: 0; visibility: hidden;
-            transform: scale(0.95);
+            opacity: 0; visibility: hidden; transform: scale(0.95);
         }
-        .slide-container.active {
-            opacity: 1; visibility: visible; transform: scale(1);
-            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-        }
+        .slide-container.active { opacity: 1; visibility: visible; transform: scale(1); transition: 0.5s; }
 
-        h1 { font-family: var(--font-head); font-size: 42px; line-height: 1; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 2px; text-align: center; }
-        .text-gradient { background: linear-gradient(135deg, #fff 30%, var(--text-muted)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .subtitle { color: var(--text-muted); font-size: 14px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 30px; }
-
-        /* --- STATS CIRCLE --- */
-        .stat-ring-container { position: relative; width: 180px; height: 180px; display: flex; align-items: center; justify-content: center; margin: 20px 0; }
-        .stat-ring-bg { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--glass); }
-        .stat-ring-active {
-            position: absolute; inset: -2px; border-radius: 50%;
-            border: 2px solid transparent; border-top-color: var(--primary); border-right-color: var(--secondary);
-            animation: spin 3s linear infinite; box-shadow: 0 0 20px rgba(0, 242, 234, 0.3);
-        }
-        .stat-value { font-family: var(--font-head); font-size: 48px; font-weight: 700; color: #fff; z-index: 2; text-shadow: 0 0 20px rgba(255,255,255,0.2); }
+        h1 { font-family: var(--font-head); font-size: 38px; margin: 0 0 10px; text-transform: uppercase; text-align: center; }
+        .text-gradient { background: linear-gradient(135deg, #fff 30%, #888); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        /* --- INPUT --- */
-        .input-group { width: 100%; max-width: 320px; position: relative; margin-top: 20px; }
-        .verify-input {
-            width: 100%; background: rgba(0,0,0,0.5); border: 1px solid var(--primary);
-            color: var(--primary); font-family: var(--font-code); font-size: 24px;
-            padding: 16px; text-align: center; border-radius: 12px; letter-spacing: 8px;
-            outline: none; box-shadow: 0 0 15px var(--primary-dim);
-            transition: 0.3s; text-transform: uppercase;
-        }
-        .verify-input:focus { box-shadow: 0 0 30px rgba(0, 242, 234, 0.3); }
-
-        /* --- DASHBOARD --- */
-        .dashboard-layout {
-            display: grid; grid-template-rows: auto 1fr auto;
-            height: 100%; width: 100%; padding: 60px 20px 40px 20px;
-            gap: 20px; align-items: start;
-        }
+        /* DASHBOARD */
+        .dashboard-layout { display: flex; flex-direction: column; width: 100%; height: 100%; padding: 60px 20px 20px; gap: 20px; }
         
-        .profile-strip { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 20px; }
-        .user-pill {
-            display: flex; align-items: center; gap: 10px;
-            background: rgba(255,255,255,0.08); padding: 8px 16px 8px 8px; border-radius: 30px;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-        .avatar-placeholder { width: 32px; height: 32px; background: linear-gradient(45deg, var(--secondary), var(--primary)); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 12px; font-weight: bold; }
-
         .balance-card {
-            width: 100%; border-radius: 24px; padding: 30px; text-align: center;
-            position: relative; overflow: hidden;
-            background: linear-gradient(180deg, rgba(20, 20, 20, 0.8) 0%, rgba(10, 10, 10, 0.95) 100%);
+            background: linear-gradient(180deg, rgba(20,20,20,0.8), rgba(0,0,0,0.9));
+            border-radius: 24px; padding: 30px; text-align: center; border: 1px solid var(--border);
         }
-        .balance-card::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-            background: linear-gradient(90deg, transparent, var(--primary), transparent);
-        }
-        .balance-val { font-family: var(--font-head); font-size: 64px; font-weight: 700; line-height: 1.1; margin: 10px 0; background: linear-gradient(to bottom, #fff, #aaddff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        
-        /* --- WITHDRAW BUTTON (HERO) --- */
-        .withdraw-container { width: 100%; margin-top: auto; }
-        .btn-withdraw {
-            position: relative; width: 100%; padding: 20px;
-            border: none; border-radius: 16px;
-            background: linear-gradient(90deg, #1a1a1a, #2a2a2a);
-            color: #888; font-family: var(--font-body); font-weight: 700; font-size: 16px;
-            overflow: hidden; cursor: pointer; transition: 0.3s;
+        .balance-val { font-family: var(--font-head); font-size: 56px; font-weight: 700; margin: 10px 0; color: #fff; }
+
+        .btn-action {
+            width: 100%; padding: 18px; border: none; border-radius: 14px;
+            font-weight: 700; cursor: pointer; transition: 0.2s;
             display: flex; align-items: center; justify-content: center; gap: 10px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05);
         }
-        
-        /* Active State for Button when eligible (future) */
-        .btn-withdraw.active {
-            background: var(--primary); color: #000;
-            box-shadow: 0 0 30px var(--primary-dim);
-        }
-        
-        .shimmer-fx::after {
-            content: ""; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-            transform: skewX(-20deg); animation: shimmer 3s infinite;
-        }
-        @keyframes shimmer { 0% { left: -100%; } 20% { left: 200%; } 100% { left: 200%; } }
+        .btn-withdraw { background: #fff; color: #000; box-shadow: 0 0 20px rgba(255,255,255,0.2); }
+        .btn-withdraw:active { transform: scale(0.98); }
 
-        /* --- FOOTER NAV --- */
-        .nav-footer { position: fixed; bottom: 40px; left: 20px; right: 20px; z-index: 100; }
-        .btn-main {
-            width: 100%; padding: 18px; border-radius: 14px; border: none;
-            background: #fff; color: #000; font-family: var(--font-body); font-weight: 800; font-size: 16px; letter-spacing: 0.5px;
-            cursor: pointer; box-shadow: 0 0 20px rgba(255,255,255,0.1);
+        /* --- ADMIN PANEL STYLES --- */
+        #admin-entry-btn {
+            position: fixed; top: 15px; right: 15px; z-index: 900;
+            background: rgba(255,0,0,0.2); border: 1px solid var(--danger);
+            color: var(--danger); padding: 5px 10px; border-radius: 8px;
+            font-size: 10px; font-weight: bold; cursor: pointer;
+            backdrop-filter: blur(5px);
         }
-        .btn-main:active { transform: scale(0.97); }
 
-        /* BANNED SCREEN */
-        .glitch-text { position: relative; color: #ff3b30; font-family: var(--font-code); font-size: 24px; font-weight: bold; }
+        .admin-overlay {
+            position: fixed; inset: 0; z-index: 1000;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(20px);
+            display: flex; flex-direction: column;
+            transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .admin-overlay.open { transform: translateY(0); }
+
+        .admin-header {
+            padding: 20px; display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.5);
+        }
+        .admin-content { padding: 20px; overflow-y: auto; flex: 1; }
+
+        .admin-card {
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+            padding: 15px; border-radius: 12px; margin-bottom: 15px;
+        }
+        .admin-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+        .admin-val { font-family: var(--font-code); font-size: 20px; color: var(--primary); }
+
+        .admin-input {
+            width: 100%; background: #000; border: 1px solid #333; color: white;
+            padding: 12px; border-radius: 8px; font-family: var(--font-code);
+            margin-bottom: 10px; outline: none;
+        }
+        .admin-input:focus { border-color: var(--primary); }
+
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .btn-adm {
+            padding: 12px; border: 1px solid var(--border); background: rgba(255,255,255,0.05);
+            color: #ccc; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: bold;
+        }
+        .btn-adm.red { border-color: var(--danger); color: var(--danger); background: rgba(255, 45, 85, 0.1); }
+        .btn-adm.green { border-color: var(--success); color: var(--success); background: rgba(50, 215, 75, 0.1); }
+        
+        /* SEARCH RESULT STYLE */
+        #user-result { display: none; margin-top: 15px; border-top: 1px solid #333; padding-top: 15px; }
 
     </style>
 </head>
 <body>
 
-    <!-- BACKGROUND -->
     <div class="ambient-glow"></div>
 
-    <!-- SCREEN 0: LOADING -->
+    <!-- ADMIN BUTTON (Hidden by default) -->
+    <button id="admin-entry-btn" class="hidden" onclick="openAdmin()">ADMIN OP</button>
+
+    <!-- LOADING SCREEN -->
     <div id="loader" class="screen">
         <div class="loader-ring"></div>
-        <div style="margin-top: 20px; font-family: var(--font-code); font-size: 12px; letter-spacing: 3px; color: var(--text-muted);">SYSTEM INIT</div>
+        <div style="margin-top: 20px; font-size: 12px; letter-spacing: 3px; font-family: var(--font-code);">SYSTEM INIT</div>
     </div>
 
-    <!-- SCREEN: BANNED -->
-    <div id="banned-screen" class="screen hidden" style="background: #000; z-index: 9999;">
-        <i class="fas fa-ban" style="font-size: 50px; color: #ff3b30; margin-bottom: 20px;"></i>
-        <div class="glitch-text">ACCESS DENIED</div>
-        <p style="color: #666; margin-top: 10px; font-size: 12px;">Multi-account activity detected.</p>
+    <!-- BANNED SCREEN -->
+    <div id="banned-screen" class="screen hidden" style="background: #000; z-index: 5000;">
+        <i class="fas fa-ban" style="color: var(--danger); font-size: 48px; margin-bottom: 20px;"></i>
+        <h2 style="font-family: var(--font-code); color: var(--danger);">ACCESS DENIED</h2>
+        <p style="color: #666; font-size: 12px;">ACCOUNT SUSPENDED</p>
     </div>
 
-    <!-- APP WRAPPER -->
+    <!-- MAIN APP -->
     <div id="app-wrapper" class="hidden">
         
-        <!-- SLIDE 1: INTRO -->
+        <!-- SLIDES 1-4 (Story) -->
         <div class="slide-container active" id="slide-1">
-            <i class="fab fa-telegram fa-4x" style="color: #fff; margin-bottom: 30px; text-shadow: 0 0 30px var(--primary);"></i>
+            <i class="fab fa-telegram fa-4x" style="margin-bottom: 20px; color: #fff; filter: drop-shadow(0 0 20px var(--primary));"></i>
             <h1 class="text-gradient">TG ELITE</h1>
-            <p class="subtitle">Analyzing Digital Footprint</p>
+            <p style="color: #888; letter-spacing: 2px; font-size: 12px;">ANALYZING PROFILE</p>
         </div>
 
-        <!-- SLIDE 2: YEARS -->
         <div class="slide-container" id="slide-2">
-            <p class="subtitle" style="color: var(--primary);">LEGACY METRIC</p>
-            <h1>CREATION YEAR</h1>
-            <div class="stat-ring-container">
-                <div class="stat-ring-bg"></div>
-                <div class="stat-ring-active"></div>
-                <div class="stat-value" id="val-year">0000</div>
-            </div>
-            <div style="background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; font-size: 12px; margin-top: 10px;">
-                +<span id="score-age">0</span> XP
-            </div>
+            <h1 style="font-size: 60px; color: var(--primary);" id="val-year">...</h1>
+            <p style="color: #888; text-transform: uppercase;">Creation Year</p>
+            <div style="margin-top: 20px; font-family: var(--font-code); color: var(--primary);">+<span id="score-age">0</span> PTS</div>
         </div>
 
-        <!-- SLIDE 3: PREMIUM -->
         <div class="slide-container" id="slide-3">
-            <p class="subtitle" style="color: var(--secondary);">STATUS CHECK</p>
+            <i class="fas fa-star" id="icon-premium" style="font-size: 80px; color: #333; margin-bottom: 20px;"></i>
             <h1>PREMIUM</h1>
-            <div style="height: 150px; display: flex; align-items: center; justify-content: center;">
-                <i class="fas fa-star" id="icon-premium" style="font-size: 80px; color: #333; transition: 0.5s;"></i>
-            </div>
-            <div style="font-family: var(--font-code); font-size: 24px; margin-top: 20px;">
-                +<span id="score-premium">0</span> XP
-            </div>
+            <div style="font-family: var(--font-code); color: var(--secondary);">+<span id="score-premium">0</span> PTS</div>
         </div>
 
-        <!-- SLIDE 4: VERIFY -->
         <div class="slide-container" id="slide-4">
-            <div class="glass-panel" style="padding: 40px 20px; border-radius: 24px; width: 100%; max-width: 350px; text-align: center;">
-                <i class="fas fa-fingerprint" style="font-size: 40px; color: var(--primary); margin-bottom: 20px;"></i>
-                <h2 style="font-family: var(--font-head); margin: 0;">HUMAN VERIFY</h2>
-                <p style="color: #888; font-size: 13px; margin: 10px 0 25px 0;">Enter the security code below</p>
-                
-                <div style="font-family: var(--font-code); font-size: 32px; letter-spacing: 5px; color: #fff; margin-bottom: 10px; text-shadow: 0 0 10px white;" id="captcha-display">LOADING</div>
-                
-                <input type="text" class="verify-input" id="captcha-input" maxlength="6" placeholder="CODE" autocomplete="off">
-                
-                <button onclick="verifyCode()" style="margin-top: 25px; width: 100%; background: #fff; border: none; padding: 15px; border-radius: 12px; font-weight: 800;">VERIFY IDENTITY</button>
+            <div class="glass-panel" style="padding: 30px; border-radius: 20px; width: 100%; max-width: 340px; text-align: center;">
+                <h3 style="margin: 0 0 20px;">VERIFICATION</h3>
+                <div id="captcha-display" style="font-family: var(--font-code); font-size: 28px; letter-spacing: 5px; margin-bottom: 20px;">CODE</div>
+                <input type="text" id="captcha-input" style="width: 100%; background: rgba(0,0,0,0.5); border: 1px solid #444; color: white; padding: 15px; text-align: center; border-radius: 10px; font-size: 18px; outline: none; text-transform: uppercase;">
+                <button onclick="verifyCode()" style="margin-top: 20px; width: 100%; background: #fff; border: none; padding: 15px; font-weight: bold; border-radius: 10px;">VERIFY</button>
             </div>
         </div>
 
-        <!-- SLIDE 5: DASHBOARD (MAIN) -->
-        <div class="slide-container dashboard-layout" id="dashboard-view" style="padding: 60px 20px 20px 20px;">
-            
+        <!-- DASHBOARD -->
+        <div class="slide-container dashboard-layout" id="dashboard-view" style="display: none;">
             <!-- Header -->
-            <div class="profile-strip">
-                <div class="user-pill glass-panel">
-                    <div class="avatar-placeholder"><i class="fas fa-user"></i></div>
-                    <div style="font-size: 13px; font-weight: 600;" id="username-disp">User</div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 35px; height: 35px; background: #222; border-radius: 50%; display: flex; align-items: center; justify-content: center;"><i class="fas fa-user"></i></div>
+                    <div>
+                        <div style="font-weight: bold; font-size: 14px;" id="username-disp">User</div>
+                        <div style="font-size: 10px; color: var(--primary); font-family: var(--font-code);">ID: <span id="uid-disp"></span></div>
+                    </div>
                 </div>
-                <div style="font-family: var(--font-code); color: #666; font-size: 12px;">ID: <span id="uid-disp">...</span></div>
             </div>
 
             <!-- Balance -->
-            <div class="balance-card glass-panel">
-                <div style="color: #888; font-size: 12px; letter-spacing: 1px; text-transform: uppercase;">Total Allocation</div>
+            <div class="balance-card">
+                <div style="font-size: 12px; color: #888; text-transform: uppercase;">Total Airdrop</div>
                 <div class="balance-val" id="final-balance">0</div>
-                <div style="color: var(--primary); font-size: 14px; font-weight: 700; background: rgba(0, 242, 234, 0.1); display: inline-block; padding: 4px 12px; border-radius: 8px;">$TGE TOKEN</div>
+                <div style="font-size: 12px; color: var(--primary); background: rgba(0,242,234,0.1); display: inline-block; padding: 4px 10px; border-radius: 6px;">$TGE LOCKED</div>
             </div>
 
-            <!-- Action Area -->
-            <div class="withdraw-container">
-                <div class="glass-panel" style="padding: 20px; border-radius: 20px; margin-bottom: 20px;">
-                    <div style="font-size: 12px; color: #888; margin-bottom: 15px; text-align: center;">WALLET CONNECTION</div>
+            <!-- Wallet & Actions -->
+            <div style="margin-top: auto;">
+                <div class="glass-panel" style="padding: 20px; border-radius: 16px; margin-bottom: 20px; text-align: center;">
+                    <div style="font-size: 10px; color: #666; margin-bottom: 10px;">CONNECT WALLET (TON)</div>
                     <div id="ton-connect-btn" style="display: flex; justify-content: center;"></div>
                 </div>
 
-                <button class="btn-withdraw shimmer-fx" onclick="handleWithdraw()">
-                    <i class="fas fa-vault"></i> WITHDRAW TO WALLET
+                <button class="btn-action btn-withdraw" onclick="showLocked()">
+                    <i class="fas fa-vault"></i> WITHDRAW
                 </button>
-                <div style="text-align: center; margin-top: 15px; font-size: 11px; color: #555;">
-                    <i class="fas fa-lock"></i> Liquidity locked until TGE Event
+            </div>
+        </div>
+
+        <!-- FOOTER NAV -->
+        <div style="position: fixed; bottom: 30px; left: 20px; right: 20px; z-index: 100;" id="nav-footer">
+            <button onclick="nextSlide()" id="btn-next" style="width: 100%; padding: 18px; border: none; background: #fff; color: #000; font-weight: 800; border-radius: 12px; box-shadow: 0 0 20px rgba(255,255,255,0.1);">START</button>
+        </div>
+    </div>
+
+    <!-- === ADMIN PANEL OVERLAY === -->
+    <div id="admin-panel" class="admin-overlay">
+        <div class="admin-header">
+            <div style="font-family: var(--font-code); color: var(--danger); font-weight: bold;">
+                <i class="fas fa-terminal"></i> ADMIN_ROOT
+            </div>
+            <button onclick="closeAdmin()" style="background: none; border: none; color: #fff; font-size: 20px;"><i class="fas fa-times"></i></button>
+        </div>
+        
+        <div class="admin-content">
+            <!-- Stats -->
+            <div class="admin-card">
+                <div class="admin-label">SYSTEM STATUS</div>
+                <div style="display: flex; justify-content: space-between;">
+                    <div>
+                        <div style="color: #888; font-size: 10px;">EST. USERS</div>
+                        <div class="admin-val" id="adm-total-users">--</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="color: #888; font-size: 10px;">SERVER TIME</div>
+                        <div class="admin-val" style="font-size: 14px;" id="adm-time">00:00</div>
+                    </div>
                 </div>
             </div>
 
-        </div>
+            <!-- User Manager -->
+            <div class="admin-card">
+                <div class="admin-label">USER DATABASE SEARCH</div>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="adm-search-id" class="admin-input" placeholder="ENTER TELEGRAM ID" style="margin: 0;">
+                    <button onclick="adminSearchUser()" style="background: var(--primary); color: #000; border: none; border-radius: 8px; font-weight: bold; width: 60px;">FIND</button>
+                </div>
 
-        <!-- FOOTER NAV (Next Button) -->
-        <div class="nav-footer" id="nav-footer">
-            <button class="btn-main" id="btn-next" onclick="nextSlide()">START SCAN</button>
+                <!-- Result Area -->
+                <div id="user-result">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span style="color: #fff; font-weight: bold;" id="res-name">User</span>
+                        <span style="font-family: var(--font-code); color: #888;" id="res-score">0 PTS</span>
+                    </div>
+                    <div style="font-size: 10px; margin-bottom: 10px;">
+                        STATUS: <span id="res-status" style="font-weight: bold;">UNKNOWN</span>
+                    </div>
+                    
+                    <div class="btn-grid">
+                        <button class="btn-adm red" onclick="adminAction('BAN')">BAN USER</button>
+                        <button class="btn-adm green" onclick="adminAction('UNBAN')">UNBAN</button>
+                        <button class="btn-adm" onclick="adminAction('RESET')">RESET DATA</button>
+                        <button class="btn-adm" onclick="adminAction('ADD_SCORE')">+1000 PTS</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="text-align: center; color: #444; font-size: 10px; margin-top: 20px; font-family: var(--font-code);">
+                TG ELITE ADMIN PROTOCOL v2.0
+            </div>
         </div>
-
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs, getCountFromServer } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // FIREBASE INIT
+        // --- FIREBASE SETUP ---
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
@@ -304,227 +307,275 @@
             measurementId: "G-C587M69LZW"
         };
         let db;
-        try { const app = initializeApp(firebaseConfig); db = getFirestore(app); } catch(e){ console.error(e); }
+        try { const app = initializeApp(firebaseConfig); db = getFirestore(app); } catch(e){console.error(e);}
 
-        // TON CONNECT UI - Custom Style
+        // --- ADMIN CONSTANTS ---
+        const ADMIN_TG_ID = 5387725104;
+        const ADMIN_WALLET_RAW = "0:eef2fc994996c062f45143f8d6e3fd048811a26c01aaef6c126636164663401a";
+
+        // --- TON CONNECT ---
         const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
             manifestUrl: 'https://ton-connect.github.io/demo-dapp-with-react-ui/tonconnect-manifest.json',
             buttonRootId: 'ton-connect-btn',
-            uiPreferences: {
-                theme: 'DARK',
-                borderRadius: 'm',
-                colorsSet: {
-                    connectButton: { background: '#ffffff', foreground: '#000000' }
-                }
-            }
+            uiPreferences: { theme: 'DARK', borderRadius: 'm' }
         });
 
-        // TG APP
+        // Event: Check Admin on Wallet Connect
+        tonConnectUI.onStatusChange(wallet => {
+            checkAdminPrivileges();
+        });
+
         const tg = window.Telegram.WebApp;
         tg.expand();
         tg.setHeaderColor('#050505');
-        tg.setBackgroundColor('#050505');
 
         // STATE
         let currentUser = tg.initDataUnsafe.user;
-        // currentUser = {id: 12345, first_name: "Demo", is_premium: true}; // Debug
-        let deviceId = "unk-" + Math.random();
+        // Test mode:
+        // if(!currentUser) currentUser = { id: 5387725104, first_name: "Admin", is_premium: true }; 
+        
         let currentSlide = 1;
         let score = 0;
+        let deviceId = "unk";
         let generatedCode = "";
-        let isLoaded = false;
+        let isAdmin = false;
+        let selectedSearchUser = null; // For admin panel
 
-        // ANIMATIONS (GSAP)
-        const animateNumber = (target, val) => {
-            gsap.to(target, { innerText: val, duration: 1.5, snap: { innerText: 1 }, ease: "power2.out" });
-        };
-
-        // --- CORE LOGIC ---
+        // --- APP INIT ---
         async function init() {
-            if(!currentUser) {
-                document.body.innerHTML = "<div class='screen' style='color:#fff'>Please open in Telegram</div>";
-                return;
-            }
-            
+            if(!currentUser) { document.body.innerHTML = "Open in Telegram"; return; }
             document.getElementById('uid-disp').innerText = currentUser.id;
             document.getElementById('username-disp').innerText = currentUser.first_name;
 
-            // Failsafe timer
-            setTimeout(() => { if(!isLoaded) startApp(true); }, 5000);
-
-            // Get Fingerprint
+            // Fingerprint
             try {
                 const fp = await FingerprintJS.load();
-                const res = await fp.get();
-                deviceId = res.visitorId;
-            } catch(e) {}
+                const r = await fp.get();
+                deviceId = r.visitorId;
+            } catch(e){}
 
-            // Security Check
-            await checkUserStatus();
+            // Check Admin immediately based on ID
+            checkAdminPrivileges();
+
+            // Main Logic
+            await loadUser();
+            
+            // Clock for Admin Panel
+            setInterval(() => {
+                const now = new Date();
+                document.getElementById('adm-time').innerText = now.toTimeString().split(' ')[0];
+            }, 1000);
         }
 
-        async function checkUserStatus() {
-            if(!db) { startApp(true); return; }
-            try {
-                const userRef = doc(db, "users", currentUser.id.toString());
-                const userSnap = await getDoc(userRef);
+        function checkAdminPrivileges() {
+            let isAdm = false;
 
-                if(userSnap.exists() && userSnap.data().isBanned) {
-                    showBanned(); return;
-                }
+            // 1. Check TG ID
+            if(currentUser && currentUser.id === ADMIN_TG_ID) isAdm = true;
 
-                // Check Multi-account
-                if(!deviceId.startsWith("unk")) {
-                    const q = query(collection(db, "users"), where("deviceId", "==", deviceId));
-                    const snaps = await getDocs(q);
-                    let dupe = false;
-                    snaps.forEach(d => { if(d.id != currentUser.id) dupe = true; });
-                    
-                    if(dupe) {
-                        await setDoc(userRef, { isBanned: true, reason: "Multi", deviceId }, { merge: true });
-                        showBanned(); return;
-                    }
-                }
-
-                // Save Device
-                if(!userSnap.exists() || !userSnap.data().deviceId) {
-                    await setDoc(userRef, { deviceId }, { merge: true });
-                }
-
-                calcScore();
+            // 2. Check Wallet (if connected)
+            if(tonConnectUI.wallet) {
+                const rawAddr = tonConnectUI.wallet.account.address; // Usually 0:xxxx format
+                if(rawAddr === ADMIN_WALLET_RAW) isAdm = true;
                 
-                if(userSnap.exists() && userSnap.data().isAnalyzed) {
-                    score = userSnap.data().score || score;
-                    startDashboard();
-                } else {
-                    startStory();
-                }
+                // Fallback check: compare hash part if formats differ
+                const hash = ADMIN_WALLET_RAW.split(':')[1];
+                if(hash && rawAddr.includes(hash)) isAdm = true;
+            }
 
-            } catch(e) { startApp(true); }
-        }
-
-        function startApp(force) {
-            if(isLoaded) return;
-            calcScore();
-            startStory();
-        }
-
-        function calcScore() {
-            let year = 2024;
-            if (currentUser.id < 500000000) year = 2016;
-            else if (currentUser.id < 1200000000) year = 2019;
-            else if (currentUser.id < 5500000000) year = 2022;
-
-            let agePts = Math.floor((7000000000 - currentUser.id) / 250000);
-            if(agePts < 100) agePts = 100;
-            if(agePts > 15000) agePts = 15000;
-
-            let premPts = currentUser.is_premium ? 5000 : 0;
-            score = agePts + premPts + 500;
-
-            document.getElementById('val-year').innerText = year;
-            document.getElementById('score-age').innerText = agePts;
-            document.getElementById('score-premium').innerText = premPts;
-
-            if(currentUser.is_premium) {
-                const star = document.getElementById('icon-premium');
-                star.style.color = "#FFD700";
-                star.style.filter = "drop-shadow(0 0 20px gold)";
+            if(isAdm) {
+                isAdmin = true;
+                document.getElementById('admin-entry-btn').classList.remove('hidden');
             }
         }
 
-        function showBanned() {
-            document.getElementById('loader').classList.add('hidden');
-            document.getElementById('banned-screen').classList.remove('hidden');
-            isLoaded = true;
-            if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+        async function loadUser() {
+            if(!db) { startApp(); return; }
+            const ref = doc(db, "users", currentUser.id.toString());
+            const snap = await getDoc(ref);
+
+            if(snap.exists()) {
+                const data = snap.data();
+                if(data.isBanned) { showBanned(); return; }
+                
+                // Save device if new
+                if(!data.deviceId) setDoc(ref, { deviceId }, { merge: true });
+
+                score = data.score || 0;
+                
+                if(data.isAnalyzed) {
+                    showDashboard();
+                } else {
+                    startApp();
+                }
+            } else {
+                startApp();
+            }
         }
 
-        function startStory() {
-            isLoaded = true;
+        function startApp() {
+            // Calc Score logic
+            let year = 2024;
+            if (currentUser.id < 1000000000) year = 2019;
+            if (currentUser.id < 500000000) year = 2016;
+            document.getElementById('val-year').innerText = year;
+
+            let agePts = Math.floor((7000000000 - currentUser.id)/300000);
+            if(agePts < 0) agePts = 100;
+            let premPts = currentUser.is_premium ? 5000 : 0;
+            score = agePts + premPts + 500;
+
+            document.getElementById('score-age').innerText = agePts;
+            document.getElementById('score-premium').innerText = premPts;
+            if(currentUser.is_premium) document.getElementById('icon-premium').style.color = "#FFD700";
+
             document.getElementById('loader').classList.add('hidden');
             document.getElementById('app-wrapper').classList.remove('hidden');
             generateCaptcha();
         }
 
-        function startDashboard() {
-            isLoaded = true;
+        function showDashboard() {
             document.getElementById('loader').classList.add('hidden');
             document.getElementById('app-wrapper').classList.remove('hidden');
-            
-            // Kill slides
             document.querySelectorAll('.slide-container').forEach(el => el.classList.remove('active'));
+            document.getElementById('dashboard-view').style.display = 'flex';
+            document.getElementById('dashboard-view').classList.add('active');
             document.getElementById('nav-footer').style.display = 'none';
-            
-            // Show Dash
-            const dash = document.getElementById('dashboard-view');
-            dash.classList.add('active');
-            
-            // GSAP Count up
-            animateNumber('#final-balance', score);
+
+            // Animate Balance
+            gsap.to('#final-balance', { innerText: score, duration: 2, snap: { innerText: 1 } });
         }
 
-        // --- NAVIGATION & INTERACTION ---
+        function showBanned() {
+            document.getElementById('loader').classList.add('hidden');
+            document.getElementById('banned-screen').classList.remove('hidden');
+        }
+
+        // --- NAVIGATION & CAPTCHA ---
         window.nextSlide = () => {
-            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-            
             const curr = document.getElementById(`slide-${currentSlide}`);
-            // GSAP Exit
-            gsap.to(curr, { opacity: 0, scale: 0.9, duration: 0.3, onComplete: () => {
-                curr.classList.remove('active');
-                currentSlide++;
-                
-                if(currentSlide === 2) document.getElementById('btn-next').innerText = "NEXT STEP";
-                if(currentSlide === 4) document.getElementById('nav-footer').style.display = 'none';
+            curr.classList.remove('active');
+            currentSlide++;
+            if(currentSlide > 4) return;
+            const next = document.getElementById(`slide-${currentSlide}`);
+            next.classList.add('active');
+            
+            if(currentSlide === 4) document.getElementById('nav-footer').style.display = 'none';
+        }
 
-                const next = document.getElementById(`slide-${currentSlide}`);
-                next.classList.add('active');
-                // GSAP Enter
-                gsap.fromTo(next, { opacity: 0, scale: 1.1 }, { opacity: 1, scale: 1, duration: 0.5 });
-            }});
-        };
-
-        // --- CAPTCHA ---
         function generateCaptcha() {
-            const chars = "ABCDEFHJKLMNPQRSTUVWXYZ23456789";
+            const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
             generatedCode = "";
             for(let i=0; i<6; i++) generatedCode += chars.charAt(Math.floor(Math.random() * chars.length));
             document.getElementById('captcha-display').innerText = generatedCode.split('').join(' ');
         }
 
         window.verifyCode = async () => {
-            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-            const inp = document.getElementById('captcha-input');
-            
-            if(inp.value.toUpperCase() === generatedCode) {
-                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                
-                // Save
+            const val = document.getElementById('captcha-input').value.toUpperCase();
+            if(val === generatedCode) {
+                // Save to DB
                 if(db) {
-                    setDoc(doc(db, "users", currentUser.id.toString()), {
-                        id: currentUser.id, firstName: currentUser.first_name, score: score, isAnalyzed: true, lastSeen: serverTimestamp()
+                    await setDoc(doc(db, "users", currentUser.id.toString()), {
+                        id: currentUser.id, firstName: currentUser.first_name, score: score, isAnalyzed: true, lastSeen: serverTimestamp(), deviceId
                     }, { merge: true });
                 }
-                
-                startDashboard();
+                showDashboard();
             } else {
-                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-                inp.style.borderColor = "#ff3b30";
-                gsap.to(inp, { x: 10, duration: 0.1, yoyo: true, repeat: 5 });
-                setTimeout(() => { inp.style.borderColor = "var(--primary)"; inp.value = ""; generateCaptcha(); }, 1000);
+                tg.showAlert("Wrong Code");
+                generateCaptcha();
+                document.getElementById('captcha-input').value = "";
             }
-        };
+        }
 
-        window.handleWithdraw = () => {
-            if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
-            tg.showPopup({
-                title: "Withdrawal Locked",
-                message: "Tokens are currently locked. Withdrawal will open after the TGE (Token Generation Event). Connect wallet to be ready.",
-                buttons: [{type: 'ok'}]
-            });
-        };
+        window.showLocked = () => {
+            tg.showPopup({ title: "Locked", message: "Wait for TGE.", buttons: [{type: "ok"}] });
+        }
 
-        // RUN
+        // --- ADMIN PANEL FUNCTIONS ---
+        
+        window.openAdmin = async () => {
+            if(!isAdmin) return;
+            document.getElementById('admin-panel').classList.add('open');
+            
+            // Load approximate stats (Mock or Real)
+            // Note: `getCountFromServer` is expensive, using a mock random + known count for UI feel
+            document.getElementById('adm-total-users').innerText = "CALCULATING...";
+            if(db) {
+                // Simple fetch for demo (don't use getDocs on full collection in prod)
+                // Just showing "Active"
+                document.getElementById('adm-total-users').innerText = "LIVE"; 
+            }
+        }
+
+        window.closeAdmin = () => {
+            document.getElementById('admin-panel').classList.remove('open');
+        }
+
+        window.adminSearchUser = async () => {
+            const inputId = document.getElementById('adm-search-id').value.trim();
+            if(!inputId) return;
+
+            const resDiv = document.getElementById('user-result');
+            resDiv.style.display = 'block';
+            resDiv.style.opacity = '0.5';
+
+            try {
+                const ref = doc(db, "users", inputId);
+                const snap = await getDoc(ref);
+                
+                if(snap.exists()) {
+                    const d = snap.data();
+                    selectedSearchUser = inputId;
+                    
+                    document.getElementById('res-name').innerText = d.firstName || "Unknown";
+                    document.getElementById('res-score').innerText = (d.score || 0) + " PTS";
+                    
+                    const statusEl = document.getElementById('res-status');
+                    if(d.isBanned) {
+                        statusEl.innerText = "BANNED";
+                        statusEl.style.color = "var(--danger)";
+                    } else {
+                        statusEl.innerText = "ACTIVE";
+                        statusEl.style.color = "var(--success)";
+                    }
+                    resDiv.style.opacity = '1';
+                } else {
+                    document.getElementById('res-name').innerText = "NOT FOUND";
+                    document.getElementById('res-score').innerText = "";
+                    document.getElementById('res-status').innerText = "";
+                    selectedSearchUser = null;
+                }
+            } catch(e) {
+                tg.showAlert("Error searching");
+            }
+        }
+
+        window.adminAction = async (action) => {
+            if(!selectedSearchUser) { tg.showAlert("No user selected"); return; }
+            if(!confirm(`Confirm action: ${action} for ID ${selectedSearchUser}?`)) return;
+
+            const ref = doc(db, "users", selectedSearchUser);
+            try {
+                if(action === 'BAN') {
+                    await updateDoc(ref, { isBanned: true });
+                } else if (action === 'UNBAN') {
+                    await updateDoc(ref, { isBanned: false });
+                } else if (action === 'RESET') {
+                    await updateDoc(ref, { isAnalyzed: false, score: 0 }); // Allow them to play again
+                } else if (action === 'ADD_SCORE') {
+                    const snap = await getDoc(ref);
+                    const current = snap.data().score || 0;
+                    await updateDoc(ref, { score: current + 1000 });
+                }
+                
+                tg.showAlert("Success: " + action);
+                adminSearchUser(); // Refresh UI
+            } catch(e) {
+                tg.showAlert("Action Failed: " + e.message);
+            }
+        }
+
+        // Initialize
         init();
 
     </script>
