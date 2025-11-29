@@ -8,7 +8,6 @@
     <!-- CORE SDKs -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
     
     <!-- ANIMATION & FONTS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
@@ -69,6 +68,18 @@
         .spinner { width: 40px; height: 40px; border: 3px solid #333; border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s infinite linear; margin: 0 auto 15px; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
+        /* WEB LOGIN SCREEN */
+        .login-content {
+            background: var(--surface);
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .login-title { font-family: var(--font-head); font-size: 24px; margin-bottom: 20px; color: var(--primary); }
+        .login-desc { color: var(--text-muted); font-size: 14px; margin-bottom: 30px; }
+
         /* --- MAIN APP LAYOUT --- */
         #app-container {
             flex: 1; display: flex; flex-direction: column;
@@ -90,7 +101,8 @@
         }
         .user-top { display: flex; justify-content: space-between; align-items: center; }
         .user-info { display: flex; align-items: center; gap: 12px; }
-        .avatar { width: 48px; height: 48px; background: #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #888; border: 2px solid var(--primary-dim); }
+        .avatar { width: 48px; height: 48px; background: #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #888; border: 2px solid var(--primary-dim); overflow: hidden;}
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
         
         .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
         .stat-box { background: rgba(255,255,255,0.03); border-radius: 12px; padding: 10px; text-align: center; }
@@ -184,7 +196,24 @@
         <p style="color: #666; font-size: 13px;">Suspicious activity detected.</p>
     </div>
 
-    <!-- 3. ADMIN BUTTON (Conditional) -->
+    <!-- 3. WEB LOGIN SCREEN (New Feature) -->
+    <div id="web-login-screen" class="screen hidden flex-center">
+        <div class="login-content">
+            <div class="login-title">ELITE PROTOCOL</div>
+            <div class="login-desc">Connect your Telegram account to continue</div>
+            
+            <!-- Telegram Login Widget -->
+            <!-- Thay Bmassk3_bot bằng tên bot của bạn -->
+            <script async src="https://telegram.org/js/telegram-widget.js?22" 
+                    data-telegram-login="Bmassk3_bot" 
+                    data-size="large" 
+                    data-radius="10"
+                    data-onauth="onTelegramAuth(user)" 
+                    data-request-access="write"></script>
+        </div>
+    </div>
+
+    <!-- 4. ADMIN BUTTON (Conditional) -->
     <div id="admin-float-btn" class="hidden" onclick="openAdmin()">OP MODE</div>
 
     <!-- === MAIN APPLICATION === -->
@@ -195,7 +224,7 @@
             <div class="user-card">
                 <div class="user-top">
                     <div class="user-info">
-                        <div class="avatar"><i class="fas fa-user"></i></div>
+                        <div class="avatar" id="user-avatar"><i class="fas fa-user"></i></div>
                         <div>
                             <div style="font-weight: 700; font-size: 16px;" id="disp-name">User</div>
                             <div style="font-size: 11px; color: var(--primary); font-family: var(--font-code);">ID: <span id="disp-id">---</span></div>
@@ -335,7 +364,7 @@
         
         const ADMIN_ID = 5387725104;
         const ADMIN_WALLET = "0:eef2fc994996c062f45143f8d6e3fd048811a26c01aaef6c126636164663401a";
-        const DAILY_CODE_SECRET = "ELITE2024"; // Simple Client Check for Demo (In prod, check DB)
+        const DAILY_CODE_SECRET = "ELITE2024";
 
         /* --- INIT SERVICES --- */
         let db;
@@ -352,12 +381,8 @@
         });
 
         /* --- STATE --- */
-        let currentUser = tg.initDataUnsafe.user;
-        // MOCK USER FOR BROWSER TESTING
-        if(!currentUser) {
-            // currentUser = { id: 5387725104, first_name: "Admin", username: "admin_god", is_premium: true, language_code: "vi" }; 
-        }
-
+        // Thử lấy user từ Telegram App trước
+        let currentUser = tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : null;
         let userScore = 0;
         let isAdmin = false;
 
@@ -373,17 +398,50 @@
             return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         }
 
+        /* --- WEB LOGIN HANDLER --- */
+        // Định nghĩa hàm này ở window scope để Widget script gọi được
+        window.onTelegramAuth = (user) => {
+            console.log("Logged in via Web Widget:", user);
+            
+            // Map dữ liệu từ Widget sang định dạng giống Telegram WebApp
+            currentUser = {
+                id: user.id,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                username: user.username,
+                photo_url: user.photo_url,
+                is_premium: false, // Widget không trả về premium status
+                language_code: 'en'
+            };
+            
+            // Ẩn màn hình login
+            document.getElementById('web-login-screen').classList.add('hidden');
+            document.getElementById('loader').classList.remove('hidden'); // Hiện lại loader để load data
+            
+            // Khởi động app
+            initApp();
+        }
+
         /* --- CORE LOGIC --- */
         async function initApp() {
+            // Kiểm tra xem đã có user chưa (từ App hoặc từ Web Login)
             if(!currentUser) {
-                document.body.innerHTML = "<div class='screen flex-center' style='color:#fff'>Please open in Telegram</div>";
+                // Nếu chưa có user (đang ở trình duyệt ngoài), tắt loader, hiện Login Screen
+                document.getElementById('loader').classList.add('hidden');
+                document.getElementById('web-login-screen').classList.remove('hidden');
                 return;
             }
 
             // Bind UI
             document.getElementById('disp-name').innerText = currentUser.first_name + (currentUser.last_name ? " " + currentUser.last_name : "");
             document.getElementById('disp-id').innerText = currentUser.id;
+            
             if(currentUser.is_premium) document.getElementById('badge-premium').classList.remove('hidden');
+            
+            // Hiển thị Avatar nếu có
+            if(currentUser.photo_url) {
+                document.getElementById('user-avatar').innerHTML = `<img src="${currentUser.photo_url}" alt="user">`;
+            }
 
             // Admin Check
             checkAdmin();
@@ -409,8 +467,7 @@
             let score = 0;
             const id = user.id;
 
-            // 1. Account Age (Based on ID range estimation)
-            // Telegram IDs grow over time. Lower ID = Older account.
+            // Account Age Logic
             let creationYear = 2024;
             if (id < 6000000000) creationYear = 2023;
             if (id < 5000000000) creationYear = 2022;
@@ -421,23 +478,18 @@
             const ageYears = 2025 - creationYear;
             document.getElementById('stat-age').innerText = ageYears;
             
-            score += ageYears * 500; // 500 points per year
+            score += ageYears * 500;
 
-            // 2. Premium
             if(user.is_premium) score += 2000;
-
-            // 3. Profile Completeness
             if(user.username) score += 500;
             if(user.last_name) score += 200;
-            
-            // 4. Language Bonus (e.g., Target market VN)
             if(user.language_code === 'vi') score += 300;
 
             return score;
         }
 
         async function loadUserData() {
-            if(!db) return; // Fallback
+            if(!db) return; 
             
             try {
                 const userRef = doc(db, "users", currentUser.id.toString());
@@ -451,8 +503,9 @@
                         return;
                     }
                     userScore = data.score;
+                    // Tính lại tuổi acc để hiển thị dù là user cũ
+                    calculateBaseScore(currentUser); 
                 } else {
-                    // New User: Calculate Initial Score & Save
                     userScore = calculateBaseScore(currentUser);
                     await setDoc(userRef, {
                         id: currentUser.id,
@@ -460,39 +513,31 @@
                         username: currentUser.username || "",
                         score: userScore,
                         joinedAt: serverTimestamp(),
-                        deviceId: "init"
+                        deviceId: "web"
                     });
-                    
-                    // Log Initial History
                     await logHistory("Account Analysis", userScore, "plus");
                 }
 
-                // Update UI
                 updateUI();
                 
-                // Show App
                 document.getElementById('loader').classList.add('hidden');
                 document.getElementById('app-container').classList.remove('hidden');
                 
-                // Load History List
                 loadHistoryList();
 
             } catch(e) {
                 console.error(e);
-                // Fallback UI if DB fails
                 document.getElementById('loader').classList.add('hidden');
                 document.getElementById('app-container').classList.remove('hidden');
             }
         }
 
         function updateUI() {
-            // Animate Score
             const el = document.getElementById('main-balance');
             gsap.to(el, { innerText: userScore, duration: 1.5, snap: { innerText: 1 }, onUpdate: function() {
                 el.innerText = formatNum(Math.ceil(this.targets()[0].innerText));
             }});
 
-            // Rank Logic
             let rank = "ROOKIE";
             if(userScore > 5000) rank = "ELITE";
             if(userScore > 10000) rank = "MASTER";
@@ -502,23 +547,14 @@
         }
 
         /* --- FEATURES --- */
-        
-        // 1. TABS
         window.switchTab = (tabName) => {
             haptic('light');
-            
-            // Nav Active State
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            // Find click target's parent if icon clicked, or self
-            const clicked = event.currentTarget;
-            clicked.classList.add('active');
-
-            // Content Visibility
+            event.currentTarget.classList.add('active');
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.getElementById(`tab-${tabName}`).classList.add('active');
         }
 
-        // 2. DAILY CODE
         window.submitDailyCode = async () => {
             haptic('medium');
             const input = document.getElementById('daily-code-input');
@@ -526,9 +562,7 @@
 
             if(!code) return;
 
-            // In real app, check against a DB collection 'daily_codes'
             if(code === DAILY_CODE_SECRET) {
-                // Check if already claimed today (LocalStorage for simple demo, DB preferred)
                 const today = new Date().toDateString();
                 const lastClaim = localStorage.getItem('last_claim_' + currentUser.id);
 
@@ -538,7 +572,6 @@
                     return;
                 }
 
-                // Reward
                 const reward = 1000;
                 await updateScore(reward, "Daily Code: " + code);
                 
@@ -549,14 +582,12 @@
             } else {
                 tg.showAlert("Invalid Code");
                 haptic('error');
-                input.classList.add('shake'); // CSS animation could be added here
             }
         }
 
         async function updateScore(amount, reason) {
             userScore += amount;
-            updateUI(); // Immediate UI update
-            
+            updateUI(); 
             if(db) {
                 const ref = doc(db, "users", currentUser.id.toString());
                 await updateDoc(ref, { score: userScore });
@@ -564,7 +595,6 @@
             }
         }
 
-        // 3. HISTORY
         async function logHistory(title, amount, type) {
             if(!db) return;
             const histRef = collection(db, "users", currentUser.id.toString(), "history");
@@ -574,7 +604,7 @@
                 type: type,
                 createdAt: serverTimestamp()
             });
-            loadHistoryList(); // Refresh list
+            loadHistoryList(); 
         }
 
         async function loadHistoryList() {
@@ -622,7 +652,6 @@
             });
         }
 
-        /* --- ADMIN PANEL LOGIC --- */
         window.openAdmin = () => document.getElementById('admin-panel').classList.add('open');
         window.closeAdmin = () => document.getElementById('admin-panel').classList.remove('open');
 
@@ -644,7 +673,6 @@
                     if(snap.exists()) {
                         const newScore = (snap.data().score || 0) + 1000;
                         await updateDoc(targetRef, { score: newScore });
-                        // Log for user
                         await addDoc(collection(db, "users", uid, "history"), {
                             title: "Admin Grant", amount: 1000, type: "plus", createdAt: serverTimestamp()
                         });
@@ -664,7 +692,7 @@
             }
         }
 
-        // Start
+        // Start App
         initApp();
 
     </script>
