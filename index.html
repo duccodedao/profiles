@@ -124,17 +124,16 @@
     /* PROJECT CARD COMPACT DESIGN */
     .project-card {
         display: flex;
-        align-items: flex-start; /* Canh lề trên */
+        align-items: flex-start;
         text-decoration: none;
         color: var(--text-primary);
-        background: rgba(255, 255, 255, 0.95); /* Tăng độ mờ nền */
-        padding: 0.8rem; /* Giảm padding */
+        background: rgba(255, 255, 255, 0.95);
+        padding: 0.8rem;
         border-radius: 12px;
         border: 1px solid #dee2e6;
         transition: var(--transition-smooth);
         box-shadow: var(--shadow-light);
         cursor: pointer;
-        /* Removed fixed min-height to reduce gaps */
     }
     .project-card:hover { transform: translateY(-3px) scale(1.01); box-shadow: 0 5px 15px rgba(145, 94, 255, 0.15); border-color: var(--accent-primary); }
     .project-icon { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; margin-right: 0.8rem; flex-shrink: 0; }
@@ -148,7 +147,6 @@
         flex-grow: 1;
         overflow: hidden;
     }
-    /* Style cho phần header của card (Tên + View) */
     .project-card-header {
         display: flex;
         justify-content: space-between;
@@ -162,7 +160,7 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: 75%; /* Chừa chỗ cho view count */
+        max-width: 75%;
     }
     .project-clicks {
         font-size: 0.75rem;
@@ -187,38 +185,17 @@
     }
 
     /* === Category Tabs Styling === */
-    .category-tabs-container {
-        padding: 1rem 0;
-        margin-top: 1.5rem;
-        position: relative;
-    }
+    .category-tabs-container { padding: 1rem 0; margin-top: 1.5rem; position: relative; }
     .category-tabs {
-        display: flex;
-        align-items: center;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-        position: relative;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        justify-content: flex-start;
-        -ms-overflow-style: none; 
-        scrollbar-width: none; 
-        padding-bottom: 0;
+        display: flex; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        position: relative; flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start;
+        -ms-overflow-style: none; scrollbar-width: none; padding-bottom: 0;
     }
     .category-tabs::-webkit-scrollbar { display: none; }
-
     .category-tab {
-        padding: 8px 16px;
-        cursor: pointer;
-        background: none;
-        border: none;
-        color: rgba(255, 255, 255, 0.7);
-        font-weight: 500;
-        font-size: 0.95rem;
-        transition: color 0.3s ease;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        flex-shrink: 0;
+        padding: 8px 16px; cursor: pointer; background: none; border: none;
+        color: rgba(255, 255, 255, 0.7); font-weight: 500; font-size: 0.95rem;
+        transition: color 0.3s ease; display: flex; align-items: center; gap: 6px; flex-shrink: 0;
     }
     .category-tab.active { color: #fff; font-weight: 600; }
     .category-tab:hover { color: #fff; }
@@ -236,8 +213,7 @@
     .tab-underline {
         position: absolute; bottom: -1px; left: 0; height: 3px;
         background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
-        border-radius: 3px;
-        transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        border-radius: 3px; transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
     }
     .category-content-container { padding-top: 1rem; }
     .category-content { display: none; animation: fadeInUp 0.5s; }
@@ -728,6 +704,30 @@ function handleEditTabClick(categoryKey) {
     if(searchInput) handleEditSearch(searchInput);
 }
 
+// Notification Permissions
+function requestNotificationPermission() {
+    if (!("Notification" in window)) {
+        alert("Trình duyệt này không hỗ trợ thông báo.");
+        return;
+    }
+    Notification.requestPermission().then(permission => {
+        if (permission === "granted") {
+            showToast("Đã bật thông báo!", "success");
+            const btn = document.getElementById('enable-notif-btn');
+            if(btn) btn.style.display = 'none';
+        }
+    });
+}
+
+function sendBrowserNotification(title, body) {
+    if (Notification.permission === "granted") {
+        new Notification(title, {
+            body: body,
+            icon: "https://bmass.vercel.app/img/bmasslogo.png"
+        });
+    }
+}
+
 // Admin Reply Handler
 async function handleAdminReply(docId) {
     const replyInput = document.getElementById(`reply-input-${docId}`);
@@ -1180,6 +1180,46 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- SETUP REALTIME NOTIFICATION LISTENERS ---
+    function setupNotificationListeners() {
+        if (!currentUser) return;
+
+        // 1. Listen for Admin Replies (To current User)
+        db.collection('support_messages')
+            .where('senderUid', '==', currentUser.uid)
+            .where('status', '==', 'replied')
+            .onSnapshot(snapshot => {
+                snapshot.docChanges().forEach(change => {
+                    if (change.type === 'modified') {
+                        // Only notify if modified recently (avoid spam on reload)
+                        // Simple check: if reply exists
+                        const data = change.doc.data();
+                        // You might want to check timestamps to be precise, 
+                        // but generally 'modified' means a reply just came in
+                        sendBrowserNotification("Phản hồi mới", "Admin đã trả lời tin nhắn của bạn.");
+                    }
+                });
+            });
+
+        // 2. Listen for New Projects from Admin (If current user is NOT admin)
+        if (currentUser.username !== ADMIN_USERNAME) {
+            let initialLoad = true;
+            let lastProjectCount = 0;
+
+            db.collection('profiles').doc(ADMIN_USERNAME).onSnapshot(doc => {
+                if (!doc.exists) return;
+                const projects = doc.data().projects || [];
+                
+                if (!initialLoad && projects.length > lastProjectCount) {
+                    sendBrowserNotification("Dự án mới!", "Admin vừa cập nhật một dự án mới.");
+                }
+                
+                lastProjectCount = projects.length;
+                initialLoad = false;
+            });
+        }
+    }
+
     function setupSidebar() {
         headerControls.innerHTML = `<button class="sidebar-toggle" id="sidebar-toggle-btn"><i class="fas fa-bars"></i></button>`;
         document.getElementById('sidebar-toggle-btn').addEventListener('click', toggleSidebar);
@@ -1190,10 +1230,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 adminLink = `<a class="sidebar-link" href="#" id="admin-dashboard-btn" style="color: #ff9800;"><i class="fas fa-user-shield"></i> Admin Panel</a>`;
             }
 
+            // Notification Button Logic
+            let notifBtnHTML = '';
+            if ("Notification" in window && Notification.permission !== "granted") {
+                notifBtnHTML = `<a class="sidebar-link" href="#" id="enable-notif-btn" style="color: #0dcaf0;"><i class="fas fa-bell"></i> Bật thông báo</a>`;
+            }
+
             sidebarLinks.innerHTML = `
                 <a class="sidebar-link" href="?user=${currentUser.username}"><i class="fas fa-user-circle"></i> Trang của tôi</a>
                 <a class="sidebar-link" href="#" id="analytics-btn"><i class="fas fa-chart-line"></i> Thống kê</a>
                 <a class="sidebar-link" href="#" id="qr-code-btn"><i class="fas fa-qrcode"></i> Mã QR</a>
+                ${notifBtnHTML}
                 ${adminLink}
                 <a class="sidebar-link" href="#" id="support-btn"><i class="fas fa-headset"></i> Hỗ trợ</a>
                 <a class="sidebar-link" href="#" id="copy-profile-link-btn"><i class="fas fa-copy"></i> Sao chép Link</a>
@@ -1212,6 +1259,10 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('qr-code-btn').addEventListener('click', showQRCode);
             document.getElementById('analytics-btn').addEventListener('click', showAnalytics);
             document.getElementById('support-btn').addEventListener('click', showSupportModal);
+            
+            if (document.getElementById('enable-notif-btn')) {
+                document.getElementById('enable-notif-btn').addEventListener('click', requestNotificationPermission);
+            }
             
             if(currentUser.uid === ADMIN_UID) {
                 document.getElementById('admin-dashboard-btn').addEventListener('click', showAdminDashboard);
@@ -1330,7 +1381,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const leaderboardItemsHTML = leaderboardProjects.map(p => {
                     const projectIndex = allProjects.indexOf(p);
-                    return `<div class="col-12 col-md-6 mb-2"> <!-- Reduced mb-3 to mb-2 -->
+                    return `<div class="col-12 col-md-6 mb-2">
                         <div data-project-index="${projectIndex}" class="project-card h-100">
                             <img src="${p.imageUrl || getRandomProjectImage()}" class="project-icon" alt="${p.name}">
                             <div class="project-card-content w-100">
@@ -1345,7 +1396,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>`;
                 }).join('');
-                contentHTML += `<div class="category-content" data-category="leaderboard"><div class="row g-2">${leaderboardItemsHTML}</div></div>`; // g-3 -> g-2
+                contentHTML += `<div class="category-content" data-category="leaderboard"><div class="row g-2">${leaderboardItemsHTML}</div></div>`;
             }
 
             const allCategoryKeys = [...new Set([...Object.keys(defaultCategories), ...Object.keys(customCategories)])];
@@ -1360,7 +1411,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(projectsInCategory.length > 0) {
                     itemsHTML = projectsInCategory.map(p => {
                         const projectIndex = allProjects.indexOf(p);
-                        return `<div class="col-12 col-md-6 mb-2"> <!-- Reduced mb-3 to mb-2 -->
+                        return `<div class="col-12 col-md-6 mb-2">
                             <div data-project-index="${projectIndex}" class="project-card h-100">
                                 <img src="${p.imageUrl || getRandomProjectImage()}" class="project-icon" alt="${p.name}">
                                 <div class="project-card-content w-100">
@@ -1376,7 +1427,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>`;
                     }).join('');
                 }
-                contentHTML += `<div class="category-content" data-category="${key}"><div class="row g-2">${itemsHTML}</div></div>`; // g-3 -> g-2
+                contentHTML += `<div class="category-content" data-category="${key}"><div class="row g-2">${itemsHTML}</div></div>`;
             });
             
             const projectsContainerHTML = allProjects.length > 0 || isOwner ? `<div class="category-tabs-container"><div class="category-tabs" id="category-tabs">${tabsHTML}${isOwner ? '<button class="category-tab" id="add-category-btn" title="Thêm danh mục mới"><i class="fas fa-plus"></i></button>' : ''}<div class="tab-underline" id="tab-underline"></div></div><div class="category-content-container" id="category-content-container">${contentHTML}</div></div>` : '';
@@ -2032,6 +2083,7 @@ function main() {
             if (!profileQuery.empty) {
                 const profileData = profileQuery.docs[0].data();
                 currentUser = { uid: refreshedUser.uid, email: refreshedUser.email, username: profileData.username, providerId: refreshedUser.providerData[0].providerId };
+                setupNotificationListeners(); // Setup Notif Listener
             } else { console.warn("User in Auth but not Firestore. Logging out."); await auth.signOut(); currentUser = null; }
         } else currentUser = null;
         setupSidebar(); 
@@ -2058,3 +2110,4 @@ main();
 
 </body>
 </html>
+
