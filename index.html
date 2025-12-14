@@ -1,4 +1,13 @@
+Dưới đây là toàn bộ mã nguồn (Code All) đã được tích hợp thêm tính năng phát nhạc (`nhac.mp3`).
 
+**Những thay đổi đã thực hiện:**
+1.  **HTML**: Thêm thẻ `<audio>` ẩn ở đầu body.
+2.  **CSS**: Thêm style cho nút bật/tắt nhạc (hình tròn, quay tròn khi nhạc chạy), đặt bên cạnh nút Menu.
+3.  **JS**: Thêm hàm `setupMusicPlayer()` để xử lý tự động phát (Autoplay). Nếu trình duyệt chặn, nó sẽ tự phát khi người dùng click lần đầu vào trang.
+
+**Lưu ý:** Bạn cần có file `nhac.mp3` nằm cùng thư mục với file code này.
+
+```html
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -360,10 +369,57 @@
     }
     .chat-bubble .meta { font-size: 0.7em; opacity: 0.7; margin-bottom: 3px; display: block;}
 
+    /* === MUSIC TOGGLE BUTTON STYLES === */
+    #music-toggle-btn {
+        position: fixed;
+        top: 1.5rem;
+        right: 5.5rem; /* Left of the header menu button */
+        z-index: 1050;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(255, 255, 255, 0.9);
+        color: #333;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    #music-toggle-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
+    }
+
+    /* Playing State Animation */
+    #music-toggle-btn.playing {
+        color: var(--accent-primary);
+        background: white;
+        box-shadow: 0 0 20px rgba(145, 94, 255, 0.6);
+    }
+
+    #music-toggle-btn.playing i {
+        animation: music-spin 3s linear infinite;
+    }
+
+    @keyframes music-spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
 </style>
 <body>
     <div id="particles-js"></div>
     
+    <!-- Audio Element for MP3 -->
+    <audio id="bg-audio" loop>
+        <source src="nhac.mp3" type="audio/mpeg">
+    </audio>
+
     <!-- Header Controls -->
     <div class="header-controls" id="header-controls"></div>
 
@@ -2073,6 +2129,72 @@ async function handleSendResetLinkFromModal() {
 
 function setupAuthForm() { showRegisterBtn.addEventListener('click', () => authFlipCard.classList.add('is-flipped')); showLoginBtn.addEventListener('click', () => authFlipCard.classList.remove('is-flipped')); document.getElementById('forgot-password-btn').addEventListener('click', () => switchView('forgotPassword')); document.getElementById('back-to-login-btn').addEventListener('click', () => { switchView('auth'); authFlipCard.classList.remove('is-flipped'); }); const resetEmailBtn = document.getElementById('reset-mode-email-btn'), resetPhoneBtn = document.getElementById('reset-mode-phone-btn'); const resetEmailGroup = document.getElementById('reset-email-group'), resetPhoneGroup = document.getElementById('reset-phone-group'); resetEmailBtn.addEventListener('click', () => { passwordResetMode = 'email'; resetEmailGroup.style.display = 'block'; resetPhoneGroup.style.display = 'none'; resetEmailBtn.classList.replace('btn-outline-light', 'btn-primary'); resetPhoneBtn.classList.replace('btn-primary', 'btn-outline-light'); }); resetPhoneBtn.addEventListener('click', () => { passwordResetMode = 'phone'; resetEmailGroup.style.display = 'none'; resetPhoneGroup.style.display = 'block'; resetPhoneBtn.classList.replace('btn-outline-light', 'btn-primary'); resetEmailBtn.classList.replace('btn-primary', 'btn-outline-light'); }); }
 
+// --- TÍNH NĂNG NHẠC NỀN ---
+function setupMusicPlayer() {
+    const audio = document.getElementById('bg-audio');
+    
+    // Tạo nút điều khiển nhạc và thêm vào giao diện
+    const musicBtn = document.createElement('button');
+    musicBtn.id = 'music-toggle-btn';
+    musicBtn.innerHTML = '<i class="fas fa-music"></i>';
+    musicBtn.title = "Bật/Tắt nhạc";
+    
+    // Chèn nút vào body
+    document.body.appendChild(musicBtn);
+
+    let isPlaying = false;
+
+    // Hàm xử lý bật/tắt
+    function toggleMusic() {
+        if (isPlaying) {
+            audio.pause();
+            musicBtn.classList.remove('playing');
+            musicBtn.innerHTML = '<i class="fas fa-music"></i>'; // Icon nhạc tĩnh
+        } else {
+            audio.play().then(() => {
+                musicBtn.classList.add('playing');
+                musicBtn.innerHTML = '<i class="fas fa-compact-disc"></i>'; // Icon đĩa quay
+            }).catch(err => console.log("Không thể phát nhạc: ", err));
+        }
+        isPlaying = !isPlaying;
+    }
+
+    // Gắn sự kiện click cho nút
+    musicBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Ngăn chặn click lan ra ngoài
+        toggleMusic();
+    });
+
+    // --- XỬ LÝ AUTOPLAY ---
+    // Cố gắng chạy nhạc ngay khi tải trang
+    audio.volume = 0.5; // Đặt âm lượng 50%
+    const playPromise = audio.play();
+
+    if (playPromise !== undefined) {
+        playPromise.then(_ => {
+            // Trình duyệt cho phép AutoPlay
+            isPlaying = true;
+            musicBtn.classList.add('playing');
+            musicBtn.innerHTML = '<i class="fas fa-compact-disc"></i>';
+        })
+        .catch(error => {
+            // Trình duyệt CHẶN AutoPlay -> Chờ click đầu tiên của người dùng
+            console.log("Autoplay bị chặn, chờ tương tác người dùng...");
+            
+            const unlockAudio = () => {
+                audio.play();
+                isPlaying = true;
+                musicBtn.classList.add('playing');
+                musicBtn.innerHTML = '<i class="fas fa-compact-disc"></i>';
+                // Xóa sự kiện sau khi đã bật được nhạc
+                document.removeEventListener('click', unlockAudio);
+            };
+
+            document.addEventListener('click', unlockAudio);
+        });
+    }
+}
+
 function main() {
     initializeFirebase();
     auth.onAuthStateChanged(async (user) => {
@@ -2101,6 +2223,9 @@ function main() {
 
     document.getElementById('project-detail-link-btn').addEventListener('click', (e) => handleProjectLinkActivation(e.currentTarget));
     document.getElementById('project-detail-share-btn').addEventListener('click', (e) => handleShareProject(e.currentTarget));
+
+    // Khởi động nhạc
+    setupMusicPlayer();
 }
 
 main();
