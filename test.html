@@ -12,6 +12,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
 
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
@@ -155,44 +156,92 @@
     .project-card:hover { transform: translateY(-3px) scale(1.01); box-shadow: 0 5px 15px rgba(145, 94, 255, 0.15); border-color: var(--accent-primary); }
     .project-icon { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; margin-right: 0.8rem; flex-shrink: 0; }
     
-    /* NEW: EXPIRED / COUNTDOWN STYLES */
+    /* === NEW: PROFESSIONAL COUNTDOWN STYLES === */
     .project-card.expired {
-        background: #e9ecef;
-        opacity: 0.7;
-        pointer-events: none; /* Disable clicking */
+        opacity: 0.8;
+        pointer-events: none; /* Vô hiệu hóa click */
         border-color: #adb5bd;
-        filter: grayscale(100%);
     }
-    .project-card.expired .project-name-text { color: #6c757d; text-decoration: line-through; }
     
-    .countdown-timer-badge {
-        font-size: 0.75rem;
-        font-weight: 700;
-        padding: 3px 8px;
-        border-radius: 6px;
-        margin-top: 5px;
-        display: inline-block;
+    /* Overlay khi hết hạn */
+    .expired-overlay {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 5;
+        border-radius: 12px;
+        backdrop-filter: blur(2px);
+    }
+    .expired-text {
+        color: white;
+        font-weight: 800;
+        font-size: 1.2rem;
+        text-transform: uppercase;
+        border: 2px solid white;
+        padding: 5px 15px;
+        border-radius: 8px;
+        transform: rotate(-10deg);
+        letter-spacing: 1px;
+    }
+
+    /* Vùng chứa Countdown */
+    .countdown-wrapper {
+        margin-top: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .countdown-label {
+        font-size: 0.7rem;
         color: #dc3545;
-        background: rgba(220, 53, 69, 0.1);
-        border: 1px solid rgba(220, 53, 69, 0.3);
-        animation: pulse-red 2s infinite;
-    }
-    .countdown-expired-badge {
-        font-size: 0.75rem;
         font-weight: 700;
-        padding: 3px 8px;
-        border-radius: 6px;
-        margin-top: 5px;
-        display: inline-block;
+        text-transform: uppercase;
+        margin-right: 2px;
+        animation: pulse-text 2s infinite;
+    }
+    
+    /* Các ô số */
+    .time-unit {
+        background: linear-gradient(135deg, #212529, #343a40);
         color: #fff;
-        background: #6c757d;
+        border-radius: 4px;
+        padding: 3px 5px;
+        min-width: 24px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
-    @keyframes pulse-red {
-        0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
-        70% { box-shadow: 0 0 0 6px rgba(220, 53, 69, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+    .time-val {
+        font-family: 'Roboto Mono', monospace;
+        font-weight: 700;
+        font-size: 0.85rem;
+        line-height: 1;
     }
-    /* ------------------------------ */
+    .time-tag {
+        font-size: 0.5rem;
+        opacity: 0.7;
+        margin-top: 1px;
+        text-transform: uppercase;
+    }
+    .time-sep {
+        font-weight: bold;
+        color: #6c757d;
+        font-size: 0.8rem;
+        margin-top: -8px;
+    }
+
+    /* Hiệu ứng nhấp nháy chữ "Đang diễn ra" */
+    @keyframes pulse-text {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+    /* ------------------------------------------- */
 
     #edit-profile-btn { position: absolute; bottom: -25px; right: 2rem; width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary)); color: white; font-size: 1.5rem; display: none; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.2); cursor: pointer; transition: transform 0.3s; z-index: 10; }
     #edit-profile-btn:hover { transform: scale(1.1); }
@@ -1445,11 +1494,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (p.expiryDate) {
                     const now = new Date();
                     const expiry = new Date(p.expiryDate);
+                    
                     if (expiry < now) {
                         extraClass = 'expired';
-                        countdownHTML = `<div class="countdown-expired-badge">Đã kết thúc</div>`;
+                        countdownHTML = `
+                            <div class="expired-overlay">
+                                <div class="expired-text">ĐÃ KẾT THÚC</div>
+                            </div>`;
                     } else {
-                        countdownHTML = `<div class="countdown-timer-badge" data-expiry="${p.expiryDate}">Đang tải...</div>`;
+                        countdownHTML = `
+                            <div class="countdown-wrapper" data-expiry="${p.expiryDate}">
+                                <div class="countdown-label">Đang diễn ra:</div>
+                                <div class="time-unit">
+                                    <span class="time-val day-val">00</span>
+                                    <span class="time-tag">Ngày</span>
+                                </div>
+                                <div class="time-sep">:</div>
+                                <div class="time-unit">
+                                    <span class="time-val hour-val">00</span>
+                                    <span class="time-tag">Giờ</span>
+                                </div>
+                                <div class="time-sep">:</div>
+                                <div class="time-unit">
+                                    <span class="time-val min-val">00</span>
+                                    <span class="time-tag">Phút</span>
+                                </div>
+                                <div class="time-sep">:</div>
+                                <div class="time-unit">
+                                    <span class="time-val sec-val">00</span>
+                                    <span class="time-tag">Giây</span>
+                                </div>
+                            </div>
+                        `;
                     }
                 }
 
@@ -1538,9 +1614,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- NEW: COUNTDOWN UPDATE LOGIC ---
     function updateCountdowns() {
-        const badges = document.querySelectorAll('.countdown-timer-badge');
-        badges.forEach(badge => {
-            const expiryStr = badge.dataset.expiry;
+        const wrappers = document.querySelectorAll('.countdown-wrapper');
+        wrappers.forEach(wrapper => {
+            const expiryStr = wrapper.dataset.expiry;
             if(!expiryStr) return;
 
             const now = new Date().getTime();
@@ -1548,11 +1624,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const distance = expiryDate - now;
 
             if (distance < 0) {
-                // If expired while watching
-                badge.className = 'countdown-expired-badge';
-                badge.innerHTML = "Đã kết thúc";
-                const card = badge.closest('.project-card');
-                if(card) card.classList.add('expired');
+                // If expired while watching, reload to show overlay
+                const card = wrapper.closest('.project-card');
+                if(card && !card.classList.contains('expired')) {
+                    // Simple hack to force refresh UI logic or just apply styles manually
+                    card.classList.add('expired');
+                    wrapper.innerHTML = ''; // Clear countdown
+                    // Inject overlay manually
+                    const overlay = document.createElement('div');
+                    overlay.className = 'expired-overlay';
+                    overlay.innerHTML = '<div class="expired-text">ĐÃ KẾT THÚC</div>';
+                    card.querySelector('.project-card-content').appendChild(overlay);
+                }
             } else {
                 // Calculate time
                 const days = Math.floor(distance / (1000 * 60 * 60 * 24));
@@ -1560,11 +1643,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
                 const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
-                let timeString = "";
-                if (days > 0) timeString += `${days}d `;
-                timeString += `${hours < 10 ? '0'+hours : hours}:${minutes < 10 ? '0'+minutes : minutes}:${seconds < 10 ? '0'+seconds : seconds}`;
-                
-                badge.innerHTML = `<i class="fas fa-clock me-1"></i>${timeString}`;
+                wrapper.querySelector('.day-val').innerText = days < 10 ? '0' + days : days;
+                wrapper.querySelector('.hour-val').innerText = hours < 10 ? '0' + hours : hours;
+                wrapper.querySelector('.min-val').innerText = minutes < 10 ? '0' + minutes : minutes;
+                wrapper.querySelector('.sec-val').innerText = seconds < 10 ? '0' + seconds : seconds;
             }
         });
     }
@@ -2098,7 +2180,6 @@ function createProjectFieldHTML(project = {}, index, categories, customCategorie
     const displayName = project.name ? project.name : 'Mục mới';
     const copyLinkBtn = project.id ? `<button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyProjectLink('${username}', ${project.id})"><i class="fas fa-copy me-1"></i>Copy Link</button>` : '';
 
-    // NEW: Expiry Date Field
     const expiryValue = project.expiryDate ? project.expiryDate : '';
 
     return `
@@ -2129,7 +2210,10 @@ function createProjectFieldHTML(project = {}, index, categories, customCategorie
                 
                 <div class="mb-2">
                     <label class="form-label small text-danger fw-bold"><i class="fas fa-stopwatch me-1"></i>Thời gian đếm ngược (Để trống nếu không dùng)</label>
-                    <input type="datetime-local" class="form-control project-expiry" value="${expiryValue}">
+                    <div class="input-group">
+                        <input type="datetime-local" class="form-control project-expiry" value="${expiryValue}">
+                        <button type="button" class="btn btn-outline-secondary" onclick="this.previousElementSibling.value = ''" title="Xóa thời gian"><i class="fas fa-trash-alt"></i></button>
+                    </div>
                     <div class="form-text small">Nếu quá thời gian này, dự án sẽ bị vô hiệu hóa.</div>
                 </div>
 
@@ -2223,8 +2307,8 @@ async function handleSaveProfile() {
                     longDescription: field.querySelector('.project-long-desc').value.trim(),
                     referralLink: field.querySelector('.project-ref-link').value.trim(), 
                     referralCode: field.querySelector('.project-ref-code').value.trim(),
-                    // NEW: Save Expiry Date
-                    expiryDate: field.querySelector('.project-expiry').value
+                    // Save Expiry Date
+                    expiryDate: field.querySelector('.project-expiry').value || null // Ensure empty string becomes null if needed
                 }); 
             } 
         }); 
