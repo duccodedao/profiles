@@ -1,186 +1,427 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Check Full Telegram Info</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>United Stables ($U) | Vietnam's Premier AI Stablecoin Layer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        body {
-            background-color: var(--tg-theme-bg-color, #fff);
-            color: var(--tg-theme-text-color, #000);
-            font-family: monospace; /* Dùng font này để nhìn giống code */
-            margin: 0;
-            padding: 15px;
-            font-size: 13px;
-        }
-
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .avatar {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            border: 3px solid var(--tg-theme-button-color, #3390ec);
-            object-fit: cover;
-        }
-
-        .section {
-            background: var(--tg-theme-secondary-bg-color, #f5f5f5);
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            word-wrap: break-word;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        h3 {
-            margin-top: 0;
-            color: var(--tg-theme-link-color, #3390ec);
-            border-bottom: 1px dashed var(--tg-theme-hint-color, #ccc);
-            padding-bottom: 5px;
-        }
-
-        .row {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 0;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-        }
-
-        .key {
-            font-weight: bold;
-            color: var(--tg-theme-hint-color, #888);
-        }
-
-        .value {
-            font-weight: bold;
-            text-align: right;
-            max-width: 60%;
-        }
-
-        .warning {
-            color: #ff4444;
-            font-style: italic;
-            font-size: 11px;
-            margin-top: 5px;
-        }
+        :root { --gold: linear-gradient(135deg, #FFD700, #B8860B); --vietnam-red: #DA251D; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0a0a0a; color: #fff; overflow-x: hidden; }
+        .gold-text { background: var(--gold); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .glass-nav { background: rgba(15, 15, 15, 0.8); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .roadmap-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); transition: 0.4s; }
+        .roadmap-card:hover { border-color: #FFD700; transform: translateY(-10px); }
+        
+        /* Admin Console Extra */
+        #admin-panel { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 9999; padding: 20px; }
+        .user-log-item { border-left: 3px solid #FFD700; background: rgba(255,255,255,0.05); }
+        
+        /* AI Chat Box */
+        #ai-assistant { position: fixed; bottom: 90px; right: 20px; width: 350px; height: 450px; background: #1a1a1a; border-radius: 20px; border: 1px solid #333; display: none; flex-direction: column; z-index: 1000; }
+        
+        .point-badge { background: var(--gold); color: black; padding: 2px 10px; border-radius: 100px; font-weight: bold; font-size: 0.75rem; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <img id="avatar" class="avatar" src="https://via.placeholder.com/100" alt="Avatar">
-        <h2 id="full-name">Checking...</h2>
-    </div>
+    <!-- NAVIGATION -->
+    <nav class="fixed top-0 left-0 right-0 w-full z-50 glass-nav">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center font-bold text-black">U</div>
+                <span class="font-bold tracking-tighter text-xl">UNITED <span class="text-yellow-500">STABLES</span></span>
+            </div>
+            
+            <div class="hidden lg:flex gap-8 text-sm font-medium items-center">
+                <a href="#home" class="hover:text-yellow-500 transition">Trang Chủ</a>
+                <a href="#ai-ecosystem" class="hover:text-yellow-500 transition">Hệ sinh thái AI</a>
+                <a href="#roadmap" class="hover:text-yellow-500 transition">Lộ trình 2026</a>
+                <div class="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full">
+                    <span class="text-xs">Số dư $HD:</span>
+                    <span id="user-hd-points" class="text-yellow-500 font-bold">0</span>
+                </div>
+            </div>
 
-    <!-- 1. Thông tin User -->
-    <div class="section">
-        <h3>👤 USER INFO (initDataUnsafe.user)</h3>
-        <div id="user-info-list"></div>
-        <div class="warning">* Lưu ý: Phone & Email không có sẵn trong API này vì lý do bảo mật.</div>
-    </div>
+            <div id="auth-section" class="flex items-center gap-4">
+                <button id="login-btn" class="bg-white text-black px-6 py-2 rounded-full text-sm font-bold hover:bg-yellow-500 transition">Kết nối ví</button>
+                <div id="user-profile" class="hidden flex items-center gap-3 bg-white/5 p-1 pr-4 rounded-full border border-white/10">
+                    <img id="user-photo" class="w-8 h-8 rounded-full">
+                    <span id="user-name" class="text-xs font-medium"></span>
+                    <button id="logout-btn" class="text-[10px] text-red-500 uppercase font-bold">Thoát</button>
+                </div>
+            </div>
+        </div>
+    </nav>
 
-    <!-- 2. Thông tin Ứng dụng & Thiết bị -->
-    <div class="section">
-        <h3>📱 DEVICE & APP SYSTEM</h3>
-        <div id="system-info-list"></div>
-    </div>
-
-    <!-- 3. Thông tin Theme (Màu sắc) -->
-    <div class="section">
-        <h3>🎨 THEME PARAMS</h3>
-        <div id="theme-info-list"></div>
-    </div>
-
-    <!-- 4. Raw Data -->
-    <div class="section">
-        <h3>🔐 RAW INIT DATA (Chuỗi xác thực)</h3>
-        <div class="value" style="text-align: left; font-size: 10px;" id="raw-data"></div>
-    </div>
-</div>
-
-<script>
-    const tg = window.Telegram.WebApp;
-    tg.expand(); // Mở full màn hình
-
-    // Hàm hỗ trợ tạo dòng hiển thị
-    function createRow(key, value) {
-        const div = document.createElement('div');
-        div.className = 'row';
+    <!-- HERO SECTION -->
+    <section id="home" class="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
+        <div class="absolute inset-0 opacity-30">
+            <video autoPlay loop muted playsInline class="w-full h-full object-cover" src="https://www.u.tech/images/main-banner-bg.webm"></video>
+        </div>
         
-        // Xử lý hiển thị true/false cho đẹp
-        let displayValue = value;
-        if (typeof value === 'boolean') {
-            displayValue = value ? '✅ True' : '❌ False';
+        <div class="relative z-10 text-center px-6">
+            <div class="inline-block bg-yellow-500/10 text-yellow-500 px-4 py-1 rounded-full text-xs font-bold mb-6 border border-yellow-500/20">
+                🚀 DỰ ÁN BLOCKCHAIN MADE IN VIETNAM
+            </div>
+            <h1 class="text-6xl md:text-8xl font-bold mb-6 tracking-tight" id="cms-hero-title">
+                Kỷ Nguyên <span class="gold-text">AI Stablecoin</span>
+            </h1>
+            <p class="text-gray-400 text-lg md:text-xl max-w-3xl mx-auto mb-10" id="cms-hero-subtitle">
+                United Stables ($U) - Lớp thanh khoản hợp nhất cho các tác vụ AI và Tài chính phi tập trung toàn cầu.
+            </p>
+            <div class="flex flex-wrap justify-center gap-4">
+                <button onclick="trackAction('Click Mint')" class="bg-yellow-500 text-black px-10 py-4 rounded-full font-bold text-lg hover:scale-105 transition shadow-[0_0_30px_rgba(234,179,8,0.3)]">
+                    Đúc $U Ngay (+10 $HD)
+                </button>
+                <button onclick="toggleAI()" class="bg-white/10 backdrop-blur-md border border-white/20 px-10 py-4 rounded-full font-bold text-lg hover:bg-white/20 transition">
+                    Trợ lý AI
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- AI ADVANCED FEATURES -->
+    <section id="ai-ecosystem" class="py-24 px-6 relative">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-4xl font-bold mb-16 text-center">Tích hợp <span class="gold-text">Trí Tuệ Nhân Tạo</span></h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="roadmap-card p-8 rounded-[32px]">
+                    <div class="text-4xl mb-6">🤖</div>
+                    <h3 class="text-2xl font-bold mb-4">AI Yield Optimizer</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Tự động hóa việc tối ưu hóa lợi nhuận trên các giao thức DeFi bằng thuật toán học máy (Machine Learning).</p>
+                </div>
+                <div class="roadmap-card p-8 rounded-[32px]">
+                    <div class="text-4xl mb-6">⚡</div>
+                    <h3 class="text-2xl font-bold mb-4">Auto-Minting API</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Bộ API Python/JS cho phép các Agent AI tự động thanh toán và chuyển đổi tiền tệ theo thời gian thực.</p>
+                </div>
+                <div class="roadmap-card p-8 rounded-[32px]">
+                    <div class="text-4xl mb-6">🛡️</div>
+                    <h3 class="text-2xl font-bold mb-4">Risk Monitoring</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Hệ thống giám sát rủi ro 24/7 bằng AI, bảo vệ giá trị 1:1 của $U trước mọi biến động thị trường.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ROADMAP 2026 -->
+    <section id="roadmap" class="py-24 bg-[#050505]">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-20">
+                <h2 class="text-5xl font-bold mb-4">Lộ Trình Phát Triển <span class="gold-text">2026</span></h2>
+                <p class="text-gray-500">Từ Việt Nam vươn tầm thế giới</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <!-- Q1 -->
+                <div class="roadmap-card p-6 rounded-2xl border-t-4 border-t-yellow-500">
+                    <span class="text-yellow-500 font-bold">Q1 2026</span>
+                    <h4 class="text-xl font-bold mt-2 mb-4">Mainnet 2.0</h4>
+                    <ul class="text-gray-500 text-sm space-y-2">
+                        <li>• Triển khai layer-2 riêng cho $U</li>
+                        <li>• Tích hợp ví Smart Account</li>
+                        <li>• Airdrop $HD Round 1</li>
+                    </ul>
+                </div>
+                <!-- Q2 -->
+                <div class="roadmap-card p-6 rounded-2xl">
+                    <span class="text-gray-500 font-bold">Q2 2026</span>
+                    <h4 class="text-xl font-bold mt-2 mb-4">AI Agent Hub</h4>
+                    <ul class="text-gray-500 text-sm space-y-2">
+                        <li>• Marketplace cho các bot AI</li>
+                        <li>• SDK cho nhà phát triển VN</li>
+                        <li>• Listing sàn CEX Tier 1</li>
+                    </ul>
+                </div>
+                <!-- Q3 -->
+                <div class="roadmap-card p-6 rounded-2xl">
+                    <span class="text-gray-500 font-bold">Q3 2026</span>
+                    <h4 class="text-xl font-bold mt-2 mb-4">Global Expansion</h4>
+                    <ul class="text-gray-500 text-sm space-y-2">
+                        <li>• Mở rộng thị trường Đông Nam Á</li>
+                        <li>• Pháp lý Stablecoin tại EU</li>
+                        <li>• Ra mắt thẻ Visa $U</li>
+                    </ul>
+                </div>
+                <!-- Q4 -->
+                <div class="roadmap-card p-6 rounded-2xl">
+                    <span class="text-gray-500 font-bold">Q4 2026</span>
+                    <h4 class="text-xl font-bold mt-2 mb-4">Decentralized AI</h4>
+                    <ul class="text-gray-500 text-sm space-y-2">
+                        <li>• Chạy Node AI phi tập trung</li>
+                        <li>• Quản trị DAO hoàn toàn</li>
+                        <li>• Quy đổi $HD sang Token quản trị</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="py-10 border-t border-white/10 text-center text-gray-500 text-sm">
+        <p>© 2025 United Stables Vietnam. Developed with ❤️ for the Community.</p>
+    </footer>
+
+    <!-- AI CHAT INTERFACE -->
+    <div id="ai-assistant">
+        <div class="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
+            <span class="font-bold text-yellow-500">U-AI Assistant</span>
+            <button onclick="toggleAI()">✕</button>
+        </div>
+        <div id="ai-messages" class="flex-1 overflow-y-auto p-4 space-y-4 text-sm">
+            <div class="bg-white/10 p-3 rounded-lg max-w-[80%]">Xin chào! Tôi là trợ lý AI của United Stables. Tôi có thể giúp gì cho bạn về dự án này?</div>
+        </div>
+        <div class="p-4 border-t border-white/10 flex gap-2">
+            <input id="ai-input" type="text" placeholder="Hỏi gì đó..." class="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-yellow-500">
+            <button onclick="sendAI()" class="bg-yellow-500 text-black px-4 py-2 rounded-lg font-bold">Gửi</button>
+        </div>
+    </div>
+
+    <!-- OMNIPOTENT ADMIN PANEL -->
+    <div id="admin-panel">
+        <div class="max-w-6xl mx-auto h-full flex flex-col">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-3xl font-bold gold-text">HỆ THỐNG QUẢN TRỊ TỐI CAO</h2>
+                <button onclick="closeAdmin()" class="bg-red-500 text-white px-6 py-2 rounded-full font-bold">ĐÓNG BẢNG ĐIỀU KHIỂN</button>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1 overflow-hidden">
+                <!-- Cấu hình nội dung -->
+                <div class="bg-white/5 p-6 rounded-2xl overflow-y-auto">
+                    <h3 class="font-bold text-yellow-500 mb-4 border-b border-yellow-500/20 pb-2">🛠 THAY ĐỔI GIAO DIỆN</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-xs text-gray-400">Tiêu đề Hero</label>
+                            <input id="adm-hero-title" class="w-full bg-black border border-white/20 p-2 rounded mt-1">
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-400">Mô tả Hero</label>
+                            <textarea id="adm-hero-sub" class="w-full bg-black border border-white/20 p-2 rounded mt-1 h-20"></textarea>
+                        </div>
+                        <button onclick="updateCMS()" class="w-full bg-yellow-600 py-3 rounded-xl font-bold">CẬP NHẬT TRANG WEB</button>
+                    </div>
+                </div>
+
+                <!-- Theo dõi User -->
+                <div class="bg-white/5 p-6 rounded-2xl overflow-y-auto">
+                    <h3 class="font-bold text-blue-500 mb-4 border-b border-blue-500/20 pb-2">👥 QUẢN LÝ NGƯỜI DÙNG</h3>
+                    <div id="adm-user-list" class="space-y-3">
+                        <!-- Users will be injected here -->
+                    </div>
+                </div>
+
+                <!-- Hoạt động thời gian thực -->
+                <div class="bg-white/5 p-6 rounded-2xl overflow-y-auto">
+                    <h3 class="font-bold text-green-500 mb-4 border-b border-green-500/20 pb-2">👁️ QUAN SÁT HÀNH VI (LIVE)</h3>
+                    <div id="adm-logs" class="space-y-2 text-[10px] font-mono">
+                        <!-- Real-time logs -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN TRIGGER (Chỉ hiện cho admin) -->
+    <button id="admin-trigger" class="fixed bottom-5 left-5 w-12 h-12 bg-red-600 rounded-full hidden z-[1000] flex items-center justify-center shadow-xl">
+        ⚡
+    </button>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, limit, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // Cấu hình Firebase (Thay bằng config của bạn)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
+            authDomain: "profile-d1214.firebaseapp.com",
+            projectId: "profile-d1214",
+            storageBucket: "profile-d1214.firebasestorage.app",
+            messagingSenderId: "914980131889",
+            appId: "1:914980131889:web:72f8da15c42dbee671b110"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        const ADMIN_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1"; // UID Admin của bạn
+        let currentUser = null;
+
+        // --- HỆ THỐNG ĐIỂM $HD & THEO DÕI ---
+        async function trackAction(actionName) {
+            if (!currentUser) return alert("Vui lòng đăng nhập để thực hiện và nhận $HD!");
+            
+            // Tăng điểm $HD trong Firestore
+            const userRef = doc(db, "users", currentUser.uid);
+            await updateDoc(userRef, {
+                hdPoints: increment(10),
+                lastAction: actionName,
+                lastSeen: new Date()
+            });
+
+            // Ghi log vào hệ thống quan sát của Admin
+            await addDoc(collection(db, "activity_logs"), {
+                uid: currentUser.uid,
+                name: currentUser.displayName,
+                action: actionName,
+                time: new Date()
+            });
+            
+            if(actionName === 'Click Mint') alert("Bạn nhận được 10 $HD points!");
         }
-        if (!value && value !== 0 && value !== false) displayValue = 'Empty/Null';
+        window.trackAction = trackAction;
 
-        div.innerHTML = `<span class="key">${key}</span><span class="value">${displayValue}</span>`;
-        return div;
-    }
+        // --- AUTH ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('login-btn').classList.add('hidden');
+                document.getElementById('user-profile').classList.remove('hidden');
+                document.getElementById('user-photo').src = user.photoURL;
+                document.getElementById('user-name').innerText = user.displayName;
 
-    // --- 1. XỬ LÝ THÔNG TIN USER ---
-    const user = tg.initDataUnsafe.user;
-    const userList = document.getElementById('user-info-list');
+                // Khởi tạo/Cập nhật User trong DB
+                const userRef = doc(db, "users", user.uid);
+                await setDoc(userRef, {
+                    name: user.displayName,
+                    email: user.email,
+                    photo: user.photoURL,
+                    uid: user.uid
+                }, { merge: true });
 
-    if (user) {
-        // Cập nhật Avatar & Tên
-        document.getElementById('full-name').innerText = `${user.first_name} ${user.last_name || ''}`;
-        if (user.photo_url) document.getElementById('avatar').src = user.photo_url;
+                // Lắng nghe điểm số thời gian thực
+                onSnapshot(userRef, (doc) => {
+                    if(doc.exists()) document.getElementById('user-hd-points').innerText = doc.data().hdPoints || 0;
+                });
 
-        // Vòng lặp lấy hết tất cả thuộc tính của user object
-        // Các trường thường có: id, is_bot, first_name, last_name, username, language_code, is_premium, added_to_attachment_menu, allows_write_to_pm
-        for (const [key, value] of Object.entries(user)) {
-            userList.appendChild(createRow(key, value));
+                if (user.uid === ADMIN_UID) {
+                    document.getElementById('admin-trigger').style.display = 'flex';
+                    initAdminPanel();
+                }
+                
+                trackAction("Truy cập trang web");
+            } else {
+                currentUser = null;
+                document.getElementById('login-btn').classList.remove('hidden');
+                document.getElementById('user-profile').classList.add('hidden');
+                document.getElementById('admin-trigger').style.display = 'none';
+            }
+        });
+
+        document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
+        document.getElementById('logout-btn').onclick = () => signOut(auth);
+
+        // --- AI ASSISTANT LOGIC ---
+        window.toggleAI = () => {
+            const box = document.getElementById('ai-assistant');
+            box.style.display = box.style.display === 'flex' ? 'none' : 'flex';
+        };
+
+        window.sendAI = async () => {
+            const input = document.getElementById('ai-input');
+            const msgArea = document.getElementById('ai-messages');
+            if(!input.value) return;
+
+            msgArea.innerHTML += `<div class="bg-yellow-500/20 p-3 rounded-lg self-end ml-auto max-w-[80%]">${input.value}</div>`;
+            
+            // Giả lập API AI (Có thể kết nối OpenAI/Gemini tại đây)
+            setTimeout(() => {
+                msgArea.innerHTML += `<div class="bg-white/10 p-3 rounded-lg max-w-[80%] italic">Hệ thống AI đang phân tích dữ liệu thị trường cho câu hỏi: "${input.value}"...</div>`;
+                msgArea.scrollTop = msgArea.scrollHeight;
+            }, 600);
+            
+            input.value = "";
+            trackAction("Sử dụng AI Assistant");
+        };
+
+        // --- ADMIN SYSTEM ---
+        document.getElementById('admin-trigger').onclick = () => {
+            document.getElementById('admin-panel').style.display = 'block';
+        };
+        window.closeAdmin = () => document.getElementById('admin-panel').style.display = 'none';
+
+        async function initAdminPanel() {
+            // Lắng nghe danh sách User
+            onSnapshot(collection(db, "users"), (snap) => {
+                const list = document.getElementById('adm-user-list');
+                list.innerHTML = "";
+                snap.forEach(doc => {
+                    const u = doc.data();
+                    list.innerHTML += `
+                        <div class="p-3 bg-white/10 rounded-lg flex items-center justify-between border border-white/5">
+                            <div class="flex items-center gap-2">
+                                <img src="${u.photo}" class="w-6 h-6 rounded-full">
+                                <div class="text-[10px]">
+                                    <p class="font-bold">${u.name}</p>
+                                    <p class="text-gray-500">${u.hdPoints || 0} $HD</p>
+                                </div>
+                            </div>
+                            <span class="text-[8px] bg-green-500/20 text-green-500 px-2 rounded">${u.lastAction || 'Active'}</span>
+                        </div>
+                    `;
+                });
+            });
+
+            // Lắng nghe Hoạt động thời gian thực (Live Observation)
+            const logQuery = query(collection(db, "activity_logs"), orderBy("time", "desc"), limit(20));
+            onSnapshot(logQuery, (snap) => {
+                const logDiv = document.getElementById('adm-logs');
+                logDiv.innerHTML = "";
+                snap.forEach(doc => {
+                    const l = doc.data();
+                    const time = l.time?.toDate().toLocaleTimeString();
+                    logDiv.innerHTML += `
+                        <div class="user-log-item p-2 mb-1">
+                            <span class="text-yellow-500">[${time}]</span> 
+                            <span class="text-blue-400">${l.name}</span>: 
+                            <span class="text-white">${l.action}</span>
+                        </div>
+                    `;
+                });
+            });
+
+            // Lấy dữ liệu CMS hiện tại
+            onSnapshot(doc(db, "settings", "content"), (snap) => {
+                if(snap.exists()) {
+                    const data = snap.data();
+                    document.getElementById('cms-hero-title').innerHTML = data.heroTitle;
+                    document.getElementById('cms-hero-subtitle').innerText = data.heroSubtitle;
+                    document.getElementById('adm-hero-title').value = data.heroTitle;
+                    document.getElementById('adm-hero-sub').value = data.heroSubtitle;
+                }
+            });
         }
-    } else {
-        userList.innerHTML = '<div class="row">Không tìm thấy thông tin User (vui lòng mở bằng Telegram)</div>';
-    }
 
-    // --- 2. XỬ LÝ THÔNG TIN HỆ THỐNG ---
-    const sysList = document.getElementById('system-info-list');
-    
-    // Các thông số hệ thống mà Telegram cung cấp
-    const sysData = {
-        'Platform (Hệ điều hành)': tg.platform, // android, ios, tdesktop, weba...
-        'App Version': tg.version, // Phiên bản Bot API
-        'Color Scheme': tg.colorScheme, // light hoặc dark
-        'Is Expanded': tg.isExpanded,
-        'Viewport Height': tg.viewportHeight,
-        'Viewport Stable Height': tg.viewportStableHeight
-    };
+        window.updateCMS = async () => {
+            await setDoc(doc(db, "settings", "content"), {
+                heroTitle: document.getElementById('adm-hero-title').value,
+                heroSubtitle: document.getElementById('adm-hero-sub').value
+            }, { merge: true });
+            alert("Đã cập nhật giao diện toàn trang!");
+        };
 
-    for (const [key, value] of Object.entries(sysData)) {
-        sysList.appendChild(createRow(key, value));
-    }
-
-    // --- 3. XỬ LÝ THÔNG TIN THEME (Màu sắc giao diện hiện tại của user) ---
-    const themeList = document.getElementById('theme-info-list');
-    const themeParams = tg.themeParams;
-    
-    for (const [key, value] of Object.entries(themeParams)) {
-        // Tạo ô màu để dễ nhìn
-        const colorBox = `<span style="background:${value}; width:12px; height:12px; display:inline-block; border:1px solid #ccc; margin-right:5px;"></span>${value}`;
+        // Scroll Reveal Animation
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if(entry.isIntersecting) {
+                    entry.target.classList.add('opacity-100');
+                    entry.target.classList.add('translate-y-0');
+                }
+            });
+        }, { threshold: 0.1 });
         
-        const div = document.createElement('div');
-        div.className = 'row';
-        div.innerHTML = `<span class="key">${key}</span><span class="value">${colorBox}</span>`;
-        themeList.appendChild(div);
-    }
+        document.querySelectorAll('.roadmap-card').forEach(el => {
+            el.classList.add('opacity-0', 'translate-y-10', 'transition', 'duration-700');
+            observer.observe(el);
+        });
 
-    // --- 4. RAW DATA ---
-    document.getElementById('raw-data').innerText = tg.initData;
-
-</script>
+    </script>
 </body>
 </html>
