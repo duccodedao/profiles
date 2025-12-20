@@ -1,82 +1,237 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>United Stables | Managed by Admin</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>United Stables ($U) | Enterprise Stablecoin Layer</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #fff; color: #202630; }
-        .glass-header { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(0,0,0,0.05); border-radius: 100px; }
-        .gold-text { background: linear-gradient(90deg, #d3b538, #968129); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .admin-panel { display: none; border: 2px dashed #d3b538; padding: 20px; margin: 20px; border-radius: 20px; background: #fffcf0; }
-        #login-btn, #logout-btn { cursor: pointer; }
+        :root { --gold: linear-gradient(90deg, #d3b538, #968129); }
+        body { font-family: 'Inter', sans-serif; background-color: #fff; color: #202630; scroll-behavior: smooth; overflow-x: hidden; }
+        .gold-text { background: var(--gold); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 600; }
+        .glass-nav { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(15px); border: 1px solid rgba(0,0,0,0.05); }
+        .reveal { opacity: 0; transform: translateY(40px); transition: all 0.8s ease-out; }
+        .reveal.active { opacity: 1; transform: translateY(0); }
+        
+        /* Admin UI Floating */
+        #admin-btn-trigger { position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: none; }
+        #admin-panel { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000; padding: 20px; overflow-y: auto; }
+        .admin-card { background: white; max-width: 800px; margin: 40px auto; padding: 30px; border-radius: 24px; }
+        
+        /* Custom Carousel */
+        .carousel-track { display: flex; transition: transform 0.5s ease-in-out; }
+        .card-shadow { box-shadow: inset 0 2px 16px rgba(0, 0, 0, 0.06); }
     </style>
 </head>
 <body>
 
-    <!-- Admin Panel (Chỉ hiện cho UID cụ thể) -->
-    <div id="admin-section" class="admin-panel sticky top-24 z-[100] shadow-2xl">
-        <h3 class="font-bold text-xl mb-4 text-yellow-700">🛠 Admin CMS Dashboard</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label class="block text-sm font-bold">Hero Title</label>
-                <input id="edit-title" type="text" class="w-full p-2 border rounded">
+    <!-- NAVIGATION -->
+    <nav class="fixed top-0 left-0 right-0 w-full flex justify-center pt-6 px-4 z-50">
+        <div class="glass-nav w-full max-w-[800px] px-6 py-3 rounded-[100px] flex items-center justify-between shadow-sm">
+            <div class="flex items-center gap-3">
+                <img src="https://www.u.tech/images/logo-icon.svg" width="28" alt="logo">
+                <span class="font-semibold tracking-tight">United Stables</span>
             </div>
-            <div>
-                <label class="block text-sm font-bold">Hero Subtitle</label>
-                <input id="edit-subtitle" type="text" class="w-full p-2 border rounded">
+            <div class="hidden md:flex gap-8 text-sm font-medium">
+                <a href="#home" class="hover:opacity-60">Home</a>
+                <a href="#vision" class="hover:opacity-60">Vision</a>
+                <a href="#transparency" class="hover:opacity-60">Transparency</a>
+                <a href="#get-in-touch" class="hover:opacity-60">Mint $U</a>
             </div>
-            <div>
-                <label class="block text-sm font-bold">Video URL (Main)</label>
-                <input id="edit-video" type="text" class="w-full p-2 border rounded">
-            </div>
-        </div>
-        <button id="save-btn" class="mt-4 bg-yellow-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-yellow-700">Cập nhật nội dung</button>
-    </div>
-
-    <!-- Navigation -->
-    <div class="fixed top-0 left-0 right-0 w-full flex justify-center pt-6 px-4 z-50">
-        <div class="glass-header w-full max-w-[800px] px-6 py-3 flex items-center justify-between shadow-sm">
-            <div class="flex items-center gap-2">
-                <img src="https://www.u.tech/images/logo-icon.svg" class="w-6">
-                <span class="font-medium">United Stables</span>
-            </div>
-            <div class="flex items-center gap-4">
-                <a href="#home" class="hidden md:block hover:text-yellow-600 transition">Home</a>
-                <div id="user-info" class="flex items-center gap-2 border-l pl-4">
-                    <button id="login-btn" class="bg-black text-white px-4 py-2 rounded-full text-sm">Login with Google</button>
-                    <div id="admin-badge" class="hidden bg-yellow-100 text-yellow-700 text-[10px] px-2 py-1 rounded-full font-bold">ADMIN</div>
-                    <button id="logout-btn" class="hidden text-red-500 text-sm font-bold">Logout</button>
+            <div id="auth-section">
+                <button id="login-btn" class="bg-black text-white px-5 py-2 rounded-full text-xs font-bold hover:scale-105 transition">Login</button>
+                <div id="user-profile" class="hidden flex items-center gap-3">
+                    <img id="user-photo" class="w-8 h-8 rounded-full border">
+                    <button id="logout-btn" class="text-xs text-red-500 font-bold">Sign Out</button>
                 </div>
             </div>
         </div>
-    </div>
+    </nav>
 
-    <!-- Background Video -->
-    <div class="absolute top-0 left-0 right-0 w-full z-0 h-[100vh]">
-        <video id="display-video" src="https://www.u.tech/images/main-banner-bg.webm" autoPlay loop muted playsInline class="w-full h-full object-cover"></video>
-    </div>
+    <!-- HERO SECTION -->
+    <header id="home" class="relative h-screen w-full flex items-center justify-center overflow-hidden">
+        <div class="absolute inset-0 z-0">
+            <video id="hero-video" src="https://www.u.tech/images/main-banner-bg.webm" autoPlay loop muted playsInline class="w-full h-full object-cover"></video>
+        </div>
+        <div class="relative z-10 text-center px-6">
+            <h1 class="text-6xl md:text-8xl font-medium tracking-tighter mb-6 reveal" id="cms-hero-title">
+                Meet <span class="gold-text">$U</span>
+            </h1>
+            <p class="text-xl md:text-2xl text-gray-600 max-w-2xl mx-auto mb-10 reveal" id="cms-hero-subtitle">
+                The Most United Stablecoin for Everyone
+            </p>
+            <div class="flex justify-center gap-4 reveal">
+                <a href="#get-in-touch" class="bg-[#202630] text-white px-10 py-4 rounded-full font-semibold hover:bg-black transition shadow-xl">Mint $U</a>
+            </div>
+        </div>
+    </header>
 
-    <!-- Hero Section -->
-    <section id="home" class="relative z-10 pt-[25vh] pb-24 text-center">
-        <h1 class="text-6xl md:text-8xl font-medium tracking-tight mb-4">
-            <span id="display-title">Meet <span class="gold-text">$U</span></span>
-        </h1>
-        <p id="display-subtitle" class="text-xl md:text-2xl text-gray-600 mb-8 px-4">The Most United Stablecoin for Everyone</p>
-        <div class="flex justify-center gap-4">
-            <button class="bg-[#202630] text-white px-10 py-4 rounded-full font-medium hover:scale-105 transition">Mint $U</button>
+    <!-- VISION SECTION -->
+    <section id="vision" class="py-24 px-6 bg-white">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <p class="text-xs font-bold tracking-[0.2em] text-gray-400 uppercase mb-4">Our Vision</p>
+                <h2 class="text-4xl md:text-6xl font-medium">A United Layer of <span class="gold-text">Money</span></h2>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="reveal border border-gray-100 rounded-[32px] p-8 card-shadow">
+                    <div class="h-48 mb-8 rounded-2xl overflow-hidden">
+                        <video src="https://www.u.tech/images/fluid.webm" autoPlay loop muted class="w-full h-full object-cover"></video>
+                    </div>
+                    <h3 class="text-2xl font-semibold mb-4">The Future is Fluid</h3>
+                    <p class="text-gray-500 leading-relaxed">Value flows freely between humans and AI, connecting everyone through money.</p>
+                </div>
+                <div class="reveal border border-gray-100 rounded-[32px] p-8 card-shadow" style="transition-delay: 0.2s;">
+                    <div class="h-48 mb-8 rounded-2xl overflow-hidden">
+                        <video src="https://www.u.tech/images/liquidity.webm" autoPlay loop muted class="w-full h-full object-cover"></video>
+                    </div>
+                    <h3 class="text-2xl font-semibold mb-4">Uniting Liquidity</h3>
+                    <p class="text-gray-500 leading-relaxed">Connecting fragmented liquidity across DeFi and exchanges into one layer.</p>
+                </div>
+                <div class="reveal border border-gray-100 rounded-[32px] p-8 card-shadow" style="transition-delay: 0.4s;">
+                    <div class="h-48 mb-8 rounded-2xl overflow-hidden">
+                        <video src="https://www.u.tech/images/buildf.webm" autoPlay loop muted class="w-full h-full object-cover"></video>
+                    </div>
+                    <h3 class="text-2xl font-semibold mb-4">Build for Everyone</h3>
+                    <p class="text-gray-500 leading-relaxed">From human agents to AI, $U is the universal language of value.</p>
+                </div>
+            </div>
         </div>
     </section>
 
-    <!-- Script Firebase -->
+    <!-- TRANSPARENCY SECTION -->
+    <section id="transparency" class="py-24 bg-[#f8f8f8]">
+        <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row gap-16 items-center">
+            <div class="flex-1 reveal">
+                <h2 class="text-5xl font-medium mb-6">Transparency</h2>
+                <h3 class="text-gray-400 font-bold mb-6 tracking-widest">ATTESTATION REPORTS</h3>
+                <p class="text-lg text-gray-600 mb-8">Every $U is backed 1:1 by liquid reserves in segregated custody accounts.</p>
+                <div class="flex flex-col gap-3">
+                    <button class="flex items-center justify-between bg-white border p-4 rounded-xl font-bold hover:bg-gray-50 transition">
+                        Dec 2025 Attestation <img src="https://www.u.tech/images/download.svg" class="w-5">
+                    </button>
+                    <button class="flex items-center justify-between bg-white border p-4 rounded-xl font-bold hover:bg-gray-50 transition">
+                        Security Audit Reports <img src="https://www.u.tech/images/download.svg" class="w-5">
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 w-full reveal" style="transition-delay: 0.3s;">
+                <div class="bg-white p-10 rounded-[40px] shadow-2xl space-y-10">
+                    <div>
+                        <p class="text-sm font-bold text-gray-400 uppercase mb-2">Token in Circulation</p>
+                        <p class="text-5xl font-medium tracking-tighter"><span class="gold-text">$U</span> <span id="stat-circulation">0</span></p>
+                    </div>
+                    <div class="pt-10 border-t">
+                        <p class="text-sm font-bold text-gray-400 uppercase mb-2">Assets in Reserve</p>
+                        <p class="text-5xl font-medium tracking-tighter">$ <span id="stat-reserves">0</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MINT FORM SECTION -->
+    <section id="get-in-touch" class="py-24 bg-white relative overflow-hidden">
+        <div class="max-w-4xl mx-auto px-6 relative z-10 reveal">
+            <div class="text-center mb-16">
+                <h2 class="text-5xl font-medium mb-6">Mint <span class="gold-text">$U</span></h2>
+                <p class="text-gray-500">Submit your institutional application for $U minting.</p>
+            </div>
+            <form id="mint-form" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <input type="text" name="firstName" placeholder="First Name" required class="p-5 rounded-2xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-yellow-500 transition">
+                <input type="text" name="lastName" placeholder="Last Name" required class="p-5 rounded-2xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-yellow-500 transition">
+                <input type="email" name="email" placeholder="Work Email" required class="md:col-span-2 p-5 rounded-2xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-yellow-500 transition">
+                <input type="text" name="company" placeholder="Company Name" required class="md:col-span-2 p-5 rounded-2xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-yellow-500 transition">
+                <button type="submit" id="submit-btn" class="md:col-span-2 bg-black text-white py-5 rounded-2xl font-bold text-lg hover:bg-gray-800 transition shadow-lg">Submit Application</button>
+            </form>
+        </div>
+        <img src="https://www.u.tech/images/bg-6.png" class="absolute bottom-0 left-0 w-full opacity-50 z-0">
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="bg-[#DBD9CF] py-20 px-6">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
+            <div class="col-span-2">
+                <div class="flex items-center gap-3 mb-6">
+                    <img src="https://www.u.tech/images/logo-icon.svg" width="30">
+                    <span class="text-xl font-bold">United Stables</span>
+                </div>
+                <p class="text-sm text-gray-600 max-w-sm mb-8">The stablecoin layer designed for the next generation of finance and AI agents.</p>
+                <div class="flex gap-4">
+                    <a href="#" class="w-10 h-10 bg-white/50 rounded-full flex items-center justify-center hover:bg-white transition"><img src="https://www.u.tech/images/social-x-1c.svg" width="18"></a>
+                    <a href="#" class="w-10 h-10 bg-white/50 rounded-full flex items-center justify-center hover:bg-white transition"><img src="https://www.u.tech/images/social-telegram-1c.svg" width="18"></a>
+                </div>
+            </div>
+            <div>
+                <h4 class="font-bold mb-6">Transparency</h4>
+                <ul class="text-sm space-y-4 text-gray-600">
+                    <li><a href="#" class="hover:underline">Attestations</a></li>
+                    <li><a href="#" class="hover:underline">Smart Contract Audit</a></li>
+                    <li><a href="#" class="hover:underline">Privacy Policy</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold mb-6">Company</h4>
+                <ul class="text-sm space-y-4 text-gray-600">
+                    <li><a href="#" class="hover:underline">About Us</a></li>
+                    <li><a href="#" class="hover:underline">Terms of Service</a></li>
+                    <li><a href="#" class="hover:underline">Contact</a></li>
+                </ul>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ADMIN PANEL OVERLAY -->
+    <div id="admin-panel">
+        <div class="admin-card">
+            <div class="flex justify-between items-center mb-8 border-b pb-4">
+                <h2 class="text-2xl font-bold">🛠 Admin Control Center</h2>
+                <button id="close-admin" class="text-gray-400 hover:text-black">Close</button>
+            </div>
+            
+            <div class="grid grid-cols-1 gap-6">
+                <div class="bg-gray-50 p-6 rounded-2xl">
+                    <h3 class="font-bold mb-4">1. Live Stats Manager</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <input id="edit-circulation" type="text" placeholder="Circulation (e.g. 5,500,000)" class="p-3 border rounded-xl">
+                        <input id="edit-reserves" type="text" placeholder="Reserves (e.g. 5,500,000)" class="p-3 border rounded-xl">
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 p-6 rounded-2xl">
+                    <h3 class="font-bold mb-4">2. Content Manager</h3>
+                    <input id="edit-hero-title" type="text" placeholder="Hero Title" class="w-full p-3 border rounded-xl mb-3">
+                    <textarea id="edit-hero-subtitle" placeholder="Hero Subtitle" class="w-full p-3 border rounded-xl h-24"></textarea>
+                </div>
+
+                <div class="bg-gray-50 p-6 rounded-2xl">
+                    <h3 class="font-bold mb-4">3. Lead Submissions</h3>
+                    <div id="leads-list" class="max-h-60 overflow-y-auto space-y-2 text-sm">
+                        <!-- Leads from Firebase -->
+                    </div>
+                </div>
+
+                <button id="save-cms" class="bg-yellow-600 text-white font-bold py-4 rounded-xl hover:bg-yellow-700 transition">PUBLISH CHANGES</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN TRIGGER BUTTON -->
+    <button id="admin-btn-trigger" class="bg-yellow-500 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition active:scale-95">
+        ⚙️
+    </button>
+
+    <!-- FIREBASE & LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, setDoc, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Cấu hình Firebase của bạn
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
@@ -94,77 +249,138 @@
 
         const ADMIN_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1";
 
-        // DOM Elements
+        // --- AUTH LOGIC ---
         const loginBtn = document.getElementById('login-btn');
         const logoutBtn = document.getElementById('logout-btn');
-        const adminSection = document.getElementById('admin-section');
-        const adminBadge = document.getElementById('admin-badge');
-        
-        const displayTitle = document.getElementById('display-title');
-        const displaySubtitle = document.getElementById('display-subtitle');
-        const displayVideo = document.getElementById('display-video');
+        const userProfile = document.getElementById('user-profile');
+        const userPhoto = document.getElementById('user-photo');
+        const adminBtn = document.getElementById('admin-btn-trigger');
 
-        const editTitle = document.getElementById('edit-title');
-        const editSubtitle = document.getElementById('edit-subtitle');
-        const editVideo = document.getElementById('edit-video');
-        const saveBtn = document.getElementById('save-btn');
-
-        // 1. Đăng nhập / Đăng xuất
         loginBtn.onclick = () => signInWithPopup(auth, provider);
         logoutBtn.onclick = () => signOut(auth);
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 loginBtn.classList.add('hidden');
-                logoutBtn.classList.remove('hidden');
-                console.log("Logged in UID:", user.uid);
-                
-                // Kiểm tra quyền Admin
+                userProfile.classList.remove('hidden');
+                userPhoto.src = user.photoURL;
                 if (user.uid === ADMIN_UID) {
-                    adminSection.style.display = 'block';
-                    adminBadge.classList.remove('hidden');
+                    adminBtn.style.display = 'flex';
+                    loadLeads();
                 }
             } else {
                 loginBtn.classList.remove('hidden');
-                logoutBtn.classList.add('hidden');
-                adminSection.style.display = 'none';
-                adminBadge.classList.add('hidden');
+                userProfile.classList.add('hidden');
+                adminBtn.style.display = 'none';
             }
         });
 
-        // 2. Lấy dữ liệu Real-time từ Firestore
-        const docRef = doc(db, "siteContent", "homepage");
+        // --- CMS REAL-TIME LOGIC ---
+        const heroTitle = document.getElementById('cms-hero-title');
+        const heroSub = document.getElementById('cms-hero-subtitle');
+        const statCirc = document.getElementById('stat-circulation');
+        const statResv = document.getElementById('stat-reserves');
 
-        onSnapshot(docRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                displayTitle.innerHTML = data.title; // Dùng innerHTML để hỗ trợ thẻ span gold-text
-                displaySubtitle.innerText = data.subtitle;
-                if(data.videoUrl) displayVideo.src = data.videoUrl;
+        onSnapshot(doc(db, "settings", "content"), (snap) => {
+            if (snap.exists()) {
+                const data = snap.data();
+                heroTitle.innerHTML = data.heroTitle || 'Meet <span class="gold-text">$U</span>';
+                heroSub.innerText = data.heroSubtitle || 'The Most United Stablecoin for Everyone';
+                
+                // Animate numbers
+                animateValue(statCirc, parseInt(statCirc.innerText.replace(/,/g, '')), parseInt(data.statCirculation || 5500000), 1500);
+                animateValue(statResv, parseInt(statResv.innerText.replace(/,/g, '')), parseInt(data.statReserves || 5500000), 1500);
 
-                // Điền sẵn vào form edit cho admin
-                editTitle.value = data.title;
-                editSubtitle.value = data.subtitle;
-                editVideo.value = data.videoUrl;
-            } else {
-                console.log("No data found, please create document 'siteContent/homepage'");
+                // Admin Inp values
+                document.getElementById('edit-circulation').value = data.statCirculation;
+                document.getElementById('edit-reserves').value = data.statReserves;
+                document.getElementById('edit-hero-title').value = data.heroTitle;
+                document.getElementById('edit-hero-subtitle').value = data.heroSubtitle;
             }
         });
 
-        // 3. Admin cập nhật dữ liệu
-        saveBtn.onclick = async () => {
+        // --- FORM LOGIC ---
+        const mintForm = document.getElementById('mint-form');
+        mintForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submit-btn');
+            btn.innerText = "Submitting...";
+            btn.disabled = true;
+
+            const formData = new FormData(mintForm);
             try {
-                await updateDoc(docRef, {
-                    title: editTitle.value,
-                    subtitle: editSubtitle.value,
-                    videoUrl: editVideo.value
+                await addDoc(collection(db, "submissions"), {
+                    firstName: formData.get('firstName'),
+                    lastName: formData.get('lastName'),
+                    email: formData.get('email'),
+                    company: formData.get('company'),
+                    timestamp: new Date()
                 });
-                alert("Cập nhật thành công!");
-            } catch (error) {
-                console.error("Error updating:", error);
-                alert("Bạn không có quyền hoặc lỗi kết nối!");
+                alert("Application Sent! Our team will contact you soon.");
+                mintForm.reset();
+            } catch (err) {
+                alert("Error sending application. Please try again.");
             }
+            btn.innerText = "Submit Application";
+            btn.disabled = false;
         };
+
+        // --- ADMIN PANEL LOGIC ---
+        adminBtn.onclick = () => document.getElementById('admin-panel').style.display = 'block';
+        document.getElementById('close-admin').onclick = () => document.getElementById('admin-panel').style.display = 'none';
+
+        document.getElementById('save-cms').onclick = async () => {
+            const btn = document.getElementById('save-cms');
+            btn.innerText = "Publishing...";
+            try {
+                await setDoc(doc(db, "settings", "content"), {
+                    statCirculation: document.getElementById('edit-circulation').value,
+                    statReserves: document.getElementById('edit-reserves').value,
+                    heroTitle: document.getElementById('edit-hero-title').value,
+                    heroSubtitle: document.getElementById('edit-hero-subtitle').value
+                }, { merge: true });
+                alert("Website Updated!");
+            } catch (err) {
+                alert("Permission Denied!");
+            }
+            btn.innerText = "PUBLISH CHANGES";
+        };
+
+        async function loadLeads() {
+            const q = query(collection(db, "submissions"), orderBy("timestamp", "desc"));
+            const snap = await getDocs(q);
+            const list = document.getElementById('leads-list');
+            list.innerHTML = "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                list.innerHTML += `<div class="p-3 bg-white border rounded-lg">
+                    <b>${d.firstName} ${d.lastName}</b> (${d.company})<br>
+                    <span class="text-blue-500">${d.email}</span>
+                </div>`;
+            });
+        }
+
+        // --- ANIMATIONS & UTILS ---
+        function animateValue(obj, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const val = Math.floor(progress * (end - start) + start);
+                obj.innerText = val.toLocaleString();
+                if (progress < 1) window.requestAnimationFrame(step);
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        // Scroll Reveal
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if(entry.isIntersecting) entry.target.classList.add('active');
+            });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
     </script>
 </body>
 </html>
