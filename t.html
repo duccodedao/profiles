@@ -1,20 +1,17 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
-    <title>HD Ecosystem Pro | Airdrop & Tokenomic</title>
+    <title>HD Ecosystem Pro | Dashboard V2</title>
     
     <!-- Frameworks -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     
-    <!-- Excel Export Library -->
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-
     <!-- Modern Toast Library -->
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
@@ -42,6 +39,12 @@
         
         /* Loading & Animations */
         #loader { position: fixed; inset: 0; background: white; z-index: 9999; display: flex; items-center; justify-content: center; }
+        
+        .btn-primary { 
+            background: var(--dark); color: white; transition: all 0.3s;
+            box-shadow: 0 4px 14px 0 rgba(0,0,0,0.2);
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
         
         .dashboard-card { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white; }
 
@@ -82,6 +85,7 @@
             <button onclick="toggleNotif()" class="text-gray-400 hover:text-black"><i data-lucide="x" class="w-4 h-4"></i></button>
         </div>
         <div id="notif-list" class="max-h-80 overflow-y-auto p-2 space-y-2">
+            <!-- Items injected by JS -->
             <div class="text-center py-6 text-gray-400 text-xs">Chưa có thông báo nào</div>
         </div>
     </div>
@@ -97,10 +101,9 @@
                 <h3 class="font-extrabold text-xl tracking-tight">HD PRO</h3>
             </div>
             <ul class="space-y-2 font-semibold text-gray-600">
-                <li><a href="#" onclick="switchSection('dashboard')" class="flex items-center gap-3 p-3 rounded-xl hover:bg-yellow-50 hover:text-yellow-600 transition"><i data-lucide="home" class="w-5 h-5"></i> Trang chủ</a></li>
-                <li><a href="#missions" onclick="switchSection('missions')" class="flex items-center gap-3 p-3 rounded-xl hover:bg-yellow-50 hover:text-yellow-600 transition"><i data-lucide="target" class="w-5 h-5"></i> Nhiệm vụ</a></li>
-                <li><a href="#airdrop" onclick="switchSection('airdrop')" class="flex items-center gap-3 p-3 rounded-xl hover:bg-yellow-50 hover:text-yellow-600 transition"><i data-lucide="parachute" class="w-5 h-5"></i> Airdrop</a></li>
-                <li><a href="#leaderboard" onclick="switchSection('leaderboard')" class="flex items-center gap-3 p-3 rounded-xl hover:bg-yellow-50 hover:text-yellow-600 transition"><i data-lucide="trophy" class="w-5 h-5"></i> BXH</a></li>
+                <li><a href="#" class="flex items-center gap-3 p-3 rounded-xl hover:bg-yellow-50 hover:text-yellow-600 transition"><i data-lucide="home" class="w-5 h-5"></i> Trang chủ</a></li>
+                <li><a href="#missions" class="flex items-center gap-3 p-3 rounded-xl hover:bg-yellow-50 hover:text-yellow-600 transition"><i data-lucide="target" class="w-5 h-5"></i> Nhiệm vụ</a></li>
+                <li><a href="#leaderboard" class="flex items-center gap-3 p-3 rounded-xl hover:bg-yellow-50 hover:text-yellow-600 transition"><i data-lucide="trophy" class="w-5 h-5"></i> BXH</a></li>
             </ul>
         </div>
     </aside>
@@ -116,6 +119,7 @@
             </div>
             
             <div class="flex items-center gap-3">
+                <!-- Notif Bell (Only show when logged in) -->
                 <button id="notif-btn" onclick="toggleNotif()" class="hidden relative p-2 hover:bg-gray-100 rounded-full transition">
                     <i data-lucide="bell" class="w-5 h-5"></i>
                     <span id="notif-badge" class="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white hidden"></span>
@@ -125,6 +129,10 @@
                     <button id="login-google-btn" class="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 transition">
                         <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="currentColor" d="M21.35 11.1h-9.17v2.73h6.51c-.33 3.81-3.5 5.44-6.5 5.44C8.36 19.27 5 16.25 5 12c0-4.1 3.2-7.27 7.2-7.27 3.09 0 4.9 1.97 4.9 1.97L19 4.72S16.56 2 12.1 2C6.42 2 2.03 6.8 2.03 12c0 5.05 4.13 10 10.22 10 5.35 0 9.25-3.67 9.25-9.09 0-1.15-.15-1.81-.15-1.81z"/></svg>
                         Google
+                    </button>
+                    <button id="login-twitter-btn" class="bg-black text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 hover:bg-gray-800 transition">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                        Connect X
                     </button>
                 </div>
                 
@@ -151,124 +159,63 @@
         </div>
     </div>
 
-    <!-- MAIN CONTENT WRAPPER -->
-    <main class="pt-32 pb-20">
-        
-        <!-- DASHBOARD (Authenticated) -->
-        <section id="user-dashboard" class="px-6 hidden mb-10 relative z-20 gs-reveal">
-            <div class="max-w-5xl mx-auto">
-                <h2 class="text-3xl font-black mb-6">Tổng quan</h2>
-                <div class="dashboard-card p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
-                    <div class="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-                        <div>
-                            <p class="text-blue-200 text-xs font-bold uppercase tracking-widest mb-2">Số dư hiện tại</p>
-                            <h2 class="text-6xl font-black text-white mb-6 flex items-baseline gap-2">
-                                <span id="user-balance-main">0</span> 
-                                <span class="text-2xl text-yellow-400 font-bold">$HD</span>
-                            </h2>
-                            <div class="flex gap-3">
-                                <button onclick="dailyCheckIn()" class="bg-yellow-500 text-black px-6 py-3 rounded-xl font-bold hover:bg-yellow-400 transition flex items-center gap-2 shadow-lg shadow-yellow-500/20">
-                                    <i data-lucide="calendar-check" class="w-5 h-5"></i> Điểm danh
-                                </button>
-                                <button onclick="copyRef()" class="bg-white/10 backdrop-blur-md text-white px-6 py-3 rounded-xl font-bold hover:bg-white/20 transition flex items-center gap-2">
-                                    <i data-lucide="copy" class="w-5 h-5"></i> Mã mời
-                                </button>
-                            </div>
+    <!-- HERO SECTION -->
+    <header class="relative pt-32 pb-16 px-6 text-center">
+        <div class="max-w-4xl mx-auto gs-reveal">
+            <h1 class="text-5xl md:text-7xl font-black tracking-tight mb-6 text-slate-900 leading-tight">
+                HD Ecosystem <span class="text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-600">Pro</span>
+            </h1>
+            <p class="text-lg text-slate-500 mb-8 max-w-2xl mx-auto">
+                Nền tảng tích điểm đổi thưởng thế hệ mới. Kết nối mạng xã hội, hoàn thành nhiệm vụ và nhận token $HD miễn phí.
+            </p>
+        </div>
+    </header>
+
+    <!-- DASHBOARD (Authenticated) -->
+    <section id="user-dashboard" class="px-6 hidden mb-20 relative z-20">
+        <div class="max-w-5xl mx-auto">
+            <div class="dashboard-card p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden gs-reveal">
+                <div class="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+                    <div>
+                        <p class="text-blue-200 text-xs font-bold uppercase tracking-widest mb-2">Số dư hiện tại</p>
+                        <h2 class="text-6xl font-black text-white mb-6 flex items-baseline gap-2">
+                            <span id="user-balance-main">0</span> 
+                            <span class="text-2xl text-yellow-400 font-bold">$HD</span>
+                        </h2>
+                        <div class="flex gap-3">
+                            <button onclick="dailyCheckIn()" class="bg-yellow-500 text-black px-6 py-3 rounded-xl font-bold hover:bg-yellow-400 transition flex items-center gap-2 shadow-lg shadow-yellow-500/20">
+                                <i data-lucide="calendar-check" class="w-5 h-5"></i> Điểm danh
+                            </button>
+                            <button onclick="copyRef()" class="bg-white/10 backdrop-blur-md text-white px-6 py-3 rounded-xl font-bold hover:bg-white/20 transition flex items-center gap-2">
+                                <i data-lucide="copy" class="w-5 h-5"></i> Mã mời
+                            </button>
                         </div>
-                        <div class="bg-white/10 p-6 rounded-3xl backdrop-blur-md border border-white/10">
-                            <p class="text-xs text-gray-300 font-bold uppercase mb-4">Referral Code</p>
-                            <div class="flex justify-between items-center bg-black/20 p-4 rounded-xl">
-                                <code id="user-ref-code" class="text-2xl font-mono font-bold text-white tracking-widest">---</code>
-                                <button onclick="copyRef()" class="text-white hover:text-yellow-400"><i data-lucide="copy" class="w-5 h-5"></i></button>
-                            </div>
-                            <p class="mt-4 text-xs text-gray-400">*Mời bạn bè để nhận 100 HD mỗi lượt.</p>
+                    </div>
+                    <div class="bg-white/10 p-6 rounded-3xl backdrop-blur-md border border-white/10">
+                        <p class="text-xs text-gray-300 font-bold uppercase mb-4">Referral Code</p>
+                        <div class="flex justify-between items-center bg-black/20 p-4 rounded-xl">
+                            <code id="user-ref-code" class="text-2xl font-mono font-bold text-white tracking-widest">---</code>
+                            <button onclick="copyRef()" class="text-white hover:text-yellow-400"><i data-lucide="copy" class="w-5 h-5"></i></button>
                         </div>
+                        <p class="mt-4 text-xs text-gray-400">*Mời bạn bè để nhận 100 HD mỗi lượt.</p>
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
+    </section>
 
-        <!-- AIRDROP SECTION -->
-        <section id="airdrop" class="px-6 hidden max-w-2xl mx-auto mb-20 gs-reveal">
-            <h2 class="text-3xl font-black mb-6 flex items-center gap-2"><i data-lucide="parachute" class="text-yellow-500"></i> Airdrop Claim</h2>
-            
-            <div id="airdrop-closed-msg" class="text-center p-10 bg-white rounded-3xl border border-gray-200 shadow-lg">
-                <i data-lucide="lock" class="w-12 h-12 mx-auto text-gray-300 mb-4"></i>
-                <h3 class="text-xl font-bold text-gray-700">Chưa mở tính năng</h3>
-                <p class="text-gray-500 mt-2">Tính năng nhận Airdrop chưa được kích hoạt bởi Admin. Vui lòng quay lại sau!</p>
-            </div>
+    <!-- MISSIONS -->
+    <section id="missions" class="py-12 px-6 max-w-6xl mx-auto">
+        <h2 class="text-3xl font-bold mb-8 flex items-center gap-2"><i data-lucide="layers" class="text-yellow-500"></i> Nhiệm vụ</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="task-container">
+            <!-- Dynamic Tasks -->
+        </div>
+    </section>
 
-            <div id="airdrop-form-container" class="hidden bg-white p-8 rounded-3xl border border-gray-200 shadow-xl">
-                <div class="mb-6">
-                    <label class="block text-sm font-bold text-gray-700 mb-3">Bạn muốn nhận token qua đâu?</label>
-                    <div class="grid grid-cols-2 gap-4">
-                        <label class="cursor-pointer">
-                            <input type="radio" name="walletType" value="CEX" class="peer sr-only" onchange="toggleWalletForm()">
-                            <div class="p-4 border-2 border-gray-200 rounded-xl peer-checked:border-yellow-500 peer-checked:bg-yellow-50 hover:bg-gray-50 transition text-center font-bold">
-                                Sàn CEX
-                            </div>
-                        </label>
-                        <label class="cursor-pointer">
-                            <input type="radio" name="walletType" value="DEX" class="peer sr-only" onchange="toggleWalletForm()">
-                            <div class="p-4 border-2 border-gray-200 rounded-xl peer-checked:border-yellow-500 peer-checked:bg-yellow-50 hover:bg-gray-50 transition text-center font-bold">
-                                Ví DEX (Metamask)
-                            </div>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- CEX FORM -->
-                <div id="cex-fields" class="hidden space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 mb-1">Chọn Sàn giao dịch</label>
-                        <select id="cex-name" class="w-full p-3 bg-gray-50 border rounded-xl font-semibold">
-                            <option value="Binance">Binance</option>
-                            <option value="OKX">OKX</option>
-                            <option value="Bybit">Bybit</option>
-                            <option value="Gate.io">Gate.io</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 mb-1">Chọn Mạng lưới (Network)</label>
-                        <select id="cex-network" class="w-full p-3 bg-gray-50 border rounded-xl font-semibold">
-                            <option value="BSC">BNB Smart Chain (BEP20)</option>
-                            <option value="SOL">Solana</option>
-                            <option value="TON">TON</option>
-                            <option value="ETH">Ethereum (ERC20)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 mb-1">Địa chỉ ví nạp</label>
-                        <input id="cex-address" type="text" class="w-full p-3 bg-gray-50 border rounded-xl font-mono text-sm" placeholder="Ví dụ: 0x123...">
-                    </div>
-                </div>
-
-                <!-- DEX FORM -->
-                <div id="dex-fields" class="hidden space-y-4">
-                    <div class="p-3 bg-blue-50 text-blue-700 text-xs rounded-lg font-bold">
-                        Lưu ý: Chỉ hỗ trợ ví EVM (Metamask, TrustWallet, C98...)
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 mb-1">Địa chỉ ví EVM</label>
-                        <input id="dex-address" type="text" class="w-full p-3 bg-gray-50 border rounded-xl font-mono text-sm" placeholder="0x...">
-                    </div>
-                </div>
-
-                <button onclick="submitAirdrop()" class="w-full mt-6 bg-black text-white py-3 rounded-xl font-bold hover:bg-gray-800 shadow-lg">Xác nhận thông tin</button>
-            </div>
-        </section>
-
-        <!-- MISSIONS -->
-        <section id="missions" class="px-6 hidden max-w-6xl mx-auto mb-20 gs-reveal">
-            <h2 class="text-3xl font-bold mb-8 flex items-center gap-2"><i data-lucide="layers" class="text-yellow-500"></i> Nhiệm vụ</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="task-container">
-                <!-- Dynamic Tasks -->
-            </div>
-        </section>
-
-        <!-- LEADERBOARD -->
-        <section id="leaderboard" class="px-6 hidden max-w-4xl mx-auto mb-20 gs-reveal">
-            <h2 class="text-3xl font-bold mb-8">Bảng Xếp Hạng</h2>
+    <!-- LEADERBOARD -->
+    <section id="leaderboard" class="py-12 px-6 bg-white">
+        <div class="max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8 text-center">Bảng Xếp Hạng</h2>
             <div class="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
                 <table class="w-full">
                     <thead class="bg-slate-50 border-b">
@@ -281,19 +228,18 @@
                     <tbody id="leaderboard-list"></tbody>
                 </table>
             </div>
-        </section>
-    </main>
+        </div>
+    </section>
 
     <!-- ADMIN PANEL OVERLAY -->
     <div id="admin-panel" class="fixed inset-0 bg-slate-50 z-[100] hidden flex flex-col">
         <div class="bg-white px-6 py-4 border-b flex justify-between items-center shadow-sm z-10">
             <div class="flex items-center gap-4">
-                <h2 class="text-xl font-bold flex items-center gap-2"><i data-lucide="shield-check" class="text-blue-500"></i> Admin</h2>
+                <h2 class="text-xl font-bold flex items-center gap-2"><i data-lucide="shield-check" class="text-blue-500"></i> Admin Center</h2>
                 <div class="flex bg-gray-100 rounded-lg p-1 gap-1">
-                    <button class="px-3 py-1.5 rounded-md text-xs font-bold bg-white shadow-sm" onclick="showAdminTab('users')">Users</button>
-                    <button class="px-3 py-1.5 rounded-md text-xs font-bold hover:bg-white/50" onclick="showAdminTab('tokenomic')">Tokenomic/Airdrop</button>
-                    <button class="px-3 py-1.5 rounded-md text-xs font-bold hover:bg-white/50" onclick="showAdminTab('tasks')">Tasks</button>
-                    <button class="px-3 py-1.5 rounded-md text-xs font-bold hover:bg-white/50" onclick="showAdminTab('notif')">Notif</button>
+                    <button class="px-4 py-1.5 rounded-md text-xs font-bold bg-white shadow-sm" onclick="showAdminTab('users')">Users</button>
+                    <button class="px-4 py-1.5 rounded-md text-xs font-bold hover:bg-white/50" onclick="showAdminTab('tasks')">Tasks</button>
+                    <button class="px-4 py-1.5 rounded-md text-xs font-bold hover:bg-white/50" onclick="showAdminTab('notif')">Notif</button>
                 </div>
             </div>
             <button id="close-admin" class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition">
@@ -304,7 +250,7 @@
         <div class="flex-1 overflow-y-auto p-6 bg-slate-50">
             
             <!-- USERS TAB -->
-            <div id="tab-users" class="admin-tab-content max-w-6xl mx-auto">
+            <div id="tab-users" class="admin-tab-content max-w-5xl mx-auto">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="font-bold text-lg">Quản lý Thành viên</h3>
                     <div class="flex gap-2">
@@ -316,42 +262,13 @@
                     <table class="w-full text-sm">
                         <thead class="bg-gray-50 border-b">
                             <tr>
-                                <th class="p-3 text-left">User Info / IP</th>
-                                <th class="p-3 text-left">Wallet</th>
-                                <th class="p-3 text-left">Balance</th>
-                                <th class="p-3 text-left">Status</th>
-                                <th class="p-3 text-right">Actions</th>
+                                <th class="p-4 text-left">User Info</th>
+                                <th class="p-4 text-left">Balance</th>
+                                <th class="p-4 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="admin-users-list"></tbody>
                     </table>
-                </div>
-            </div>
-
-            <!-- TOKENOMIC / AIRDROP TAB -->
-            <div id="tab-tokenomic" class="admin-tab-content hidden max-w-4xl mx-auto">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <!-- Toggle Airdrop -->
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border">
-                        <h3 class="font-bold text-lg mb-2">Trạng thái Airdrop</h3>
-                        <p class="text-xs text-gray-500 mb-4">Bật tính năng này để cho phép người dùng nhập địa chỉ ví.</p>
-                        <div class="flex items-center justify-between bg-gray-50 p-4 rounded-xl">
-                            <span id="airdrop-status-text" class="font-bold text-gray-700">Đang Tắt</span>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="airdrop-toggle" class="sr-only peer" onchange="toggleAirdropFeature()">
-                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Export Excel -->
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border">
-                        <h3 class="font-bold text-lg mb-2">Xuất dữ liệu (Excel)</h3>
-                        <p class="text-xs text-gray-500 mb-4">Tải xuống danh sách user, số dư, địa chỉ ví và IP.</p>
-                        <button onclick="exportToExcel()" class="w-full flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition">
-                            <i data-lucide="sheet" class="w-5 h-5"></i> Download .xlsx
-                        </button>
-                    </div>
                 </div>
             </div>
 
@@ -361,9 +278,7 @@
                     <h3 class="font-bold text-lg">Hệ thống Nhiệm vụ</h3>
                     <button onclick="openTaskModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold">+ Thêm Nhiệm vụ</button>
                 </div>
-                <div id="admin-tasks-list" class="grid grid-cols-1 gap-4">
-                    <!-- Tasks will load here via JS -->
-                </div>
+                <div id="admin-tasks-list" class="space-y-3"></div>
             </div>
 
             <!-- NOTIF TAB -->
@@ -380,7 +295,7 @@
         </div>
     </div>
 
-    <!-- CUSTOM MODAL -->
+    <!-- CUSTOM MODAL (Replaces SweetAlert inputs) -->
     <div id="custom-modal" class="custom-modal fixed inset-0 z-[150] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="custom-modal-content bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl">
             <h3 id="modal-title" class="text-xl font-bold mb-4">Title</h3>
@@ -397,12 +312,12 @@
     <!-- FIREBASE LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, setDoc, getDoc, collection, addDoc, query, orderBy, limit, increment, updateDoc, deleteDoc, getDocs, arrayUnion, writeBatch, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, TwitterAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc, getDoc, collection, addDoc, query, orderBy, limit, increment, updateDoc, deleteDoc, getDocs, where, arrayUnion, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // --- FIREBASE CONFIG (THAY API KEY THỰC CỦA BẠN VÀO ĐÂY) ---
+        // --- FIREBASE CONFIG (Thay API Key của bạn vào đây) ---
         const firebaseConfig = {
-            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE", // <<<<< FIX THIS
+            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE", // Dùng key cũ của bạn hoặc tạo mới
             authDomain: "profile-d1214.firebaseapp.com",
             projectId: "profile-d1214",
             storageBucket: "profile-d1214.firebasestorage.app",
@@ -414,16 +329,16 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         
+        // --- 1. PERSISTENCE FIX (Sửa lỗi văng login) ---
+        setPersistence(auth, browserLocalPersistence).catch(error => console.error("Persistence Error:", error));
+
         const googleProvider = new GoogleAuthProvider();
-        
-        // --- DANH SÁCH ADMIN (THÊM UID CỦA BẠN VÀO ĐÂY) ---
-        const ADMIN_UIDS = ["VYIs9XHLR9RMStwtcdwMrOIo33w1", "THEM_UID_KHAC_NEU_CAN"];
+        const twitterProvider = new TwitterAuthProvider();
 
-        // --- GLOBAL VARIABLES ---
-        let currentUserData = null;
-        let isAirdropEnabled = false;
+        // Admin UIDs (Thêm UID của bạn sau khi login lần đầu và check console)
+        const ADMIN_UIDS = ["VYIs9XHLR9RMStwtcdwMrOIo33w1", "YOUR_UID_HERE"]; 
 
-        // --- UI UTILS ---
+        // --- UI HELPERS (Toastify replaces Swal) ---
         const showToast = (msg, type = "success") => {
             Toastify({
                 text: msg,
@@ -439,548 +354,117 @@
             }).showToast();
         };
 
-        // --- HELPER: GET IP ---
-        async function getUserIP() {
-            try {
-                const res = await fetch('https://api.ipify.org?format=json');
-                const data = await res.json();
-                return data.ip;
-            } catch (e) {
-                console.error("IP Fetch Error", e);
-                return "unknown";
-            }
-        }
+        // --- APP INIT ---
+        gsap.registerPlugin(ScrollTrigger);
+        lucide.createIcons();
+        
+        window.onload = () => {
+            gsap.to("#loader", { opacity: 0, duration: 0.5, onComplete: () => document.getElementById('loader').style.display = 'none' });
+            gsap.utils.toArray('.gs-reveal').forEach(elem => {
+                gsap.from(elem, { scrollTrigger: { trigger: elem, start: "top 85%" }, y: 30, opacity: 0, duration: 0.8 });
+            });
+        };
 
-        // --- AUTH & SECURITY LOGIC ---
-        document.getElementById('login-google-btn').onclick = async () => {
+        // --- AUTH LOGIC ---
+        // Login Functions
+        const handleLogin = async (provider) => {
             try {
-                await signInWithPopup(auth, googleProvider);
-                showToast(`Đăng nhập thành công!`);
+                const result = await signInWithPopup(auth, provider);
+                showToast(`Xin chào ${result.user.displayName}!`);
             } catch (error) {
                 showToast("Lỗi đăng nhập: " + error.message, "error");
             }
         };
+
+        document.getElementById('login-google-btn').onclick = () => handleLogin(googleProvider);
+        document.getElementById('login-twitter-btn').onclick = () => handleLogin(twitterProvider);
 
         document.getElementById('logout-btn').onclick = () => {
             signOut(auth);
             window.location.reload();
         };
 
+        // Auth State Listener
         onAuthStateChanged(auth, async (user) => {
+            const authBtns = document.getElementById('auth-buttons');
+            const userInfo = document.getElementById('user-info');
+            const dashArea = document.getElementById('user-dashboard');
+            const notifBtn = document.getElementById('notif-btn');
+
             if (user) {
-                // UI States
-                document.getElementById('auth-buttons').classList.add('hidden');
-                document.getElementById('user-info').classList.remove('hidden');
-                document.getElementById('user-info').classList.add('flex');
-                document.getElementById('notif-btn').classList.remove('hidden');
-                document.getElementById('user-photo').src = user.photoURL;
+                authBtns.classList.add('hidden');
+                userInfo.classList.remove('hidden');
+                userInfo.classList.add('flex');
+                dashArea.classList.remove('hidden');
+                notifBtn.classList.remove('hidden');
+                
+                document.getElementById('user-photo').src = user.photoURL || 'https://ui-avatars.com/api/?name=' + user.displayName;
                 document.getElementById('user-name').innerText = user.displayName;
 
-                const userIP = await getUserIP();
-                const userRef = doc(db, "users", user.uid);
-                
-                // Realtime Listener for User Data
-                onSnapshot(userRef, async (snap) => {
-                    if (snap.exists()) {
-                        const data = snap.data();
-                        currentUserData = data;
-
-                        if (data.isLocked) {
-                            signOut(auth);
-                            alert("TÀI KHOẢN BỊ KHÓA DO VI PHẠM CHÍNH SÁCH!");
-                            window.location.reload();
-                            return;
-                        }
-
-                        // Update IP tracking
-                        if ((!data.ip || data.ip === "unknown") && userIP !== "unknown") {
-                             updateDoc(userRef, { ip: userIP });
-                        }
-
-                        // Update UI Balance
-                        document.getElementById('user-balance-nav').innerText = `${data.balance.toLocaleString()} HD`;
-                        document.getElementById('user-balance-main').innerText = data.balance.toLocaleString();
-                        document.getElementById('user-ref-code').innerText = data.refCode;
-                        
-                        switchSection('dashboard');
-
-                    } else {
-                        // === CREATE NEW USER LOGIC ===
-                        const newRefCode = "HD" + Math.random().toString(36).substr(2, 6).toUpperCase();
-                        const urlParams = new URLSearchParams(window.location.search);
-                        const inviterCode = urlParams.get('ref');
-
-                        // FIX: Cộng tiền cho người giới thiệu
-                        if (inviterCode) {
-                            const q = query(collection(db, "users"), where("refCode", "==", inviterCode));
-                            const querySnapshot = await getDocs(q);
-                            if (!querySnapshot.empty) {
-                                const inviterDoc = querySnapshot.docs[0];
-                                await updateDoc(inviterDoc.ref, {
-                                    balance: increment(100)
-                                });
-                            }
-                        }
-
-                        await setDoc(userRef, {
-                            uid: user.uid,
-                            name: user.displayName,
-                            email: user.email,
-                            photo: user.photoURL,
-                            balance: 0,
-                            refCode: newRefCode,
-                            completedTasks: [],
-                            joinedAt: Date.now(),
-                            inviter: inviterCode || null,
-                            ip: userIP,
-                            isLocked: false
-                        });
-                    }
-                });
-
-                // Init Global Features
+                // Sync User Data
+                syncUserData(user);
                 listenToNotifications();
-                loadUserTasks(user.uid);
-                loadLeaderboard();
-                checkGlobalSettings();
-
-                // Admin UI
+                
+                // Admin Check
                 if (ADMIN_UIDS.includes(user.uid)) {
                     document.getElementById('admin-trigger').classList.remove('hidden');
                     loadAdminUsers();
                     loadAdminTasks();
                 }
-
             } else {
-                // Logged Out State
-                document.getElementById('auth-buttons').classList.remove('hidden');
-                document.getElementById('user-info').classList.add('hidden');
-                document.getElementById('user-info').classList.remove('flex');
-                hideAllSections();
+                authBtns.classList.remove('hidden');
+                userInfo.classList.add('hidden');
+                userInfo.classList.remove('flex');
+                dashArea.classList.add('hidden');
+                notifBtn.classList.add('hidden');
             }
         });
 
-        // --- NAVIGATION ---
-        window.switchSection = (id) => {
-            hideAllSections();
-            if(id === 'dashboard') document.getElementById('user-dashboard').classList.remove('hidden');
-            if(id === 'missions') document.getElementById('missions').classList.remove('hidden');
-            if(id === 'leaderboard') document.getElementById('leaderboard').classList.remove('hidden');
+        // --- USER DATA SYNC ---
+        async function syncUserData(user) {
+            const userRef = doc(db, "users", user.uid);
             
-            if(id === 'airdrop') {
-                document.getElementById('airdrop').classList.remove('hidden');
-                updateAirdropUI();
-            }
-            
-            // Mobile fixes
-            document.getElementById('dynamic-sidebar').classList.add('-translate-x-full');
-            document.getElementById('overlay-sidebar').classList.add('hidden');
-        };
+            onSnapshot(userRef, (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    const bal = data.balance || 0;
+                    document.getElementById('user-balance-nav').innerText = `${bal.toLocaleString()} HD`;
+                    document.getElementById('user-balance-main').innerText = bal.toLocaleString();
+                    document.getElementById('user-ref-code').innerText = data.refCode;
+                    loadUserTasks(user.uid, data.completedTasks || []);
+                } else {
+                    // Create New User
+                    const newRefCode = "HD" + Math.random().toString(36).substr(2, 6).toUpperCase();
+                    // Check URL for Inviter
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const inviterCode = urlParams.get('ref');
 
-        function hideAllSections() {
-            document.getElementById('user-dashboard').classList.add('hidden');
-            document.getElementById('missions').classList.add('hidden');
-            document.getElementById('leaderboard').classList.add('hidden');
-            document.getElementById('airdrop').classList.add('hidden');
-        }
-
-        // --- AIRDROP LOGIC ---
-        function checkGlobalSettings() {
-            const docRef = doc(db, "settings", "global");
-            onSnapshot(docRef, (doc) => {
-                if(doc.exists()) {
-                    isAirdropEnabled = doc.data().airdropEnabled || false;
-                    updateAirdropUI();
-                    
-                    if(document.getElementById('airdrop-toggle')) {
-                        document.getElementById('airdrop-toggle').checked = isAirdropEnabled;
-                        document.getElementById('airdrop-status-text').innerText = isAirdropEnabled ? "Đang Bật" : "Đang Tắt";
-                        document.getElementById('airdrop-status-text').className = isAirdropEnabled ? "font-bold text-green-600" : "font-bold text-gray-700";
-                    }
-                }
-            });
-        }
-
-        function updateAirdropUI() {
-            const closedMsg = document.getElementById('airdrop-closed-msg');
-            const formContainer = document.getElementById('airdrop-form-container');
-            
-            if(isAirdropEnabled) {
-                closedMsg.classList.add('hidden');
-                formContainer.classList.remove('hidden');
-                
-                if(currentUserData && currentUserData.walletInfo) {
-                    const info = currentUserData.walletInfo;
-                    const radio = document.querySelector(`input[name="walletType"][value="${info.type}"]`);
-                    if(radio) {
-                        radio.checked = true;
-                        window.toggleWalletForm();
-                        
-                        if(info.type === 'CEX') {
-                            document.getElementById('cex-name').value = info.exchange;
-                            document.getElementById('cex-network').value = info.network;
-                            document.getElementById('cex-address').value = info.address;
-                        } else {
-                            document.getElementById('dex-address').value = info.address;
-                        }
-                    }
-                }
-            } else {
-                closedMsg.classList.remove('hidden');
-                formContainer.classList.add('hidden');
-            }
-        }
-
-        window.toggleWalletForm = () => {
-            const type = document.querySelector('input[name="walletType"]:checked').value;
-            if(type === 'CEX') {
-                document.getElementById('cex-fields').classList.remove('hidden');
-                document.getElementById('dex-fields').classList.add('hidden');
-            } else {
-                document.getElementById('cex-fields').classList.add('hidden');
-                document.getElementById('dex-fields').classList.remove('hidden');
-            }
-        };
-
-        window.submitAirdrop = async () => {
-            if(currentUserData.isLocked) return showToast("Tài khoản bị khóa!", "error");
-            
-            const type = document.querySelector('input[name="walletType"]:checked')?.value;
-            if(!type) return showToast("Vui lòng chọn loại ví", "error");
-            
-            let dataToSave = { type };
-            
-            if(type === 'CEX') {
-                const exchange = document.getElementById('cex-name').value;
-                const network = document.getElementById('cex-network').value;
-                const address = document.getElementById('cex-address').value.trim();
-                
-                if(!address) return showToast("Vui lòng nhập địa chỉ ví", "error");
-                dataToSave = { ...dataToSave, exchange, network, address };
-            } else {
-                const address = document.getElementById('dex-address').value.trim();
-                if(!address.startsWith('0x')) return showToast("Ví DEX phải là định dạng EVM (0x...)", "error");
-                dataToSave = { ...dataToSave, address, network: 'EVM' };
-            }
-
-            try {
-                await updateDoc(doc(db, "users", auth.currentUser.uid), {
-                    walletInfo: dataToSave
-                });
-                showToast("Lưu thông tin ví thành công!");
-            } catch (e) {
-                showToast("Lỗi: " + e.message, "error");
-            }
-        };
-
-        // --- ADMIN FUNCTIONS ---
-        window.toggleAirdropFeature = async () => {
-            const newVal = document.getElementById('airdrop-toggle').checked;
-            await setDoc(doc(db, "settings", "global"), { airdropEnabled: newVal }, { merge: true });
-            showToast(newVal ? "Đã BẬT Airdrop" : "Đã TẮT Airdrop");
-        };
-
-        window.exportToExcel = async () => {
-            showToast("Đang tải dữ liệu...", "info");
-            const q = query(collection(db, "users"));
-            const snap = await getDocs(q);
-            
-            const data = snap.docs.map(doc => {
-                const d = doc.data();
-                const w = d.walletInfo || {};
-                return {
-                    "UID": d.uid,
-                    "Tên": d.name,
-                    "Email": d.email,
-                    "Số dư HD": d.balance,
-                    "IP Address": d.ip || "N/A",
-                    "Trạng thái": d.isLocked ? "BỊ KHÓA" : "Hoạt động",
-                    "Loại Ví": w.type || "",
-                    "Sàn": w.exchange || "",
-                    "Network": w.network || "",
-                    "Địa chỉ Ví": w.address || "",
-                    "Ngày tham gia": new Date(d.joinedAt).toLocaleDateString()
-                };
-            });
-
-            const ws = XLSX.utils.json_to_sheet(data);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Danh_Sach_User");
-            XLSX.writeFile(wb, "HD_Ecosystem_Users.xlsx");
-            showToast("Xuất file thành công!");
-        };
-
-        // --- ADMIN: MANAGE USERS ---
-        window.loadAdminUsers = async () => {
-            const tbody = document.getElementById('admin-users-list');
-            tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center">Loading...</td></tr>';
-            
-            const q = query(collection(db, "users"), orderBy("joinedAt", "desc"), limit(50));
-            const snap = await getDocs(q);
-            tbody.innerHTML = '';
-            
-            snap.forEach(d => {
-                const u = d.data();
-                const w = u.walletInfo || {};
-                const walletStr = w.address ? `${w.type}: ${w.address.substring(0,6)}...` : "Chưa cập nhật";
-                const isLocked = u.isLocked || false;
-                
-                tbody.innerHTML += `
-                <tr class="border-b hover:bg-gray-50 ${isLocked ? 'bg-red-50' : ''}">
-                    <td class="p-3">
-                        <div class="font-bold text-sm">${u.name}</div>
-                        <div class="text-xs text-gray-400">${u.email}</div>
-                        <div class="text-[10px] text-gray-500 font-mono">IP: ${u.ip || 'N/A'}</div>
-                    </td>
-                    <td class="p-3 text-xs font-mono text-gray-600">${walletStr}</td>
-                    <td class="p-3 font-bold text-blue-600">${u.balance}</td>
-                    <td class="p-3">
-                        <span class="px-2 py-1 rounded text-xs font-bold ${isLocked ? 'bg-red-200 text-red-800' : 'bg-green-100 text-green-800'}">
-                            ${isLocked ? 'Locked' : 'Active'}
-                        </span>
-                    </td>
-                    <td class="p-3 text-right flex justify-end gap-2">
-                        <button onclick="toggleLockUser('${d.id}', ${isLocked})" class="p-2 rounded hover:bg-gray-200" title="${isLocked ? 'Mở khóa' : 'Khóa'}">
-                            <i data-lucide="${isLocked ? 'unlock' : 'lock'}" class="w-4 h-4 ${isLocked ? 'text-green-600' : 'text-red-500'}"></i>
-                        </button>
-                        <button onclick="editUserPoints('${d.id}', '${u.name}')" class="p-2 rounded hover:bg-yellow-100 text-yellow-700" title="Cộng điểm">
-                            <i data-lucide="coins" class="w-4 h-4"></i>
-                        </button>
-                    </td>
-                </tr>`;
-            });
-            lucide.createIcons();
-        };
-
-        window.toggleLockUser = async (uid, currentStatus) => {
-            if(confirm(`Bạn có chắc muốn ${currentStatus ? 'MỞ KHÓA' : 'KHÓA'} user này?`)) {
-                await updateDoc(doc(db, "users", uid), { isLocked: !currentStatus });
-                showToast("Đã cập nhật trạng thái user");
-                loadAdminUsers();
-            }
-        };
-
-        // --- TASKS LOGIC ---
-        function loadUserTasks(uid) {
-            onSnapshot(query(collection(db, "tasks"), orderBy("createdAt", "desc")), (snap) => {
-                const container = document.getElementById('task-container');
-                container.innerHTML = '';
-                const completed = currentUserData?.completedTasks || [];
-                
-                snap.forEach(d => {
-                    const t = d.data();
-                    const isDone = completed.includes(d.id);
-                    const btnHtml = isDone 
-                        ? `<button disabled class="w-full mt-4 py-2 bg-gray-100 text-gray-400 rounded-lg font-bold text-xs cursor-not-allowed">Đã nhận</button>`
-                        : `<button onclick="doTask('${d.id}', '${t.link}', ${t.reward})" class="w-full mt-4 py-2 bg-black text-white rounded-lg font-bold text-xs hover:bg-yellow-500 hover:text-black transition">Thực hiện (+${t.reward} HD)</button>`;
-
-                    container.innerHTML += `
-                    <div class="bento-card p-6 rounded-2xl flex flex-col justify-between h-full">
-                        <div>
-                            <div class="w-10 h-10 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center mb-4">
-                                <i data-lucide="${isDone ? 'check-circle' : 'star'}" class="w-5 h-5"></i>
-                            </div>
-                            <h4 class="font-bold text-sm text-slate-800">${t.title}</h4>
-                        </div>
-                        ${btnHtml}
-                    </div>`;
-                });
-                lucide.createIcons();
-            });
-        }
-
-        window.doTask = async (id, link, reward) => {
-            if(currentUserData.isLocked) return showToast("Tài khoản bị khóa!", "error");
-            window.open(link, '_blank');
-            // Wait 5 seconds
-            setTimeout(async () => {
-                try {
-                    await updateDoc(doc(db, "users", auth.currentUser.uid), {
-                        balance: increment(reward),
-                        completedTasks: arrayUnion(id)
+                    setDoc(userRef, {
+                        uid: user.uid,
+                        name: user.displayName,
+                        email: user.email,
+                        photo: user.photoURL,
+                        balance: 0,
+                        refCode: newRefCode,
+                        completedTasks: [],
+                        joinedAt: Date.now(),
+                        inviter: inviterCode || null
                     });
-                    showToast(`+${reward} HD`);
-                } catch (e) { console.log(e); }
-            }, 5000);
-        };
-
-        // --- ADMIN: TASKS ---
-        function loadAdminTasks() {
-            onSnapshot(collection(db, "tasks"), (snap) => {
-                const list = document.getElementById('admin-tasks-list');
-                list.innerHTML = '';
-                snap.forEach(d => {
-                    const t = d.data();
-                    list.innerHTML += `
-                    <div class="bg-white p-4 rounded-xl border flex justify-between items-center">
-                        <div>
-                            <p class="font-bold text-sm">${t.title}</p>
-                            <p class="text-xs text-gray-400">${t.link} - Reward: ${t.reward} HD</p>
-                        </div>
-                        <button onclick="deleteTask('${d.id}')" class="text-red-500 hover:bg-red-50 p-2 rounded"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                    </div>`;
-                });
-                lucide.createIcons();
-            });
-        }
-
-        window.openTaskModal = () => {
-             openModal(
-                "Thêm Nhiệm vụ Mới",
-                `
-                <input id="new-task-title" class="w-full p-3 border rounded-xl mb-3 text-sm" placeholder="Tên nhiệm vụ">
-                <input id="new-task-link" class="w-full p-3 border rounded-xl mb-3 text-sm" placeholder="Link nhiệm vụ (https://...)">
-                <input id="new-task-reward" type="number" class="w-full p-3 border rounded-xl text-sm" placeholder="Phần thưởng (HD)">
-                `,
-                async () => {
-                    const title = document.getElementById('new-task-title').value;
-                    const link = document.getElementById('new-task-link').value;
-                    const reward = Number(document.getElementById('new-task-reward').value);
                     
-                    if(title && link && reward) {
-                        await addDoc(collection(db, "tasks"), {
-                            title, link, reward, createdAt: Date.now()
-                        });
-                        showToast("Đã thêm nhiệm vụ!");
-                    } else {
-                        showToast("Vui lòng nhập đủ thông tin", "error");
-                    }
+                    // Bonus for Inviter could be implemented here via Cloud Function or careful client logic
                 }
-            );
-        };
-
-        window.deleteTask = async (id) => {
-            if(confirm("Xóa nhiệm vụ này?")) {
-                await deleteDoc(doc(db, "tasks", id));
-            }
-        };
-
-        // --- GLOBAL & MODALS ---
-        window.dailyCheckIn = async () => {
-            if(currentUserData.isLocked) return showToast("Tài khoản bị khóa!", "error");
-            const now = Date.now();
-            if(currentUserData.lastCheckin && (now - currentUserData.lastCheckin < 86400000)) {
-                return showToast("Hôm nay đã điểm danh rồi!", "info");
-            }
-            await updateDoc(doc(db, "users", auth.currentUser.uid), {
-                balance: increment(50),
-                lastCheckin: now
-            });
-            showToast("Điểm danh thành công! +50 HD");
-        };
-
-        window.onload = () => {
-            gsap.to("#loader", { opacity: 0, duration: 0.5, onComplete: () => document.getElementById('loader').style.display = 'none' });
-            gsap.utils.toArray('.gs-reveal').forEach(elem => {
-                gsap.from(elem, { scrollTrigger: { trigger: elem, start: "top 85%" }, y: 30, opacity: 0, duration: 0.8 });
-            });
-            // FIX: Render icons initially
-            lucide.createIcons();
-        };
-        
-        window.toggleUserMenu = () => document.getElementById('user-dropdown').classList.toggle('hidden');
-        window.toggleNotif = () => document.getElementById('notification-overlay').classList.toggle('hidden');
-        
-        document.getElementById('sidebar-toggle-btn').onclick = () => {
-            document.getElementById('dynamic-sidebar').classList.toggle('-translate-x-full');
-            document.getElementById('overlay-sidebar').classList.toggle('hidden');
-        };
-        document.getElementById('overlay-sidebar').onclick = () => {
-            document.getElementById('dynamic-sidebar').classList.add('-translate-x-full');
-            document.getElementById('overlay-sidebar').classList.add('hidden');
-        };
-
-        document.getElementById('admin-trigger').onclick = () => {
-             document.getElementById('user-dropdown').classList.add('hidden');
-             document.getElementById('admin-panel').classList.remove('hidden');
-             loadAdminUsers();
-        };
-        document.getElementById('close-admin').onclick = () => document.getElementById('admin-panel').classList.add('hidden');
-
-        window.showAdminTab = (tab) => {
-            document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.add('hidden'));
-            document.getElementById(`tab-${tab}`).classList.remove('hidden');
-        };
-        
-        // Modal helpers
-        window.openModal = (title, htmlBody, confirmFn) => {
-            document.getElementById('modal-title').innerText = title;
-            document.getElementById('modal-body').innerHTML = htmlBody;
-            const btn = document.getElementById('modal-confirm-btn');
-            const newBtn = btn.cloneNode(true);
-            btn.parentNode.replaceChild(newBtn, btn);
-            newBtn.onclick = async () => { await confirmFn(); closeModal(); };
-            
-            const modal = document.getElementById('custom-modal');
-            modal.classList.remove('hidden');
-            setTimeout(() => modal.classList.add('active'), 10);
-        };
-        window.closeModal = () => {
-            const modal = document.getElementById('custom-modal');
-            modal.classList.remove('active');
-            setTimeout(() => modal.classList.add('hidden'), 300);
-        };
-        
-        window.editUserPoints = (uid, name) => {
-            openModal(
-                `Chỉnh sửa số dư: ${name}`,
-                `<input id="input-points" type="number" class="w-full p-3 border rounded-xl" placeholder="Số lượng (+/-)">`,
-                async () => {
-                    const amount = Number(document.getElementById('input-points').value);
-                    if(amount) {
-                        await updateDoc(doc(db, "users", uid), { balance: increment(amount) });
-                        showToast("Đã cập nhật!");
-                        loadAdminUsers();
-                    }
-                }
-            );
-        };
-        
-        window.openBonusModal = (isGlobal) => {
-            openModal(
-                "Tặng quà TOÀN BỘ User",
-                `<p class="text-sm text-red-500 mb-2">Hành động này sẽ cộng điểm cho tất cả user!</p>
-                 <input id="input-global-points" type="number" class="w-full p-3 border rounded-xl" placeholder="Nhập số điểm muốn tặng">`,
-                async () => {
-                    const amount = Number(document.getElementById('input-global-points').value);
-                    if(!amount) return;
-                    showToast("Đang xử lý...", "info");
-                    const snap = await getDocs(collection(db, "users"));
-                    const batch = writeBatch(db);
-                    snap.forEach(doc => batch.update(doc.ref, { balance: increment(amount) }));
-                    await batch.commit();
-                    showToast(`Đã tặng quà xong!`);
-                    loadAdminUsers();
-                }
-            );
-        };
-
-        async function loadLeaderboard() {
-            const q = query(collection(db, "users"), orderBy("balance", "desc"), limit(10));
-            const snap = await getDocs(q);
-            const tbody = document.getElementById('leaderboard-list');
-            tbody.innerHTML = '';
-            let rank = 1;
-            snap.forEach(d => {
-                const u = d.data();
-                tbody.innerHTML += `
-                <tr class="border-b border-gray-50">
-                    <td class="p-4 font-bold text-gray-500">#${rank++}</td>
-                    <td class="p-4 flex items-center gap-3">
-                        <img src="${u.photo}" class="w-6 h-6 rounded-full">
-                        <span class="text-sm font-semibold">${u.name}</span>
-                    </td>
-                    <td class="p-4 text-right font-bold text-yellow-600">${u.balance.toLocaleString()}</td>
-                </tr>`;
             });
         }
-        
+
+        // --- NOTIFICATION SYSTEM (Admin to User) ---
         function listenToNotifications() {
+            // Listen to global system messages
             const q = query(collection(db, "notifications"), orderBy("createdAt", "desc"), limit(10));
             onSnapshot(q, (snap) => {
                 const list = document.getElementById('notif-list');
                 const badge = document.getElementById('notif-badge');
                 list.innerHTML = '';
+                
                 if(!snap.empty) {
                     badge.classList.remove('hidden');
                     snap.forEach(d => {
@@ -999,20 +483,318 @@
                 }
             });
         }
-        
-        window.sendSystemNotification = async () => {
-            const title = document.getElementById('notif-title').value;
-            const msg = document.getElementById('notif-msg').value;
-            if(title && msg) {
-                await addDoc(collection(db, "notifications"), { title, message: msg, createdAt: Date.now() });
-                showToast("Đã gửi thông báo!");
+
+        window.toggleNotif = () => {
+            const el = document.getElementById('notification-overlay');
+            el.classList.toggle('hidden');
+            if(!el.classList.contains('hidden')) {
+                document.getElementById('notif-badge').classList.add('hidden'); // Clear badge on open
             }
+        };
+
+        // --- TASK SYSTEM ---
+        let allTasks = [];
+        
+        function loadUserTasks(uid, completedIds) {
+            const container = document.getElementById('task-container');
+            container.innerHTML = ''; // Clear
+
+            // Listen to tasks collection
+            onSnapshot(query(collection(db, "tasks"), orderBy("createdAt", "desc")), (snap) => {
+                allTasks = [];
+                let html = '';
+                
+                snap.forEach(d => {
+                    const t = d.data();
+                    t.id = d.id;
+                    allTasks.push(t);
+                    
+                    const isDone = completedIds.includes(t.id);
+                    const btnHtml = isDone 
+                        ? `<button disabled class="w-full mt-4 py-2 bg-gray-100 text-gray-400 rounded-lg font-bold text-xs cursor-not-allowed">Đã nhận</button>`
+                        : `<button onclick="doTask('${t.id}', '${t.link}', ${t.reward})" class="w-full mt-4 py-2 bg-black text-white rounded-lg font-bold text-xs hover:bg-yellow-500 hover:text-black transition">Thực hiện (+${t.reward} HD)</button>`;
+
+                    html += `
+                    <div class="bento-card p-6 rounded-2xl flex flex-col justify-between h-full">
+                        <div>
+                            <div class="w-10 h-10 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center mb-4">
+                                <i data-lucide="${isDone ? 'check-circle' : 'star'}" class="w-5 h-5"></i>
+                            </div>
+                            <h4 class="font-bold text-sm text-slate-800">${t.title}</h4>
+                        </div>
+                        ${btnHtml}
+                    </div>`;
+                });
+                container.innerHTML = html;
+                lucide.createIcons();
+            });
+        }
+
+        window.doTask = (id, link, reward) => {
+            if(!auth.currentUser) return showToast("Vui lòng đăng nhập!", "error");
+            
+            // 1. Open Link
+            window.open(link, '_blank');
+            
+            // 2. Simulate Verification (Wait 5s)
+            const btn = event.target;
+            const originalText = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = "Đang kiểm tra...";
+            btn.classList.replace("bg-black", "bg-gray-400");
+
+            setTimeout(async () => {
+                // 3. Reward
+                try {
+                    const userRef = doc(db, "users", auth.currentUser.uid);
+                    await updateDoc(userRef, {
+                        balance: increment(reward),
+                        completedTasks: arrayUnion(id)
+                    });
+                    showToast(`Hoàn thành! +${reward} HD`);
+                } catch (e) {
+                    showToast("Lỗi cập nhật: " + e.message, "error");
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                }
+            }, 5000); // 5 seconds simulated delay
+        };
+
+        // --- DAILY CHECKIN & REFERRAL ---
+        window.dailyCheckIn = async () => {
+            const user = auth.currentUser;
+            if(!user) return;
+            
+            const userRef = doc(db, "users", user.uid);
+            const snap = await getDoc(userRef);
+            const data = snap.data();
+            const now = Date.now();
+            
+            if(data.lastCheckin && (now - data.lastCheckin < 86400000)) {
+                return showToast("Hôm nay đã điểm danh rồi!", "info");
+            }
+            
+            const reward = 50;
+            await updateDoc(userRef, {
+                balance: increment(reward),
+                lastCheckin: now
+            });
+            showToast(`Điểm danh thành công! +${reward} HD`);
         };
 
         window.copyRef = () => {
             const code = document.getElementById('user-ref-code').innerText;
-            navigator.clipboard.writeText(`${window.location.origin}?ref=${code}`);
-            showToast("Đã copy link mời!");
+            const link = `${window.location.origin}?ref=${code}`;
+            navigator.clipboard.writeText(link);
+            showToast("Đã copy link giới thiệu!");
+        };
+
+        // --- LEADERBOARD ---
+        async function loadLeaderboard() {
+            const q = query(collection(db, "users"), orderBy("balance", "desc"), limit(10));
+            const snap = await getDocs(q);
+            const tbody = document.getElementById('leaderboard-list');
+            tbody.innerHTML = '';
+            
+            let rank = 1;
+            snap.forEach(d => {
+                const u = d.data();
+                tbody.innerHTML += `
+                <tr class="border-b border-gray-50">
+                    <td class="p-4 font-bold text-gray-500">#${rank++}</td>
+                    <td class="p-4 flex items-center gap-3">
+                        <img src="${u.photo || 'https://via.placeholder.com/30'}" class="w-6 h-6 rounded-full">
+                        <span class="text-sm font-semibold">${u.name}</span>
+                    </td>
+                    <td class="p-4 text-right font-bold text-yellow-600">${u.balance.toLocaleString()}</td>
+                </tr>`;
+            });
+        }
+        loadLeaderboard();
+
+        // --- ADMIN FUNCTIONS ---
+        window.showAdminTab = (tab) => {
+            document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tab}`).classList.remove('hidden');
+        };
+
+        // 1. User Management
+        window.loadAdminUsers = async () => {
+            const tbody = document.getElementById('admin-users-list');
+            tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center">Loading...</td></tr>';
+            
+            const q = query(collection(db, "users"), orderBy("joinedAt", "desc"), limit(50));
+            const snap = await getDocs(q);
+            tbody.innerHTML = '';
+            
+            snap.forEach(d => {
+                const u = d.data();
+                tbody.innerHTML += `
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="p-4">
+                        <div class="font-bold text-sm">${u.name}</div>
+                        <div class="text-xs text-gray-400">${u.email}</div>
+                    </td>
+                    <td class="p-4 font-mono font-bold text-blue-600">${u.balance}</td>
+                    <td class="p-4 text-right flex justify-end gap-2">
+                        <button onclick="editUserPoints('${d.id}', '${u.name}')" class="bg-gray-100 p-2 rounded hover:bg-yellow-100 text-yellow-700" title="Cộng/Trừ điểm">
+                            <i data-lucide="coins" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+                </tr>`;
+            });
+            lucide.createIcons();
+        };
+
+        // 2. Edit User Points (Individual)
+        window.editUserPoints = (uid, name) => {
+            openModal(
+                `Điều chỉnh số dư: ${name}`,
+                `<input id="input-points" type="number" class="w-full p-3 border rounded-xl" placeholder="Nhập số (+100 hoặc -50)">`,
+                async () => {
+                    const amount = Number(document.getElementById('input-points').value);
+                    if(!amount) return;
+                    await updateDoc(doc(db, "users", uid), { balance: increment(amount) });
+                    showToast(`Đã cập nhật số dư cho ${name}`);
+                    loadAdminUsers();
+                }
+            );
+        };
+
+        // 3. Global Bonus (All Users)
+        window.openBonusModal = (isGlobal) => {
+            openModal(
+                "Tặng quà TOÀN BỘ User",
+                `<p class="text-sm text-red-500 mb-2">Hành động này sẽ cộng điểm cho tất cả user!</p>
+                 <input id="input-global-points" type="number" class="w-full p-3 border rounded-xl" placeholder="Nhập số điểm muốn tặng">`,
+                async () => {
+                    const amount = Number(document.getElementById('input-global-points').value);
+                    if(!amount) return;
+                    
+                    showToast("Đang xử lý đồng loạt...", "info");
+                    
+                    // Batch write (Firestore limit 500 ops per batch, loop for simple implementation)
+                    const snap = await getDocs(collection(db, "users"));
+                    const batch = writeBatch(db);
+                    let count = 0;
+                    
+                    snap.forEach(doc => {
+                        batch.update(doc.ref, { balance: increment(amount) });
+                        count++;
+                    });
+                    
+                    await batch.commit();
+                    showToast(`Đã tặng ${amount} HD cho ${count} thành viên!`);
+                    loadAdminUsers();
+                }
+            );
+        };
+
+        // 4. Task Management
+        window.loadAdminTasks = () => {
+            const list = document.getElementById('admin-tasks-list');
+            onSnapshot(collection(db, "tasks"), (snap) => {
+                list.innerHTML = '';
+                snap.forEach(d => {
+                    const t = d.data();
+                    list.innerHTML += `
+                    <div class="flex items-center justify-between p-4 bg-white border rounded-xl">
+                        <div>
+                            <div class="font-bold text-sm">${t.title}</div>
+                            <div class="text-xs text-gray-400">Reward: ${t.reward} | Link: ${t.link}</div>
+                        </div>
+                        <button onclick="deleteTask('${d.id}')" class="text-red-500 hover:bg-red-50 p-2 rounded"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>`;
+                });
+                lucide.createIcons();
+            });
+        };
+
+        window.openTaskModal = () => {
+            openModal(
+                "Thêm Nhiệm Vụ Mới",
+                `<input id="t-title" class="w-full p-3 border rounded-xl mb-2" placeholder="Tên nhiệm vụ">
+                 <input id="t-reward" type="number" class="w-full p-3 border rounded-xl mb-2" placeholder="Điểm thưởng">
+                 <input id="t-link" class="w-full p-3 border rounded-xl" placeholder="Link nhiệm vụ">`,
+                async () => {
+                    const title = document.getElementById('t-title').value;
+                    const reward = Number(document.getElementById('t-reward').value);
+                    const link = document.getElementById('t-link').value;
+                    
+                    if(title && reward) {
+                        await addDoc(collection(db, "tasks"), {
+                            title, reward, link, createdAt: Date.now()
+                        });
+                        showToast("Đã thêm nhiệm vụ");
+                    }
+                }
+            );
+        };
+
+        window.deleteTask = async (id) => {
+             if(confirm('Xóa nhiệm vụ này?')) await deleteDoc(doc(db, "tasks", id));
+        };
+
+        // 5. System Notification
+        window.sendSystemNotification = async () => {
+            const title = document.getElementById('notif-title').value;
+            const msg = document.getElementById('notif-msg').value;
+            
+            if(!title || !msg) return showToast("Vui lòng nhập đủ thông tin", "error");
+            
+            await addDoc(collection(db, "notifications"), {
+                title: title,
+                message: msg,
+                createdAt: Date.now(),
+                type: 'global'
+            });
+            
+            showToast("Đã gửi thông báo toàn hệ thống");
+            document.getElementById('notif-title').value = '';
+            document.getElementById('notif-msg').value = '';
+        };
+
+        // --- MODAL UTILS (Custom) ---
+        let currentConfirmAction = null;
+        
+        window.openModal = (title, htmlBody, confirmFn) => {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-body').innerHTML = htmlBody;
+            currentConfirmAction = confirmFn;
+            
+            const modal = document.getElementById('custom-modal');
+            modal.classList.remove('hidden');
+            // Trigger animation
+            setTimeout(() => modal.classList.add('active'), 10);
+        };
+
+        window.closeModal = () => {
+            const modal = document.getElementById('custom-modal');
+            modal.classList.remove('active');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+            currentConfirmAction = null;
+        };
+
+        document.getElementById('modal-confirm-btn').onclick = async () => {
+            if(currentConfirmAction) await currentConfirmAction();
+            closeModal();
+        };
+
+        // --- UI TOGGLES ---
+        window.toggleUserMenu = () => document.getElementById('user-dropdown').classList.toggle('hidden');
+        document.getElementById('admin-trigger').onclick = () => {
+             document.getElementById('user-dropdown').classList.add('hidden');
+             document.getElementById('admin-panel').classList.remove('hidden');
+             loadAdminUsers();
+        };
+        document.getElementById('close-admin').onclick = () => document.getElementById('admin-panel').classList.add('hidden');
+        document.getElementById('sidebar-toggle-btn').onclick = () => {
+            document.getElementById('dynamic-sidebar').classList.toggle('-translate-x-full');
+            document.getElementById('overlay-sidebar').classList.toggle('hidden');
+        };
+        document.getElementById('overlay-sidebar').onclick = () => {
+            document.getElementById('dynamic-sidebar').classList.add('-translate-x-full');
+            document.getElementById('overlay-sidebar').classList.add('hidden');
         };
 
     </script>
