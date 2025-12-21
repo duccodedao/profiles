@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
     <title>HD Ecosystem Pro | Nền tảng công nghệ toàn diện 2026</title>
     
     <!-- Frameworks -->
@@ -16,360 +16,380 @@
     
     <style>
         :root { 
-            --gold: linear-gradient(135deg, #FFD700, #B8860B);
+            --gold: linear-gradient(135deg, #F59E0B, #D97706);
             --dark: #0f172a;
+            --glass: rgba(255, 255, 255, 0.85);
         }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; color: #1e293b; scroll-behavior: smooth; overflow-x: hidden; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; color: #1e293b; overflow-x: hidden; }
         
         .gold-text { background: var(--gold); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .glass-nav { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0,0,0,0.05); }
-        .bento-card { border: 1px solid rgba(0,0,0,0.05); transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); background: white; }
-        .bento-card:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.08); border-color: #fbbf24; }
+        .glass-nav { background: var(--glass); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.5); }
+        
+        .bento-card { 
+            background: white; 
+            border: 1px solid #e2e8f0; 
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            position: relative;
+            overflow: hidden;
+        }
+        .bento-card::after {
+            content: ''; position: absolute; inset: 0; 
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.8), transparent);
+            transform: translateX(-100%); transition: 0.5s;
+        }
+        .bento-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px -5px rgba(0,0,0,0.1); border-color: #fbbf24; }
+        .bento-card:hover::after { transform: translateX(100%); }
         
         /* Loading Animation */
         #loader { position: fixed; inset: 0; background: white; z-index: 9999; display: flex; items-center; justify-content: center; }
         
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
         .btn-primary { 
-            background: var(--dark); 
-            color: white; 
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
+            background: var(--dark); color: white; transition: all 0.3s;
+            box-shadow: 0 4px 14px 0 rgba(0,0,0,0.39);
         }
-        .btn-primary:hover { transform: scale(1.02); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .btn-primary:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(0,0,0,0.23); }
         
-        .dashboard-card { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white; }
+        .dashboard-card { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; }
 
-        /* Sidebar Custom */
+        /* Sidebar & Admin */
         #dynamic-sidebar { transition: transform 0.4s ease; transform: translateX(-100%); }
         #dynamic-sidebar.active { transform: translateX(0); }
-
-        /* Admin Tab Button */
         .admin-tab-btn.active { background-color: #0f172a; color: white; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Toast Notification */
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
     </style>
 </head>
-<body>
+<body class="antialiased">
 
     <!-- LOADER -->
     <div id="loader">
         <div class="flex flex-col items-center">
-            <div class="w-12 h-12 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin"></div>
-            <p class="mt-4 font-bold text-gray-400 tracking-widest text-xs uppercase">HD Ecosystem Loading...</p>
+            <div class="relative w-16 h-16">
+                <div class="absolute inset-0 border-4 border-gray-200 rounded-full"></div>
+                <div class="absolute inset-0 border-4 border-yellow-500 rounded-full border-t-transparent animate-spin"></div>
+            </div>
+            <p class="mt-4 font-bold text-gray-500 tracking-widest text-xs uppercase animate-pulse">Initializing System...</p>
         </div>
     </div>
 
-    <!-- DYNAMIC SIDEBAR (Hidden by default, controlled by Admin) -->
-    <aside id="dynamic-sidebar" class="fixed top-0 left-0 h-full w-64 bg-white shadow-2xl z-[60] pt-24 px-6 border-r border-gray-100">
-        <h3 class="font-bold text-xl mb-6">Menu</h3>
-        <ul class="space-y-4 font-bold text-gray-600">
-            <li><a href="#" class="flex items-center gap-3 hover:text-yellow-600 transition"><i data-lucide="home" class="w-5 h-5"></i> Trang chủ</a></li>
-            <li><a href="#missions" class="flex items-center gap-3 hover:text-yellow-600 transition"><i data-lucide="target" class="w-5 h-5"></i> Nhiệm vụ</a></li>
-            <li><a href="#" class="flex items-center gap-3 hover:text-yellow-600 transition"><i data-lucide="users" class="w-5 h-5"></i> Cộng đồng</a></li>
-        </ul>
-        <div id="sidebar-socials" class="absolute bottom-10 left-6 flex gap-4">
-            <!-- Social icons inserted via JS -->
+    <!-- DYNAMIC SIDEBAR -->
+    <div id="overlay-sidebar" class="fixed inset-0 bg-black/20 z-[55] hidden backdrop-blur-sm transition-opacity"></div>
+    <aside id="dynamic-sidebar" class="fixed top-0 left-0 h-full w-72 bg-white shadow-2xl z-[60] p-6 flex flex-col justify-between">
+        <div>
+            <div class="flex items-center gap-3 mb-10">
+                <div class="w-10 h-10 bg-black rounded-xl flex items-center justify-center text-white">
+                    <i data-lucide="zap" class="w-5 h-5"></i>
+                </div>
+                <h3 class="font-extrabold text-xl tracking-tight">HD Ecosystem</h3>
+            </div>
+            <ul class="space-y-2 font-semibold text-gray-600">
+                <li><a href="#" class="flex items-center gap-3 p-3 rounded-xl hover:bg-yellow-50 hover:text-yellow-600 transition"><i data-lucide="home" class="w-5 h-5"></i> Trang chủ</a></li>
+                <li><a href="#missions" class="flex items-center gap-3 p-3 rounded-xl hover:bg-yellow-50 hover:text-yellow-600 transition"><i data-lucide="target" class="w-5 h-5"></i> Nhiệm vụ</a></li>
+                <li><a href="#leaderboard" class="flex items-center gap-3 p-3 rounded-xl hover:bg-yellow-50 hover:text-yellow-600 transition"><i data-lucide="trophy" class="w-5 h-5"></i> Bảng xếp hạng</a></li>
+            </ul>
         </div>
+        <div id="sidebar-socials" class="flex gap-4 justify-center pb-4 border-t pt-6"></div>
     </aside>
 
     <!-- NAVIGATION -->
     <nav class="fixed top-0 left-0 right-0 w-full flex justify-center pt-4 px-4 z-50">
-        <div class="glass-nav w-full max-w-6xl px-6 py-4 rounded-3xl flex items-center justify-between shadow-2xl shadow-black/5">
+        <div class="glass-nav w-full max-w-7xl px-6 py-3 rounded-full flex items-center justify-between shadow-lg shadow-black/5">
             <div class="flex items-center gap-4">
-                <!-- Toggle Sidebar Btn (Visible only if enabled) -->
-                <button id="sidebar-toggle-btn" class="hidden p-2 hover:bg-gray-100 rounded-lg">
-                    <i data-lucide="menu" class="w-6 h-6"></i>
+                <button id="sidebar-toggle-btn" class="p-2 hover:bg-gray-100 rounded-full transition">
+                    <i data-lucide="menu" class="w-5 h-5"></i>
                 </button>
-
-                <div class="flex items-center gap-2">
-                    <div class="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
-                        <i data-lucide="layers" class="text-yellow-500 w-6 h-6"></i>
-                    </div>
-                    <div class="flex flex-col">
-                        <span class="font-extrabold tracking-tight text-lg leading-none">HD PLATFORM</span>
-                        <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Ecosystem 2026</span>
-                    </div>
+                <div class="flex items-center gap-2 select-none">
+                    <span class="font-black tracking-tighter text-xl">HD <span class="text-yellow-600">PRO</span></span>
                 </div>
             </div>
             
-            <div class="hidden md:flex gap-8 text-sm font-bold text-gray-600">
-                <a href="#vision" class="hover:text-yellow-600 transition">Tầm nhìn</a>
-                <a href="#missions" class="hover:text-yellow-600 transition">Săn $HD</a>
-                <a href="#roadmap" class="hover:text-yellow-600 transition">Lộ trình</a>
+            <div class="hidden md:flex gap-8 text-sm font-bold text-gray-500">
+                <a href="#missions" class="hover:text-black transition">Airdrop</a>
+                <a href="#leaderboard" class="hover:text-black transition">Top Users</a>
+                <a href="#roadmap" class="hover:text-black transition">Roadmap</a>
             </div>
 
-            <div id="auth-section" class="flex items-center gap-4">
-                <button id="login-btn" class="btn-primary px-6 py-2.5 rounded-2xl text-xs font-bold uppercase tracking-wider">Đăng nhập</button>
+            <div id="auth-section" class="flex items-center gap-3">
+                <button id="login-btn" class="btn-primary px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider">Connect Wallet</button>
                 
-                <div id="user-info" class="hidden flex items-center gap-3 bg-gray-100 p-1.5 pr-4 rounded-2xl border border-black/5">
-                    <img id="user-photo" class="w-8 h-8 rounded-xl border-2 border-white shadow-sm">
+                <div id="user-info" class="hidden flex items-center gap-2 bg-white pl-1 pr-4 py-1 rounded-full border border-gray-200 shadow-sm cursor-pointer hover:border-yellow-400 transition" onclick="toggleUserMenu()">
+                    <img id="user-photo" class="w-8 h-8 rounded-full border border-gray-100">
                     <div class="flex flex-col">
-                        <span id="user-name" class="text-xs font-bold leading-none">...</span>
-                        <span id="user-balance-nav" class="text-[10px] font-bold text-yellow-600">0 $HD</span>
+                        <span id="user-name" class="text-[11px] font-bold leading-none max-w-[80px] truncate">User</span>
+                        <span id="user-balance-nav" class="text-[10px] font-bold text-yellow-600">0 HD</span>
                     </div>
-                    <!-- Admin Trigger -->
-                    <button id="admin-trigger" class="hidden ml-2 p-1.5 bg-yellow-100 text-yellow-700 rounded-lg shadow-sm hover:bg-yellow-200 transition">
-                        <i data-lucide="shield-check" class="w-4 h-4"></i>
-                    </button>
-                    <button id="logout-btn" class="ml-1 p-1.5 hover:text-red-500 transition">
-                        <i data-lucide="log-out" class="w-4 h-4"></i>
-                    </button>
                 </div>
             </div>
         </div>
     </nav>
 
+    <!-- USER DROPDOWN -->
+    <div id="user-dropdown" class="fixed top-20 right-4 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 hidden transform origin-top-right transition-all">
+        <div class="p-2 space-y-1">
+            <button id="admin-trigger" class="hidden w-full text-left px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-xl flex items-center gap-2">
+                <i data-lucide="shield" class="w-4 h-4 text-blue-500"></i> Admin Panel
+            </button>
+            <button id="logout-btn" class="w-full text-left px-4 py-2 text-sm font-bold text-red-500 hover:bg-red-50 rounded-xl flex items-center gap-2">
+                <i data-lucide="log-out" class="w-4 h-4"></i> Đăng xuất
+            </button>
+        </div>
+    </div>
+
     <!-- HERO SECTION -->
-    <header class="relative min-h-screen w-full flex items-center justify-center pt-20 overflow-hidden bg-white">
-        <div class="absolute inset-0 z-0 opacity-40">
-            <div class="absolute top-0 -left-20 w-96 h-96 bg-yellow-200 rounded-full blur-[120px]"></div>
-            <div class="absolute bottom-0 -right-20 w-96 h-96 bg-blue-100 rounded-full blur-[120px]"></div>
+    <header class="relative min-h-[90vh] w-full flex items-center justify-center overflow-hidden bg-white pt-20">
+        <!-- Background Elements -->
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-yellow-400/20 rounded-full blur-[100px]"></div>
+            <div class="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[120px]"></div>
+            <!-- Grid Pattern -->
+            <div class="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
         </div>
 
-        <div class="relative z-10 text-center px-6 max-w-5xl">
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 border border-black/5 mb-8 animate-bounce">
-                <span class="w-2 h-2 bg-green-500 rounded-full"></span>
-                <span class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Hệ sinh thái đã sẵn sàng</span>
+        <div class="relative z-10 text-center px-6 max-w-4xl gs-reveal">
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-yellow-50 border border-yellow-200 mb-8">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
+                </span>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-yellow-700">Airdrop Phase 1 Live</span>
             </div>
-            <h1 class="text-6xl md:text-[110px] font-extrabold tracking-tighter leading-[0.85] mb-8" id="cms-hero-title">
-                The Next Gen <br> <span class="gold-text">Vietnam Tech</span>
+            <h1 class="text-5xl md:text-[90px] font-black tracking-tight leading-[1.1] mb-6 text-slate-900" id="cms-hero-title">
+                Future of <br> <span class="text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-amber-600">Digital Economy</span>
             </h1>
-            <p class="text-lg md:text-xl text-gray-500 max-w-2xl mx-auto mb-10 leading-relaxed" id="cms-hero-subtitle">
-                Trải nghiệm nền tảng quản trị thông minh, minh bạch và tối ưu hóa hiệu suất cho cộng đồng công nghệ Việt Nam.
+            <p class="text-lg md:text-xl text-slate-500 max-w-2xl mx-auto mb-10 leading-relaxed font-medium" id="cms-hero-subtitle">
+                Tham gia hệ sinh thái công nghệ tiên tiến. Hoàn thành nhiệm vụ, tích lũy token và trở thành người tiên phong.
             </p>
             <div class="flex flex-wrap justify-center gap-4">
-                <a href="#missions" class="btn-primary px-10 py-5 rounded-2xl font-bold flex items-center gap-3">
-                    Bắt đầu nhiệm vụ <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                <a href="#missions" class="btn-primary px-8 py-4 rounded-full font-bold flex items-center gap-2 shadow-xl shadow-blue-900/20">
+                    Săn thưởng ngay <i data-lucide="arrow-down" class="w-4 h-4"></i>
                 </a>
             </div>
         </div>
     </header>
 
-    <!-- DASHBOARD PREVIEW (REAL DATA) -->
-    <section id="user-dashboard" class="py-10 px-6 hidden">
-        <div class="max-w-6xl mx-auto">
-            <div class="dashboard-card p-8 rounded-[40px] shadow-2xl relative overflow-hidden">
-                <div class="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+    <!-- DASHBOARD (Only Visible when Logged In) -->
+    <section id="user-dashboard" class="py-12 px-6 hidden -mt-20 relative z-20">
+        <div class="max-w-5xl mx-auto">
+            <div class="dashboard-card p-8 md:p-10 rounded-[3rem] shadow-2xl relative overflow-hidden gs-reveal">
+                <!-- Content -->
+                <div class="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
                     <div>
-                        <p class="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Tài sản của bạn</p>
-                        <h2 class="text-5xl font-black text-yellow-500"><span id="user-balance-main">0</span> <span class="text-2xl text-white opacity-50">$HD</span></h2>
-                    </div>
-                    <div class="flex flex-col gap-2">
-                        <div class="flex justify-between text-xs font-bold uppercase">
-                            <span>Mã mời: <span id="user-ref-code" class="text-white">...</span></span>
-                            <span class="text-yellow-500 cursor-pointer" onclick="copyRef()">Copy</span>
+                        <p class="text-blue-200 text-xs font-bold uppercase tracking-widest mb-2">Tổng tài sản</p>
+                        <h2 class="text-6xl font-black text-white mb-6 flex items-baseline gap-2">
+                            <span id="user-balance-main">0</span> 
+                            <span class="text-2xl text-yellow-400 font-bold">$HD</span>
+                        </h2>
+                        <div class="flex gap-3">
+                            <button onclick="dailyCheckIn()" class="bg-yellow-500 text-black px-6 py-3 rounded-xl font-bold hover:bg-yellow-400 transition flex items-center gap-2 shadow-lg shadow-yellow-500/20">
+                                <i data-lucide="calendar-check" class="w-5 h-5"></i> Điểm danh
+                            </button>
+                            <button onclick="copyRef()" class="bg-white/10 backdrop-blur-md text-white px-6 py-3 rounded-xl font-bold hover:bg-white/20 transition flex items-center gap-2">
+                                <i data-lucide="copy" class="w-5 h-5"></i> Mã mời
+                            </button>
                         </div>
-                        <div class="w-full h-3 bg-white/10 rounded-full overflow-hidden">
-                            <div class="h-full bg-yellow-500 w-[85%] shadow-[0_0_20px_#fbbf24]"></div>
-                        </div>
                     </div>
-                    <div class="flex justify-end">
-                        <button onclick="dailyCheckIn()" id="checkin-btn" class="bg-white text-black px-8 py-4 rounded-2xl font-bold hover:bg-yellow-500 transition active:scale-95">
-                            Điểm danh hàng ngày
-                        </button>
+                    <div class="bg-white/5 p-6 rounded-3xl border border-white/10 backdrop-blur-sm">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-sm font-bold text-gray-300">Tiến độ cấp độ</span>
+                            <span class="text-yellow-400 font-bold text-sm">Pioneer</span>
+                        </div>
+                        <div class="w-full h-3 bg-black/30 rounded-full overflow-hidden mb-2">
+                            <div class="h-full bg-gradient-to-r from-yellow-500 to-orange-500 w-[45%] rounded-full shadow-[0_0_15px_rgba(234,179,8,0.5)]"></div>
+                        </div>
+                        <p class="text-xs text-gray-400 text-right">Cần thêm 500 HD để lên cấp</p>
+                        
+                        <div class="mt-6 pt-6 border-t border-white/10 flex justify-between items-center">
+                            <div>
+                                <p class="text-[10px] text-gray-400 uppercase font-bold">Mã giới thiệu của bạn</p>
+                                <p id="user-ref-code" class="font-mono font-bold text-xl text-white tracking-wider">LOADING...</p>
+                            </div>
+                            <div class="w-10 h-10 bg-white text-black rounded-lg flex items-center justify-center cursor-pointer hover:scale-110 transition" onclick="copyRef()">
+                                <i data-lucide="share-2" class="w-5 h-5"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <!-- Abstract patterns -->
-                <div class="absolute top-0 right-0 w-64 h-64 bg-yellow-500/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+                
+                <!-- Decor -->
+                <div class="absolute top-0 right-0 w-96 h-96 bg-blue-500/20 rounded-full blur-[80px] -mr-20 -mt-20"></div>
+                <div class="absolute bottom-0 left-0 w-64 h-64 bg-yellow-500/10 rounded-full blur-[60px] -ml-10 -mb-10"></div>
             </div>
         </div>
     </section>
 
     <!-- MISSION SECTION -->
-    <section id="missions" class="py-24 px-6">
-        <div class="max-w-6xl mx-auto">
-            <div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
-                <div>
-                    <h2 class="text-5xl font-extrabold tracking-tight mb-4">Nhiệm vụ kiếm <span class="gold-text">$HD</span></h2>
-                    <p class="text-gray-500 max-w-md">Hoàn thành các hoạt động tương tác để nhận phần thưởng Token giá trị mỗi ngày.</p>
-                </div>
-                <div class="flex gap-4">
-                    <div class="bg-white border p-4 rounded-2xl shadow-sm text-center min-w-[120px]">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase">Token Lưu thông</p>
-                        <p id="stat-circulation" class="text-xl font-bold">5M+</p>
+    <section id="missions" class="py-24 px-6 max-w-7xl mx-auto">
+        <div class="flex flex-col md:flex-row justify-between items-end mb-12 gs-reveal">
+            <div>
+                <h2 class="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 text-slate-900">Nhiệm vụ <span class="text-yellow-600">Kiếm Thưởng</span></h2>
+                <p class="text-slate-500 font-medium">Hoàn thành các tác vụ đơn giản để nhận Token giá trị.</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="task-container">
+            <!-- Static Tasks -->
+            <div class="bento-card p-6 rounded-[2rem] flex items-center justify-between cursor-pointer group gs-reveal" onclick="copyRef()">
+                <div class="flex items-center gap-5">
+                    <div class="w-14 h-14 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition">
+                        <i data-lucide="users" class="w-7 h-7"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-lg text-slate-800">Mời bạn bè</h4>
+                        <p class="text-sm text-gray-400 font-medium">Nhận 100 HD / lượt</p>
                     </div>
                 </div>
+                <div class="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg font-bold text-sm">Vô hạn</div>
             </div>
 
-            <!-- DYNAMIC TASK GRID -->
-            <div id="task-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Checkin Card (Static) -->
-                <div class="bento-card p-8 rounded-[32px] flex items-center justify-between group cursor-pointer" onclick="dailyCheckIn()">
-                    <div class="flex items-center gap-6">
-                        <div class="w-16 h-16 bg-yellow-50 rounded-2xl flex items-center justify-center text-yellow-600 group-hover:bg-yellow-500 group-hover:text-white transition-colors">
-                            <i data-lucide="calendar-check-2" class="w-8 h-8"></i>
-                        </div>
-                        <div>
-                            <h4 class="font-bold text-xl">Điểm danh 24h</h4>
-                            <p class="text-sm text-gray-400">Nhận thưởng ngẫu nhiên</p>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <span class="block font-black text-2xl text-yellow-600">10-50</span>
-                        <span class="text-[10px] font-bold text-green-500 uppercase">Sẵn sàng</span>
-                    </div>
-                </div>
+            <!-- Dynamic Tasks will be injected here -->
+        </div>
+        <div id="loading-tasks" class="text-center py-10 hidden">
+            <div class="inline-block w-6 h-6 border-2 border-gray-300 border-t-yellow-500 rounded-full animate-spin"></div>
+        </div>
+    </section>
 
-                <!-- Invite Card (Toggleable) -->
-                <div id="invite-card" class="bento-card p-8 rounded-[32px] flex items-center justify-between group cursor-pointer" onclick="copyRef()">
-                    <div class="flex items-center gap-6">
-                        <div class="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                            <i data-lucide="share-2" class="w-8 h-8"></i>
-                        </div>
-                        <div>
-                            <h4 class="font-bold text-xl">Mời bạn bè</h4>
-                            <p class="text-sm text-gray-400">Chia sẻ mã giới thiệu</p>
-                        </div>
-                    </div>
-                    <div class="text-right font-black text-2xl text-blue-600">
-                        +100 $HD
-                    </div>
-                </div>
+    <!-- LEADERBOARD SECTION -->
+    <section id="leaderboard" class="py-20 px-6 bg-white border-y border-gray-100">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-center mb-12 gs-reveal">
+                <span class="text-yellow-500 font-bold tracking-widest text-xs uppercase mb-2 block">Hall of Fame</span>
+                <h2 class="text-4xl font-extrabold text-slate-900">Bảng Xếp Hạng</h2>
             </div>
             
-            <!-- Additional Tasks Container -->
-            <div id="extra-tasks" class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                <!-- Tasks injected by JS -->
+            <div class="bg-white border border-gray-100 rounded-[2.5rem] shadow-xl overflow-hidden gs-reveal">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50 border-b border-gray-100">
+                            <tr>
+                                <th class="p-6 text-xs font-extrabold text-gray-400 uppercase tracking-wider">#</th>
+                                <th class="p-6 text-xs font-extrabold text-gray-400 uppercase tracking-wider">Thành viên</th>
+                                <th class="p-6 text-xs font-extrabold text-gray-400 uppercase tracking-wider text-right">Điểm thưởng ($HD)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-list">
+                            <tr><td colspan="3" class="p-8 text-center text-gray-400">Đang tải dữ liệu...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </section>
 
     <!-- FOOTER -->
-    <footer class="py-20 px-6 border-t border-gray-100 bg-white">
-        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
-            <div class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-                    <i data-lucide="layers" class="text-yellow-500 w-5 h-5"></i>
-                </div>
-                <span class="font-bold text-xl tracking-tighter">HD Ecosystem</span>
+    <footer class="py-12 px-6 bg-slate-50">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-2 opacity-50 hover:opacity-100 transition">
+                <i data-lucide="layers" class="w-6 h-6"></i>
+                <span class="font-bold text-lg">HD Ecosystem</span>
             </div>
-            <p class="text-sm text-gray-400">© 2026 HD Platform.</p>
+            <p class="text-sm text-gray-400 font-medium">© 2026 HD Platform. All rights reserved.</p>
             <div id="footer-socials" class="flex gap-6">
                 <!-- Social links injected by JS -->
             </div>
         </div>
     </footer>
 
-    <!-- ADMIN PANEL (FULL SCREEN OVERLAY WITH TABS) -->
-    <div id="admin-panel" class="fixed inset-0 bg-[#f8fafc] z-[100] hidden overflow-hidden flex flex-col">
-        <!-- Admin Header -->
+    <!-- ADMIN PANEL OVERLAY -->
+    <div id="admin-panel" class="fixed inset-0 bg-slate-50 z-[100] hidden flex flex-col">
         <div class="bg-white px-6 py-4 border-b flex justify-between items-center shadow-sm z-10">
-            <h2 class="text-2xl font-black tracking-tight">Hệ thống <span class="text-yellow-600">Quản trị</span></h2>
-            <button id="close-admin" class="p-2 bg-gray-100 rounded-xl hover:bg-red-50 hover:text-red-500 transition">
+            <h2 class="text-xl font-bold flex items-center gap-2"><i data-lucide="shield-check" class="text-blue-500"></i> Admin Center</h2>
+            <button id="close-admin" class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
         </div>
-
+        
         <div class="flex flex-1 overflow-hidden">
-            <!-- Admin Sidebar Navigation -->
-            <div class="w-64 bg-white border-r p-4 space-y-2 hidden md:block">
-                <button class="admin-tab-btn w-full text-left p-3 rounded-xl font-bold text-sm hover:bg-gray-50 active" onclick="showAdminTab('config')">Cấu hình chung</button>
-                <button class="admin-tab-btn w-full text-left p-3 rounded-xl font-bold text-sm hover:bg-gray-50" onclick="showAdminTab('tasks')">Quản lý Nhiệm vụ</button>
-                <button class="admin-tab-btn w-full text-left p-3 rounded-xl font-bold text-sm hover:bg-gray-50" onclick="showAdminTab('users')">Quản lý User</button>
+            <div class="w-64 bg-white border-r hidden md:block p-4 space-y-1">
+                <button class="admin-tab-btn w-full text-left p-3 rounded-lg font-semibold text-sm hover:bg-gray-50 active" onclick="showAdminTab('config')">Cấu hình chung</button>
+                <button class="admin-tab-btn w-full text-left p-3 rounded-lg font-semibold text-sm hover:bg-gray-50" onclick="showAdminTab('tasks')">Quản lý Nhiệm vụ</button>
+                <button class="admin-tab-btn w-full text-left p-3 rounded-lg font-semibold text-sm hover:bg-gray-50" onclick="showAdminTab('users')">Quản lý User</button>
             </div>
-
-            <!-- Admin Content -->
-            <div class="flex-1 overflow-y-auto p-8">
-                
-                <!-- TAB: CONFIG -->
-                <div id="tab-config" class="admin-tab-content space-y-6">
-                    <div class="bg-white p-8 rounded-[32px] shadow-sm border border-black/5">
-                        <h3 class="text-xl font-bold mb-6 flex items-center gap-2">
-                            <i data-lucide="layout" class="w-5 h-5"></i> Cấu hình Website
-                        </h3>
+            <div class="flex-1 overflow-y-auto p-8 bg-slate-50">
+                <!-- Config Tab -->
+                <div id="tab-config" class="admin-tab-content max-w-2xl mx-auto space-y-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <h3 class="font-bold text-lg mb-4">Nội dung trang chủ</h3>
                         <div class="space-y-4">
                             <div>
-                                <label class="text-xs font-bold text-gray-400 uppercase">Tiêu đề Hero</label>
-                                <textarea id="edit-hero-title" class="w-full mt-1 p-3 bg-gray-50 rounded-xl border focus:border-yellow-500 outline-none h-20"></textarea>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Tiêu đề chính</label>
+                                <textarea id="edit-hero-title" class="w-full p-3 bg-gray-50 rounded-xl border focus:border-yellow-500 outline-none min-h-[80px]"></textarea>
                             </div>
                             <div>
-                                <label class="text-xs font-bold text-gray-400 uppercase">Mô tả Hero</label>
-                                <input id="edit-hero-subtitle" class="w-full mt-1 p-3 bg-gray-50 rounded-xl border focus:border-yellow-500 outline-none">
-                            </div>
-                            <div class="flex items-center gap-4">
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" id="edit-enable-sidebar" class="w-5 h-5 accent-yellow-500">
-                                    <span class="font-bold text-sm">Bật Sidebar Trái</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" id="edit-enable-invite" class="w-5 h-5 accent-yellow-500">
-                                    <span class="font-bold text-sm">Bật Chế độ Mời bạn</span>
-                                </label>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Mô tả phụ</label>
+                                <input id="edit-hero-subtitle" class="w-full p-3 bg-gray-50 rounded-xl border focus:border-yellow-500 outline-none">
                             </div>
                         </div>
                     </div>
-
-                    <div class="bg-white p-8 rounded-[32px] shadow-sm border border-black/5">
-                        <h3 class="text-xl font-bold mb-6">Liên kết Social Media</h3>
-                        <div class="grid grid-cols-3 gap-4">
-                            <input id="link-fb" placeholder="Link Facebook" class="p-3 bg-gray-50 rounded-xl border">
-                            <input id="link-tele" placeholder="Link Telegram" class="p-3 bg-gray-50 rounded-xl border">
-                            <input id="link-tw" placeholder="Link Twitter/X" class="p-3 bg-gray-50 rounded-xl border">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <h3 class="font-bold text-lg mb-4">Social Media</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <input id="link-fb" placeholder="Facebook Link" class="p-3 bg-gray-50 rounded-xl border outline-none text-sm">
+                            <input id="link-tele" placeholder="Telegram Link" class="p-3 bg-gray-50 rounded-xl border outline-none text-sm">
+                            <input id="link-tw" placeholder="X (Twitter) Link" class="p-3 bg-gray-50 rounded-xl border outline-none text-sm">
                         </div>
-                        <button onclick="saveConfig()" class="mt-6 w-full bg-black text-white py-4 rounded-xl font-bold hover:bg-yellow-600 transition">LƯU CẤU HÌNH</button>
+                        <button onclick="saveConfig()" class="mt-4 w-full bg-black text-white py-3 rounded-xl font-bold hover:bg-gray-800 transition">Lưu thay đổi</button>
                     </div>
                 </div>
 
-                <!-- TAB: TASKS -->
-                <div id="tab-tasks" class="admin-tab-content hidden space-y-6">
-                    <div class="flex justify-between items-center">
-                        <h3 class="text-xl font-bold">Danh sách Nhiệm vụ</h3>
-                        <button onclick="addTask()" class="bg-yellow-500 text-white px-4 py-2 rounded-xl font-bold text-sm">+ Thêm mới</button>
+                <!-- Tasks Tab -->
+                <div id="tab-tasks" class="admin-tab-content hidden max-w-4xl mx-auto">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="font-bold text-xl">Danh sách Nhiệm vụ</h3>
+                        <button onclick="addTask()" class="bg-yellow-500 text-white px-5 py-2 rounded-xl font-bold text-sm shadow-lg shadow-yellow-500/20 hover:scale-105 transition">+ Thêm mới</button>
                     </div>
-                    <div class="bg-white rounded-[24px] overflow-hidden border border-gray-100">
+                    <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
                         <table class="w-full text-sm text-left">
                             <thead class="bg-gray-50 font-bold text-gray-500 uppercase text-xs">
                                 <tr>
                                     <th class="p-4">Tên nhiệm vụ</th>
-                                    <th class="p-4">Điểm ($HD)</th>
+                                    <th class="p-4">Thưởng</th>
                                     <th class="p-4">Link</th>
-                                    <th class="p-4 text-right">Hành động</th>
+                                    <th class="p-4 text-right">Xóa</th>
                                 </tr>
                             </thead>
-                            <tbody id="admin-tasks-list">
-                                <!-- JS render tasks here -->
-                            </tbody>
+                            <tbody id="admin-tasks-list"></tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- TAB: USERS -->
-                <div id="tab-users" class="admin-tab-content hidden space-y-6">
-                    <div class="bg-white p-4 rounded-[24px] flex gap-4">
-                        <input id="search-user" placeholder="Tìm kiếm user..." class="flex-1 p-2 bg-gray-50 outline-none">
-                        <button onclick="loadUsers()" class="font-bold">Tìm</button>
+                <!-- Users Tab -->
+                <div id="tab-users" class="admin-tab-content hidden max-w-4xl mx-auto">
+                    <div class="bg-white p-4 rounded-2xl mb-6 shadow-sm flex gap-3">
+                        <input id="search-user" placeholder="Tìm kiếm theo tên..." class="flex-1 p-2 bg-transparent outline-none font-medium">
+                        <button onclick="loadUsers()" class="px-4 py-2 bg-gray-100 rounded-lg font-bold hover:bg-gray-200">Reload</button>
                     </div>
-                    <div class="bg-white rounded-[24px] overflow-hidden border border-gray-100">
+                    <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
                         <table class="w-full text-sm text-left">
                             <thead class="bg-gray-50 font-bold text-gray-500 uppercase text-xs">
                                 <tr>
-                                    <th class="p-4">User</th>
-                                    <th class="p-4">Số dư</th>
-                                    <th class="p-4 text-right">Chỉnh điểm</th>
+                                    <th class="p-4">Thông tin User</th>
+                                    <th class="p-4">Số dư ($HD)</th>
+                                    <th class="p-4 text-right">Hành động</th>
                                 </tr>
                             </thead>
-                            <tbody id="admin-users-list">
-                                <!-- JS render users here -->
-                            </tbody>
+                            <tbody id="admin-users-list"></tbody>
                         </table>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>
 
-    <!-- FIREBASE & LOGIC -->
+    <!-- FIREBASE & APP LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, setDoc, getDoc, collection, addDoc, query, orderBy, limit, increment, updateDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, setDoc, getDoc, collection, addDoc, query, orderBy, limit, increment, updateDoc, deleteDoc, getDocs, where, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // --- FIREBASE CONFIG (Thay bằng của bạn) ---
+        // --- FIREBASE CONFIG ---
+        // LƯU Ý: Để bảo mật tuyệt đối, hãy thiết lập Firestore Security Rules trên Firebase Console.
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
@@ -384,21 +404,62 @@
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
         
-        // --- ID ADMIN (Thay UID của bạn vào đây để hiện nút Admin) ---
+        // --- ADMIN SETTINGS ---
+        // Thay UID của bạn vào đây
         const ADMIN_UIDS = ["VYIs9XHLR9RMStwtcdwMrOIo33w1"]; 
 
-        // --- INIT ---
-        lucide.createIcons();
-        window.addEventListener('load', () => {
-            gsap.to("#loader", { opacity: 0, duration: 0.5, onComplete: () => document.getElementById('loader').style.display = 'none' });
-            
-            // Toggle sidebar event
-            document.getElementById('sidebar-toggle-btn').onclick = () => {
-                document.getElementById('dynamic-sidebar').classList.toggle('active');
-            };
+        // --- UI HELPERS ---
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer)
+                toast.addEventListener('mouseleave', Swal.resumeTimer)
+            }
         });
 
-        // --- AUTH ---
+        // --- INIT & ANIMATIONS ---
+        gsap.registerPlugin(ScrollTrigger);
+        lucide.createIcons();
+        
+        window.addEventListener('load', () => {
+            const tl = gsap.timeline();
+            tl.to("#loader", { opacity: 0, duration: 0.5, onComplete: () => document.getElementById('loader').style.display = 'none' });
+            
+            // Scroll Animations
+            gsap.utils.toArray('.gs-reveal').forEach(elem => {
+                gsap.from(elem, {
+                    scrollTrigger: { trigger: elem, start: "top 85%" },
+                    y: 50, opacity: 0, duration: 1, ease: "power3.out"
+                });
+            });
+
+            // Sidebar
+            const sidebar = document.getElementById('dynamic-sidebar');
+            const overlay = document.getElementById('overlay-sidebar');
+            const toggle = () => {
+                sidebar.classList.toggle('active');
+                if(sidebar.classList.contains('active')) {
+                    overlay.classList.remove('hidden');
+                    setTimeout(()=> overlay.classList.remove('opacity-0'), 10);
+                } else {
+                    overlay.classList.add('opacity-0');
+                    setTimeout(()=> overlay.classList.add('hidden'), 300);
+                }
+            };
+            document.getElementById('sidebar-toggle-btn').onclick = toggle;
+            overlay.onclick = toggle;
+        });
+
+        // --- AUTH & DATA LOGIC ---
+        // 1. Referral Logic
+        const urlParams = new URLSearchParams(window.location.search);
+        const refCodeFromUrl = urlParams.get('ref');
+        if(refCodeFromUrl) localStorage.setItem('hd_ref_code', refCodeFromUrl);
+
         onAuthStateChanged(auth, async (user) => {
             const loginBtn = document.getElementById('login-btn');
             const userInfo = document.getElementById('user-info');
@@ -407,83 +468,84 @@
             if (user) {
                 loginBtn.classList.add('hidden');
                 userInfo.classList.remove('hidden');
+                userInfo.classList.add('flex');
                 dashArea.classList.remove('hidden');
                 
                 document.getElementById('user-photo').src = user.photoURL;
                 document.getElementById('user-name').innerText = user.displayName;
+
+                await syncUserProfile(user);
                 
-                // Check Admin
+                // Admin Check
                 if (ADMIN_UIDS.includes(user.uid)) {
                     document.getElementById('admin-trigger').classList.remove('hidden');
-                    // Setup Admin Listeners
-                    setupAdminListeners();
+                    loadUsers(); 
                 }
-
-                syncUserProfile(user);
             } else {
                 loginBtn.classList.remove('hidden');
                 userInfo.classList.add('hidden');
+                userInfo.classList.remove('flex');
                 dashArea.classList.add('hidden');
             }
         });
 
-        document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
-        document.getElementById('logout-btn').onclick = () => signOut(auth);
+        document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider).catch(e => Toast.fire({icon:'error', title: e.message}));
+        document.getElementById('logout-btn').onclick = () => {
+            document.getElementById('user-dropdown').classList.add('hidden');
+            signOut(auth);
+        };
+        window.toggleUserMenu = () => document.getElementById('user-dropdown').classList.toggle('hidden');
 
-        // --- DATA SYNC ---
-        // 1. User Profile
-        function syncUserProfile(user) {
+        async function syncUserProfile(user) {
             const userRef = doc(db, "users", user.uid);
+            
+            // Realtime Update Balance
             onSnapshot(userRef, (snap) => {
                 if (snap.exists()) {
                     const data = snap.data();
-                    document.getElementById('user-balance-nav').innerText = `${(data.balance || 0).toLocaleString()} $HD`;
-                    document.getElementById('user-balance-main').innerText = (data.balance || 0).toLocaleString();
-                    document.getElementById('user-ref-code').innerText = data.refCode || '...';
+                    const balance = (data.balance || 0).toLocaleString();
+                    document.getElementById('user-balance-nav').innerText = `${balance} HD`;
+                    document.getElementById('user-balance-main').innerText = balance;
+                    document.getElementById('user-ref-code').innerText = data.refCode || 'Creating...';
+                    
+                    // Reload tasks to update "Completed" status
+                    loadTasks(user.uid, data.completedTasks || []);
                 } else {
-                    const refCode = "HD" + Math.random().toString(36).substr(2, 6).toUpperCase();
-                    setDoc(userRef, { 
-                        name: user.displayName, 
-                        email: user.email, 
-                        balance: 0, 
-                        refCode: refCode,
-                        photo: user.photoURL
+                    // Create New User
+                    const newRefCode = "HD" + Math.random().toString(36).substr(2, 6).toUpperCase();
+                    const inviterCode = localStorage.getItem('hd_ref_code');
+                    
+                    const userData = {
+                        name: user.displayName,
+                        email: user.email,
+                        balance: 0,
+                        refCode: newRefCode,
+                        photo: user.photoURL,
+                        createdAt: Date.now(),
+                        completedTasks: []
+                    };
+
+                    // Bonus for inviter logic could be here (Backend function is better)
+                    setDoc(userRef, userData).then(() => {
+                        Toast.fire({ icon: 'success', title: 'Chào mừng thành viên mới!' });
                     });
                 }
             });
         }
 
-        // 2. Global Settings (Admin Config)
+        // --- GLOBAL CONTENT & TASKS ---
         onSnapshot(doc(db, "settings", "global"), (snap) => {
             if (snap.exists()) {
                 const data = snap.data();
-                
                 // Update UI
                 if(data.heroTitle) document.getElementById('cms-hero-title').innerHTML = data.heroTitle;
                 if(data.heroSubtitle) document.getElementById('cms-hero-subtitle').innerText = data.heroSubtitle;
-                
-                // Sidebar Toggle
-                const sidebarBtn = document.getElementById('sidebar-toggle-btn');
-                if(data.enableSidebar) {
-                    sidebarBtn.classList.remove('hidden');
-                } else {
-                    sidebarBtn.classList.add('hidden');
-                    document.getElementById('dynamic-sidebar').classList.remove('active');
-                }
-
-                // Invite Mode
-                const inviteCard = document.getElementById('invite-card');
-                if(inviteCard) inviteCard.style.display = data.enableInvite ? 'flex' : 'none';
-
-                // Socials
                 renderSocials(data.socials);
-
-                // Update Admin Inputs (if is admin)
-                if (document.getElementById('edit-hero-title')) {
+                
+                // Update Admin Forms
+                if(document.getElementById('edit-hero-title')) {
                     document.getElementById('edit-hero-title').value = data.heroTitle || '';
                     document.getElementById('edit-hero-subtitle').value = data.heroSubtitle || '';
-                    document.getElementById('edit-enable-sidebar').checked = data.enableSidebar || false;
-                    document.getElementById('edit-enable-invite').checked = data.enableInvite || false;
                     document.getElementById('link-fb').value = data.socials?.fb || '';
                     document.getElementById('link-tele').value = data.socials?.tele || '';
                     document.getElementById('link-tw').value = data.socials?.tw || '';
@@ -491,142 +553,234 @@
             }
         });
 
-        function renderSocials(socials) {
-            if(!socials) return;
-            const html = `
-                ${socials.fb ? `<a href="${socials.fb}" target="_blank" class="text-gray-400 hover:text-black"><i data-lucide="facebook"></i></a>` : ''}
-                ${socials.tele ? `<a href="${socials.tele}" target="_blank" class="text-gray-400 hover:text-blue-500"><i data-lucide="send"></i></a>` : ''}
-                ${socials.tw ? `<a href="${socials.tw}" target="_blank" class="text-gray-400 hover:text-black"><i data-lucide="twitter"></i></a>` : ''}
-            `;
-            document.getElementById('footer-socials').innerHTML = html;
-            document.getElementById('sidebar-socials').innerHTML = html; // Also add to sidebar
-            lucide.createIcons();
-        }
-
-        // 3. Dynamic Tasks
+        // Realtime Tasks Listener
+        let globalTasks = [];
         onSnapshot(collection(db, "tasks"), (snap) => {
-            const container = document.getElementById('extra-tasks');
+            globalTasks = [];
             const adminList = document.getElementById('admin-tasks-list');
-            
-            let htmlUser = '';
             let htmlAdmin = '';
 
             snap.forEach(d => {
                 const t = d.data();
-                const id = d.id;
-
-                // User View
-                htmlUser += `
-                <div class="bento-card p-6 rounded-[32px] flex items-center justify-between cursor-pointer" onclick="doTask('${id}', '${t.link}', ${t.reward})">
-                    <div class="flex items-center gap-4">
-                        <div class="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-gray-600">
-                            <i data-lucide="star" class="w-6 h-6"></i>
-                        </div>
-                        <div>
-                            <h4 class="font-bold text-lg">${t.title}</h4>
-                            <p class="text-xs text-gray-400">${t.desc || 'Nhiệm vụ mới'}</p>
-                        </div>
-                    </div>
-                    <div class="font-bold text-yellow-600">+${t.reward} $HD</div>
-                </div>`;
-
+                globalTasks.push({ id: d.id, ...t });
+                
                 // Admin View
                 htmlAdmin += `
                 <tr class="border-b border-gray-100">
-                    <td class="p-4 font-bold">${t.title}</td>
-                    <td class="p-4">${t.reward}</td>
-                    <td class="p-4 max-w-[150px] truncate text-gray-400">${t.link || '-'}</td>
+                    <td class="p-4 font-bold text-gray-700">${t.title}</td>
+                    <td class="p-4 text-yellow-600 font-bold">${t.reward}</td>
+                    <td class="p-4 max-w-[150px] truncate text-gray-400 cursor-pointer" title="${t.link}">${t.link || '-'}</td>
                     <td class="p-4 text-right">
-                        <button onclick="deleteTask('${id}')" class="text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        <button onclick="deleteTask('${d.id}')" class="text-red-400 hover:text-red-600 bg-red-50 p-2 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                     </td>
                 </tr>`;
             });
-
-            if(container) container.innerHTML = htmlUser;
             if(adminList) adminList.innerHTML = htmlAdmin;
             lucide.createIcons();
+
+            // Refresh user view if logged in
+            const user = auth.currentUser;
+            if(user) {
+                getDoc(doc(db, "users", user.uid)).then(s => {
+                    if(s.exists()) loadTasks(user.uid, s.data().completedTasks || []);
+                });
+            } else {
+                loadTasks(null, []);
+            }
         });
+
+        function loadTasks(uid, completedList) {
+            const container = document.getElementById('task-container');
+            // Remove old dynamic tasks (keep static ones if logic requires, but here we rebuild dynamic part)
+            // Strategy: Keep the static "Invite" card, append dynamic ones.
+            // Simplified: Clear container content except the first static card if you want, but easier to re-render all or append.
+            
+            // Let's grab the static invite card HTML to preserve it
+            // const inviteHTML = container.firstElementChild ? container.firstElementChild.outerHTML : ''; 
+            // Better: Just append to a specific div, but let's clear and re-add static for simplicity here
+            
+            let html = `
+            <div class="bento-card p-6 rounded-[2rem] flex items-center justify-between cursor-pointer group gs-reveal" onclick="copyRef()">
+                <div class="flex items-center gap-5">
+                    <div class="w-14 h-14 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition">
+                        <i data-lucide="users" class="w-7 h-7"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-lg text-slate-800">Mời bạn bè</h4>
+                        <p class="text-sm text-gray-400 font-medium">Nhận +100 HD</p>
+                    </div>
+                </div>
+                <div class="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg font-bold text-xs">HOT</div>
+            </div>`;
+
+            globalTasks.forEach(t => {
+                const isDone = completedList.includes(t.id);
+                const btnClass = isDone ? "bg-green-100 text-green-600 cursor-default" : "bg-yellow-100 text-yellow-700 group-hover:bg-yellow-500 group-hover:text-white";
+                const icon = isDone ? "check-circle-2" : "arrow-right";
+                
+                html += `
+                <div class="bento-card p-6 rounded-[2rem] flex items-center justify-between group ${isDone ? 'opacity-70' : 'cursor-pointer'}" onclick="${isDone ? '' : `doTask('${t.id}', '${t.link}', ${t.reward})`}">
+                    <div class="flex items-center gap-5">
+                        <div class="w-14 h-14 ${isDone ? 'bg-green-50 text-green-500' : 'bg-gray-100 text-gray-600'} rounded-2xl flex items-center justify-center transition-colors">
+                            <i data-lucide="${isDone ? 'check' : 'star'}" class="w-7 h-7"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-lg text-slate-800 ${isDone ? 'line-through text-gray-400' : ''}">${t.title}</h4>
+                            <p class="text-sm text-gray-400 font-medium">${isDone ? 'Đã hoàn thành' : `+${t.reward} $HD`}</p>
+                        </div>
+                    </div>
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center ${btnClass} transition-all">
+                        <i data-lucide="${icon}" class="w-5 h-5"></i>
+                    </div>
+                </div>`;
+            });
+            
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function renderSocials(socials) {
+            if(!socials) return;
+            const html = `
+                ${socials.fb ? `<a href="${socials.fb}" target="_blank" class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition"><i data-lucide="facebook" class="w-5 h-5"></i></a>` : ''}
+                ${socials.tele ? `<a href="${socials.tele}" target="_blank" class="w-10 h-10 rounded-full bg-sky-50 text-sky-500 flex items-center justify-center hover:bg-sky-500 hover:text-white transition"><i data-lucide="send" class="w-5 h-5"></i></a>` : ''}
+                ${socials.tw ? `<a href="${socials.tw}" target="_blank" class="w-10 h-10 rounded-full bg-gray-100 text-black flex items-center justify-center hover:bg-black hover:text-white transition"><i data-lucide="twitter" class="w-5 h-5"></i></a>` : ''}
+            `;
+            document.getElementById('footer-socials').innerHTML = html;
+            document.getElementById('sidebar-socials').innerHTML = html;
+            lucide.createIcons();
+        }
+
+        // --- LEADERBOARD ---
+        async function loadLeaderboard() {
+            const q = query(collection(db, "users"), orderBy("balance", "desc"), limit(5));
+            const snap = await getDocs(q);
+            const tbody = document.getElementById('leaderboard-list');
+            tbody.innerHTML = '';
+            
+            let rank = 1;
+            snap.forEach(d => {
+                const u = d.data();
+                let rankBadge = `<span class="font-bold text-gray-500">#${rank}</span>`;
+                if(rank === 1) rankBadge = `<span class="text-2xl">🥇</span>`;
+                if(rank === 2) rankBadge = `<span class="text-2xl">🥈</span>`;
+                if(rank === 3) rankBadge = `<span class="text-2xl">🥉</span>`;
+
+                tbody.innerHTML += `
+                <tr class="border-b border-gray-50 hover:bg-gray-50 transition">
+                    <td class="p-6">${rankBadge}</td>
+                    <td class="p-6 flex items-center gap-3">
+                        <img src="${u.photo || 'https://via.placeholder.com/32'}" class="w-8 h-8 rounded-full border">
+                        <span class="font-bold text-sm">${u.name}</span>
+                    </td>
+                    <td class="p-6 text-right font-black text-yellow-600">${u.balance.toLocaleString()}</td>
+                </tr>`;
+                rank++;
+            });
+        }
+        loadLeaderboard(); // Init load
 
         // --- USER ACTIONS ---
         window.dailyCheckIn = async () => {
             const user = auth.currentUser;
-            if(!user) return Swal.fire("Lỗi", "Bạn chưa đăng nhập", "error");
+            if(!user) return Toast.fire({ icon: 'warning', title: 'Vui lòng đăng nhập!' });
             
             const userRef = doc(db, "users", user.uid);
             const snap = await getDoc(userRef);
             const data = snap.data();
             
             const now = Date.now();
+            // Check 24h
             if(data.lastCheckin && (now - data.lastCheckin < 86400000)) {
-                return Swal.fire("Chờ đã", "Bạn đã điểm danh hôm nay rồi!", "info");
+                return Toast.fire({ icon: 'info', title: 'Bạn đã điểm danh hôm nay rồi. Quay lại mai nhé!' });
             }
 
-            const reward = Math.floor(Math.random() * 40) + 10;
+            const reward = Math.floor(Math.random() * 50) + 20; // Random 20-70
             await updateDoc(userRef, {
                 balance: increment(reward),
                 lastCheckin: now
             });
-            Swal.fire("Thành công", `Bạn nhận được ${reward} $HD`, "success");
+            
+            Swal.fire({
+                title: `+${reward} $HD`,
+                text: "Điểm danh thành công!",
+                icon: "success",
+                confirmButtonColor: "#eab308"
+            });
         };
 
         window.doTask = async (id, link, reward) => {
             const user = auth.currentUser;
-            if(!user) return Swal.fire("Lỗi", "Bạn chưa đăng nhập", "error");
+            if(!user) return Toast.fire({ icon: 'warning', title: 'Vui lòng đăng nhập!' });
 
-            // Check if done logic here (simplified for demo)
-            if(link) window.open(link, '_blank');
+            if(link && link !== '#') window.open(link, '_blank');
             
-            // Fake processing
+            // Simulation of verification
             Swal.fire({
-                title: 'Đang kiểm tra...',
-                timer: 2000,
-                didOpen: () => Swal.showLoading()
+                title: 'Đang xác minh...',
+                text: 'Vui lòng không đóng tab...',
+                timer: 3000,
+                timerProgressBar: true,
+                didOpen: () => Swal.showLoading(),
+                allowOutsideClick: false
             }).then(async () => {
-                await updateDoc(doc(db, "users", user.uid), { balance: increment(reward) });
-                Swal.fire("Hoàn thành", `+${reward} $HD`, "success");
+                const userRef = doc(db, "users", user.uid);
+                // Atomic update: Add reward AND add task ID to list
+                await updateDoc(userRef, {
+                    balance: increment(reward),
+                    completedTasks: arrayUnion(id)
+                });
+                
+                Toast.fire({ icon: 'success', title: `Nhiệm vụ hoàn tất! +${reward} HD` });
             });
         };
 
         window.copyRef = () => {
+            const user = auth.currentUser;
+            if(!user) return Toast.fire({ icon: 'warning', title: 'Đăng nhập để lấy mã!' });
+            
             const code = document.getElementById('user-ref-code').innerText;
-            navigator.clipboard.writeText(code);
-            Swal.fire("Đã copy", `Mã: ${code}`, "success");
+            const link = `${window.location.origin}${window.location.pathname}?ref=${code}`;
+            navigator.clipboard.writeText(link);
+            Toast.fire({ icon: 'success', title: 'Đã copy link giới thiệu!' });
         };
 
         // --- ADMIN ACTIONS ---
-        document.getElementById('admin-trigger').onclick = () => document.getElementById('admin-panel').classList.remove('hidden');
+        document.getElementById('admin-trigger').onclick = () => {
+            document.getElementById('user-dropdown').classList.add('hidden');
+            document.getElementById('admin-panel').classList.remove('hidden');
+        };
         document.getElementById('close-admin').onclick = () => document.getElementById('admin-panel').classList.add('hidden');
 
         window.showAdminTab = (tab) => {
             document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(`tab-${tab}`).classList.remove('hidden');
             
-            document.querySelectorAll('.admin-tab-btn').forEach(el => el.classList.remove('active', 'bg-black', 'text-white'));
-            // Highlight logic skipped for brevity, simplistic toggle
+            document.querySelectorAll('.admin-tab-btn').forEach(el => el.classList.remove('active'));
+            // Highlight logic needs event target ref handling, simplified here
         };
 
         window.saveConfig = async () => {
             await setDoc(doc(db, "settings", "global"), {
                 heroTitle: document.getElementById('edit-hero-title').value,
                 heroSubtitle: document.getElementById('edit-hero-subtitle').value,
-                enableSidebar: document.getElementById('edit-enable-sidebar').checked,
-                enableInvite: document.getElementById('edit-enable-invite').checked,
                 socials: {
                     fb: document.getElementById('link-fb').value,
                     tele: document.getElementById('link-tele').value,
                     tw: document.getElementById('link-tw').value
                 }
             }, { merge: true });
-            Swal.fire("Saved", "Cấu hình đã lưu", "success");
+            Toast.fire({ icon: 'success', title: 'Cấu hình đã lưu' });
         };
 
         window.addTask = async () => {
             const { value: formValues } = await Swal.fire({
-                title: 'Thêm Nhiệm Vụ',
-                html: '<input id="swal-title" class="swal2-input" placeholder="Tên">' +
-                      '<input id="swal-reward" type="number" class="swal2-input" placeholder="Điểm">' +
-                      '<input id="swal-link" class="swal2-input" placeholder="Link">',
+                title: 'Thêm Nhiệm Vụ Mới',
+                html: '<input id="swal-title" class="swal2-input" placeholder="Tên nhiệm vụ">' +
+                      '<input id="swal-reward" type="number" class="swal2-input" placeholder="Điểm thưởng">' +
+                      '<input id="swal-link" class="swal2-input" placeholder="Link (https://...)">',
                 focusConfirm: false,
+                confirmButtonColor: '#0f172a',
                 preConfirm: () => [
                     document.getElementById('swal-title').value,
                     document.getElementById('swal-reward').value,
@@ -634,26 +788,26 @@
                 ]
             });
 
-            if(formValues) {
+            if(formValues && formValues[0]) {
                 await addDoc(collection(db, "tasks"), {
                     title: formValues[0],
-                    reward: Number(formValues[1]),
+                    reward: Number(formValues[1]) || 0,
                     link: formValues[2],
                     createdAt: Date.now()
                 });
+                Toast.fire({ icon: 'success', title: 'Đã thêm nhiệm vụ' });
             }
         };
 
         window.deleteTask = async (id) => {
-            if(confirm("Xóa nhiệm vụ này?")) await deleteDoc(doc(db, "tasks", id));
+            if(confirm("Bạn chắc chắn muốn xóa?")) await deleteDoc(doc(db, "tasks", id));
         };
 
-        // User Management for Admin
         window.loadUsers = async () => {
             const tbody = document.getElementById('admin-users-list');
             tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center">Loading...</td></tr>';
             
-            const q = query(collection(db, "users"), limit(20));
+            const q = query(collection(db, "users"), orderBy("balance", "desc"), limit(20));
             const snap = await getDocs(q);
             
             tbody.innerHTML = '';
@@ -662,12 +816,12 @@
                 tbody.innerHTML += `
                 <tr class="border-b">
                     <td class="p-4">
-                        <div class="font-bold">${u.name}</div>
+                        <div class="font-bold text-slate-800">${u.name}</div>
                         <div class="text-xs text-gray-400">${u.email}</div>
                     </td>
                     <td class="p-4 font-bold text-yellow-600">${u.balance}</td>
                     <td class="p-4 text-right">
-                        <button onclick="editPoints('${d.id}')" class="bg-gray-100 p-2 rounded text-xs font-bold">Sửa điểm</button>
+                        <button onclick="editPoints('${d.id}')" class="bg-blue-50 text-blue-600 p-2 rounded-lg text-xs font-bold hover:bg-blue-100">Sửa điểm</button>
                     </td>
                 </tr>`;
             });
@@ -675,21 +829,20 @@
 
         window.editPoints = async (uid) => {
             const { value: points } = await Swal.fire({
-                title: 'Nhập số điểm cần cộng/trừ',
-                input: 'number'
+                title: 'Cộng/Trừ điểm',
+                input: 'number',
+                inputLabel: 'Nhập số (vd: 100 hoặc -50)',
+                confirmButtonColor: '#0f172a'
             });
             if(points) {
                 await updateDoc(doc(db, "users", uid), { balance: increment(Number(points)) });
-                loadUsers(); // reload list
-                Swal.fire("Đã cập nhật", "", "success");
+                loadUsers();
+                Toast.fire({ icon: 'success', title: 'Đã cập nhật số dư' });
             }
         };
 
-        function setupAdminListeners() {
-            // Load users initially
-            loadUsers();
-        }
-
+        // Expose functions to window
+        window.loadUsers = loadUsers;
     </script>
 </body>
 </html>
