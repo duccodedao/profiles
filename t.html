@@ -9,6 +9,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <!-- Excel Export Library -->
@@ -61,14 +62,6 @@
         }
         .custom-modal.active .custom-modal-content {
             transform: scale(1);
-        }
-        
-        /* Locked Account Overlay */
-        .locked-overlay {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(4px);
-            z-index: 50;
-            display: flex; justify-content: center; align-items: center;
         }
     </style>
 </head>
@@ -212,13 +205,13 @@
                         <label class="cursor-pointer">
                             <input type="radio" name="walletType" value="CEX" class="peer sr-only" onchange="toggleWalletForm()">
                             <div class="p-4 border-2 border-gray-200 rounded-xl peer-checked:border-yellow-500 peer-checked:bg-yellow-50 hover:bg-gray-50 transition text-center font-bold">
-                                Sàn CEX (Binance/OKX...)
+                                Sàn CEX
                             </div>
                         </label>
                         <label class="cursor-pointer">
                             <input type="radio" name="walletType" value="DEX" class="peer sr-only" onchange="toggleWalletForm()">
                             <div class="p-4 border-2 border-gray-200 rounded-xl peer-checked:border-yellow-500 peer-checked:bg-yellow-50 hover:bg-gray-50 transition text-center font-bold">
-                                Ví DEX (Metamask...)
+                                Ví DEX (Metamask)
                             </div>
                         </label>
                     </div>
@@ -232,7 +225,6 @@
                             <option value="Binance">Binance</option>
                             <option value="OKX">OKX</option>
                             <option value="Bybit">Bybit</option>
-                            <option value="Bitget">Bitget</option>
                             <option value="Gate.io">Gate.io</option>
                         </select>
                     </div>
@@ -369,7 +361,9 @@
                     <h3 class="font-bold text-lg">Hệ thống Nhiệm vụ</h3>
                     <button onclick="openTaskModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold">+ Thêm Nhiệm vụ</button>
                 </div>
-                <div id="admin-tasks-list" class="space-y-3"></div>
+                <div id="admin-tasks-list" class="grid grid-cols-1 gap-4">
+                    <!-- Tasks will load here via JS -->
+                </div>
             </div>
 
             <!-- NOTIF TAB -->
@@ -404,11 +398,11 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, setDoc, getDoc, collection, addDoc, query, orderBy, limit, increment, updateDoc, deleteDoc, getDocs, arrayUnion, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, setDoc, getDoc, collection, addDoc, query, orderBy, limit, increment, updateDoc, deleteDoc, getDocs, arrayUnion, writeBatch, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // --- FIREBASE CONFIG (Thay API Key của bạn vào đây) ---
+        // --- FIREBASE CONFIG (THAY API KEY THỰC CỦA BẠN VÀO ĐÂY) ---
         const firebaseConfig = {
-            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE", // << THAY API KEY THỰC CỦA BẠN
+            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE", // <<<<< FIX THIS
             authDomain: "profile-d1214.firebaseapp.com",
             projectId: "profile-d1214",
             storageBucket: "profile-d1214.firebasestorage.app",
@@ -421,7 +415,9 @@
         const db = getFirestore(app);
         
         const googleProvider = new GoogleAuthProvider();
-        const ADMIN_UIDS = ["VYIs9XHLR9RMStwtcdwMrOIo33w1"]; // << THÊM UID CỦA BẠN VÀO ĐÂY
+        
+        // --- DANH SÁCH ADMIN (THÊM UID CỦA BẠN VÀO ĐÂY) ---
+        const ADMIN_UIDS = ["VYIs9XHLR9RMStwtcdwMrOIo33w1", "THEM_UID_KHAC_NEU_CAN"];
 
         // --- GLOBAL VARIABLES ---
         let currentUserData = null;
@@ -458,7 +454,7 @@
         // --- AUTH & SECURITY LOGIC ---
         document.getElementById('login-google-btn').onclick = async () => {
             try {
-                const result = await signInWithPopup(auth, googleProvider);
+                await signInWithPopup(auth, googleProvider);
                 showToast(`Đăng nhập thành công!`);
             } catch (error) {
                 showToast("Lỗi đăng nhập: " + error.message, "error");
@@ -480,7 +476,6 @@
                 document.getElementById('user-photo').src = user.photoURL;
                 document.getElementById('user-name').innerText = user.displayName;
 
-                // Security Check: Lock & IP
                 const userIP = await getUserIP();
                 const userRef = doc(db, "users", user.uid);
                 
@@ -490,7 +485,6 @@
                         const data = snap.data();
                         currentUserData = data;
 
-                        // 1. Check Locked Status
                         if (data.isLocked) {
                             signOut(auth);
                             alert("TÀI KHOẢN BỊ KHÓA DO VI PHẠM CHÍNH SÁCH!");
@@ -498,30 +492,9 @@
                             return;
                         }
 
-                        // 2. IP Security Check (Chặn trùng IP)
-                        if (data.ip && data.ip !== userIP && data.ip !== "unknown") {
-                             // Logic: Nếu IP lưu trong DB khác IP hiện tại -> Cảnh báo (tùy chọn update hoặc block)
-                             // Ở đây mình chỉ update lại IP mới nhất để tracking
+                        // Update IP tracking
+                        if ((!data.ip || data.ip === "unknown") && userIP !== "unknown") {
                              updateDoc(userRef, { ip: userIP });
-                        } else if (!data.ip) {
-                            // Check toàn bộ DB xem IP này đã có ai dùng chưa
-                            const q = query(collection(db, "users"), orderBy("joinedAt")); // Cần index nếu dữ liệu lớn
-                            const querySnap = await getDocs(q);
-                            let isDuplicate = false;
-                            
-                            // Client-side filtering (tốt nhất nên dùng Cloud Functions)
-                            querySnap.forEach(doc => {
-                                if(doc.data().ip === userIP && doc.id !== user.uid) isDuplicate = true;
-                            });
-
-                            if(isDuplicate) {
-                                signOut(auth);
-                                alert("CẢNH BÁO: IP này đã được sử dụng trên tài khoản khác!");
-                                window.location.reload();
-                                return;
-                            }
-                            // Save IP
-                            updateDoc(userRef, { ip: userIP });
                         }
 
                         // Update UI Balance
@@ -529,14 +502,25 @@
                         document.getElementById('user-balance-main').innerText = data.balance.toLocaleString();
                         document.getElementById('user-ref-code').innerText = data.refCode;
                         
-                        // Show Dashboard
                         switchSection('dashboard');
 
                     } else {
-                        // Create New User
+                        // === CREATE NEW USER LOGIC ===
                         const newRefCode = "HD" + Math.random().toString(36).substr(2, 6).toUpperCase();
                         const urlParams = new URLSearchParams(window.location.search);
                         const inviterCode = urlParams.get('ref');
+
+                        // FIX: Cộng tiền cho người giới thiệu
+                        if (inviterCode) {
+                            const q = query(collection(db, "users"), where("refCode", "==", inviterCode));
+                            const querySnapshot = await getDocs(q);
+                            if (!querySnapshot.empty) {
+                                const inviterDoc = querySnapshot.docs[0];
+                                await updateDoc(inviterDoc.ref, {
+                                    balance: increment(100)
+                                });
+                            }
+                        }
 
                         await setDoc(userRef, {
                             uid: user.uid,
@@ -549,7 +533,7 @@
                             joinedAt: Date.now(),
                             inviter: inviterCode || null,
                             ip: userIP,
-                            isLocked: false // Default
+                            isLocked: false
                         });
                     }
                 });
@@ -558,12 +542,13 @@
                 listenToNotifications();
                 loadUserTasks(user.uid);
                 loadLeaderboard();
-                checkGlobalSettings(); // Check Airdrop Status
+                checkGlobalSettings();
 
                 // Admin UI
                 if (ADMIN_UIDS.includes(user.uid)) {
                     document.getElementById('admin-trigger').classList.remove('hidden');
                     loadAdminUsers();
+                    loadAdminTasks();
                 }
 
             } else {
@@ -572,15 +557,12 @@
                 document.getElementById('user-info').classList.add('hidden');
                 document.getElementById('user-info').classList.remove('flex');
                 hideAllSections();
-                document.querySelector('header').classList.remove('hidden'); // Show Hero
             }
         });
 
         // --- NAVIGATION ---
         window.switchSection = (id) => {
             hideAllSections();
-            document.querySelector('header').classList.add('hidden'); // Hide Hero
-            
             if(id === 'dashboard') document.getElementById('user-dashboard').classList.remove('hidden');
             if(id === 'missions') document.getElementById('missions').classList.remove('hidden');
             if(id === 'leaderboard') document.getElementById('leaderboard').classList.remove('hidden');
@@ -590,7 +572,7 @@
                 updateAirdropUI();
             }
             
-            // Close Sidebar on Mobile
+            // Mobile fixes
             document.getElementById('dynamic-sidebar').classList.add('-translate-x-full');
             document.getElementById('overlay-sidebar').classList.add('hidden');
         };
@@ -610,7 +592,6 @@
                     isAirdropEnabled = doc.data().airdropEnabled || false;
                     updateAirdropUI();
                     
-                    // Admin Toggle State
                     if(document.getElementById('airdrop-toggle')) {
                         document.getElementById('airdrop-toggle').checked = isAirdropEnabled;
                         document.getElementById('airdrop-status-text').innerText = isAirdropEnabled ? "Đang Bật" : "Đang Tắt";
@@ -628,7 +609,6 @@
                 closedMsg.classList.add('hidden');
                 formContainer.classList.remove('hidden');
                 
-                // Pre-fill existing data if any
                 if(currentUserData && currentUserData.walletInfo) {
                     const info = currentUserData.walletInfo;
                     const radio = document.querySelector(`input[name="walletType"][value="${info.type}"]`);
@@ -693,7 +673,7 @@
             }
         };
 
-        // --- ADMIN: TOGGLE AIRDROP & EXPORT ---
+        // --- ADMIN FUNCTIONS ---
         window.toggleAirdropFeature = async () => {
             const newVal = document.getElementById('airdrop-toggle').checked;
             await setDoc(doc(db, "settings", "global"), { airdropEnabled: newVal }, { merge: true });
@@ -730,7 +710,7 @@
             showToast("Xuất file thành công!");
         };
 
-        // --- ADMIN: LOCK/UNLOCK USER ---
+        // --- ADMIN: MANAGE USERS ---
         window.loadAdminUsers = async () => {
             const tbody = document.getElementById('admin-users-list');
             tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center">Loading...</td></tr>';
@@ -780,12 +760,11 @@
             }
         };
 
-        // --- TASK & POINTS LOGIC (Giữ nguyên logic cũ nhưng bổ sung check lock) ---
+        // --- TASKS LOGIC ---
         function loadUserTasks(uid) {
             onSnapshot(query(collection(db, "tasks"), orderBy("createdAt", "desc")), (snap) => {
                 const container = document.getElementById('task-container');
                 container.innerHTML = '';
-                
                 const completed = currentUserData?.completedTasks || [];
                 
                 snap.forEach(d => {
@@ -813,7 +792,7 @@
         window.doTask = async (id, link, reward) => {
             if(currentUserData.isLocked) return showToast("Tài khoản bị khóa!", "error");
             window.open(link, '_blank');
-            // Logic chờ 5s rồi cộng điểm...
+            // Wait 5 seconds
             setTimeout(async () => {
                 try {
                     await updateDoc(doc(db, "users", auth.currentUser.uid), {
@@ -825,6 +804,58 @@
             }, 5000);
         };
 
+        // --- ADMIN: TASKS ---
+        function loadAdminTasks() {
+            onSnapshot(collection(db, "tasks"), (snap) => {
+                const list = document.getElementById('admin-tasks-list');
+                list.innerHTML = '';
+                snap.forEach(d => {
+                    const t = d.data();
+                    list.innerHTML += `
+                    <div class="bg-white p-4 rounded-xl border flex justify-between items-center">
+                        <div>
+                            <p class="font-bold text-sm">${t.title}</p>
+                            <p class="text-xs text-gray-400">${t.link} - Reward: ${t.reward} HD</p>
+                        </div>
+                        <button onclick="deleteTask('${d.id}')" class="text-red-500 hover:bg-red-50 p-2 rounded"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>`;
+                });
+                lucide.createIcons();
+            });
+        }
+
+        window.openTaskModal = () => {
+             openModal(
+                "Thêm Nhiệm vụ Mới",
+                `
+                <input id="new-task-title" class="w-full p-3 border rounded-xl mb-3 text-sm" placeholder="Tên nhiệm vụ">
+                <input id="new-task-link" class="w-full p-3 border rounded-xl mb-3 text-sm" placeholder="Link nhiệm vụ (https://...)">
+                <input id="new-task-reward" type="number" class="w-full p-3 border rounded-xl text-sm" placeholder="Phần thưởng (HD)">
+                `,
+                async () => {
+                    const title = document.getElementById('new-task-title').value;
+                    const link = document.getElementById('new-task-link').value;
+                    const reward = Number(document.getElementById('new-task-reward').value);
+                    
+                    if(title && link && reward) {
+                        await addDoc(collection(db, "tasks"), {
+                            title, link, reward, createdAt: Date.now()
+                        });
+                        showToast("Đã thêm nhiệm vụ!");
+                    } else {
+                        showToast("Vui lòng nhập đủ thông tin", "error");
+                    }
+                }
+            );
+        };
+
+        window.deleteTask = async (id) => {
+            if(confirm("Xóa nhiệm vụ này?")) {
+                await deleteDoc(doc(db, "tasks", id));
+            }
+        };
+
+        // --- GLOBAL & MODALS ---
         window.dailyCheckIn = async () => {
             if(currentUserData.isLocked) return showToast("Tài khoản bị khóa!", "error");
             const now = Date.now();
@@ -838,12 +869,13 @@
             showToast("Điểm danh thành công! +50 HD");
         };
 
-        // --- INIT & UTILS ---
         window.onload = () => {
             gsap.to("#loader", { opacity: 0, duration: 0.5, onComplete: () => document.getElementById('loader').style.display = 'none' });
             gsap.utils.toArray('.gs-reveal').forEach(elem => {
                 gsap.from(elem, { scrollTrigger: { trigger: elem, start: "top 85%" }, y: 30, opacity: 0, duration: 0.8 });
             });
+            // FIX: Render icons initially
+            lucide.createIcons();
         };
         
         window.toggleUserMenu = () => document.getElementById('user-dropdown').classList.toggle('hidden');
@@ -889,9 +921,6 @@
             setTimeout(() => modal.classList.add('hidden'), 300);
         };
         
-        // Helper Functions cho Admin (Edit Points, Add Task...)
-        // Giữ lại các hàm này từ code cũ nhưng không paste hết để code gọn, 
-        // đảm bảo function loadAdminUsers gọi editUserPoints đúng cách
         window.editUserPoints = (uid, name) => {
             openModal(
                 `Chỉnh sửa số dư: ${name}`,
