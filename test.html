@@ -1,385 +1,616 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <title>United Stables ($U) | Enterprise Stablecoin Layer</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vercel SocialFi - $VERCEL Airdrop</title>
+    <!-- Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        :root { --gold: linear-gradient(90deg, #d3b538, #968129); }
-        body { font-family: 'Inter', sans-serif; background-color: #fff; color: #202630; scroll-behavior: smooth; overflow-x: hidden; }
-        .gold-text { background: var(--gold); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 600; }
-        .glass-nav { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(15px); border: 1px solid rgba(0,0,0,0.05); }
-        .reveal { opacity: 0; transform: translateY(40px); transition: all 0.8s ease-out; }
-        .reveal.active { opacity: 1; transform: translateY(0); }
+        :root {
+            --bg-dark: #000000;
+            --glass-bg: rgba(20, 20, 20, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --primary-gradient: linear-gradient(135deg, #0070f3, #f81ce5);
+            --text-main: #ffffff;
+            --text-sec: #888888;
+            --card-radius: 24px;
+            --neon-glow: 0 0 20px rgba(0, 112, 243, 0.4);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* --- BACKGROUND ANIMATION --- */
+        .ambient-light {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: var(--primary-gradient);
+            filter: blur(100px);
+            opacity: 0.4;
+            border-radius: 50%;
+            animation: moveLight 10s infinite alternate;
+            z-index: 0;
+        }
+        @keyframes moveLight {
+            0% { top: 10%; left: 10%; transform: scale(1); }
+            100% { top: 60%; left: 60%; transform: scale(1.2); }
+        }
+
+        /* --- APP CONTAINER --- */
+        #app {
+            position: relative;
+            width: 100%;
+            max-width: 420px;
+            height: 100%;
+            max-height: 850px;
+            background: rgba(10, 10, 10, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 1;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        }
+
+        @media(min-width: 450px) {
+            #app { height: 90vh; border-radius: 30px; }
+        }
+
+        /* --- VIEWS --- */
+        .view {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            display: none; /* JS will toggle */
+            overflow-y: auto;
+        }
+        .view.active { display: flex; opacity: 1; }
+
+        /* --- TYPOGRAPHY & COMPONENTS --- */
+        h1, h2, h3 { family-family: 'Space Grotesk', sans-serif; letter-spacing: -0.02em; }
         
-        /* Admin UI Floating */
-        #admin-btn-trigger { position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: none; }
-        #admin-panel { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000; padding: 20px; overflow-y: auto; }
-        .admin-card { background: white; max-width: 800px; margin: 40px auto; padding: 30px; border-radius: 24px; }
+        .btn-grad {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: var(--neon-glow);
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-grad:active { transform: scale(0.96); }
+
+        .btn-icon {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--glass-border);
+            color: #fff;
+            padding: 15px;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn-icon:hover { background: rgba(255,255,255,0.1); }
+
+        /* --- LOADING VIEW --- */
+        #view-loading { justify-content: center; align-items: center; text-align: center; }
+        .spinner {
+            width: 50px; height: 50px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: #0070f3;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- AUTH VIEW --- */
+        #view-auth { justify-content: center; align-items: center; text-align: center; }
+        .logo-box {
+            font-size: 80px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 30px rgba(255,255,255,0.3);
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+        /* --- PROFILE VIEW --- */
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 30px;
+        }
+        .user-pill {
+            display: flex; align-items: center; gap: 10px;
+            background: rgba(255,255,255,0.05);
+            padding: 6px 12px; border-radius: 50px;
+            border: 1px solid var(--glass-border);
+        }
+        .avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
         
-        /* Custom Carousel */
-        .carousel-track { display: flex; transition: transform 0.5s ease-in-out; }
-        .card-shadow { box-shadow: inset 0 2px 16px rgba(0, 0, 0, 0.06); }
+        .balance-card {
+            background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--card-radius);
+            padding: 30px 20px;
+            text-align: center;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+        .balance-card::before {
+            content:''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+            animation: shine 5s infinite linear;
+            pointer-events: none;
+        }
+        @keyframes shine { from {transform: rotate(0deg);} to {transform: rotate(360deg);} }
+        
+        .points-display { font-size: 42px; font-weight: 800; font-family: 'Space Grotesk'; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.5); }
+        .token-name { color: var(--text-sec); font-size: 14px; letter-spacing: 2px; text-transform: uppercase; margin-top: 5px; }
+
+        .action-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px;
+        }
+        .action-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 20px;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .action-card:active { transform: scale(0.95); background: rgba(255,255,255,0.08); }
+        .action-card i { font-size: 24px; background: -webkit-linear-gradient(#eee, #333); -webkit-background-clip: text; -webkit-text-fill-color: transparent;}
+        
+        .leaderboard { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+        .leaderboard h3 { margin-bottom: 15px; font-size: 18px; color: #fff; }
+        .lb-list { overflow-y: auto; flex: 1; padding-right: 5px; }
+        /* Custom Scrollbar */
+        .lb-list::-webkit-scrollbar { width: 4px; }
+        .lb-list::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+        
+        .lb-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .lb-item:first-child .lb-rank { color: #FFD700; } 
+        .lb-left { display: flex; align-items: center; gap: 10px; }
+        .lb-rank { font-weight: bold; width: 20px; color: var(--text-sec); }
+        .lb-score { font-family: 'Space Grotesk'; font-weight: bold; color: #fff; }
+
+        /* --- TOAST NOTIFICATION --- */
+        #toast {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: #fff; color: #000; padding: 12px 24px; border-radius: 50px;
+            font-weight: 600; font-size: 14px;
+            opacity: 0; pointer-events: none; transition: 0.3s; z-index: 100;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: max-content;
+        }
+        #toast.show { opacity: 1; bottom: 40px; }
+
+        /* --- MODAL --- */
+        .modal {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
+            z-index: 50; display: none; justify-content: center; align-items: center;
+        }
+        .modal-box {
+            background: #111; border: 1px solid #333; width: 85%; padding: 24px;
+            border-radius: 24px; text-align: center;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn { from{transform: scale(0.8); opacity: 0;} to{transform: scale(1); opacity: 1;} }
+        
+        .ref-code {
+            background: #222; border: 1px dashed #555; padding: 15px; margin: 20px 0;
+            font-family: monospace; letter-spacing: 3px; font-size: 20px; color: #0070f3;
+            border-radius: 12px;
+        }
+        input.custom-input {
+            width: 100%; background: #000; border: 1px solid #333; padding: 14px;
+            border-radius: 12px; color: #fff; outline: none; margin-bottom: 10px;
+        }
+        input.custom-input:focus { border-color: #0070f3; }
+
+        /* Admin style */
+        .admin-header { background: rgba(255,0,0,0.1); padding: 10px; border-radius: 12px; margin-bottom: 20px; border: 1px solid red; }
+
     </style>
 </head>
 <body>
 
-    <!-- NAVIGATION -->
-    <nav class="fixed top-0 left-0 right-0 w-full flex justify-center pt-6 px-4 z-50">
-        <div class="glass-nav w-full max-w-[800px] px-6 py-3 rounded-[100px] flex items-center justify-between shadow-sm">
-            <div class="flex items-center gap-3">
-                <img src="https://www.u.tech/images/logo-icon.svg" width="28" alt="logo">
-                <span class="font-semibold tracking-tight">United Stables</span>
-            </div>
-            <div class="hidden md:flex gap-8 text-sm font-medium">
-                <a href="#home" class="hover:opacity-60">Home</a>
-                <a href="#vision" class="hover:opacity-60">Vision</a>
-                <a href="#transparency" class="hover:opacity-60">Transparency</a>
-                <a href="#get-in-touch" class="hover:opacity-60">Mint $U</a>
-            </div>
-            <div id="auth-section">
-                <button id="login-btn" class="bg-black text-white px-5 py-2 rounded-full text-xs font-bold hover:scale-105 transition">Login</button>
-                <div id="user-profile" class="hidden flex items-center gap-3">
-                    <img id="user-photo" class="w-8 h-8 rounded-full border">
-                    <button id="logout-btn" class="text-xs text-red-500 font-bold">Sign Out</button>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <div class="ambient-light"></div>
 
-    <!-- HERO SECTION -->
-    <header id="home" class="relative h-screen w-full flex items-center justify-center overflow-hidden">
-        <div class="absolute inset-0 z-0">
-            <video id="hero-video" src="https://www.u.tech/images/main-banner-bg.webm" autoPlay loop muted playsInline class="w-full h-full object-cover"></video>
+    <div id="app">
+        
+        <!-- TOAST -->
+        <div id="toast">Thông báo</div>
+
+        <!-- 1. LOADING VIEW -->
+        <div id="view-loading" class="view active">
+            <div class="spinner"></div>
+            <p style="color: var(--text-sec); letter-spacing: 1px;">INITIALIZING VERCEL CHAIN...</p>
         </div>
-        <div class="relative z-10 text-center px-6">
-            <h1 class="text-6xl md:text-8xl font-medium tracking-tighter mb-6 reveal" id="cms-hero-title">
-                Meet <span class="gold-text">$U</span>
-            </h1>
-            <p class="text-xl md:text-2xl text-gray-600 max-w-2xl mx-auto mb-10 reveal" id="cms-hero-subtitle">
-                The Most United Stablecoin for Everyone
+
+        <!-- 2. AUTH VIEW -->
+        <div id="view-auth" class="view">
+            <div class="logo-box">▲</div>
+            <h1 style="font-size: 28px; margin-bottom: 10px;">$VERCEL Hub</h1>
+            <p style="color: var(--text-sec); margin-bottom: 40px; font-size: 14px; line-height: 1.5;">
+                Nền tảng SocialFi thế hệ mới.<br>Kiếm điểm thưởng, quy đổi token.
             </p>
-            <div class="flex justify-center gap-4 reveal">
-                <a href="#get-in-touch" class="bg-[#202630] text-white px-10 py-4 rounded-full font-semibold hover:bg-black transition shadow-xl">Mint $U</a>
-            </div>
+            <button id="btn-google-login" class="btn-grad">
+                <i class="fab fa-google"></i> Tiếp tục với Google
+            </button>
+            <p style="margin-top: 20px; font-size: 12px; color: #444;">Powered by Vercel & Firebase</p>
         </div>
-    </header>
 
-    <!-- VISION SECTION -->
-    <section id="vision" class="py-24 px-6 bg-white">
-        <div class="max-w-7xl mx-auto">
-            <div class="text-center mb-16">
-                <p class="text-xs font-bold tracking-[0.2em] text-gray-400 uppercase mb-4">Our Vision</p>
-                <h2 class="text-4xl md:text-6xl font-medium">A United Layer of <span class="gold-text">Money</span></h2>
+        <!-- 3. PROFILE VIEW -->
+        <div id="view-profile" class="view">
+            <header class="header">
+                <div class="user-pill">
+                    <img id="user-avatar" class="avatar" src="" alt="">
+                    <span id="user-name" style="font-size: 13px; font-weight: 600;">...</span>
+                </div>
+                <button id="btn-logout" style="background:none; border:none; color: #666;"><i class="fas fa-sign-out-alt"></i></button>
+            </header>
+
+            <section class="balance-card">
+                <div class="token-name">YOUR BALANCE</div>
+                <div id="user-points" class="points-display">0</div>
+                <div style="font-size: 12px; color: #0070f3; margin-top: 5px;">$VERCEL POINTS</div>
+            </section>
+
+            <div class="action-grid">
+                <div class="action-card" id="btn-checkin">
+                    <i class="fas fa-calendar-check"></i>
+                    <span style="font-size: 13px; font-weight: 600;">Check-in</span>
+                    <span style="font-size: 10px; color: #4caf50;">+100 PTS</span>
+                </div>
+                <div class="action-card" id="btn-invite">
+                    <i class="fas fa-user-astronaut"></i>
+                    <span style="font-size: 13px; font-weight: 600;">Friends</span>
+                    <span style="font-size: 10px; color: #f81ce5;">+500 PTS</span>
+                </div>
+            </div>
+
+            <div class="leaderboard">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3>Top Warriors</h3>
+                    <span style="font-size: 12px; color: #666;">Live Update</span>
+                </div>
+                <div id="leaderboard-list" class="lb-list">
+                    <!-- Javascript will inject items here -->
+                </div>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="reveal border border-gray-100 rounded-[32px] p-8 card-shadow">
-                    <div class="h-48 mb-8 rounded-2xl overflow-hidden">
-                        <video src="https://www.u.tech/images/fluid.webm" autoPlay loop muted class="w-full h-full object-cover"></video>
-                    </div>
-                    <h3 class="text-2xl font-semibold mb-4">The Future is Fluid</h3>
-                    <p class="text-gray-500 leading-relaxed">Value flows freely between humans and AI, connecting everyone through money.</p>
-                </div>
-                <div class="reveal border border-gray-100 rounded-[32px] p-8 card-shadow" style="transition-delay: 0.2s;">
-                    <div class="h-48 mb-8 rounded-2xl overflow-hidden">
-                        <video src="https://www.u.tech/images/liquidity.webm" autoPlay loop muted class="w-full h-full object-cover"></video>
-                    </div>
-                    <h3 class="text-2xl font-semibold mb-4">Uniting Liquidity</h3>
-                    <p class="text-gray-500 leading-relaxed">Connecting fragmented liquidity across DeFi and exchanges into one layer.</p>
-                </div>
-                <div class="reveal border border-gray-100 rounded-[32px] p-8 card-shadow" style="transition-delay: 0.4s;">
-                    <div class="h-48 mb-8 rounded-2xl overflow-hidden">
-                        <video src="https://www.u.tech/images/buildf.webm" autoPlay loop muted class="w-full h-full object-cover"></video>
-                    </div>
-                    <h3 class="text-2xl font-semibold mb-4">Build for Everyone</h3>
-                    <p class="text-gray-500 leading-relaxed">From human agents to AI, $U is the universal language of value.</p>
-                </div>
+            <!-- Hidden Admin Button (Show only for admin) -->
+            <div id="admin-entry" style="display: none; margin-top: 20px;">
+                <button onclick="switchView('admin')" class="btn-icon" style="width: 100%; border-color: red; color: red;">
+                    <i class="fas fa-shield-alt"></i> ADMIN PANEL
+                </button>
             </div>
         </div>
-    </section>
 
-    <!-- TRANSPARENCY SECTION -->
-    <section id="transparency" class="py-24 bg-[#f8f8f8]">
-        <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row gap-16 items-center">
-            <div class="flex-1 reveal">
-                <h2 class="text-5xl font-medium mb-6">Transparency</h2>
-                <h3 class="text-gray-400 font-bold mb-6 tracking-widest">ATTESTATION REPORTS</h3>
-                <p class="text-lg text-gray-600 mb-8">Every $U is backed 1:1 by liquid reserves in segregated custody accounts.</p>
-                <div class="flex flex-col gap-3">
-                    <button class="flex items-center justify-between bg-white border p-4 rounded-xl font-bold hover:bg-gray-50 transition">
-                        Dec 2025 Attestation <img src="https://www.u.tech/images/download.svg" class="w-5">
-                    </button>
-                    <button class="flex items-center justify-between bg-white border p-4 rounded-xl font-bold hover:bg-gray-50 transition">
-                        Security Audit Reports <img src="https://www.u.tech/images/download.svg" class="w-5">
-                    </button>
-                </div>
+        <!-- 4. ADMIN VIEW -->
+        <div id="view-admin" class="view">
+            <div class="admin-header">
+                <h2 style="color: red;">ADMIN CONTROL</h2>
+                <p style="font-size: 12px;">Cảnh báo: Chỉ dành cho nhà phát triển.</p>
             </div>
-            <div class="flex-1 w-full reveal" style="transition-delay: 0.3s;">
-                <div class="bg-white p-10 rounded-[40px] shadow-2xl space-y-10">
-                    <div>
-                        <p class="text-sm font-bold text-gray-400 uppercase mb-2">Token in Circulation</p>
-                        <p class="text-5xl font-medium tracking-tighter"><span class="gold-text">$U</span> <span id="stat-circulation">0</span></p>
-                    </div>
-                    <div class="pt-10 border-t">
-                        <p class="text-sm font-bold text-gray-400 uppercase mb-2">Assets in Reserve</p>
-                        <p class="text-5xl font-medium tracking-tighter">$ <span id="stat-reserves">0</span></p>
-                    </div>
-                </div>
-            </div>
+            <input type="text" id="admin-uid" class="custom-input" placeholder="User UID">
+            <input type="number" id="admin-amount" class="custom-input" placeholder="Points Amount">
+            <button id="btn-admin-submit" class="btn-grad" style="background: #333; margin-bottom: 10px;">Cộng điểm</button>
+            <button onclick="switchView('profile')" style="background: none; border: none; color: #888; width: 100%; padding: 10px;">Quay lại</button>
         </div>
-    </section>
 
-    <!-- MINT FORM SECTION -->
-    <section id="get-in-touch" class="py-24 bg-white relative overflow-hidden">
-        <div class="max-w-4xl mx-auto px-6 relative z-10 reveal">
-            <div class="text-center mb-16">
-                <h2 class="text-5xl font-medium mb-6">Mint <span class="gold-text">$U</span></h2>
-                <p class="text-gray-500">Submit your institutional application for $U minting.</p>
-            </div>
-            <form id="mint-form" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <input type="text" name="firstName" placeholder="First Name" required class="p-5 rounded-2xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-yellow-500 transition">
-                <input type="text" name="lastName" placeholder="Last Name" required class="p-5 rounded-2xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-yellow-500 transition">
-                <input type="email" name="email" placeholder="Work Email" required class="md:col-span-2 p-5 rounded-2xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-yellow-500 transition">
-                <input type="text" name="company" placeholder="Company Name" required class="md:col-span-2 p-5 rounded-2xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-yellow-500 transition">
-                <button type="submit" id="submit-btn" class="md:col-span-2 bg-black text-white py-5 rounded-2xl font-bold text-lg hover:bg-gray-800 transition shadow-lg">Submit Application</button>
-            </form>
-        </div>
-        <img src="https://www.u.tech/images/bg-6.png" class="absolute bottom-0 left-0 w-full opacity-50 z-0">
-    </section>
+    </div>
 
-    <!-- FOOTER -->
-    <footer class="bg-[#DBD9CF] py-20 px-6">
-        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
-            <div class="col-span-2">
-                <div class="flex items-center gap-3 mb-6">
-                    <img src="https://www.u.tech/images/logo-icon.svg" width="30">
-                    <span class="text-xl font-bold">United Stables</span>
-                </div>
-                <p class="text-sm text-gray-600 max-w-sm mb-8">The stablecoin layer designed for the next generation of finance and AI agents.</p>
-                <div class="flex gap-4">
-                    <a href="#" class="w-10 h-10 bg-white/50 rounded-full flex items-center justify-center hover:bg-white transition"><img src="https://www.u.tech/images/social-x-1c.svg" width="18"></a>
-                    <a href="#" class="w-10 h-10 bg-white/50 rounded-full flex items-center justify-center hover:bg-white transition"><img src="https://www.u.tech/images/social-telegram-1c.svg" width="18"></a>
-                </div>
-            </div>
-            <div>
-                <h4 class="font-bold mb-6">Transparency</h4>
-                <ul class="text-sm space-y-4 text-gray-600">
-                    <li><a href="#" class="hover:underline">Attestations</a></li>
-                    <li><a href="#" class="hover:underline">Smart Contract Audit</a></li>
-                    <li><a href="#" class="hover:underline">Privacy Policy</a></li>
-                </ul>
-            </div>
-            <div>
-                <h4 class="font-bold mb-6">Company</h4>
-                <ul class="text-sm space-y-4 text-gray-600">
-                    <li><a href="#" class="hover:underline">About Us</a></li>
-                    <li><a href="#" class="hover:underline">Terms of Service</a></li>
-                    <li><a href="#" class="hover:underline">Contact</a></li>
-                </ul>
-            </div>
-        </div>
-    </footer>
-
-    <!-- ADMIN PANEL OVERLAY -->
-    <div id="admin-panel">
-        <div class="admin-card">
-            <div class="flex justify-between items-center mb-8 border-b pb-4">
-                <h2 class="text-2xl font-bold">🛠 Admin Control Center</h2>
-                <button id="close-admin" class="text-gray-400 hover:text-black">Close</button>
-            </div>
+    <!-- MODAL INVITE -->
+    <div id="modal-invite" class="modal">
+        <div class="modal-box">
+            <h2 style="margin-bottom: 5px;">Mời bạn bè</h2>
+            <p style="font-size: 12px; color: #888;">Chia sẻ mã này để nhận 500 Points</p>
             
-            <div class="grid grid-cols-1 gap-6">
-                <div class="bg-gray-50 p-6 rounded-2xl">
-                    <h3 class="font-bold mb-4">1. Live Stats Manager</h3>
-                    <div class="grid grid-cols-2 gap-4">
-                        <input id="edit-circulation" type="text" placeholder="Circulation (e.g. 5,500,000)" class="p-3 border rounded-xl">
-                        <input id="edit-reserves" type="text" placeholder="Reserves (e.g. 5,500,000)" class="p-3 border rounded-xl">
-                    </div>
-                </div>
-
-                <div class="bg-gray-50 p-6 rounded-2xl">
-                    <h3 class="font-bold mb-4">2. Content Manager</h3>
-                    <input id="edit-hero-title" type="text" placeholder="Hero Title" class="w-full p-3 border rounded-xl mb-3">
-                    <textarea id="edit-hero-subtitle" placeholder="Hero Subtitle" class="w-full p-3 border rounded-xl h-24"></textarea>
-                </div>
-
-                <div class="bg-gray-50 p-6 rounded-2xl">
-                    <h3 class="font-bold mb-4">3. Lead Submissions</h3>
-                    <div id="leads-list" class="max-h-60 overflow-y-auto space-y-2 text-sm">
-                        <!-- Leads from Firebase -->
-                    </div>
-                </div>
-
-                <button id="save-cms" class="bg-yellow-600 text-white font-bold py-4 rounded-xl hover:bg-yellow-700 transition">PUBLISH CHANGES</button>
+            <div class="ref-code" id="my-ref-code">...</div>
+            
+            <p style="font-size: 12px; margin-bottom: 10px; text-align: left;">Nhập mã của bạn bè:</p>
+            <input type="text" id="input-ref" class="custom-input" placeholder="CODE (VD: ABC123)">
+            
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button id="btn-close-modal" class="btn-icon" style="flex:1;">Đóng</button>
+                <button id="btn-submit-ref" class="btn-grad" style="flex:2; padding: 12px;">Xác nhận</button>
             </div>
         </div>
     </div>
 
-    <!-- ADMIN TRIGGER BUTTON -->
-    <button id="admin-btn-trigger" class="bg-yellow-500 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition active:scale-95">
-        ⚙️
-    </button>
-
-    <!-- FIREBASE & LOGIC -->
+    <!-- JAVASCRIPT LOGIC -->
     <script type="module">
+        // ----------------------------------------------------
+        // 1. FIREBASE SETUP (BẠN PHẢI THAY THÔNG TIN CỦA BẠN VÀO ĐÂY)
+        // ----------------------------------------------------
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, updateDoc, setDoc, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, query, orderBy, limit, getDocs, serverTimestamp, runTransaction, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // !!! THAY THẾ BẰNG CONFIG CỦA BẠN TỪ FIREBASE CONSOLE !!!
         const firebaseConfig = {
-            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
-            authDomain: "profile-d1214.firebaseapp.com",
-            projectId: "profile-d1214",
-            storageBucket: "profile-d1214.firebasestorage.app",
-            messagingSenderId: "914980131889",
-            appId: "1:914980131889:web:72f8da15c42dbee671b110",
-            measurementId: "G-C587M69LZW"
+            apiKey: "AIzaSyD...", // <-- Dán API Key
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "123456...",
+            appId: "1:123456..."
         };
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const provider = new GoogleAuthProvider();
+        // --- Init App ---
+        // Xử lý lỗi nếu chưa điền config
+        let app, auth, db;
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+        } catch (e) {
+            console.error("Firebase chưa được cấu hình đúng.", e);
+            document.querySelector('#view-loading p').innerText = "ERROR: CHƯA CẤU HÌNH FIREBASE CONFIG TRONG CODE!";
+        }
 
         const ADMIN_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1";
+        let currentUser = null;
 
-        // --- AUTH LOGIC ---
-        const loginBtn = document.getElementById('login-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-        const userProfile = document.getElementById('user-profile');
-        const userPhoto = document.getElementById('user-photo');
-        const adminBtn = document.getElementById('admin-btn-trigger');
+        // ----------------------------------------------------
+        // 2. UI UTILITIES
+        // ----------------------------------------------------
+        const views = {
+            loading: document.getElementById('view-loading'),
+            auth: document.getElementById('view-auth'),
+            profile: document.getElementById('view-profile'),
+            admin: document.getElementById('view-admin')
+        };
 
-        loginBtn.onclick = () => signInWithPopup(auth, provider);
-        logoutBtn.onclick = () => signOut(auth);
+        window.switchView = (name) => {
+            Object.values(views).forEach(v => {
+                v.classList.remove('active');
+                setTimeout(() => { if(!v.classList.contains('active')) v.style.display = 'none'; }, 400);
+            });
+            const target = views[name];
+            target.style.display = 'flex';
+            setTimeout(() => target.classList.add('active'), 50);
+        };
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                loginBtn.classList.add('hidden');
-                userProfile.classList.remove('hidden');
-                userPhoto.src = user.photoURL;
-                if (user.uid === ADMIN_UID) {
-                    adminBtn.style.display = 'flex';
-                    loadLeads();
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        // ----------------------------------------------------
+        // 3. AUTH LOGIC
+        // ----------------------------------------------------
+        if(auth) {
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    await loadUserProfile(user);
+                    switchView('profile');
+                    loadLeaderboard();
+                    // Check Admin
+                    if(user.uid === ADMIN_UID) document.getElementById('admin-entry').style.display = 'block';
+                } else {
+                    switchView('auth');
                 }
-            } else {
-                loginBtn.classList.remove('hidden');
-                userProfile.classList.add('hidden');
-                adminBtn.style.display = 'none';
-            }
-        });
-
-        // --- CMS REAL-TIME LOGIC ---
-        const heroTitle = document.getElementById('cms-hero-title');
-        const heroSub = document.getElementById('cms-hero-subtitle');
-        const statCirc = document.getElementById('stat-circulation');
-        const statResv = document.getElementById('stat-reserves');
-
-        onSnapshot(doc(db, "settings", "content"), (snap) => {
-            if (snap.exists()) {
-                const data = snap.data();
-                heroTitle.innerHTML = data.heroTitle || 'Meet <span class="gold-text">$U</span>';
-                heroSub.innerText = data.heroSubtitle || 'The Most United Stablecoin for Everyone';
-                
-                // Animate numbers
-                animateValue(statCirc, parseInt(statCirc.innerText.replace(/,/g, '')), parseInt(data.statCirculation || 5500000), 1500);
-                animateValue(statResv, parseInt(statResv.innerText.replace(/,/g, '')), parseInt(data.statReserves || 5500000), 1500);
-
-                // Admin Inp values
-                document.getElementById('edit-circulation').value = data.statCirculation;
-                document.getElementById('edit-reserves').value = data.statReserves;
-                document.getElementById('edit-hero-title').value = data.heroTitle;
-                document.getElementById('edit-hero-subtitle').value = data.heroSubtitle;
-            }
-        });
-
-        // --- FORM LOGIC ---
-        const mintForm = document.getElementById('mint-form');
-        mintForm.onsubmit = async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('submit-btn');
-            btn.innerText = "Submitting...";
-            btn.disabled = true;
-
-            const formData = new FormData(mintForm);
-            try {
-                await addDoc(collection(db, "submissions"), {
-                    firstName: formData.get('firstName'),
-                    lastName: formData.get('lastName'),
-                    email: formData.get('email'),
-                    company: formData.get('company'),
-                    timestamp: new Date()
-                });
-                alert("Application Sent! Our team will contact you soon.");
-                mintForm.reset();
-            } catch (err) {
-                alert("Error sending application. Please try again.");
-            }
-            btn.innerText = "Submit Application";
-            btn.disabled = false;
-        };
-
-        // --- ADMIN PANEL LOGIC ---
-        adminBtn.onclick = () => document.getElementById('admin-panel').style.display = 'block';
-        document.getElementById('close-admin').onclick = () => document.getElementById('admin-panel').style.display = 'none';
-
-        document.getElementById('save-cms').onclick = async () => {
-            const btn = document.getElementById('save-cms');
-            btn.innerText = "Publishing...";
-            try {
-                await setDoc(doc(db, "settings", "content"), {
-                    statCirculation: document.getElementById('edit-circulation').value,
-                    statReserves: document.getElementById('edit-reserves').value,
-                    heroTitle: document.getElementById('edit-hero-title').value,
-                    heroSubtitle: document.getElementById('edit-hero-subtitle').value
-                }, { merge: true });
-                alert("Website Updated!");
-            } catch (err) {
-                alert("Permission Denied!");
-            }
-            btn.innerText = "PUBLISH CHANGES";
-        };
-
-        async function loadLeads() {
-            const q = query(collection(db, "submissions"), orderBy("timestamp", "desc"));
-            const snap = await getDocs(q);
-            const list = document.getElementById('leads-list');
-            list.innerHTML = "";
-            snap.forEach(doc => {
-                const d = doc.data();
-                list.innerHTML += `<div class="p-3 bg-white border rounded-lg">
-                    <b>${d.firstName} ${d.lastName}</b> (${d.company})<br>
-                    <span class="text-blue-500">${d.email}</span>
-                </div>`;
             });
         }
 
-        // --- ANIMATIONS & UTILS ---
+        document.getElementById('btn-google-login').addEventListener('click', async () => {
+            if(!auth) return showToast("Lỗi Config Firebase!");
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                showToast("Đăng nhập thất bại");
+            }
+        });
+
+        document.getElementById('btn-logout').addEventListener('click', () => {
+            signOut(auth);
+            currentUser = null;
+        });
+
+        // ----------------------------------------------------
+        // 4. DATA LOGIC
+        // ----------------------------------------------------
+        async function loadUserProfile(user) {
+            const ref = doc(db, "users", user.uid);
+            const snap = await getDoc(ref);
+
+            if (snap.exists()) {
+                currentUser = snap.data();
+            } else {
+                // Register New User
+                const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+                currentUser = {
+                    uid: user.uid,
+                    displayName: user.displayName,
+                    email: user.email,
+                    photoURL: user.photoURL,
+                    points: 0,
+                    referralCode: code,
+                    referredBy: null,
+                    lastCheckIn: null,
+                    createdAt: serverTimestamp()
+                };
+                await setDoc(ref, currentUser);
+            }
+            updateProfileUI();
+        }
+
+        function updateProfileUI() {
+            if(!currentUser) return;
+            // Animation counter for points
+            const el = document.getElementById('user-points');
+            const currentVal = parseInt(el.innerText.replace(/,/g,'')) || 0;
+            animateValue(el, currentVal, currentUser.points, 1000);
+            
+            document.getElementById('user-name').innerText = currentUser.displayName;
+            document.getElementById('user-avatar').src = currentUser.photoURL;
+        }
+
         function animateValue(obj, start, end, duration) {
             let startTimestamp = null;
             const step = (timestamp) => {
                 if (!startTimestamp) startTimestamp = timestamp;
                 const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-                const val = Math.floor(progress * (end - start) + start);
-                obj.innerText = val.toLocaleString();
+                obj.innerHTML = Math.floor(progress * (end - start) + start).toLocaleString();
                 if (progress < 1) window.requestAnimationFrame(step);
             };
             window.requestAnimationFrame(step);
         }
 
-        // Scroll Reveal
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if(entry.isIntersecting) entry.target.classList.add('active');
-            });
-        }, { threshold: 0.1 });
-        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+        // ----------------------------------------------------
+        // 5. FEATURES: CHECK-IN & REFERRAL
+        // ----------------------------------------------------
+        document.getElementById('btn-checkin').addEventListener('click', async () => {
+            if (!currentUser) return;
+            const today = new Date().toDateString();
+            if (currentUser.lastCheckIn === today) return showToast("Hôm nay đã điểm danh rồi!");
+
+            try {
+                await updateDoc(doc(db, "users", currentUser.uid), {
+                    points: increment(100),
+                    lastCheckIn: today
+                });
+                currentUser.points += 100;
+                currentUser.lastCheckIn = today;
+                updateProfileUI();
+                showToast("Check-in thành công! +100 Points");
+                confettiEffect(); // Giả lập effect
+            } catch (e) {
+                showToast("Lỗi kết nối");
+            }
+        });
+
+        // Modal Controls
+        const modal = document.getElementById('modal-invite');
+        document.getElementById('btn-invite').addEventListener('click', () => {
+            modal.style.display = 'flex';
+            document.getElementById('my-ref-code').innerText = currentUser.referralCode;
+        });
+        document.getElementById('btn-close-modal').addEventListener('click', () => modal.style.display = 'none');
+
+        // Submit Referral Code
+        document.getElementById('btn-submit-ref').addEventListener('click', async () => {
+            const code = document.getElementById('input-ref').value.trim().toUpperCase();
+            if(!code) return showToast("Vui lòng nhập mã");
+            if(code === currentUser.referralCode) return showToast("Không thể nhập mã của chính mình");
+            if(currentUser.referredBy) return showToast("Bạn đã nhập mã rồi");
+
+            // Demo logic (cần query backend thật để an toàn)
+            // Ở đây mình giả lập check cơ bản
+            showToast("Đang kiểm tra mã...");
+            try {
+                // Logic thực tế cần transaction phức tạp hơn
+                await updateDoc(doc(db, "users", currentUser.uid), {
+                    referredBy: code,
+                    points: increment(500)
+                });
+                currentUser.points += 500;
+                currentUser.referredBy = code;
+                updateProfileUI();
+                modal.style.display = 'none';
+                showToast("Thành công! +500 Points");
+            } catch(e) {
+                showToast("Lỗi hệ thống hoặc mã không tồn tại");
+            }
+        });
+
+        // ----------------------------------------------------
+        // 6. LEADERBOARD
+        // ----------------------------------------------------
+        async function loadLeaderboard() {
+            const list = document.getElementById('leaderboard-list');
+            // Mock loading
+            list.innerHTML = '<div style="padding:20px; text-align:center; color:#666;">Loading data...</div>';
+            
+            try {
+                const q = query(collection(db, "users"), orderBy("points", "desc"), limit(10));
+                const snap = await getDocs(q);
+                list.innerHTML = '';
+                let rank = 1;
+                snap.forEach(d => {
+                    const u = d.data();
+                    const item = `
+                        <div class="lb-item">
+                            <div class="lb-left">
+                                <span class="lb-rank">#${rank++}</span>
+                                <span style="font-weight:500; font-size:14px;">${u.displayName}</span>
+                            </div>
+                            <span class="lb-score">${u.points.toLocaleString()}</span>
+                        </div>
+                    `;
+                    list.innerHTML += item;
+                });
+            } catch (e) {
+                list.innerHTML = '<div style="text-align:center">Failed to load</div>';
+            }
+        }
+
+        // ----------------------------------------------------
+        // 7. ADMIN TOOLS
+        // ----------------------------------------------------
+        document.getElementById('btn-admin-submit').addEventListener('click', async () => {
+            const uid = document.getElementById('admin-uid').value;
+            const amt = parseInt(document.getElementById('admin-amount').value);
+            if(!uid || !amt) return showToast("Thiếu thông tin");
+            
+            try {
+                await updateDoc(doc(db, "users", uid), { points: increment(amt) });
+                showToast(`Đã cộng ${amt} cho user`);
+            } catch(e) {
+                showToast("Lỗi: UID không đúng?");
+            }
+        });
+
+        // Simple visual effect function
+        function confettiEffect() {
+            // Placeholder for confetti visual logic
+            const btn = document.getElementById('btn-checkin');
+            btn.style.transform = "scale(1.1)";
+            setTimeout(() => btn.style.transform = "scale(1)", 200);
+        }
 
     </script>
 </body>
