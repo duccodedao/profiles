@@ -3,595 +3,557 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GuardianCheck | AI Anti-Scam Detector</title>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Lucide Icons (via CDN) -->
+    <title>ProProfile | Personal Identity System</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Vue.js 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     
-    <style>
-        :root {
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --bg-dark: #0f172a;
-            --card-bg: #1e293b;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --success: #22c55e;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --border: #334155;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            line-height: 1.6;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 2rem;
-            flex: 1;
-        }
-
-        /* Header Styles */
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 3rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--primary);
-        }
-
-        .settings-btn {
-            background: none;
-            border: 1px solid var(--border);
-            color: var(--text-muted);
-            padding: 0.5rem;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        .settings-btn:hover {
-            border-color: var(--primary);
-            color: var(--text-main);
-        }
-
-        /* Hero/Search Area */
-        .hero {
-            text-align: center;
-            margin-bottom: 3rem;
-        }
-
-        .hero h1 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            background: linear-gradient(to right, #60a5fa, #2563eb);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .search-container {
-            position: relative;
-            max-width: 650px;
-            margin: 2rem auto;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 1.25rem 1.5rem;
-            padding-right: 120px;
-            background: var(--card-bg);
-            border: 2px solid var(--border);
-            border-radius: 16px;
-            color: white;
-            font-size: 1.1rem;
-            transition: 0.3s;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
-
-        .search-input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2);
-        }
-
-        .analyze-btn {
-            position: absolute;
-            right: 8px;
-            top: 8px;
-            bottom: 8px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 0 1.5rem;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .analyze-btn:hover {
-            background: var(--primary-hover);
-        }
-
-        /* Results Area */
-        #results-area {
-            display: none; /* Hidden by default */
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        .result-card {
-            background: var(--card-bg);
-            border-radius: 20px;
-            padding: 2rem;
-            border: 1px solid var(--border);
-            margin-bottom: 2rem;
-        }
-
-        .risk-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 2rem;
-        }
-
-        .risk-badge {
-            padding: 0.5rem 1.5rem;
-            border-radius: 99px;
-            font-weight: 700;
-            text-transform: uppercase;
-            font-size: 0.875rem;
-        }
-
-        .badge-safe { background: rgba(34, 197, 94, 0.1); color: var(--success); border: 1px solid var(--success); }
-        .badge-suspicious { background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid var(--warning); }
-        .badge-danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
-
-        .risk-meter {
-            height: 12px;
-            background: #334155;
-            border-radius: 6px;
-            overflow: hidden;
-            margin: 1rem 0;
-        }
-
-        .risk-meter-fill {
-            height: 100%;
-            width: 0%;
-            transition: width 1s ease-in-out;
-        }
-
-        .grid-info {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-            margin-top: 2rem;
-        }
-
-        .info-item {
-            background: rgba(15, 23, 42, 0.5);
-            padding: 1.25rem;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-        }
-
-        .info-label {
-            color: var(--text-muted);
-            font-size: 0.8rem;
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-        }
-
-        /* Loading Animation */
-        .loader {
-            display: none;
-            text-align: center;
-            padding: 3rem;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(37, 99, 235, 0.1);
-            border-left-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 1rem;
-        }
-
-        /* Settings Modal */
-        #settings-modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.8);
-            z-index: 100;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-content {
-            background: var(--card-bg);
-            padding: 2rem;
-            border-radius: 20px;
-            width: 90%;
-            max-width: 500px;
-            border: 1px solid var(--border);
-        }
-
-        .input-group {
-            margin: 1.5rem 0;
-        }
-
-        .input-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: var(--text-muted);
-        }
-
-        .input-group input {
-            width: 100%;
-            padding: 0.75rem;
-            background: var(--bg-dark);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: white;
-        }
-
-        /* Footer */
-        footer {
-            padding: 2rem;
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            border-top: 1px solid var(--border);
-        }
-
-        .disclaimer {
-            max-width: 700px;
-            margin: 1rem auto;
-            padding: 1rem;
-            background: rgba(239, 68, 68, 0.05);
-            border-radius: 8px;
-            border: 1px dashed var(--danger);
-            color: #fca5a5;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        @media (max-width: 600px) {
-            .grid-info { grid-template-columns: 1fr; }
-            .hero h1 { font-size: 1.8rem; }
-        }
-    </style>
-</head>
-<body>
-
-    <div class="container">
-        <header>
-            <div class="logo">
-                <i data-lucide="shield-check"></i>
-                GuardianCheck
-            </div>
-            <button class="settings-btn" onclick="toggleSettings()">
-                <i data-lucide="settings"></i>
-            </button>
-        </header>
-
-        <main>
-            <section class="hero">
-                <h1>Detect Scams Before They Strike</h1>
-                <p style="color: var(--text-muted)">Verify websites and phone numbers using AI-powered threat analysis.</p>
-                
-                <div class="search-container">
-                    <input type="text" id="userInput" class="search-input" placeholder="Enter URL (e.g., bank-login.top) or Phone number...">
-                    <button class="analyze-btn" onclick="performAnalysis()">Analyze</button>
-                </div>
-            </section>
-
-            <!-- Loading State -->
-            <div id="loader" class="loader">
-                <div class="spinner"></div>
-                <p>AI is scanning for threats...</p>
-            </div>
-
-            <!-- Results Section -->
-            <section id="results-area">
-                <div class="result-card">
-                    <div class="risk-header">
-                        <div>
-                            <h2 id="result-title">Analysis Result</h2>
-                            <p id="check-timestamp" class="info-label" style="margin-top: 5px;"></p>
-                        </div>
-                        <div id="risk-badge" class="risk-badge">SAFE</div>
-                    </div>
-
-                    <div class="risk-meter">
-                        <div id="risk-meter-fill" class="risk-meter-fill"></div>
-                    </div>
-                    <p id="risk-score-text" style="font-weight: 600; margin-bottom: 1.5rem;"></p>
-
-                    <div class="info-item" style="margin-bottom: 1.5rem; border-left: 4px solid var(--primary);">
-                        <div class="info-label"><i data-lucide="bot"></i> AI CONCLUSION</div>
-                        <p id="ai-conclusion">Analyzing...</p>
-                    </div>
-
-                    <div class="grid-info">
-                        <div class="info-item">
-                            <div class="info-label"><i data-lucide="search"></i> HEURISTIC FINDINGS</div>
-                            <ul id="heuristic-list" style="padding-left: 1.2rem; font-size: 0.9rem;">
-                                <!-- Findings injected here -->
-                            </ul>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label"><i data-lucide="alert-triangle"></i> SAFETY ADVICE</div>
-                            <p id="safety-advice" style="font-size: 0.9rem;"></p>
-                        </div>
-                    </div>
-
-                    <div id="firebase-status" style="margin-top: 1.5rem; font-size: 0.75rem; text-align: right; color: var(--text-muted);">
-                        <!-- Firebase log status -->
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <footer>
-            <div class="disclaimer">
-                <strong>Legal Disclaimer:</strong> This tool provides risk assessment based on automated algorithms and AI. It is not a definitive legal judgment. Always exercise caution when sharing personal information online.
-            </div>
-            <p>&copy; 2025 GuardianCheck Security. Built for a safer web.</p>
-        </footer>
-    </div>
-
-    <!-- Settings Modal -->
-    <div id="settings-modal" onclick="if(event.target === this) toggleSettings()">
-        <div class="modal-content">
-            <h3>Analysis Settings</h3>
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Keys are stored locally in your browser.</p>
-            
-            <div class="input-group">
-                <label>OpenAI/Groq API Key</label>
-                <input type="password" id="apiKey" placeholder="sk-...">
-            </div>
-
-            <div class="input-group">
-                <label>Custom Endpoint (Optional)</label>
-                <input type="text" id="apiEndpoint" placeholder="https://api.openai.com/v1">
-            </div>
-
-            <button class="analyze-btn" style="position: static; width: 100%;" onclick="saveSettings()">Save Configuration</button>
-        </div>
-    </div>
-
-    <!-- Firebase SDK (Optional Integration) -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
     <script>
-        // --- 1. CONFIGURATION & INITIALIZATION ---
-        lucide.createIcons();
-
-        // Firebase Config Placeholder (User can fill this)
-        const firebaseConfig = {
-            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
-            authDomain: "profile-d1214.firebaseapp.com",
-            projectId: "profile-d1214",
-            storageBucket: "profile-d1214.firebasestorage.app",
-            messagingSenderId: "914980131889",
-            appId: "1:914980131889:web:72f8da15c42dbee671b110",
-        };
-
-        // Initialize Firebase if config is valid
-        let db = null;
-        if (firebaseConfig.apiKey !== "YOUR_FIREBASE_API_KEY") {
-            try {
-                firebase.initializeApp(firebaseConfig);
-                db = firebase.firestore();
-            } catch (e) { console.error("Firebase init failed", e); }
-        }
-
-        function toggleSettings() {
-            const modal = document.getElementById('settings-modal');
-            modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
-            if(modal.style.display === 'flex') {
-                document.getElementById('apiKey').value = localStorage.getItem('gc_api_key') || '';
-                document.getElementById('apiEndpoint').value = localStorage.getItem('gc_api_endpoint') || 'https://api.openai.com/v1';
-            }
-        }
-
-        function saveSettings() {
-            localStorage.setItem('gc_api_key', document.getElementById('apiKey').value);
-            localStorage.setItem('gc_api_endpoint', document.getElementById('apiEndpoint').value);
-            toggleSettings();
-            alert('Settings saved locally.');
-        }
-
-        // --- 2. INPUT DETECTION & VALIDATION ---
-        function detectType(input) {
-            const urlPattern = /^(https?:\/\/)?([\w\d-]+\.)+[\w-]{2,}(\/.*)?$/i;
-            const phonePattern = /^(\+?\d{1,3})?[-.\s]?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/;
-
-            if (urlPattern.test(input)) return 'URL';
-            if (phonePattern.test(input)) return 'PHONE';
-            return 'UNKNOWN';
-        }
-
-        // --- 3. CORE ANALYSIS LOGIC ---
-        async function performAnalysis() {
-            const input = document.getElementById('userInput').value.trim();
-            const type = detectType(input);
-
-            if (!input) return alert("Please enter a URL or Phone number.");
-            if (type === 'UNKNOWN') return alert("Unrecognized format. Please provide a valid URL or Phone number.");
-
-            // UI State: Loading
-            document.getElementById('loader').style.display = 'block';
-            document.getElementById('results-area').style.display = 'none';
-
-            // Gather Heuristics
-            const heuristics = runHeuristics(input, type);
-            
-            // Call AI Analysis
-            const aiResult = await callAI(input, type, heuristics);
-
-            // Update UI
-            displayResults(input, type, heuristics, aiResult);
-            
-            // Optional: Save to Firebase
-            saveResultToFirebase(input, type, aiResult);
-        }
-
-        function runHeuristics(input, type) {
-            let findings = [];
-            let baseScore = 0;
-
-            if (type === 'URL') {
-                const url = input.toLowerCase();
-                if (!url.startsWith('https://')) {
-                    findings.push("No HTTPS encryption detected.");
-                    baseScore += 30;
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4f46e5',
+                        secondary: '#10b981',
+                    }
                 }
-                const suspiciousTlds = ['.xyz', '.top', '.pw', '.bid', '.monster', '.icu'];
-                if (suspiciousTlds.some(tld => url.endsWith(tld) || url.includes(tld + '/'))) {
-                    findings.push("Uses a low-reputation TLD often associated with spam.");
-                    baseScore += 25;
-                }
-                const scamKeywords = ['login', 'verify', 'secure', 'bank', 'update', 'account', 'gift', 'prize'];
-                if (scamKeywords.some(word => url.includes(word))) {
-                    findings.push("Contains keywords commonly used in phishing (e.g., 'login', 'bank').");
-                    baseScore += 15;
-                }
-                if (input.includes('xn--')) {
-                    findings.push("Punycode detected (possible homograph attack/fake characters).");
-                    baseScore += 40;
-                }
-            } else {
-                // Phone Heuristics
-                if (input.length < 8) findings.push("Number is suspiciously short.");
-                if (input.startsWith('+')) baseScore += 5; // Global numbers are neutral but noted
-                findings.push("Pattern analysis: Standard formatting check complete.");
-            }
-
-            return { findings, baseScore };
-        }
-
-        // --- 4. AI INTEGRATION ---
-        async function callAI(input, type, heuristics) {
-            const apiKey = localStorage.getItem('gc_api_key');
-            const endpoint = localStorage.getItem('gc_api_endpoint') || 'https://api.openai.com/v1';
-
-            if (!apiKey) {
-                return {
-                    score: Math.min(heuristics.baseScore, 100),
-                    level: heuristics.baseScore > 50 ? 'Suspicious' : 'Safe',
-                    conclusion: "AI Analysis skipped (No API Key). Based on heuristics: " + 
-                               (heuristics.findings[0] || "No immediate red flags."),
-                    advice: "Please set your API key in settings for deep AI inspection."
-                };
-            }
-
-            const prompt = `You are a cybersecurity expert. Analyze this ${type}: "${input}". 
-            Heuristic findings: ${heuristics.findings.join(', ')}. 
-            Return ONLY a JSON object with: 
-            { "score": (0-100), "level": ("Safe", "Suspicious", "High Risk"), "conclusion": "short explanation", "advice": "safety tip" }`;
-
-            try {
-                const response = await fetch(`${endpoint}/chat/completions`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${apiKey}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        model: "gpt-3.5-turbo", // Or groq equivalent
-                        messages: [{ role: "user", content: prompt }],
-                        temperature: 0.3
-                    })
-                });
-
-                const data = await response.json();
-                return JSON.parse(data.choices[0].message.content);
-            } catch (e) {
-                console.error("AI Error:", e);
-                return { score: 50, level: "Unknown", conclusion: "AI Analysis failed to connect.", advice: "Check your API settings." };
-            }
-        }
-
-        // --- 5. UI RENDERING ---
-        function displayResults(input, type, heuristics, ai) {
-            document.getElementById('loader').style.display = 'none';
-            document.getElementById('results-area').style.display = 'block';
-
-            // Title and Timestamp
-            document.getElementById('result-title').innerText = `${type} Check: ${input}`;
-            document.getElementById('check-timestamp').innerText = `Analyzed on: ${new Date().toLocaleString()}`;
-
-            // Risk Badge
-            const badge = document.getElementById('risk-badge');
-            badge.innerText = ai.level;
-            badge.className = 'risk-badge ' + 
-                (ai.level === 'Safe' ? 'badge-safe' : ai.level === 'Suspicious' ? 'badge-suspicious' : 'badge-danger');
-
-            // Risk Meter
-            const meterFill = document.getElementById('risk-meter-fill');
-            meterFill.style.width = ai.score + '%';
-            meterFill.style.backgroundColor = ai.score < 40 ? 'var(--success)' : ai.score < 75 ? 'var(--warning)' : 'var(--danger)';
-            document.getElementById('risk-score-text').innerText = `Risk Score: ${ai.score}/100`;
-
-            // Text content
-            document.getElementById('ai-conclusion').innerText = ai.conclusion;
-            document.getElementById('safety-advice').innerText = ai.advice;
-
-            // Heuristic list
-            const hList = document.getElementById('heuristic-list');
-            hList.innerHTML = heuristics.findings.map(f => `<li>${f}</li>`).join('') || "<li>No automated red flags detected in formatting.</li>";
-        }
-
-        // --- 6. DATA PERSISTENCE ---
-        async function saveResultToFirebase(input, type, result) {
-            if (!db) return;
-            
-            try {
-                await db.collection("analysis_logs").add({
-                    input,
-                    type,
-                    score: result.score,
-                    level: result.level,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                document.getElementById('firebase-status').innerText = "Result synced to secure cloud storage.";
-            } catch (e) {
-                console.warn("Firebase logging failed", e);
             }
         }
     </script>
+
+    <style>
+        [v-cloak] { display: none; }
+        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); }
+        .dark .glass { background: rgba(17, 24, 39, 0.8); }
+        .profile-card:hover { transform: translateY(-4px); transition: all 0.3s ease; }
+        .section-fade-enter-active, .section-fade-leave-active { transition: opacity 0.3s ease; }
+        .section-fade-enter-from, .section-fade-leave-to { opacity: 0; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen transition-colors duration-300">
+
+<div id="app" v-cloak>
+    <!-- Navigation -->
+    <nav class="sticky top-0 z-50 border-b border-gray-200 dark:border-gray-800 glass">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-2 cursor-pointer" @click="view = 'home'">
+                    <div class="bg-primary p-2 rounded-lg text-white">
+                        <i data-lucide="user-circle"></i>
+                    </div>
+                    <span class="text-xl font-bold tracking-tight">ProProfile</span>
+                </div>
+
+                <div class="hidden md:flex items-center space-x-8">
+                    <button @click="view = 'home'" :class="view === 'home' ? 'text-primary' : ''" class="hover:text-primary transition">Explore</button>
+                    <button @click="view = 'editor'" :class="view === 'editor' ? 'text-primary' : ''" class="hover:text-primary transition">My Profile</button>
+                    <button @click="toggleDarkMode" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition">
+                        <i :data-lucide="darkMode ? 'sun' : 'moon'"></i>
+                    </button>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden">
+                    <button @click="isMobileMenuOpen = !isMobileMenuOpen" class="p-2">
+                        <i data-lucide="menu"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- HOME / SEARCH VIEW -->
+        <section v-if="view === 'home'" class="space-y-8">
+            <div class="text-center max-w-2xl mx-auto mb-12">
+                <h1 class="text-4xl font-extrabold mb-4">Discover Professional Talents</h1>
+                <p class="text-gray-600 dark:text-gray-400">Search and connect with professionals across the globe.</p>
+                
+                <div class="mt-8 relative">
+                    <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <input 
+                        v-model="searchQuery"
+                        type="text" 
+                        placeholder="Search by name, skill, or job title..." 
+                        class="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm focus:ring-2 focus:ring-primary outline-none transition"
+                    >
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div v-for="profile in filteredProfiles" :key="profile.id" 
+                     @click="openProfile(profile)"
+                     class="profile-card bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm cursor-pointer">
+                    <div class="flex items-center gap-4 mb-4">
+                        <img :src="profile.avatar || 'https://ui-avatars.com/api/?name='+profile.name" class="w-16 h-16 rounded-xl object-cover">
+                        <div>
+                            <h3 class="font-bold text-lg">{{ profile.name }}</h3>
+                            <p class="text-primary text-sm font-medium">{{ profile.jobTitle }}</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 mb-4">{{ profile.bio }}</p>
+                    <div class="flex flex-wrap gap-2">
+                        <span v-for="skill in profile.skills?.slice(0, 3)" class="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md">
+                            {{ skill }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div v-if="filteredProfiles.length === 0" class="text-center py-20">
+                <i data-lucide="users" class="mx-auto w-12 h-12 text-gray-300 mb-4"></i>
+                <p class="text-gray-500">No profiles found matching your search.</p>
+            </div>
+        </section>
+
+        <!-- EDITOR / MY PROFILE VIEW -->
+        <section v-if="view === 'editor'" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- Sidebar Navigation -->
+            <div class="lg:col-span-3 space-y-2">
+                <h2 class="text-xl font-bold mb-4">Profile Editor</h2>
+                <nav class="flex flex-col gap-1">
+                    <button @click="editSection = 'basic'" :class="editSection === 'basic' ? 'bg-primary text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-800'" class="flex items-center gap-3 px-4 py-2 rounded-lg text-left transition">
+                        <i data-lucide="user" class="w-4 h-4"></i> Basic Info
+                    </button>
+                    <button @click="editSection = 'professional'" :class="editSection === 'professional' ? 'bg-primary text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-800'" class="flex items-center gap-3 px-4 py-2 rounded-lg text-left transition">
+                        <i data-lucide="briefcase" class="w-4 h-4"></i> Career & Skills
+                    </button>
+                    <button @click="editSection = 'projects'" :class="editSection === 'projects' ? 'bg-primary text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-800'" class="flex items-center gap-3 px-4 py-2 rounded-lg text-left transition">
+                        <i data-lucide="folder-kanban" class="w-4 h-4"></i> Portfolio
+                    </button>
+                    <button @click="editSection = 'data'" :class="editSection === 'data' ? 'bg-primary text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-800'" class="flex items-center gap-3 px-4 py-2 rounded-lg text-left transition">
+                        <i data-lucide="database" class="w-4 h-4"></i> Import / Export
+                    </button>
+                </nav>
+
+                <hr class="my-6 border-gray-200 dark:border-gray-800">
+                
+                <button @click="saveProfile" :disabled="loading" class="w-full bg-secondary hover:bg-emerald-600 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2">
+                    <i data-lucide="save" class="w-4 h-4"></i>
+                    {{ loading ? 'Saving...' : 'Save Changes' }}
+                </button>
+                
+                <p class="text-[10px] text-gray-400 mt-4 text-center">
+                    ID: {{ myProfile.username }} | Last updated: {{ formatDate(myProfile.updatedAt) }}
+                </p>
+            </div>
+
+            <!-- Editor Content -->
+            <div class="lg:col-span-9 bg-white dark:bg-gray-900 rounded-3xl p-6 md:p-8 border border-gray-200 dark:border-gray-800">
+                
+                <!-- Basic Info Section -->
+                <div v-if="editSection === 'basic'" class="space-y-6">
+                    <div class="flex items-center gap-6 mb-8">
+                        <div class="relative group">
+                            <img :src="myProfile.avatar || 'https://ui-avatars.com/api/?name='+myProfile.name" class="w-24 h-24 rounded-2xl object-cover border-4 border-gray-100 dark:border-gray-800">
+                            <div class="absolute inset-0 bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition cursor-pointer">
+                                <i data-lucide="camera" class="text-white"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold">Primary Identity</h2>
+                            <p class="text-gray-500">This information will be visible to the public.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold uppercase text-gray-500">Full Name</label>
+                            <input v-model="myProfile.name" type="text" class="w-full bg-gray-50 dark:bg-gray-800 border-none rounded-xl p-3 focus:ring-2 focus:ring-primary">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold uppercase text-gray-500">Job Title</label>
+                            <input v-model="myProfile.jobTitle" type="text" class="w-full bg-gray-50 dark:bg-gray-800 border-none rounded-xl p-3 focus:ring-2 focus:ring-primary">
+                        </div>
+                        <div class="md:col-span-2 space-y-1">
+                            <label class="text-xs font-bold uppercase text-gray-500">Short Bio</label>
+                            <textarea v-model="myProfile.bio" rows="3" class="w-full bg-gray-50 dark:bg-gray-800 border-none rounded-xl p-3 focus:ring-2 focus:ring-primary"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="pt-6 border-t border-gray-100 dark:border-gray-800">
+                        <h3 class="text-lg font-bold mb-4">Contact & Social</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div v-for="(val, key) in myProfile.social" :key="key" class="flex items-center gap-2">
+                                <div class="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                    <i :data-lucide="getIcon(key)" class="w-4 h-4"></i>
+                                </div>
+                                <input v-model="myProfile.social[key]" :placeholder="key" class="flex-1 bg-gray-50 dark:bg-gray-800 border-none rounded-xl p-3 text-sm">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Career Section -->
+                <div v-if="editSection === 'professional'" class="space-y-8">
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-bold">Skills</h3>
+                            <button @click="addSkill" class="text-primary text-sm font-bold">+ Add Skill</button>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <div v-for="(skill, idx) in myProfile.skills" :key="idx" class="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 pl-3 pr-1 py-1 rounded-full">
+                                <span class="text-sm">{{ skill }}</span>
+                                <button @click="myProfile.skills.splice(idx, 1)" class="text-gray-400 hover:text-red-500">
+                                    <i data-lucide="x" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-bold">Experience</h3>
+                            <button @click="addExp" class="text-primary text-sm font-bold">+ Add Item</button>
+                        </div>
+                        <div class="space-y-4">
+                            <div v-for="(exp, idx) in myProfile.experience" :key="idx" class="p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl relative">
+                                <button @click="myProfile.experience.splice(idx, 1)" class="absolute top-4 right-4 text-gray-400">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                                <input v-model="exp.role" placeholder="Role" class="block w-full bg-transparent font-bold mb-1 outline-none">
+                                <input v-model="exp.company" placeholder="Company" class="block w-full bg-transparent text-sm text-primary mb-2 outline-none">
+                                <textarea v-model="exp.desc" placeholder="Description" class="block w-full bg-transparent text-sm outline-none" rows="2"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Projects Section -->
+                <div v-if="editSection === 'projects'" class="space-y-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold">Project Portfolio</h3>
+                        <button @click="addProject" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold">+ Add Project</button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div v-for="(project, idx) in myProfile.projects" :key="idx" class="p-4 border border-gray-100 dark:border-gray-800 rounded-2xl">
+                            <input v-model="project.name" placeholder="Project Name" class="font-bold w-full bg-transparent mb-2 outline-none">
+                            <textarea v-model="project.desc" placeholder="Project description..." class="text-sm w-full bg-transparent mb-2 outline-none" rows="2"></textarea>
+                            <input v-model="project.link" placeholder="Link (https://...)" class="text-xs text-primary w-full bg-transparent outline-none">
+                            <button @click="myProfile.projects.splice(idx, 1)" class="mt-4 text-xs text-red-400">Remove</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data Tools Section -->
+                <div v-if="editSection === 'data'" class="space-y-8">
+                    <div class="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-2xl border border-blue-100 dark:border-blue-800/30">
+                        <h3 class="text-blue-700 dark:text-blue-400 font-bold mb-2 flex items-center gap-2">
+                            <i data-lucide="download" class="w-5 h-5"></i> Export Your Data
+                        </h3>
+                        <p class="text-sm text-blue-600 dark:text-blue-300 mb-4">Download your entire profile as a JSON file for backup or manual migration.</p>
+                        <button @click="exportData" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-blue-700 transition">
+                            Download JSON
+                        </button>
+                    </div>
+
+                    <div class="bg-purple-50 dark:bg-purple-900/20 p-6 rounded-2xl border border-purple-100 dark:border-purple-800/30">
+                        <h3 class="text-purple-700 dark:text-purple-400 font-bold mb-2 flex items-center gap-2">
+                            <i data-lucide="upload" class="w-5 h-5"></i> Import Data
+                        </h3>
+                        <p class="text-sm text-purple-600 dark:text-purple-300 mb-4">Upload a compatible JSON file to restore your profile instantly.</p>
+                        <input type="file" id="importFile" @change="importData" class="hidden">
+                        <button @click="triggerImport" class="bg-purple-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-purple-700 transition">
+                            Select File
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PUBLIC PROFILE MODAL -->
+        <div v-if="selectedProfile" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="selectedProfile = null"></div>
+            <div class="bg-white dark:bg-gray-900 w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl relative animate-in fade-in zoom-in duration-300">
+                <button @click="selectedProfile = null" class="absolute top-6 right-6 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full z-10">
+                    <i data-lucide="x"></i>
+                </button>
+                
+                <div class="p-8 md:p-12">
+                    <div class="flex flex-col md:flex-row gap-8 items-start mb-12">
+                        <img :src="selectedProfile.avatar || 'https://ui-avatars.com/api/?name='+selectedProfile.name" class="w-32 h-32 rounded-3xl object-cover shadow-xl">
+                        <div class="flex-1">
+                            <h2 class="text-4xl font-black mb-2">{{ selectedProfile.name }}</h2>
+                            <p class="text-xl text-primary font-medium mb-4">{{ selectedProfile.jobTitle }}</p>
+                            <p class="text-gray-600 dark:text-gray-400 leading-relaxed">{{ selectedProfile.bio }}</p>
+                            
+                            <div class="flex flex-wrap gap-4 mt-6">
+                                <a v-for="(val, key) in selectedProfile.social" :key="key" v-show="val" :href="val" target="_blank" class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-primary hover:text-white transition">
+                                    <i :data-lucide="getIcon(key)" class="w-5 h-5"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+                        <div class="md:col-span-2 space-y-12">
+                            <section v-if="selectedProfile.experience?.length">
+                                <h3 class="text-sm font-black uppercase tracking-widest text-gray-400 mb-6">Experience</h3>
+                                <div class="space-y-8">
+                                    <div v-for="exp in selectedProfile.experience" class="border-l-2 border-primary/20 pl-6 relative">
+                                        <div class="absolute w-3 h-3 bg-primary rounded-full -left-[7px] top-1"></div>
+                                        <h4 class="font-bold text-lg">{{ exp.role }}</h4>
+                                        <p class="text-primary font-medium text-sm mb-2">{{ exp.company }}</p>
+                                        <p class="text-gray-500 text-sm">{{ exp.desc }}</p>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section v-if="selectedProfile.projects?.length">
+                                <h3 class="text-sm font-black uppercase tracking-widest text-gray-400 mb-6">Featured Projects</h3>
+                                <div class="grid grid-cols-1 gap-4">
+                                    <a v-for="proj in selectedProfile.projects" :href="proj.link" target="_blank" class="block p-6 bg-gray-50 dark:bg-gray-800 rounded-2xl hover:ring-2 ring-primary transition">
+                                        <h4 class="font-bold mb-1">{{ proj.name }}</h4>
+                                        <p class="text-sm text-gray-500">{{ proj.desc }}</p>
+                                    </a>
+                                </div>
+                            </section>
+                        </div>
+
+                        <div class="space-y-8">
+                            <section>
+                                <h3 class="text-sm font-black uppercase tracking-widest text-gray-400 mb-4">Expertise</h3>
+                                <div class="flex flex-wrap gap-2">
+                                    <span v-for="skill in selectedProfile.skills" class="bg-primary/10 text-primary px-3 py-1 rounded-lg font-bold text-xs">
+                                        {{ skill }}
+                                    </span>
+                                </div>
+                            </section>
+                            
+                            <div class="p-6 bg-gray-100 dark:bg-gray-800 rounded-3xl">
+                                <h4 class="font-bold mb-2">Connect</h4>
+                                <p class="text-xs text-gray-500 mb-4">Available for networking and opportunities.</p>
+                                <a :href="'mailto:' + selectedProfile.social.email" class="block w-full text-center bg-white dark:bg-gray-900 py-3 rounded-xl font-bold text-sm shadow-sm">
+                                    Send Message
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-200 dark:border-gray-800 py-12 mt-20">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p class="text-gray-500 text-sm">© 2025 ProProfile Personal System. All data is user-provided.</p>
+            <p class="text-[10px] text-gray-400 mt-2 uppercase tracking-tighter">Privacy First • Decentralized Storage • Open Export</p>
+        </div>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div v-if="toast.show" class="fixed bottom-8 right-8 z-[100] animate-bounce">
+        <div :class="toast.type === 'success' ? 'bg-secondary' : 'bg-red-500'" class="px-6 py-3 rounded-2xl text-white shadow-2xl font-bold flex items-center gap-2">
+            <i :data-lucide="toast.type === 'success' ? 'check-circle' : 'alert-circle'"></i>
+            {{ toast.msg }}
+        </div>
+    </div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
+        authDomain: "profile-d1214.firebaseapp.com",
+        projectId: "profile-d1214",
+        storageBucket: "profile-d1214.firebasestorage.app",
+        messagingSenderId: "914980131889",
+        appId: "1:914980131889:web:72f8da15c42dbee671b110",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const { createApp, ref, onMounted, computed, watch, nextTick } = Vue;
+
+    createApp({
+        setup() {
+            const view = ref('home');
+            const editSection = ref('basic');
+            const darkMode = ref(localStorage.getItem('theme') === 'dark');
+            const profiles = ref([]);
+            const searchQuery = ref('');
+            const loading = ref(false);
+            const selectedProfile = ref(null);
+            const toast = ref({ show: false, msg: '', type: 'success' });
+
+            // Generate or fetch a session-based username for this demo
+            // In a real app, this comes from Firebase Auth
+            const userId = localStorage.getItem('profile_uid') || 'user_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('profile_uid', userId);
+
+            const myProfile = ref({
+                username: userId,
+                name: 'Anonymous User',
+                jobTitle: 'Professional Developer',
+                bio: 'Passionate about building modern web experiences.',
+                avatar: '',
+                skills: ['JavaScript', 'HTML/CSS'],
+                social: {
+                    email: '', github: '', linkedin: '', twitter: '', website: ''
+                },
+                experience: [
+                    { role: 'Senior Developer', company: 'Tech Corp', desc: 'Working on core products.' }
+                ],
+                projects: [
+                    { name: 'My First Project', desc: 'A revolutionary app.', link: '#' }
+                ],
+                updatedAt: new Date().toISOString()
+            });
+
+            const toggleDarkMode = () => {
+                darkMode.value = !darkMode.value;
+                document.documentElement.classList.toggle('dark');
+                localStorage.setItem('theme', darkMode.value ? 'dark' : 'light');
+                nextTick(() => lucide.createIcons());
+            };
+
+            const showToast = (msg, type = 'success') => {
+                toast.value = { show: true, msg, type };
+                setTimeout(() => toast.value.show = false, 3000);
+            };
+
+            const fetchData = () => {
+                // Listen to profiles collection
+                const q = query(collection(db, "profiles"), limit(50));
+                onSnapshot(q, (snapshot) => {
+                    profiles.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    nextTick(() => lucide.createIcons());
+                });
+
+                // Load current user profile
+                getDoc(doc(db, "profiles", userId)).then(snap => {
+                    if (snap.exists()) {
+                        myProfile.value = snap.data();
+                    }
+                });
+            };
+
+            const saveProfile = async () => {
+                loading.value = true;
+                try {
+                    myProfile.value.updatedAt = new Date().toISOString();
+                    await setDoc(doc(db, "profiles", userId), myProfile.value);
+                    showToast('Profile updated successfully!');
+                } catch (e) {
+                    showToast('Error saving data', 'error');
+                } finally {
+                    loading.value = false;
+                }
+            };
+
+            const filteredProfiles = computed(() => {
+                if (!searchQuery.value) return profiles.value;
+                const q = searchQuery.value.toLowerCase();
+                return profiles.value.filter(p => 
+                    p.name.toLowerCase().includes(q) || 
+                    p.jobTitle.toLowerCase().includes(q) ||
+                    p.skills?.some(s => s.toLowerCase().includes(q))
+                );
+            });
+
+            const openProfile = (profile) => {
+                selectedProfile.value = profile;
+                nextTick(() => lucide.createIcons());
+            };
+
+            const getIcon = (key) => {
+                const map = {
+                    email: 'mail',
+                    github: 'github',
+                    linkedin: 'linkedin',
+                    twitter: 'twitter',
+                    website: 'globe',
+                    facebook: 'facebook',
+                    phone: 'phone'
+                };
+                return map[key] || 'link';
+            };
+
+            const addSkill = () => {
+                const s = prompt("Enter skill name:");
+                if (s) myProfile.value.skills.push(s);
+            };
+
+            const addExp = () => {
+                myProfile.value.experience.push({ role: '', company: '', desc: '' });
+                nextTick(() => lucide.createIcons());
+            };
+
+            const addProject = () => {
+                myProfile.value.projects.push({ name: '', desc: '', link: '' });
+                nextTick(() => lucide.createIcons());
+            };
+
+            const exportData = () => {
+                const data = JSON.stringify(myProfile.value, null, 2);
+                const blob = new Blob([data], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `profile_${myProfile.value.username}.json`;
+                a.click();
+            };
+
+            const triggerImport = () => document.getElementById('importFile').click();
+
+            const importData = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const imported = JSON.parse(e.target.result);
+                        if (!imported.name) throw new Error("Invalid structure");
+                        myProfile.value = { ...myProfile.value, ...imported, username: userId };
+                        showToast('Data imported! Remember to save.');
+                    } catch (err) {
+                        showToast('Invalid JSON file', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            };
+
+            const formatDate = (dateStr) => {
+                if (!dateStr) return 'Never';
+                return new Date(dateStr).toLocaleDateString();
+            };
+
+            onMounted(() => {
+                if (darkMode.value) document.documentElement.classList.add('dark');
+                fetchData();
+                lucide.createIcons();
+            });
+
+            watch([view, editSection, selectedProfile], () => {
+                nextTick(() => lucide.createIcons());
+            });
+
+            return {
+                view, editSection, myProfile, profiles, searchQuery, 
+                filteredProfiles, loading, selectedProfile, toast,
+                toggleDarkMode, darkMode, saveProfile, openProfile, 
+                getIcon, addSkill, addExp, addProject, exportData, 
+                importData, triggerImport, formatDate
+            }
+        }
+    }).mount('#app');
+</script>
 </body>
 </html>
