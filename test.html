@@ -2,154 +2,132 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexus Core | Premium SaaS Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NEXUS | Institutional Crypto Terminal</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #05070a;
-            --card-bg: rgba(17, 19, 24, 0.7);
-            --card-border: rgba(255, 255, 255, 0.08);
-            --accent-primary: #6366f1;
-            --accent-glow: rgba(99, 102, 241, 0.3);
-            --text-main: #f8fafc;
+            --bg: #030508;
+            --surface: #0a0c10;
+            --surface-hover: #14171c;
+            --accent: #3d5afe;
+            --accent-glow: rgba(61, 90, 254, 0.3);
+            --text: #ffffff;
             --text-dim: #94a3b8;
-            --danger: #ef4444;
-            --success: #10b981;
-            --sidebar-width: 260px;
-            --glass-blur: blur(12px);
+            --success: #00f2fe;
+            --danger: #ff3366;
+            --border: rgba(255, 255, 255, 0.06);
+            --glass: rgba(10, 12, 16, 0.8);
+            --sidebar-w: 260px;
+            --header-h: 70px;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            background: var(--bg); 
+            color: var(--text); 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            overflow: hidden; 
+            line-height: 1.5;
         }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            overflow: hidden;
-            height: 100vh;
-            background-image: 
-                radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
-                radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.08) 0%, transparent 40%);
-        }
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 
-        /* Utils */
-        .hidden { display: none !important; }
+        /* Typography & Layout */
         .flex { display: flex; }
         .items-center { align-items: center; }
         .justify-between { justify-content: space-between; }
-        .glass {
-            background: var(--card-bg);
-            backdrop-filter: var(--glass-blur);
-            -webkit-backdrop-filter: var(--glass-blur);
-            border: 1px solid var(--card-border);
-            border-radius: 16px;
-        }
+        .hidden { display: none !important; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
 
         /* Auth Screen */
-        #auth-screen {
+        #auth-view {
             height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
-        }
-
-        .login-card {
-            width: 400px;
-            padding: 3rem;
-            text-align: center;
-            animation: fadeIn 0.6s ease-out;
-        }
-
-        .btn-google {
-            background: white;
-            color: #1a1a1a;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
+            background: radial-gradient(circle at 50% 50%, #1a1f35 0%, #030508 100%);
+            z-index: 9999;
+            position: fixed;
             width: 100%;
-            margin-top: 2rem;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .btn-google:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        .auth-card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            padding: 3rem;
+            border-radius: 32px;
+            border: 1px solid var(--border);
+            text-align: center;
+            width: 90%;
+            max-width: 420px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
 
-        /* App Layout */
-        #app-shell {
-            display: flex;
+        /* Sidebar */
+        #sidebar {
+            width: var(--sidebar-w);
             height: 100vh;
-            opacity: 0;
-            transition: opacity 0.5s ease;
-        }
-
-        #app-shell.visible { opacity: 1; }
-
-        aside {
-            width: var(--sidebar-width);
-            border-right: 1px solid var(--card-border);
-            padding: 2rem 1.5rem;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            position: fixed;
+            left: 0;
+            top: 0;
+            padding: 2rem 1rem;
             display: flex;
             flex-direction: column;
-            gap: 2rem;
-            background: rgba(5, 7, 10, 0.5);
-            backdrop-filter: blur(20px);
+            transition: transform 0.3s ease;
+            z-index: 100;
         }
 
         .logo {
-            font-size: 1.25rem;
+            font-size: 1.5rem;
             font-weight: 800;
-            background: linear-gradient(135deg, #fff 0%, #6366f1 100%);
+            background: linear-gradient(to right, #fff, #3d5afe);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        nav ul { list-style: none; }
-        nav li {
-            padding: 12px 16px;
-            border-radius: 10px;
-            margin-bottom: 8px;
-            cursor: pointer;
-            color: var(--text-dim);
-            transition: 0.2s;
+            margin-bottom: 3rem;
+            padding: 0 1rem;
             display: flex;
             align-items: center;
             gap: 12px;
+        }
+
+        .nav-item {
+            padding: 12px 16px;
+            border-radius: 12px;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 4px;
             font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
-        nav li:hover, nav li.active {
-            background: rgba(255, 255, 255, 0.05);
-            color: white;
+        .nav-item:hover, .nav-item.active {
+            background: var(--surface-hover);
+            color: #fff;
         }
 
-        nav li.active {
-            color: var(--accent-primary);
-            background: rgba(99, 102, 241, 0.1);
+        .nav-item.active {
+            background: var(--accent-glow);
+            color: var(--accent);
         }
 
-        main {
-            flex: 1;
-            padding: 2rem;
+        /* Main Content */
+        #main-shell {
+            margin-left: var(--sidebar-w);
+            height: 100vh;
             overflow-y: auto;
+            background: var(--bg);
+            padding: 2rem;
             position: relative;
         }
 
@@ -157,309 +135,277 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 2.5rem;
+            margin-bottom: 2rem;
         }
 
-        /* Cards & Content */
+        .wallet-pill {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 99px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .wallet-pill:hover { border-color: var(--accent); }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 10px var(--success); }
+
+        /* Dashboard Cards */
+        .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 1.5rem; }
+        .col-4 { grid-column: span 4; }
+        .col-8 { grid-column: span 8; }
+        .col-12 { grid-column: span 12; }
+
         .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
             padding: 1.5rem;
-            margin-bottom: 1.5rem;
+            position: relative;
+            overflow: hidden;
         }
 
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .badge {
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        .badge-admin { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
-        .badge-user { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
+        .stat-label { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 0.5rem; }
+        .stat-value { font-size: 1.8rem; font-weight: 700; }
+        .stat-delta { font-size: 0.85rem; margin-left: 8px; }
 
         /* Tables */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th { text-align: left; padding: 1rem; color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+        td { padding: 1.2rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
 
-        th {
-            text-align: left;
-            padding: 12px;
-            color: var(--text-dim);
-            font-size: 0.85rem;
-            border-bottom: 1px solid var(--card-border);
-        }
+        .token-icon { width: 32px; height: 32px; border-radius: 50%; }
 
-        td {
-            padding: 16px 12px;
-            border-bottom: 1px solid var(--card-border);
-            font-size: 0.9rem;
-        }
-
-        /* Form Controls */
-        input, select, textarea {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--card-border);
-            padding: 12px 16px;
-            border-radius: 8px;
-            color: white;
-            width: 100%;
-            margin-top: 8px;
-            outline: none;
-        }
-
-        input:focus { border-color: var(--accent-primary); }
-
+        /* Buttons */
         .btn {
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
+            padding: 12px 24px;
+            border-radius: 12px;
             border: none;
-            transition: 0.2s;
+            cursor: pointer;
+            font-weight: 600;
+            font-family: inherit;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .btn-primary { background: var(--accent-primary); color: white; }
-        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
-        .btn-ghost { background: transparent; color: var(--text-dim); border: 1px solid var(--card-border); }
+        .btn-primary { background: var(--accent); color: white; box-shadow: 0 8px 16px var(--accent-glow); }
+        .btn-primary:hover { transform: translateY(-2px); opacity: 0.9; }
+        .btn-google { background: #fff; color: #000; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; }
 
-        /* Real-time Toast */
-        #toast-container {
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-in { animation: fadeIn 0.4s forwards; }
+
+        /* Mobile Adjustments */
+        @media (max-width: 1024px) {
+            #sidebar { transform: translateX(-100%); }
+            #sidebar.open { transform: translateX(0); }
+            #main-shell { margin-left: 0; padding: 1rem; }
+            .col-4, .col-8 { grid-column: span 12; }
+            .hide-mobile { display: none; }
+        }
+
+        /* Alert System */
+        .alert-item {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .toast-container {
             position: fixed;
             bottom: 24px;
             right: 24px;
-            z-index: 9999;
+            z-index: 10000;
         }
 
         .toast {
-            padding: 12px 24px;
-            background: #1e293b;
-            border-left: 4px solid var(--accent-primary);
-            border-radius: 8px;
+            background: var(--surface);
+            border: 1px solid var(--accent);
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
             margin-top: 10px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            animation: slideIn 0.3s ease-out;
+            animation: slideIn 0.3s forwards;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        /* Animations */
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-
-        /* Profile Section */
-        .profile-header {
-            display: flex;
-            align-items: center;
-            gap: 2rem;
-            margin-bottom: 3rem;
-        }
-
-        .avatar-l {
-            width: 100px;
-            height: 100px;
-            border-radius: 24px;
-            object-fit: cover;
-            border: 4px solid var(--card-border);
-        }
-
-        /* Skeleton */
-        .skeleton {
-            background: linear-gradient(90deg, #1a1c23 25%, #2d2f39 50%, #1a1c23 75%);
-            background-size: 200% 100%;
-            animation: loading 1.5s infinite;
-            border-radius: 8px;
-        }
-        @keyframes loading { from { background-position: 200% 0; } to { background-position: -200% 0; } }
-
-        /* Modal */
-        #modal-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(4px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 5000;
-        }
     </style>
 </head>
 <body>
 
-    <!-- Auth View -->
-    <div id="auth-screen">
-        <div class="glass login-card">
-            <div class="logo" style="justify-content: center; margin-bottom: 1rem; font-size: 2rem;">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                NEXUS
-            </div>
-            <p style="color: var(--text-dim); margin-bottom: 1rem;">Enterprise Identity Management</p>
-            <button class="btn-google" id="login-btn">
-                <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+    <!-- AUTH SECTION -->
+    <div id="auth-view">
+        <div class="auth-card">
+            <div class="logo" style="justify-content: center; font-size: 2.5rem;">NEXUS</div>
+            <h2 style="margin-bottom: 0.5rem;">Terminal Access</h2>
+            <p style="color: var(--text-dim); margin-bottom: 2rem;">Sign in to sync your institutional portfolio across all devices.</p>
+            <button class="btn btn-google" id="login-google">
+                <svg width="20" height="20" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
                 Continue with Google
             </button>
         </div>
     </div>
 
-    <!-- Main Application UI -->
-    <div id="app-shell" class="hidden">
-        <aside>
-            <div class="logo">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                NEXUS CORE
-            </div>
-            <nav>
-                <ul id="nav-links">
-                    <li class="active" data-view="profile">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                        Personal Dashboard
-                    </li>
-                    <li data-view="data">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h7"/><path d="M16 19h6"/><path d="M19 16v6"/><circle cx="7.5" cy="15.5" r=".5"/><circle cx="16.5" cy="9.5" r=".5"/></svg>
-                        System Objects
-                    </li>
-                    <li id="nav-admin" class="hidden" data-view="admin">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
-                        Admin Control
-                    </li>
-                </ul>
+    <!-- MAIN APP SHELL -->
+    <div id="app-shell" class="hidden flex">
+        <aside id="sidebar">
+            <div class="logo">NEXUS</div>
+            <nav style="flex: 1;">
+                <div class="nav-item active" data-view="dashboard">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                    Dashboard
+                </div>
+                <div class="nav-item" data-view="markets">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                    Markets
+                </div>
+                <div class="nav-item" data-view="alerts">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                    Price Alerts
+                </div>
+                <div class="nav-item hidden" id="admin-link" data-view="admin">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    Administrator
+                </div>
             </nav>
-            <div style="margin-top: auto;">
-                <li style="list-style: none;" id="logout-btn">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                    Sign Out
-                </li>
+            <div class="nav-item" id="logout-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                Sign Out
             </div>
         </aside>
 
-        <main id="main-content">
+        <main id="main-shell">
             <header>
-                <div>
+                <div class="flex items-center gap-12">
+                    <button id="menu-toggle" class="btn btn-ghost hide-mobile" style="padding: 0;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                    </button>
                     <h1 id="view-title">Personal Dashboard</h1>
-                    <p style="color: var(--text-dim); font-size: 0.85rem;" id="view-subtitle">Manage your profile and preferences</p>
                 </div>
-                <div class="flex items-center gap-12 glass" style="padding: 6px 16px; border-radius: 12px;">
-                    <span id="current-user-role" class="badge">USER</span>
-                    <img id="user-avatar" class="avatar" style="width: 32px; height: 32px; border-radius: 50%;" src="" alt="">
+                <div class="flex items-center gap-12">
+                    <div class="wallet-pill" id="wallet-connect">
+                        <div class="status-dot" id="wallet-dot" style="background: #666; box-shadow: none;"></div>
+                        <span id="wallet-address">Connect MetaMask</span>
+                    </div>
+                    <img id="user-avatar" src="" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--border);">
                 </div>
             </header>
 
-            <!-- PROFILE VIEW -->
-            <section id="view-profile" class="view">
-                <div class="profile-header">
-                    <img id="profile-img-large" class="avatar-l" src="" alt="Profile">
-                    <div>
-                        <h2 id="profile-name" style="font-size: 2rem;">...</h2>
-                        <p id="profile-email" style="color: var(--text-dim);">...</p>
-                    </div>
-                </div>
-
+            <!-- VIEW: DASHBOARD -->
+            <div id="view-dashboard" class="content-view animate-in">
                 <div class="grid">
-                    <div class="glass card">
-                        <h3>Profile Settings</h3>
+                    <div class="card col-8">
+                        <div class="stat-label">Total Portfolio Value</div>
+                        <div class="stat-value mono" id="total-balance-usd">$0.00</div>
+                        <div style="margin-top: 1rem; height: 120px; display: flex; align-items: flex-end; gap: 8px;" id="mini-chart">
+                            <!-- JS Generated Sparkline -->
+                        </div>
+                    </div>
+                    <div class="card col-4">
+                        <div class="stat-label">Wallet Balance</div>
+                        <div class="stat-value mono" id="wallet-eth">0.000 ETH</div>
+                        <p id="eth-usd-val" style="color: var(--text-dim); margin-top: 5px;">$0.00</p>
+                    </div>
+                    <div class="card col-12">
+                        <h3>Your Watchlist</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Asset</th>
+                                    <th>Price</th>
+                                    <th>24h Change</th>
+                                    <th>Market Cap</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="watchlist-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: MARKETS -->
+            <div id="view-markets" class="content-view hidden animate-in">
+                <div class="card col-12">
+                    <div class="flex justify-between items-center">
+                        <h2>Top Market Caps</h2>
+                        <input type="text" id="token-search" placeholder="Search tokens..." style="background: var(--bg); border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; color: white;">
+                    </div>
+                    <table id="market-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Asset</th>
+                                <th>Price</th>
+                                <th>24h Change</th>
+                                <th>Market Cap</th>
+                                <th>Chart</th>
+                                <th>Add</th>
+                            </tr>
+                        </thead>
+                        <tbody id="market-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- VIEW: ALERTS -->
+            <div id="view-alerts" class="content-view hidden animate-in">
+                <div class="grid">
+                    <div class="card col-4">
+                        <h3>Create Alert</h3>
                         <div style="margin-top: 1.5rem;">
-                            <label>Display Name</label>
-                            <input type="text" id="edit-display-name">
-                            <label style="display:block; margin-top: 1rem;">Bio</label>
-                            <textarea id="edit-bio" rows="3"></textarea>
-                            <button class="btn btn-primary" style="margin-top: 1.5rem; width: 100%;" id="save-profile">Update Profile</button>
+                            <label class="stat-label">Token ID (e.g., bitcoin)</label>
+                            <input type="text" id="alert-token" placeholder="bitcoin" class="col-12" style="background: var(--bg); border: 1px solid var(--border); padding: 12px; border-radius: 8px; color: white; margin-bottom: 1rem; width: 100%;">
+                            <label class="stat-label">Price Threshold (USD)</label>
+                            <input type="number" id="alert-price" placeholder="60000" style="background: var(--bg); border: 1px solid var(--border); padding: 12px; border-radius: 8px; color: white; margin-bottom: 1rem; width: 100%;">
+                            <button class="btn btn-primary" id="save-alert" style="width: 100%;">Create Alert</button>
                         </div>
                     </div>
-                    <div class="glass card">
-                        <h3>Session Activity</h3>
-                        <div id="activity-log" style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-dim);">
-                            <div style="padding: 8px 0; border-bottom: 1px solid var(--card-border);">Authenticating session...</div>
-                        </div>
+                    <div class="card col-8">
+                        <h3>Active Triggers</h3>
+                        <div id="alerts-list" style="margin-top: 1.5rem;"></div>
                     </div>
                 </div>
-            </section>
+            </div>
 
-            <!-- DATA VIEW -->
-            <section id="view-data" class="view hidden">
-                <div class="flex justify-between items-center" style="margin-bottom: 1.5rem;">
-                    <h3>Managed Objects</h3>
-                    <button class="btn btn-primary" id="add-data-btn">+ Create New</button>
-                </div>
-                <div class="glass card">
-                    <table id="data-table">
-                        <thead>
-                            <tr>
-                                <th>Object Name</th>
-                                <th>Description</th>
-                                <th>Last Modified</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="data-list-container">
-                            <!-- Items populated via JS -->
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-
-            <!-- ADMIN VIEW -->
-            <section id="view-admin" class="view hidden">
-                <div class="grid" style="margin-bottom: 2rem;">
-                    <div class="glass card">
-                        <h4 style="color: var(--text-dim);">Total Users</h4>
-                        <div style="font-size: 2.5rem; font-weight: 800;" id="stat-users">0</div>
-                    </div>
-                    <div class="glass card">
-                        <h4 style="color: var(--text-dim);">Active Objects</h4>
-                        <div style="font-size: 2.5rem; font-weight: 800;" id="stat-data">0</div>
+            <!-- VIEW: ADMIN -->
+            <div id="view-admin" class="content-view hidden animate-in">
+                <div class="grid">
+                    <div class="card col-12">
+                        <h2>Registered Terminals</h2>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Wallet</th>
+                                    <th>Role</th>
+                                    <th>Last Seen</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-user-list"></tbody>
+                        </table>
                     </div>
                 </div>
-                <h3>User Management</h3>
-                <div class="glass card">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Identity</th>
-                                <th>Role</th>
-                                <th>Joined</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="admin-user-list">
-                            <!-- Populated via Admin Auth -->
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+            </div>
         </main>
     </div>
 
-    <!-- Modals -->
-    <div id="modal-overlay">
-        <div class="glass card" style="width: 450px; padding: 2.5rem;">
-            <h2 id="modal-title">Create Object</h2>
-            <div id="modal-content" style="margin-top: 1.5rem;">
-                <label>Title</label>
-                <input type="text" id="modal-input-title">
-                <label style="display:block; margin-top: 1rem;">Description</label>
-                <textarea id="modal-input-desc" rows="4"></textarea>
-                <div class="flex gap-12" style="margin-top: 2rem; justify-content: flex-end;">
-                    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-                    <button class="btn btn-primary" id="modal-submit">Save Object</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <div id="toast-container" class="toast-container"></div>
 
-    <div id="toast-container"></div>
-
-    <!-- Firebase SDK Modular -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, orderBy, serverTimestamp, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, query, where, getDocs, updateDoc, deleteDoc, serverTimestamp, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
@@ -470,334 +416,289 @@
             appId: "1:914980131889:web:72f8da15c42dbee671b110"
         };
 
-        // Initialize
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
-        // State Management
-        let currentUser = null;
-        let currentUserData = null;
-        let activeView = 'profile';
-        let unsubscribers = [];
-
-        // UI Selectors
-        const screens = {
-            auth: document.getElementById('auth-screen'),
-            app: document.getElementById('app-shell')
+        // App State
+        let STATE = {
+            user: null,
+            profile: null,
+            wallet: null,
+            prices: {},
+            watchlist: [],
+            alerts: []
         };
 
-        // Initialize App Flow
+        // --- AUTH LOGIC ---
+        document.getElementById('login-google').onclick = () => signInWithPopup(auth, provider);
+        document.getElementById('logout-btn').onclick = () => signOut(auth).then(() => location.reload());
+
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                currentUser = user;
+                STATE.user = user;
+                document.getElementById('auth-view').classList.add('hidden');
+                document.getElementById('app-shell').classList.remove('hidden');
+                document.getElementById('user-avatar').src = user.photoURL;
                 await syncUserProfile(user);
-                setupAppListeners();
-                showScreen('app');
+                initRealtime();
             } else {
-                cleanupListeners();
-                showScreen('auth');
+                document.getElementById('auth-view').classList.remove('hidden');
+                document.getElementById('app-shell').classList.add('hidden');
             }
         });
 
-        // Auth Operations
-        document.getElementById('login-btn').addEventListener('click', async () => {
-            try {
-                await signInWithPopup(auth, provider);
-            } catch (err) {
-                notify("Login Failed: " + err.message, "danger");
-            }
-        });
-
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            signOut(auth).then(() => window.location.reload());
-        });
-
-        // Profile Logic
         async function syncUserProfile(user) {
             const userRef = doc(db, "users", user.uid);
-            const userSnap = await getDoc(userRef);
-
-            if (!userSnap.exists()) {
-                const newUser = {
+            const snap = await getDoc(userRef);
+            if (!snap.exists()) {
+                const profile = {
                     uid: user.uid,
-                    displayName: user.displayName,
                     email: user.email,
-                    photoURL: user.photoURL,
-                    role: 'USER',
-                    bio: 'System Architect',
-                    createdAt: serverTimestamp(),
-                    lastLogin: serverTimestamp()
+                    displayName: user.displayName,
+                    role: 'user',
+                    watchlist: ['bitcoin', 'ethereum', 'solana'],
+                    createdAt: serverTimestamp()
                 };
-                await setDoc(userRef, newUser);
-                currentUserData = newUser;
+                await setDoc(userRef, profile);
+                STATE.profile = profile;
             } else {
-                await updateDoc(userRef, { lastLogin: serverTimestamp() });
-                currentUserData = userSnap.data();
+                STATE.profile = snap.data();
             }
-            renderUserUI();
+            if (STATE.profile.role === 'admin') document.getElementById('admin-link').classList.remove('hidden');
+            STATE.watchlist = STATE.profile.watchlist || [];
         }
 
-        function renderUserUI() {
-            document.getElementById('profile-name').innerText = currentUserData.displayName;
-            document.getElementById('profile-email').innerText = currentUserData.email;
-            document.getElementById('user-avatar').src = currentUserData.photoURL;
-            document.getElementById('profile-img-large').src = currentUserData.photoURL;
-            document.getElementById('edit-display-name').value = currentUserData.displayName;
-            document.getElementById('edit-bio').value = currentUserData.bio || '';
+        // --- CRYPTO LOGIC (ETHERS + COINGECKO) ---
+        async function connectWallet() {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    const provider = new ethers.BrowserProvider(window.ethereum);
+                    const accounts = await provider.send("eth_requestAccounts", []);
+                    STATE.wallet = accounts[0];
+                    document.getElementById('wallet-address').innerText = `${STATE.wallet.slice(0, 6)}...${STATE.wallet.slice(-4)}`;
+                    document.getElementById('wallet-dot').style.background = 'var(--success)';
+                    document.getElementById('wallet-dot').style.boxShadow = '0 0 10px var(--success)';
+                    
+                    // Update Firestore
+                    await updateDoc(doc(db, "users", STATE.user.uid), { wallet: STATE.wallet });
+                    refreshBalance();
+                } catch (err) {
+                    showToast("Wallet connection failed", "danger");
+                }
+            } else {
+                showToast("Please install MetaMask", "danger");
+            }
+        }
+        document.getElementById('wallet-connect').onclick = connectWallet;
+
+        async function refreshBalance() {
+            if (!STATE.wallet) return;
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const bal = await provider.getBalance(STATE.wallet);
+            const eth = ethers.formatEther(bal);
+            const ethPrice = STATE.prices['ethereum']?.usd || 0;
+            const usd = parseFloat(eth) * ethPrice;
             
-            const roleEl = document.getElementById('current-user-role');
-            roleEl.innerText = currentUserData.role;
-            roleEl.className = `badge badge-${currentUserData.role.toLowerCase()}`;
+            document.getElementById('wallet-eth').innerText = `${parseFloat(eth).toFixed(4)} ETH`;
+            document.getElementById('eth-usd-val').innerText = `$${usd.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            document.getElementById('total-balance-usd').innerText = `$${usd.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+        }
 
-            if (currentUserData.role === 'ADMIN') {
-                document.getElementById('nav-admin').classList.remove('hidden');
-            } else {
-                document.getElementById('nav-admin').classList.add('hidden');
-                if (activeView === 'admin') switchView('profile');
+        async function fetchMarketData() {
+            try {
+                const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,binancecoin,cardano,ripple,polkadot,dogecoin,chainlink,polygon&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true');
+                const data = await res.json();
+                STATE.prices = data;
+                renderDashboard();
+                renderMarkets();
+                checkAlerts();
+            } catch (err) {
+                console.error("Coingecko Limit Reached");
             }
         }
 
-        document.getElementById('save-profile').onclick = async () => {
-            const btn = document.getElementById('save-profile');
-            btn.disabled = true;
-            try {
-                await updateDoc(doc(db, "users", currentUser.uid), {
-                    displayName: document.getElementById('edit-display-name').value,
-                    bio: document.getElementById('edit-bio').value
-                });
-                notify("Profile updated successfully");
-            } catch (err) {
-                notify("Update failed: " + err.message, "danger");
-            } finally {
-                btn.disabled = false;
+        // --- RENDERING ---
+        function renderDashboard() {
+            const body = document.getElementById('watchlist-body');
+            body.innerHTML = '';
+            STATE.watchlist.forEach(id => {
+                const p = STATE.prices[id];
+                if (!p) return;
+                const change = p.usd_24h_change || 0;
+                body.innerHTML += `
+                    <tr>
+                        <td class="flex items-center gap-12" style="font-weight: 700; text-transform: capitalize;">
+                            ${id}
+                        </td>
+                        <td class="mono">$${p.usd.toLocaleString()}</td>
+                        <td style="color: ${change >= 0 ? 'var(--success)' : 'var(--danger)'}">
+                            ${change >= 0 ? '▲' : '▼'} ${Math.abs(change).toFixed(2)}%
+                        </td>
+                        <td class="mono">$${(p.usd_market_cap / 1e9).toFixed(2)}B</td>
+                        <td><button class="btn" style="padding: 4px 10px; font-size: 0.7rem; background: var(--border);" onclick="toggleWatchlist('${id}')">Remove</button></td>
+                    </tr>
+                `;
+            });
+            refreshBalance();
+        }
+
+        async function renderMarkets() {
+            const body = document.getElementById('market-body');
+            body.innerHTML = '';
+            let i = 1;
+            for (const [id, p] of Object.entries(STATE.prices)) {
+                const change = p.usd_24h_change || 0;
+                body.innerHTML += `
+                    <tr class="animate-in">
+                        <td>${i++}</td>
+                        <td style="font-weight: 700; text-transform: capitalize;">${id}</td>
+                        <td class="mono">$${p.usd.toLocaleString()}</td>
+                        <td style="color: ${change >= 0 ? 'var(--success)' : 'var(--danger)'}">
+                            ${change >= 0 ? '▲' : '▼'} ${Math.abs(change).toFixed(2)}%
+                        </td>
+                        <td class="mono">$${(p.usd_market_cap / 1e9).toFixed(2)}B</td>
+                        <td><div style="width: 60px; height: 2px; background: ${change >= 0 ? 'var(--success)' : 'var(--danger)'}; opacity: 0.5;"></div></td>
+                        <td><button class="btn btn-primary" style="padding: 5px 12px; font-size: 0.7rem;" onclick="toggleWatchlist('${id}')">+</button></td>
+                    </tr>
+                `;
             }
+        }
+
+        window.toggleWatchlist = async (id) => {
+            const userRef = doc(db, "users", STATE.user.uid);
+            if (STATE.watchlist.includes(id)) {
+                await updateDoc(userRef, { watchlist: arrayRemove(id) });
+                STATE.watchlist = STATE.watchlist.filter(x => x !== id);
+                showToast(`Removed ${id} from watchlist`);
+            } else {
+                await updateDoc(userRef, { watchlist: arrayUnion(id) });
+                STATE.watchlist.push(id);
+                showToast(`Added ${id} to watchlist`);
+            }
+            renderDashboard();
         };
 
-        // Real-time Content Listeners
-        function setupAppListeners() {
-            cleanupListeners();
-
-            // Listen to User Profile Changes (Self)
-            const unsubProfile = onSnapshot(doc(db, "users", currentUser.uid), (doc) => {
-                if (doc.exists()) {
-                    currentUserData = doc.data();
-                    renderUserUI();
-                }
-            });
-            unsubscribers.push(unsubProfile);
-
-            // Listen to System Objects
-            const unsubData = onSnapshot(query(collection(db, "system_data"), orderBy("updatedAt", "desc")), (snapshot) => {
-                renderDataTable(snapshot);
-                document.getElementById('stat-data').innerText = snapshot.size;
-            });
-            unsubscribers.push(unsubData);
-
-            // Admin: Listen to all users
-            const unsubUsers = onSnapshot(collection(db, "users"), (snapshot) => {
-                if (currentUserData?.role === 'ADMIN') {
-                    renderAdminUsers(snapshot);
-                    document.getElementById('stat-users').innerText = snapshot.size;
-                }
-            });
-            unsubscribers.push(unsubUsers);
-        }
-
-        function cleanupListeners() {
-            unsubscribers.forEach(unsub => unsub());
-            unsubscribers = [];
-        }
-
-        // View Logic
-        function switchView(viewId) {
-            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-            document.querySelectorAll('nav li').forEach(li => li.classList.remove('active'));
+        // --- ALERTS ---
+        document.getElementById('save-alert').onclick = async () => {
+            const id = document.getElementById('alert-token').value.toLowerCase();
+            const price = parseFloat(document.getElementById('alert-price').value);
+            if (!id || !price) return;
             
-            const targetView = document.getElementById(`view-${viewId}`);
-            if (targetView) {
-                targetView.classList.remove('hidden');
-                document.querySelector(`nav li[data-view="${viewId}"]`).classList.add('active');
-                activeView = viewId;
-                
-                // Update Headings
-                const titles = {
-                    profile: ['Personal Dashboard', 'Manage your profile and preferences'],
-                    data: ['System Objects', 'Manage real-time data records'],
-                    admin: ['Admin Control', 'Global system oversight and permissions']
-                };
-                document.getElementById('view-title').innerText = titles[viewId][0];
-                document.getElementById('view-subtitle').innerText = titles[viewId][1];
-            }
+            await setDoc(doc(collection(db, "alerts")), {
+                uid: STATE.user.uid,
+                tokenId: id,
+                threshold: price,
+                triggered: false,
+                createdAt: serverTimestamp()
+            });
+            showToast("Alert created successfully");
+        };
+
+        function checkAlerts() {
+            STATE.alerts.forEach(async alert => {
+                const currentPrice = STATE.prices[alert.tokenId]?.usd;
+                if (!alert.triggered && currentPrice >= alert.threshold) {
+                    showToast(`🚨 ALERT: ${alert.tokenId} hit $${alert.threshold}!`, "primary");
+                    await updateDoc(doc(db, "alerts", alert.id), { triggered: true });
+                }
+            });
         }
 
-        document.querySelectorAll('nav li').forEach(li => {
-            li.onclick = () => switchView(li.dataset.view);
+        // --- REALTIME LISTENERS ---
+        function initRealtime() {
+            // Alerts Listener
+            onSnapshot(query(collection(db, "alerts"), where("uid", "==", STATE.user.uid)), (snap) => {
+                STATE.alerts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                const list = document.getElementById('alerts-list');
+                list.innerHTML = STATE.alerts.map(a => `
+                    <div class="alert-item">
+                        <div>
+                            <span style="font-weight: 700; text-transform: capitalize;">${a.tokenId}</span>
+                            <span style="color: var(--text-dim); margin-left: 10px;">Target: $${a.threshold}</span>
+                        </div>
+                        <div class="flex items-center gap-12">
+                            ${a.triggered ? '<span class="status-dot"></span>' : '<span style="color: var(--text-dim);">Active</span>'}
+                            <button class="btn" style="color: var(--danger); background: transparent;" onclick="deleteAlert('${a.id}')">×</button>
+                        </div>
+                    </div>
+                `).join('');
+            });
+
+            // Admin: Users Listener
+            if (STATE.profile.role === 'admin') {
+                onSnapshot(collection(db, "users"), (snap) => {
+                    const body = document.getElementById('admin-user-list');
+                    body.innerHTML = snap.docs.map(d => {
+                        const u = d.data();
+                        return `
+                            <tr>
+                                <td>${u.displayName}</td>
+                                <td class="mono">${u.wallet ? u.wallet.slice(0,10)+'...' : 'No Wallet'}</td>
+                                <td><span class="btn" style="padding: 4px 8px; background: var(--accent-glow); font-size: 0.7rem;">${u.role}</span></td>
+                                <td>Just now</td>
+                                <td><button class="btn" onclick="showToast('Admin action triggered')">Logs</button></td>
+                            </tr>
+                        `;
+                    }).join('');
+                });
+            }
+
+            // Polling Crypto
+            fetchMarketData();
+            setInterval(fetchMarketData, 30000);
+        }
+
+        window.deleteAlert = async (id) => {
+            await deleteDoc(doc(db, "alerts", id));
+            showToast("Alert deleted");
+        };
+
+        // --- UI UTILS ---
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.onclick = () => {
+                const view = item.dataset.view;
+                if (!view) return;
+                document.querySelectorAll('.content-view').forEach(v => v.classList.add('hidden'));
+                document.querySelectorAll('.nav-item').forEach(v => v.classList.remove('active'));
+                document.getElementById(`view-${view}`).classList.remove('hidden');
+                item.classList.add('active');
+                document.getElementById('view-title').innerText = item.innerText;
+                if (window.innerWidth < 1024) document.getElementById('sidebar').classList.remove('open');
+            };
         });
 
-        // CRUD: System Data
-        function renderDataTable(snapshot) {
-            const container = document.getElementById('data-list-container');
-            if (snapshot.empty) {
-                container.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 40px; color: var(--text-dim);">No objects found. Create your first one.</td></tr>`;
-                return;
-            }
-            container.innerHTML = snapshot.docs.map(doc => {
-                const data = doc.data();
-                const date = data.updatedAt?.toDate()?.toLocaleDateString() || 'Just now';
-                return `
-                    <tr>
-                        <td style="font-weight: 600;">${data.title}</td>
-                        <td style="color: var(--text-dim); max-width: 300px;">${data.description}</td>
-                        <td>${date}</td>
-                        <td>
-                            <div class="flex gap-12">
-                                <button class="btn btn-ghost" style="padding: 4px 10px;" onclick="window.editItem('${doc.id}', '${data.title}', '${data.description}')">Edit</button>
-                                <button class="btn btn-ghost" style="padding: 4px 10px; color: var(--danger); border-color: rgba(239, 68, 68, 0.2);" onclick="window.deleteItem('${doc.id}')">Delete</button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        // Globalized actions for inline JS
-        let editingId = null;
-        window.editItem = (id, title, desc) => {
-            editingId = id;
-            document.getElementById('modal-title').innerText = "Edit Object";
-            document.getElementById('modal-input-title').value = title;
-            document.getElementById('modal-input-desc').value = desc;
-            openModal();
+        document.getElementById('menu-toggle').onclick = () => {
+            document.getElementById('sidebar').classList.toggle('open');
         };
 
-        window.deleteItem = async (id) => {
-            if (confirm("Permanently delete this object?")) {
-                await deleteDoc(doc(db, "system_data", id));
-                notify("Object deleted", "danger");
-            }
-        };
-
-        document.getElementById('add-data-btn').onclick = () => {
-            editingId = null;
-            document.getElementById('modal-title').innerText = "Create New Object";
-            document.getElementById('modal-input-title').value = "";
-            document.getElementById('modal-input-desc').value = "";
-            openModal();
-        };
-
-        document.getElementById('modal-submit').onclick = async () => {
-            const title = document.getElementById('modal-input-title').value;
-            const desc = document.getElementById('modal-input-desc').value;
-            if (!title) return notify("Title is required", "danger");
-
-            try {
-                const payload = { 
-                    title, 
-                    description: desc, 
-                    updatedAt: serverTimestamp(),
-                    updatedBy: currentUser.uid 
-                };
-
-                if (editingId) {
-                    await updateDoc(doc(db, "system_data", editingId), payload);
-                    notify("Object updated");
-                } else {
-                    await addDoc(collection(db, "system_data"), payload);
-                    notify("Object created");
-                }
-                closeModal();
-            } catch (err) {
-                notify("Error: " + err.message, "danger");
-            }
-        };
-
-        // ADMIN: User Management
-        function renderAdminUsers(snapshot) {
-            const container = document.getElementById('admin-user-list');
-            container.innerHTML = snapshot.docs.map(docSnap => {
-                const user = docSnap.data();
-                const isSelf = user.uid === currentUser.uid;
-                return `
-                    <tr>
-                        <td>
-                            <div class="flex items-center gap-12">
-                                <img src="${user.photoURL}" style="width: 32px; height: 32px; border-radius: 8px;">
-                                <div>
-                                    <div style="font-weight: 600;">${user.displayName} ${isSelf ? '(You)' : ''}</div>
-                                    <div style="font-size: 0.75rem; color: var(--text-dim);">${user.email}</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <select onchange="window.updateRole('${user.uid}', this.value)" ${isSelf ? 'disabled' : ''} style="margin:0; padding: 4px 8px; font-size: 0.8rem;">
-                                <option value="USER" ${user.role === 'USER' ? 'selected' : ''}>USER</option>
-                                <option value="ADMIN" ${user.role === 'ADMIN' ? 'selected' : ''}>ADMIN</option>
-                            </select>
-                        </td>
-                        <td style="color: var(--text-dim); font-size: 0.8rem;">
-                            ${user.createdAt?.toDate()?.toLocaleDateString() || 'Legacy'}
-                        </td>
-                        <td>
-                            ${!isSelf ? `<button class="btn btn-ghost" style="color: var(--danger); border: none;" onclick="window.adminDeleteUser('${user.uid}')">Remove</button>` : '-'}
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        window.updateRole = async (uid, newRole) => {
-            try {
-                await updateDoc(doc(db, "users", uid), { role: newRole });
-                notify(`Role updated to ${newRole}`);
-            } catch (err) {
-                notify("Permissions denied", "danger");
-            }
-        };
-
-        window.adminDeleteUser = async (uid) => {
-            if (confirm("Delete user record? Note: This does not delete their Google Auth account.")) {
-                await deleteDoc(doc(db, "users", uid));
-                notify("User record removed");
-            }
-        };
-
-        // UI Helpers
-        function showScreen(screen) {
-            if (screen === 'app') {
-                screens.auth.classList.add('hidden');
-                screens.app.classList.remove('hidden');
-                setTimeout(() => screens.app.classList.add('visible'), 50);
-            } else {
-                screens.app.classList.remove('visible');
-                setTimeout(() => {
-                    screens.app.classList.add('hidden');
-                    screens.auth.classList.remove('hidden');
-                }, 500);
-            }
-        }
-
-        function notify(msg, type = "success") {
+        function showToast(msg, type = "success") {
+            const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             toast.className = 'toast';
-            if (type === 'danger') toast.style.borderLeftColor = 'var(--danger)';
+            if (type === 'danger') toast.style.borderColor = 'var(--danger)';
             toast.innerText = msg;
-            document.getElementById('toast-container').appendChild(toast);
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transform = 'translateX(20px)';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
         }
 
-        function openModal() { document.getElementById('modal-overlay').style.display = 'flex'; }
-        window.closeModal = () => { document.getElementById('modal-overlay').style.display = 'none'; };
+        // --- SPARKLINE MOCK ---
+        function generateSparkline() {
+            const container = document.getElementById('mini-chart');
+            for (let i = 0; i < 20; i++) {
+                const h = Math.random() * 100 + 20;
+                const bar = document.createElement('div');
+                bar.style.flex = "1";
+                bar.style.height = `${h}%`;
+                bar.style.background = "var(--accent)";
+                bar.style.borderRadius = "4px";
+                bar.style.opacity = (i / 20).toString();
+                container.appendChild(bar);
+            }
+        }
+        generateSparkline();
 
-        // Handle Reconnects & Status
-        window.addEventListener('online', () => notify("System online - Synced"));
-        window.addEventListener('offline', () => notify("System offline - Working locally", "danger"));
-        
     </script>
 </body>
 </html>
