@@ -3,369 +3,594 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PrivacyLens | Browser Transparency Demo</title>
-    <!-- Tailwind CSS for modern 2025 styling -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>GuardianCheck | AI Anti-Scam Detector</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons (via CDN) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3); }
-        .permission-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .permission-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
-        .status-badge { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; padding: 2px 8px; border-radius: 9999px; }
-        .admin-view { border: 2px dashed #94a3b8; }
-        #camera-preview { width: 100%; height: 200px; background: #000; border-radius: 12px; object-fit: cover; display: none; }
-        .hidden { display: none !important; }
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --border: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+            flex: 1;
+        }
+
+        /* Header Styles */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--primary);
+        }
+
+        .settings-btn {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 0.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .settings-btn:hover {
+            border-color: var(--primary);
+            color: var(--text-main);
+        }
+
+        /* Hero/Search Area */
+        .hero {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, #60a5fa, #2563eb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .search-container {
+            position: relative;
+            max-width: 650px;
+            margin: 2rem auto;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1.25rem 1.5rem;
+            padding-right: 120px;
+            background: var(--card-bg);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            color: white;
+            font-size: 1.1rem;
+            transition: 0.3s;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2);
+        }
+
+        .analyze-btn {
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            bottom: 8px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0 1.5rem;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .analyze-btn:hover {
+            background: var(--primary-hover);
+        }
+
+        /* Results Area */
+        #results-area {
+            display: none; /* Hidden by default */
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .result-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 2rem;
+            border: 1px solid var(--border);
+            margin-bottom: 2rem;
+        }
+
+        .risk-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+
+        .risk-badge {
+            padding: 0.5rem 1.5rem;
+            border-radius: 99px;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.875rem;
+        }
+
+        .badge-safe { background: rgba(34, 197, 94, 0.1); color: var(--success); border: 1px solid var(--success); }
+        .badge-suspicious { background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid var(--warning); }
+        .badge-danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
+
+        .risk-meter {
+            height: 12px;
+            background: #334155;
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .risk-meter-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 1s ease-in-out;
+        }
+
+        .grid-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .info-item {
+            background: rgba(15, 23, 42, 0.5);
+            padding: 1.25rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .info-label {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        /* Loading Animation */
+        .loader {
+            display: none;
+            text-align: center;
+            padding: 3rem;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(37, 99, 235, 0.1);
+            border-left-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        /* Settings Modal */
+        #settings-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            border: 1px solid var(--border);
+        }
+
+        .input-group {
+            margin: 1.5rem 0;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: white;
+        }
+
+        /* Footer */
+        footer {
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .disclaimer {
+            max-width: 700px;
+            margin: 1rem auto;
+            padding: 1rem;
+            background: rgba(239, 68, 68, 0.05);
+            border-radius: 8px;
+            border: 1px dashed var(--danger);
+            color: #fca5a5;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 600px) {
+            .grid-info { grid-template-columns: 1fr; }
+            .hero h1 { font-size: 1.8rem; }
+        }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900 min-h-screen">
+<body>
 
-    <!-- CONSENT OVERLAY -->
-    <div id="consent-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/90 backdrop-blur-sm p-4">
-        <div class="bg-white max-w-xl w-full rounded-2xl p-8 shadow-2xl">
-            <div class="flex items-center gap-3 mb-6">
-                <div class="p-3 bg-blue-100 text-blue-600 rounded-xl">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                </div>
-                <h2 class="text-2xl font-bold">Privacy Education Demo</h2>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i data-lucide="shield-check"></i>
+                GuardianCheck
             </div>
-            <p class="text-slate-600 mb-6 leading-relaxed">
-                This website is a technical demonstration. We are about to show you the device data your browser exposes to developers.
-                <br><br>
-                <span class="font-semibold text-slate-800">No data is sent to a server.</span> Everything you see happens locally on your machine. We will only access sensitive sensors (camera, location) if you explicitly click the "Request" buttons inside.
-            </p>
-            <div class="space-y-3">
-                <button onclick="acceptConsent()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-blue-200">
-                    I Understand & Enter Demo
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MAIN INTERFACE -->
-    <div id="main-content" class="max-w-7xl mx-auto px-4 py-8 opacity-0 transition-opacity duration-700">
-        
-        <!-- HEADER -->
-        <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
-            <div>
-                <h1 class="text-3xl font-extrabold tracking-tight text-slate-900">PrivacyLens <span class="text-blue-600 text-sm font-medium border border-blue-200 px-2 py-1 rounded-md ml-2">v2025.1</span></h1>
-                <p class="text-slate-500">Real-time Browser Permissions & Capability Audit</p>
-            </div>
-            <div class="flex bg-slate-200 p-1 rounded-xl">
-                <button onclick="toggleView('user')" id="btn-user" class="px-6 py-2 rounded-lg font-semibold text-sm transition bg-white shadow-sm text-blue-600">User Dashboard</button>
-                <button onclick="toggleView('admin')" id="btn-admin" class="px-6 py-2 rounded-lg font-semibold text-sm transition text-slate-600">Admin Preview</button>
-            </div>
+            <button class="settings-btn" onclick="toggleSettings()">
+                <i data-lucide="settings"></i>
+            </button>
         </header>
 
-        <!-- DASHBOARD CONTAINER -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            
-            <!-- LEFT COLUMN: ENVIRONMENT DATA -->
-            <div class="lg:col-span-4 space-y-6">
-                <div class="glass p-6 rounded-2xl shadow-sm">
-                    <h3 class="font-bold text-slate-800 mb-4 flex items-center justify-between">
-                        Environment Info
-                        <span class="status-badge bg-green-100 text-green-700">No Consent Required</span>
-                    </h3>
-                    <div id="env-data" class="space-y-3 text-sm">
-                        <!-- Data injected via JS -->
-                    </div>
-                </div>
-
-                <div class="glass p-6 rounded-2xl shadow-sm">
-                    <h3 class="font-bold text-slate-800 mb-4 flex items-center justify-between">
-                        Network Intelligence
-                        <span id="net-badge" class="status-badge bg-blue-100 text-blue-700">Auto-Detect</span>
-                    </h3>
-                    <div id="net-data" class="space-y-3 text-sm">
-                        <p class="text-slate-400 italic">Detecting network metadata...</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- RIGHT COLUMN: SENSITIVE PERMISSIONS -->
-            <div class="lg:col-span-8 space-y-6">
+        <main>
+            <section class="hero">
+                <h1>Detect Scams Before They Strike</h1>
+                <p style="color: var(--text-muted)">Verify websites and phone numbers using AI-powered threat analysis.</p>
                 
-                <!-- USER VIEW -->
-                <div id="view-user" class="space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- GEOLOCATION CARD -->
-                        <div class="permission-card glass p-6 rounded-2xl">
-                            <div class="flex justify-between items-start mb-4">
-                                <div class="p-2 bg-purple-100 text-purple-600 rounded-lg">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                </div>
-                                <span id="geo-status" class="status-badge bg-slate-100 text-slate-600">Prompt</span>
-                            </div>
-                            <h4 class="font-bold mb-1">Precise Location</h4>
-                            <p class="text-xs text-slate-500 mb-4">Websites can ask for GPS coordinates to provide local services.</p>
-                            <div id="geo-result" class="mb-4 text-xs font-mono bg-slate-50 p-2 rounded hidden"></div>
-                            <button onclick="requestGeo()" class="w-full py-2 bg-slate-900 text-white rounded-lg text-sm font-semibold hover:bg-slate-800 transition">Request Access</button>
-                        </div>
-
-                        <!-- CAMERA CARD -->
-                        <div class="permission-card glass p-6 rounded-2xl">
-                            <div class="flex justify-between items-start mb-4">
-                                <div class="p-2 bg-red-100 text-red-600 rounded-lg">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                                </div>
-                                <span id="cam-status" class="status-badge bg-slate-100 text-slate-600">Prompt</span>
-                            </div>
-                            <h4 class="font-bold mb-1">Camera & Video</h4>
-                            <p class="text-xs text-slate-500 mb-4">Direct hardware access for photos, video calls, or AR.</p>
-                            <video id="camera-preview" autoplay playsinline class="mb-4"></video>
-                            <button id="cam-btn" onclick="requestCamera()" class="w-full py-2 bg-slate-900 text-white rounded-lg text-sm font-semibold hover:bg-slate-800 transition">Enable Camera</button>
-                        </div>
-                    </div>
-
-                    <!-- FILE PICKER CARD -->
-                    <div class="permission-card glass p-6 rounded-2xl">
-                        <h4 class="font-bold mb-2">File System Access</h4>
-                        <p class="text-sm text-slate-600 mb-4">Browsers <span class="font-bold text-red-500">cannot</span> see your files unless you manually pick them. This is a secure "sandboxed" action.</p>
-                        <div class="flex items-center gap-4">
-                            <input type="file" id="file-input" onchange="handleFile()" class="hidden">
-                            <button onclick="document.getElementById('file-input').click()" class="bg-blue-50 text-blue-700 border border-blue-200 px-6 py-2 rounded-lg text-sm font-bold hover:bg-blue-100 transition">Select File Manually</button>
-                            <div id="file-name" class="text-sm text-slate-500 italic truncate">No file chosen</div>
-                        </div>
-                    </div>
+                <div class="search-container">
+                    <input type="text" id="userInput" class="search-input" placeholder="Enter URL (e.g., bank-login.top) or Phone number...">
+                    <button class="analyze-btn" onclick="performAnalysis()">Analyze</button>
                 </div>
+            </section>
 
-                <!-- ADMIN VIEW (SIMULATED) -->
-                <div id="view-admin" class="hidden admin-view bg-white p-8 rounded-2xl">
-                    <div class="mb-6">
-                        <h3 class="text-xl font-bold text-slate-800">Admin Audit Dashboard</h3>
-                        <p class="text-sm text-slate-500 italic">This view simulates what is "sent" to our simulated server. Notice that sensitive data is blank unless you clicked 'Allow' in the user view.</p>
-                    </div>
-                    <div class="bg-slate-900 rounded-xl p-6 overflow-hidden">
-                        <pre id="admin-json" class="text-green-400 font-mono text-sm leading-relaxed whitespace-pre-wrap"></pre>
-                    </div>
-                    <div class="mt-6 p-4 bg-amber-50 border border-amber-100 rounded-lg">
-                        <p class="text-xs text-amber-800"><strong>Note:</strong> Even if you are an Admin, modern browsers prevent you from silently triggering the camera or GPS. You are limited to viewing what the user has voluntarily provided.</p>
-                    </div>
-                </div>
-
+            <!-- Loading State -->
+            <div id="loader" class="loader">
+                <div class="spinner"></div>
+                <p>AI is scanning for threats...</p>
             </div>
-        </div>
 
-        <!-- FOOTER -->
-        <footer class="mt-16 pt-8 border-t border-slate-200 text-center text-slate-400 text-sm">
-            <p>Demo purpose only. No cookies, trackers, or databases were used in this build. &copy; 2025 PrivacyLens.</p>
+            <!-- Results Section -->
+            <section id="results-area">
+                <div class="result-card">
+                    <div class="risk-header">
+                        <div>
+                            <h2 id="result-title">Analysis Result</h2>
+                            <p id="check-timestamp" class="info-label" style="margin-top: 5px;"></p>
+                        </div>
+                        <div id="risk-badge" class="risk-badge">SAFE</div>
+                    </div>
+
+                    <div class="risk-meter">
+                        <div id="risk-meter-fill" class="risk-meter-fill"></div>
+                    </div>
+                    <p id="risk-score-text" style="font-weight: 600; margin-bottom: 1.5rem;"></p>
+
+                    <div class="info-item" style="margin-bottom: 1.5rem; border-left: 4px solid var(--primary);">
+                        <div class="info-label"><i data-lucide="bot"></i> AI CONCLUSION</div>
+                        <p id="ai-conclusion">Analyzing...</p>
+                    </div>
+
+                    <div class="grid-info">
+                        <div class="info-item">
+                            <div class="info-label"><i data-lucide="search"></i> HEURISTIC FINDINGS</div>
+                            <ul id="heuristic-list" style="padding-left: 1.2rem; font-size: 0.9rem;">
+                                <!-- Findings injected here -->
+                            </ul>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label"><i data-lucide="alert-triangle"></i> SAFETY ADVICE</div>
+                            <p id="safety-advice" style="font-size: 0.9rem;"></p>
+                        </div>
+                    </div>
+
+                    <div id="firebase-status" style="margin-top: 1.5rem; font-size: 0.75rem; text-align: right; color: var(--text-muted);">
+                        <!-- Firebase log status -->
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <div class="disclaimer">
+                <strong>Legal Disclaimer:</strong> This tool provides risk assessment based on automated algorithms and AI. It is not a definitive legal judgment. Always exercise caution when sharing personal information online.
+            </div>
+            <p>&copy; 2025 GuardianCheck Security. Built for a safer web.</p>
         </footer>
     </div>
 
+    <!-- Settings Modal -->
+    <div id="settings-modal" onclick="if(event.target === this) toggleSettings()">
+        <div class="modal-content">
+            <h3>Analysis Settings</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Keys are stored locally in your browser.</p>
+            
+            <div class="input-group">
+                <label>OpenAI/Groq API Key</label>
+                <input type="password" id="apiKey" placeholder="sk-...">
+            </div>
+
+            <div class="input-group">
+                <label>Custom Endpoint (Optional)</label>
+                <input type="text" id="apiEndpoint" placeholder="https://api.openai.com/v1">
+            </div>
+
+            <button class="analyze-btn" style="position: static; width: 100%;" onclick="saveSettings()">Save Configuration</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK (Optional Integration) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
     <script>
-        // DATA MODEL (Privacy-First: In-memory only)
-        const appState = {
-            environment: {
-                browser: navigator.userAgentData ? navigator.userAgentData.brands[0].brand : 'Unknown',
-                os: 'Detecting...',
-                screen: `${window.screen.width}x${window.screen.height}`,
-                language: navigator.language,
-                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                cookiesEnabled: navigator.cookieEnabled
-            },
-            network: {
-                ip: 'Pending Permission...',
-                country: 'Unknown',
-                effectiveType: navigator.connection ? navigator.connection.effectiveType : 'Unknown'
-            },
-            sensitive: {
-                latitude: null,
-                longitude: null,
-                cameraActive: false,
-                lastFileName: null
-            },
-            view: 'user'
+        // --- 1. CONFIGURATION & INITIALIZATION ---
+        lucide.createIcons();
+
+        // Firebase Config Placeholder (User can fill this)
+        const firebaseConfig = {
+            apiKey: "YOUR_FIREBASE_API_KEY",
+            authDomain: "your-app.firebaseapp.com",
+            projectId: "your-app",
+            storageBucket: "your-app.appspot.com",
+            messagingSenderId: "...",
+            appId: "..."
         };
 
-        // 1. INITIALIZATION
-        function acceptConsent() {
-            document.getElementById('consent-modal').classList.add('hidden');
-            document.getElementById('main-content').classList.remove('opacity-0');
-            detectBasics();
-            fetchNetworkData();
-            updateAdminJSON();
-            startPermissionPoller();
-        }
-
-        function detectBasics() {
-            // OS Detection
-            const platform = navigator.platform.toLowerCase();
-            if (platform.includes('win')) appState.environment.os = 'Windows';
-            else if (platform.includes('mac')) appState.environment.os = 'macOS';
-            else if (platform.includes('linux')) appState.environment.os = 'Linux';
-            else appState.environment.os = 'Mobile OS';
-
-            const envContainer = document.getElementById('env-data');
-            const fields = [
-                { label: 'OS', val: appState.environment.os },
-                { label: 'Screen', val: appState.environment.screen },
-                { label: 'Timezone', val: appState.environment.timezone },
-                { label: 'Locale', val: appState.environment.language },
-                { label: 'Cookies', val: appState.environment.cookiesEnabled ? '✅ Enabled' : '❌ Blocked' }
-            ];
-
-            envContainer.innerHTML = fields.map(f => `
-                <div class="flex justify-between border-b border-slate-100 pb-2">
-                    <span class="text-slate-500">${f.label}:</span>
-                    <span class="font-semibold text-slate-800">${f.val}</span>
-                </div>
-            `).join('');
-        }
-
-        async function fetchNetworkData() {
+        // Initialize Firebase if config is valid
+        let db = null;
+        if (firebaseConfig.apiKey !== "YOUR_FIREBASE_API_KEY") {
             try {
-                // Using a public IP API for demo purposes
-                const res = await fetch('https://ipapi.co/json/');
-                const data = await res.json();
-                appState.network.ip = data.ip;
-                appState.network.country = data.country_name;
-                
-                document.getElementById('net-data').innerHTML = `
-                    <div class="flex justify-between border-b border-slate-100 pb-2">
-                        <span class="text-slate-500">Public IP:</span>
-                        <span class="font-semibold text-blue-600">${data.ip}</span>
-                    </div>
-                    <div class="flex justify-between border-b border-slate-100 pb-2">
-                        <span class="text-slate-500">Country:</span>
-                        <span class="font-semibold">${data.country_name}</span>
-                    </div>
-                    <div class="flex justify-between border-b border-slate-100 pb-2">
-                        <span class="text-slate-500">Speed:</span>
-                        <span class="font-semibold uppercase">${appState.network.effectiveType}</span>
-                    </div>
-                `;
-            } catch (e) {
-                document.getElementById('net-data').innerHTML = `<p class="text-red-500 text-xs">Network detection blocked by browser security or ad-blocker.</p>`;
-            }
-            updateAdminJSON();
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+            } catch (e) { console.error("Firebase init failed", e); }
         }
 
-        // 2. SENSITIVE ACTIONS
-        async function requestGeo() {
-            const btn = document.getElementById('geo-status');
-            const resBox = document.getElementById('geo-result');
+        function toggleSettings() {
+            const modal = document.getElementById('settings-modal');
+            modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
+            if(modal.style.display === 'flex') {
+                document.getElementById('apiKey').value = localStorage.getItem('gc_api_key') || '';
+                document.getElementById('apiEndpoint').value = localStorage.getItem('gc_api_endpoint') || 'https://api.openai.com/v1';
+            }
+        }
+
+        function saveSettings() {
+            localStorage.setItem('gc_api_key', document.getElementById('apiKey').value);
+            localStorage.setItem('gc_api_endpoint', document.getElementById('apiEndpoint').value);
+            toggleSettings();
+            alert('Settings saved locally.');
+        }
+
+        // --- 2. INPUT DETECTION & VALIDATION ---
+        function detectType(input) {
+            const urlPattern = /^(https?:\/\/)?([\w\d-]+\.)+[\w-]{2,}(\/.*)?$/i;
+            const phonePattern = /^(\+?\d{1,3})?[-.\s]?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/;
+
+            if (urlPattern.test(input)) return 'URL';
+            if (phonePattern.test(input)) return 'PHONE';
+            return 'UNKNOWN';
+        }
+
+        // --- 3. CORE ANALYSIS LOGIC ---
+        async function performAnalysis() {
+            const input = document.getElementById('userInput').value.trim();
+            const type = detectType(input);
+
+            if (!input) return alert("Please enter a URL or Phone number.");
+            if (type === 'UNKNOWN') return alert("Unrecognized format. Please provide a valid URL or Phone number.");
+
+            // UI State: Loading
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('results-area').style.display = 'none';
+
+            // Gather Heuristics
+            const heuristics = runHeuristics(input, type);
             
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    appState.sensitive.latitude = pos.coords.latitude;
-                    appState.sensitive.longitude = pos.coords.longitude;
-                    btn.innerText = "Granted";
-                    btn.className = "status-badge bg-green-100 text-green-700";
-                    resBox.innerText = `Lat: ${pos.coords.latitude}, Lon: ${pos.coords.longitude}`;
-                    resBox.classList.remove('hidden');
-                    updateAdminJSON();
-                },
-                (err) => {
-                    btn.innerText = "Denied";
-                    btn.className = "status-badge bg-red-100 text-red-700";
-                    updateAdminJSON();
+            // Call AI Analysis
+            const aiResult = await callAI(input, type, heuristics);
+
+            // Update UI
+            displayResults(input, type, heuristics, aiResult);
+            
+            // Optional: Save to Firebase
+            saveResultToFirebase(input, type, aiResult);
+        }
+
+        function runHeuristics(input, type) {
+            let findings = [];
+            let baseScore = 0;
+
+            if (type === 'URL') {
+                const url = input.toLowerCase();
+                if (!url.startsWith('https://')) {
+                    findings.push("No HTTPS encryption detected.");
+                    baseScore += 30;
                 }
-            );
-        }
-
-        async function requestCamera() {
-            const video = document.getElementById('camera-preview');
-            const btn = document.getElementById('cam-btn');
-            const status = document.getElementById('cam-status');
-
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                video.srcObject = stream;
-                video.style.display = 'block';
-                appState.sensitive.cameraActive = true;
-                status.innerText = "Active";
-                status.className = "status-badge bg-green-100 text-green-700";
-                btn.innerText = "Stop Camera";
-                btn.onclick = () => {
-                    stream.getTracks().forEach(track => track.stop());
-                    video.style.display = 'none';
-                    appState.sensitive.cameraActive = false;
-                    status.innerText = "Stopped";
-                    btn.innerText = "Enable Camera";
-                    btn.onclick = requestCamera;
-                    updateAdminJSON();
-                };
-            } catch (err) {
-                status.innerText = "Denied";
-                status.className = "status-badge bg-red-100 text-red-700";
-            }
-            updateAdminJSON();
-        }
-
-        function handleFile() {
-            const input = document.getElementById('file-input');
-            const display = document.getElementById('file-name');
-            if (input.files.length > 0) {
-                const name = input.files[0].name;
-                appState.sensitive.lastFileName = name;
-                display.innerText = `Selected: ${name}`;
-                updateAdminJSON();
-            }
-        }
-
-        // 3. UI LOGIC
-        function toggleView(view) {
-            appState.view = view;
-            const btnUser = document.getElementById('btn-user');
-            const btnAdmin = document.getElementById('btn-admin');
-            const viewUser = document.getElementById('view-user');
-            const viewAdmin = document.getElementById('view-admin');
-
-            if (view === 'admin') {
-                btnAdmin.className = "px-6 py-2 rounded-lg font-semibold text-sm transition bg-white shadow-sm text-blue-600";
-                btnUser.className = "px-6 py-2 rounded-lg font-semibold text-sm transition text-slate-600";
-                viewUser.classList.add('hidden');
-                viewAdmin.classList.remove('hidden');
+                const suspiciousTlds = ['.xyz', '.top', '.pw', '.bid', '.monster', '.icu'];
+                if (suspiciousTlds.some(tld => url.endsWith(tld) || url.includes(tld + '/'))) {
+                    findings.push("Uses a low-reputation TLD often associated with spam.");
+                    baseScore += 25;
+                }
+                const scamKeywords = ['login', 'verify', 'secure', 'bank', 'update', 'account', 'gift', 'prize'];
+                if (scamKeywords.some(word => url.includes(word))) {
+                    findings.push("Contains keywords commonly used in phishing (e.g., 'login', 'bank').");
+                    baseScore += 15;
+                }
+                if (input.includes('xn--')) {
+                    findings.push("Punycode detected (possible homograph attack/fake characters).");
+                    baseScore += 40;
+                }
             } else {
-                btnUser.className = "px-6 py-2 rounded-lg font-semibold text-sm transition bg-white shadow-sm text-blue-600";
-                btnAdmin.className = "px-6 py-2 rounded-lg font-semibold text-sm transition text-slate-600";
-                viewAdmin.classList.add('hidden');
-                viewUser.classList.remove('hidden');
+                // Phone Heuristics
+                if (input.length < 8) findings.push("Number is suspiciously short.");
+                if (input.startsWith('+')) baseScore += 5; // Global numbers are neutral but noted
+                findings.push("Pattern analysis: Standard formatting check complete.");
             }
-            updateAdminJSON();
+
+            return { findings, baseScore };
         }
 
-        function updateAdminJSON() {
-            const adminData = {
-                session_id: "7892-DEMO-2025",
-                timestamp: new Date().toISOString(),
-                environment: appState.environment,
-                network: appState.network,
-                shared_content: {
-                    location: appState.sensitive.latitude ? { lat: appState.sensitive.latitude, lon: appState.sensitive.longitude } : "NOT_SHARED",
-                    camera_stream: appState.sensitive.cameraActive ? "ACTIVE_LOCAL_PREVIEW" : "INACTIVE",
-                    uploaded_files: appState.sensitive.lastFileName || "NONE"
-                },
-                forbidden_access: {
-                    contacts: "BLOCK_BY_BROWSER",
-                    sms_logs: "BLOCK_BY_BROWSER",
-                    local_ip: "BLOCK_BY_WEBRTC_PRIVACY"
-                }
-            };
-            document.getElementById('admin-json').textContent = JSON.stringify(adminData, null, 4);
+        // --- 4. AI INTEGRATION ---
+        async function callAI(input, type, heuristics) {
+            const apiKey = localStorage.getItem('gc_api_key');
+            const endpoint = localStorage.getItem('gc_api_endpoint') || 'https://api.openai.com/v1';
+
+            if (!apiKey) {
+                return {
+                    score: Math.min(heuristics.baseScore, 100),
+                    level: heuristics.baseScore > 50 ? 'Suspicious' : 'Safe',
+                    conclusion: "AI Analysis skipped (No API Key). Based on heuristics: " + 
+                               (heuristics.findings[0] || "No immediate red flags."),
+                    advice: "Please set your API key in settings for deep AI inspection."
+                };
+            }
+
+            const prompt = `You are a cybersecurity expert. Analyze this ${type}: "${input}". 
+            Heuristic findings: ${heuristics.findings.join(', ')}. 
+            Return ONLY a JSON object with: 
+            { "score": (0-100), "level": ("Safe", "Suspicious", "High Risk"), "conclusion": "short explanation", "advice": "safety tip" }`;
+
+            try {
+                const response = await fetch(`${endpoint}/chat/completions`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: "gpt-3.5-turbo", // Or groq equivalent
+                        messages: [{ role: "user", content: prompt }],
+                        temperature: 0.3
+                    })
+                });
+
+                const data = await response.json();
+                return JSON.parse(data.choices[0].message.content);
+            } catch (e) {
+                console.error("AI Error:", e);
+                return { score: 50, level: "Unknown", conclusion: "AI Analysis failed to connect.", advice: "Check your API settings." };
+            }
         }
 
-        // 4. PERMISSION POLLER (Modern API)
-        function startPermissionPoller() {
-            const check = async (name, elementId) => {
-                try {
-                    const result = await navigator.permissions.query({ name });
-                    const el = document.getElementById(elementId);
-                    if (result.state === 'granted') {
-                        el.innerText = "Granted";
-                        el.className = "status-badge bg-green-100 text-green-700";
-                    } else if (result.state === 'denied') {
-                        el.innerText = "Denied";
-                        el.className = "status-badge bg-red-100 text-red-700";
-                    }
-                } catch (e) { /* Some browsers don't support all queries */ }
-            };
+        // --- 5. UI RENDERING ---
+        function displayResults(input, type, heuristics, ai) {
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('results-area').style.display = 'block';
+
+            // Title and Timestamp
+            document.getElementById('result-title').innerText = `${type} Check: ${input}`;
+            document.getElementById('check-timestamp').innerText = `Analyzed on: ${new Date().toLocaleString()}`;
+
+            // Risk Badge
+            const badge = document.getElementById('risk-badge');
+            badge.innerText = ai.level;
+            badge.className = 'risk-badge ' + 
+                (ai.level === 'Safe' ? 'badge-safe' : ai.level === 'Suspicious' ? 'badge-suspicious' : 'badge-danger');
+
+            // Risk Meter
+            const meterFill = document.getElementById('risk-meter-fill');
+            meterFill.style.width = ai.score + '%';
+            meterFill.style.backgroundColor = ai.score < 40 ? 'var(--success)' : ai.score < 75 ? 'var(--warning)' : 'var(--danger)';
+            document.getElementById('risk-score-text').innerText = `Risk Score: ${ai.score}/100`;
+
+            // Text content
+            document.getElementById('ai-conclusion').innerText = ai.conclusion;
+            document.getElementById('safety-advice').innerText = ai.advice;
+
+            // Heuristic list
+            const hList = document.getElementById('heuristic-list');
+            hList.innerHTML = heuristics.findings.map(f => `<li>${f}</li>`).join('') || "<li>No automated red flags detected in formatting.</li>";
+        }
+
+        // --- 6. DATA PERSISTENCE ---
+        async function saveResultToFirebase(input, type, result) {
+            if (!db) return;
             
-            setInterval(() => {
-                check('geolocation', 'geo-status');
-                check('camera', 'cam-status');
-            }, 2000);
+            try {
+                await db.collection("analysis_logs").add({
+                    input,
+                    type,
+                    score: result.score,
+                    level: result.level,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                document.getElementById('firebase-status').innerText = "Result synced to secure cloud storage.";
+            } catch (e) {
+                console.warn("Firebase logging failed", e);
+            }
         }
     </script>
 </body>
