@@ -3,369 +3,464 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexus | Premium SaaS Dashboard</title>
-    
-    <!-- Typography & Icons -->
+    <title>Nexus Core | Premium SaaS Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Dependencies -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
-
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #6366f1;
-            --primary-hover: #4f46e5;
-            --bg-dark: #09090b;
-            --bg-card: rgba(24, 24, 27, 0.8);
-            --border: rgba(255, 255, 255, 0.1);
-            --text-main: #fafafa;
-            --text-muted: #a1a1aa;
-            --success: #10b981;
+            --bg-color: #05070a;
+            --card-bg: rgba(17, 19, 24, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
             --danger: #ef4444;
+            --success: #10b981;
             --sidebar-width: 260px;
-            --glass: blur(12px) saturate(180%);
+            --glass-blur: blur(12px);
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
-            -webkit-font-smoothing: antialiased;
+            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
         }
 
         body {
-            background-color: var(--bg-dark);
+            background-color: var(--bg-color);
             color: var(--text-main);
             overflow: hidden;
             height: 100vh;
+            background-image: 
+                radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.08) 0%, transparent 40%);
         }
 
-        /* --- UI Components --- */
-        .glass-panel {
-            background: var(--bg-card);
-            backdrop-filter: var(--glass);
-            border: 1px solid var(--border);
-            border-radius: 12px;
+        /* Utils */
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .glass {
+            background: var(--card-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
         }
 
-        .btn {
-            cursor: pointer;
-            padding: 10px 18px;
-            border-radius: 8px;
-            border: none;
-            font-weight: 500;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-        }
-
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
-        
-        .btn-secondary { background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); }
-        .btn-secondary:hover { background: rgba(255,255,255,0.1); }
-
-        .skeleton {
-            background: linear-gradient(90deg, #18181b 25%, #27272a 50%, #18181b 75%);
-            background-size: 200% 100%;
-            animation: skeleton-loading 1.5s infinite;
-            border-radius: 4px;
-        }
-
-        @keyframes skeleton-loading {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-
-        /* --- Layout --- */
+        /* Auth Screen */
         #auth-screen {
-            position: fixed;
-            inset: 0;
+            height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: radial-gradient(circle at top center, #1e1b4b 0%, #09090b 100%);
             z-index: 1000;
-            transition: opacity 0.5s ease;
         }
 
-        #main-layout {
-            display: grid;
-            grid-template-columns: var(--sidebar-width) 1fr;
+        .login-card {
+            width: 400px;
+            padding: 3rem;
+            text-align: center;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .btn-google {
+            background: white;
+            color: #1a1a1a;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            margin-top: 2rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-google:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        /* App Layout */
+        #app-shell {
+            display: flex;
             height: 100vh;
             opacity: 0;
             transition: opacity 0.5s ease;
         }
 
+        #app-shell.visible { opacity: 1; }
+
         aside {
-            border-right: 1px solid var(--border);
-            padding: 24px;
+            width: var(--sidebar-width);
+            border-right: 1px solid var(--card-border);
+            padding: 2rem 1.5rem;
             display: flex;
             flex-direction: column;
-            gap: 32px;
-            background: #09090b;
+            gap: 2rem;
+            background: rgba(5, 7, 10, 0.5);
+            backdrop-filter: blur(20px);
         }
 
-        .nav-item {
-            padding: 10px 12px;
-            border-radius: 8px;
-            color: var(--text-muted);
-            text-decoration: none;
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff 0%, #6366f1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        nav ul { list-style: none; }
+        nav li {
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            color: var(--text-dim);
+            transition: 0.2s;
             display: flex;
             align-items: center;
             gap: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
+            font-weight: 500;
         }
 
-        .nav-item:hover, .nav-item.active {
-            background: rgba(255,255,255,0.05);
-            color: var(--text-main);
+        nav li:hover, nav li.active {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+        }
+
+        nav li.active {
+            color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.1);
         }
 
         main {
-            padding: 32px;
+            flex: 1;
+            padding: 2rem;
             overflow-y: auto;
             position: relative;
         }
 
-        .view-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            animation: fadeIn 0.4s ease-out;
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* Cards & Content */
+        .card {
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
         }
 
-        /* --- Dashboard Grid --- */
-        .stats-grid {
+        .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 20px;
-            margin-bottom: 32px;
-        }
-
-        .stat-card {
-            padding: 24px;
-            border-radius: 16px;
-        }
-
-        .table-container {
-            width: 100%;
-            overflow-x: auto;
-            margin-top: 24px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-        }
-
-        th {
-            padding: 16px;
-            color: var(--text-muted);
-            font-weight: 500;
-            font-size: 13px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        td {
-            padding: 16px;
-            border-bottom: 1px solid var(--border);
-            font-size: 14px;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
         }
 
         .badge {
-            padding: 4px 8px;
+            padding: 4px 10px;
             border-radius: 6px;
-            font-size: 11px;
-            font-weight: 600;
+            font-size: 0.75rem;
+            font-weight: 700;
             text-transform: uppercase;
         }
 
-        .badge-admin { background: rgba(99, 102, 241, 0.2); color: #818cf8; }
-        .badge-user { background: rgba(255, 255, 255, 0.05); color: var(--text-muted); }
+        .badge-admin { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+        .badge-user { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
 
-        /* Notification Toast */
-        #toast {
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        td {
+            padding: 16px 12px;
+            border-bottom: 1px solid var(--card-border);
+            font-size: 0.9rem;
+        }
+
+        /* Form Controls */
+        input, select, textarea {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            padding: 12px 16px;
+            border-radius: 8px;
+            color: white;
+            width: 100%;
+            margin-top: 8px;
+            outline: none;
+        }
+
+        input:focus { border-color: var(--accent-primary); }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: 0.2s;
+        }
+
+        .btn-primary { background: var(--accent-primary); color: white; }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-ghost { background: transparent; color: var(--text-dim); border: 1px solid var(--card-border); }
+
+        /* Real-time Toast */
+        #toast-container {
             position: fixed;
             bottom: 24px;
             right: 24px;
-            padding: 16px 24px;
-            border-radius: 12px;
-            z-index: 2000;
-            transform: translateY(150%);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 9999;
         }
 
-        /* Hidden Utility */
-        .hidden { display: none !important; }
+        .toast {
+            padding: 12px 24px;
+            background: #1e293b;
+            border-left: 4px solid var(--accent-primary);
+            border-radius: 8px;
+            margin-top: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        /* Profile Section */
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .avatar-l {
+            width: 100px;
+            height: 100px;
+            border-radius: 24px;
+            object-fit: cover;
+            border: 4px solid var(--card-border);
+        }
+
+        /* Skeleton */
+        .skeleton {
+            background: linear-gradient(90deg, #1a1c23 25%, #2d2f39 50%, #1a1c23 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 8px;
+        }
+        @keyframes loading { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+        /* Modal */
+        #modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 5000;
+        }
     </style>
 </head>
 <body>
 
-    <!-- Notification Toast -->
-    <div id="toast" class="glass-panel"></div>
-
-    <!-- Login Screen -->
-    <section id="auth-screen">
-        <div class="glass-panel" style="padding: 48px; width: 400px; text-align: center;">
-            <div style="background: var(--primary); width: 48px; height: 48px; border-radius: 12px; margin: 0 auto 24px; display: flex; align-items: center; justify-content: center;">
-                <i class="fas fa-layer-group" style="font-size: 24px; color: white;"></i>
+    <!-- Auth View -->
+    <div id="auth-screen">
+        <div class="glass login-card">
+            <div class="logo" style="justify-content: center; margin-bottom: 1rem; font-size: 2rem;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                NEXUS
             </div>
-            <h1 style="margin-bottom: 8px; font-weight: 700;">Welcome to Nexus</h1>
-            <p style="color: var(--text-muted); margin-bottom: 32px;">The next generation analytics engine.</p>
-            <button id="google-login-btn" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px;">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/layout/google.svg" width="18" height="18">
+            <p style="color: var(--text-dim); margin-bottom: 1rem;">Enterprise Identity Management</p>
+            <button class="btn-google" id="login-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
                 Continue with Google
             </button>
         </div>
-    </section>
+    </div>
 
-    <!-- Main App Layout -->
-    <div id="main-layout">
+    <!-- Main Application UI -->
+    <div id="app-shell" class="hidden">
         <aside>
-            <div style="display: flex; align-items: center; gap: 12px; padding: 0 12px;">
-                <div style="background: var(--primary); width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-bolt" style="font-size: 16px;"></i>
-                </div>
-                <span style="font-weight: 700; font-size: 18px; letter-spacing: -0.5px;">NEXUS</span>
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                NEXUS CORE
             </div>
-
-            <nav style="flex: 1;">
-                <div class="nav-item active" onclick="app.switchView('dashboard')">
-                    <i data-lucide="layout-grid" size="18"></i> Dashboard
-                </div>
-                <div class="nav-item" onclick="app.switchView('analytics')">
-                    <i data-lucide="bar-chart-3" size="18"></i> Analytics
-                </div>
-                <div id="admin-nav" class="nav-item hidden" onclick="app.switchView('admin')">
-                    <i data-lucide="shield-check" size="18"></i> Admin Console
-                </div>
-                <div class="nav-item" onclick="app.switchView('settings')">
-                    <i data-lucide="settings" size="18"></i> Settings
-                </div>
+            <nav>
+                <ul id="nav-links">
+                    <li class="active" data-view="profile">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        Personal Dashboard
+                    </li>
+                    <li data-view="data">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h7"/><path d="M16 19h6"/><path d="M19 16v6"/><circle cx="7.5" cy="15.5" r=".5"/><circle cx="16.5" cy="9.5" r=".5"/></svg>
+                        System Objects
+                    </li>
+                    <li id="nav-admin" class="hidden" data-view="admin">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+                        Admin Control
+                    </li>
+                </ul>
             </nav>
-
-            <div id="user-profile-nav" class="glass-panel" style="padding: 12px; display: flex; align-items: center; gap: 12px;">
-                <img id="user-avatar" src="" style="width: 32px; height: 32px; border-radius: 50%; background: #27272a;">
-                <div style="overflow: hidden; flex: 1;">
-                    <div id="user-name" style="font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</div>
-                    <div id="user-role" class="badge-user" style="font-size: 10px; font-weight: 700; text-transform: uppercase;">User</div>
-                </div>
-                <button onclick="app.logout()" style="background: none; border: none; color: var(--text-muted); cursor: pointer;">
-                    <i data-lucide="log-out" size="16"></i>
-                </button>
+            <div style="margin-top: auto;">
+                <li style="list-style: none;" id="logout-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    Sign Out
+                </li>
             </div>
         </aside>
 
-        <main>
-            <!-- View: Dashboard -->
-            <div id="view-dashboard" class="view-content">
-                <header style="margin-bottom: 32px;">
-                    <h2 style="font-size: 24px; font-weight: 700;">Overview</h2>
-                    <p style="color: var(--text-muted);">Real-time performance metrics</p>
-                </header>
-
-                <div class="stats-grid">
-                    <div class="glass-panel stat-card">
-                        <div style="color: var(--text-muted); font-size: 13px; margin-bottom: 8px;">Active Users</div>
-                        <div style="font-size: 28px; font-weight: 700;" id="stat-active-users">0</div>
-                    </div>
-                    <div class="glass-panel stat-card">
-                        <div style="color: var(--text-muted); font-size: 13px; margin-bottom: 8px;">Total Operations</div>
-                        <div style="font-size: 28px; font-weight: 700;" id="stat-ops">1,284</div>
-                    </div>
-                    <div class="glass-panel stat-card">
-                        <div style="color: var(--text-muted); font-size: 13px; margin-bottom: 8px;">System Health</div>
-                        <div style="font-size: 28px; font-weight: 700; color: var(--success);">99.9%</div>
-                    </div>
+        <main id="main-content">
+            <header>
+                <div>
+                    <h1 id="view-title">Personal Dashboard</h1>
+                    <p style="color: var(--text-dim); font-size: 0.85rem;" id="view-subtitle">Manage your profile and preferences</p>
                 </div>
-
-                <div class="glass-panel" style="padding: 24px;">
-                    <h3 style="margin-bottom: 20px;">System Activity</h3>
-                    <div style="height: 300px;">
-                        <canvas id="dashboardChart"></canvas>
-                    </div>
+                <div class="flex items-center gap-12 glass" style="padding: 6px 16px; border-radius: 12px;">
+                    <span id="current-user-role" class="badge">USER</span>
+                    <img id="user-avatar" class="avatar" style="width: 32px; height: 32px; border-radius: 50%;" src="" alt="">
                 </div>
-            </div>
+            </header>
 
-            <!-- View: Admin -->
-            <div id="view-admin" class="view-content hidden">
-                <header style="margin-bottom: 32px; display: flex; justify-content: space-between; align-items: flex-end;">
+            <!-- PROFILE VIEW -->
+            <section id="view-profile" class="view">
+                <div class="profile-header">
+                    <img id="profile-img-large" class="avatar-l" src="" alt="Profile">
                     <div>
-                        <h2 style="font-size: 24px; font-weight: 700;">Admin Management</h2>
-                        <p style="color: var(--text-muted);">Control user roles and application state</p>
+                        <h2 id="profile-name" style="font-size: 2rem;">...</h2>
+                        <p id="profile-email" style="color: var(--text-dim);">...</p>
                     </div>
-                    <button class="btn btn-primary" onclick="app.exportUsers()">
-                        <i data-lucide="download" size="16"></i> Export JSON
-                    </button>
-                </header>
+                </div>
 
-                <div class="glass-panel">
-                    <div class="table-container">
-                        <table id="users-table">
-                            <thead>
-                                <tr>
-                                    <th>USER</th>
-                                    <th>ROLE</th>
-                                    <th>JOINED</th>
-                                    <th>ACTIONS</th>
-                                </tr>
-                            </thead>
-                            <tbody id="users-list-tbody">
-                                <!-- Dynamic Injection -->
-                            </tbody>
-                        </table>
+                <div class="grid">
+                    <div class="glass card">
+                        <h3>Profile Settings</h3>
+                        <div style="margin-top: 1.5rem;">
+                            <label>Display Name</label>
+                            <input type="text" id="edit-display-name">
+                            <label style="display:block; margin-top: 1rem;">Bio</label>
+                            <textarea id="edit-bio" rows="3"></textarea>
+                            <button class="btn btn-primary" style="margin-top: 1.5rem; width: 100%;" id="save-profile">Update Profile</button>
+                        </div>
+                    </div>
+                    <div class="glass card">
+                        <h3>Session Activity</h3>
+                        <div id="activity-log" style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-dim);">
+                            <div style="padding: 8px 0; border-bottom: 1px solid var(--card-border);">Authenticating session...</div>
+                        </div>
                     </div>
                 </div>
-                
-                <div class="glass-panel" style="margin-top: 32px; padding: 24px;">
-                    <h3 style="margin-bottom: 16px;">Audit Log</h3>
-                    <div id="audit-logs" style="font-family: monospace; font-size: 12px; color: var(--text-muted); display: flex; flex-direction: column; gap: 8px;">
-                        <!-- Real-time logs -->
-                    </div>
-                </div>
-            </div>
+            </section>
 
-            <!-- View: Settings -->
-            <div id="view-settings" class="view-content hidden">
-                <header style="margin-bottom: 32px;">
-                    <h2 style="font-size: 24px; font-weight: 700;">Account Settings</h2>
-                    <p style="color: var(--text-muted);">Manage your profile and preferences</p>
-                </header>
-                <div class="glass-panel" style="padding: 32px; max-width: 600px;">
-                    <div style="margin-bottom: 24px;">
-                        <label style="display: block; margin-bottom: 8px; font-size: 14px; color: var(--text-muted);">Display Name</label>
-                        <input type="text" id="setting-name" class="glass-panel" style="width: 100%; padding: 12px; color: white; outline: none; background: rgba(255,255,255,0.02);">
-                    </div>
-                    <div style="margin-bottom: 32px;">
-                        <label style="display: block; margin-bottom: 8px; font-size: 14px; color: var(--text-muted);">Email Address</label>
-                        <input type="text" id="setting-email" disabled class="glass-panel" style="width: 100%; padding: 12px; color: var(--text-muted); background: rgba(0,0,0,0.2);">
-                    </div>
-                    <button class="btn btn-primary" onclick="app.updateProfile()">Save Changes</button>
+            <!-- DATA VIEW -->
+            <section id="view-data" class="view hidden">
+                <div class="flex justify-between items-center" style="margin-bottom: 1.5rem;">
+                    <h3>Managed Objects</h3>
+                    <button class="btn btn-primary" id="add-data-btn">+ Create New</button>
                 </div>
-            </div>
+                <div class="glass card">
+                    <table id="data-table">
+                        <thead>
+                            <tr>
+                                <th>Object Name</th>
+                                <th>Description</th>
+                                <th>Last Modified</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="data-list-container">
+                            <!-- Items populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ADMIN VIEW -->
+            <section id="view-admin" class="view hidden">
+                <div class="grid" style="margin-bottom: 2rem;">
+                    <div class="glass card">
+                        <h4 style="color: var(--text-dim);">Total Users</h4>
+                        <div style="font-size: 2.5rem; font-weight: 800;" id="stat-users">0</div>
+                    </div>
+                    <div class="glass card">
+                        <h4 style="color: var(--text-dim);">Active Objects</h4>
+                        <div style="font-size: 2.5rem; font-weight: 800;" id="stat-data">0</div>
+                    </div>
+                </div>
+                <h3>User Management</h3>
+                <div class="glass card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Identity</th>
+                                <th>Role</th>
+                                <th>Joined</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-user-list">
+                            <!-- Populated via Admin Auth -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
         </main>
     </div>
 
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, query, onSnapshot, updateDoc, deleteDoc, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+    <!-- Modals -->
+    <div id="modal-overlay">
+        <div class="glass card" style="width: 450px; padding: 2.5rem;">
+            <h2 id="modal-title">Create Object</h2>
+            <div id="modal-content" style="margin-top: 1.5rem;">
+                <label>Title</label>
+                <input type="text" id="modal-input-title">
+                <label style="display:block; margin-top: 1rem;">Description</label>
+                <textarea id="modal-input-desc" rows="4"></textarea>
+                <div class="flex gap-12" style="margin-top: 2rem; justify-content: flex-end;">
+                    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+                    <button class="btn btn-primary" id="modal-submit">Save Object</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        // Configuration
+    <div id="toast-container"></div>
+
+    <!-- Firebase SDK Modular -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, orderBy, serverTimestamp, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
@@ -375,241 +470,334 @@
             appId: "1:914980131889:web:72f8da15c42dbee671b110"
         };
 
-        // Initialize Firebase
-        const fbApp = initializeApp(firebaseConfig);
-        const auth = getAuth(fbApp);
-        const db = getFirestore(fbApp);
+        // Initialize
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
-        // Application State
-        const state = {
-            user: null,
-            role: 'user',
-            activeView: 'dashboard',
-            users: [],
-            logs: []
+        // State Management
+        let currentUser = null;
+        let currentUserData = null;
+        let activeView = 'profile';
+        let unsubscribers = [];
+
+        // UI Selectors
+        const screens = {
+            auth: document.getElementById('auth-screen'),
+            app: document.getElementById('app-shell')
         };
 
-        // UI Core
-        const app = {
-            async init() {
-                this.setupListeners();
-                lucide.createIcons();
-                this.initChart();
-            },
+        // Initialize App Flow
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                await syncUserProfile(user);
+                setupAppListeners();
+                showScreen('app');
+            } else {
+                cleanupListeners();
+                showScreen('auth');
+            }
+        });
 
-            setupListeners() {
-                // Auth Observer
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        state.user = user;
-                        await this.syncUserProfile(user);
-                        this.toggleUI(true);
-                        this.loadData();
-                    } else {
-                        state.user = null;
-                        this.toggleUI(false);
-                    }
+        // Auth Operations
+        document.getElementById('login-btn').addEventListener('click', async () => {
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (err) {
+                notify("Login Failed: " + err.message, "danger");
+            }
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            signOut(auth).then(() => window.location.reload());
+        });
+
+        // Profile Logic
+        async function syncUserProfile(user) {
+            const userRef = doc(db, "users", user.uid);
+            const userSnap = await getDoc(userRef);
+
+            if (!userSnap.exists()) {
+                const newUser = {
+                    uid: user.uid,
+                    displayName: user.displayName,
+                    email: user.email,
+                    photoURL: user.photoURL,
+                    role: 'USER',
+                    bio: 'System Architect',
+                    createdAt: serverTimestamp(),
+                    lastLogin: serverTimestamp()
+                };
+                await setDoc(userRef, newUser);
+                currentUserData = newUser;
+            } else {
+                await updateDoc(userRef, { lastLogin: serverTimestamp() });
+                currentUserData = userSnap.data();
+            }
+            renderUserUI();
+        }
+
+        function renderUserUI() {
+            document.getElementById('profile-name').innerText = currentUserData.displayName;
+            document.getElementById('profile-email').innerText = currentUserData.email;
+            document.getElementById('user-avatar').src = currentUserData.photoURL;
+            document.getElementById('profile-img-large').src = currentUserData.photoURL;
+            document.getElementById('edit-display-name').value = currentUserData.displayName;
+            document.getElementById('edit-bio').value = currentUserData.bio || '';
+            
+            const roleEl = document.getElementById('current-user-role');
+            roleEl.innerText = currentUserData.role;
+            roleEl.className = `badge badge-${currentUserData.role.toLowerCase()}`;
+
+            if (currentUserData.role === 'ADMIN') {
+                document.getElementById('nav-admin').classList.remove('hidden');
+            } else {
+                document.getElementById('nav-admin').classList.add('hidden');
+                if (activeView === 'admin') switchView('profile');
+            }
+        }
+
+        document.getElementById('save-profile').onclick = async () => {
+            const btn = document.getElementById('save-profile');
+            btn.disabled = true;
+            try {
+                await updateDoc(doc(db, "users", currentUser.uid), {
+                    displayName: document.getElementById('edit-display-name').value,
+                    bio: document.getElementById('edit-bio').value
                 });
-
-                // Google Login
-                document.getElementById('google-login-btn').addEventListener('click', async () => {
-                    try {
-                        await signInWithPopup(auth, provider);
-                    } catch (err) {
-                        this.notify("Login failed: " + err.message, "danger");
-                    }
-                });
-            },
-
-            async syncUserProfile(user) {
-                const userRef = doc(db, "users", user.uid);
-                const userSnap = await getDoc(userRef);
-
-                if (!userSnap.exists()) {
-                    const userData = {
-                        uid: user.uid,
-                        name: user.displayName,
-                        email: user.email,
-                        photo: user.photoURL,
-                        role: 'user', // Default role
-                        createdAt: serverTimestamp()
-                    };
-                    await setDoc(userRef, userData);
-                    state.role = 'user';
-                } else {
-                    state.role = userSnap.data().role;
-                }
-
-                // Update UI Profile info
-                document.getElementById('user-avatar').src = user.photoURL;
-                document.getElementById('user-name').innerText = user.displayName;
-                document.getElementById('user-role').innerText = state.role;
-                document.getElementById('setting-name').value = user.displayName;
-                document.getElementById('setting-email').value = user.email;
-
-                if (state.role === 'admin') {
-                    document.getElementById('admin-nav').classList.remove('hidden');
-                } else {
-                    document.getElementById('admin-nav').classList.add('hidden');
-                }
-            },
-
-            loadData() {
-                // Real-time Users Listener (for Admin)
-                if (state.role === 'admin') {
-                    onSnapshot(collection(db, "users"), (snapshot) => {
-                        state.users = snapshot.docs.map(doc => doc.data());
-                        this.renderUsers();
-                        document.getElementById('stat-active-users').innerText = state.users.length;
-                    });
-
-                    // Real-time Logs
-                    const logsQuery = query(collection(db, "logs"), orderBy("timestamp", "desc"), limit(10));
-                    onSnapshot(logsQuery, (snapshot) => {
-                        this.renderLogs(snapshot.docs.map(doc => doc.data()));
-                    });
-                }
-            },
-
-            renderUsers() {
-                const tbody = document.getElementById('users-list-tbody');
-                tbody.innerHTML = state.users.map(u => `
-                    <tr>
-                        <td>
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <img src="${u.photo}" style="width: 24px; height: 24px; border-radius: 50%;">
-                                <div>
-                                    <div style="font-weight: 500;">${u.name}</div>
-                                    <div style="font-size: 12px; color: var(--text-muted);">${u.email}</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td><span class="badge badge-${u.role}">${u.role}</span></td>
-                        <td>${u.createdAt?.toDate().toLocaleDateString() || 'Now'}</td>
-                        <td>
-                            <button class="btn-secondary" style="padding: 5px 10px;" onclick="app.toggleRole('${u.uid}', '${u.role}')">
-                                Promote/Demote
-                            </button>
-                        </td>
-                    </tr>
-                `).join('');
-            },
-
-            async toggleRole(uid, currentRole) {
-                if (uid === state.user.uid) return this.notify("Cannot change your own role", "danger");
-                const newRole = currentRole === 'admin' ? 'user' : 'admin';
-                await updateDoc(doc(db, "users", uid), { role: newRole });
-                this.logAction(`Changed user ${uid} role to ${newRole}`);
-                this.notify(`User role updated to ${newRole}`);
-            },
-
-            renderLogs(logs) {
-                const container = document.getElementById('audit-logs');
-                container.innerHTML = logs.map(l => `
-                    <div style="display: flex; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">
-                        <span style="color: var(--primary)">[${l.timestamp?.toDate().toLocaleTimeString() || '...'}]</span>
-                        <span>${l.action}</span>
-                    </div>
-                `).join('');
-            },
-
-            async logAction(action) {
-                await setDoc(doc(collection(db, "logs")), {
-                    action,
-                    userId: state.user.uid,
-                    userName: state.user.displayName,
-                    timestamp: serverTimestamp()
-                });
-            },
-
-            async updateProfile() {
-                const newName = document.getElementById('setting-name').value;
-                await updateDoc(doc(db, "users", state.user.uid), { name: newName });
-                this.notify("Profile updated successfully");
-            },
-
-            switchView(viewId) {
-                // Handle navigation visuals
-                document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-                event.currentTarget.classList.add('active');
-
-                // Toggle visibility
-                document.querySelectorAll('.view-content').forEach(el => el.classList.add('hidden'));
-                document.getElementById(`view-${viewId}`).classList.remove('hidden');
-                
-                state.activeView = viewId;
-            },
-
-            toggleUI(isLoggedIn) {
-                if (isLoggedIn) {
-                    document.getElementById('auth-screen').style.opacity = '0';
-                    setTimeout(() => {
-                        document.getElementById('auth-screen').classList.add('hidden');
-                        document.getElementById('main-layout').style.opacity = '1';
-                    }, 500);
-                } else {
-                    document.getElementById('auth-screen').classList.remove('hidden');
-                    document.getElementById('auth-screen').style.opacity = '1';
-                    document.getElementById('main-layout').style.opacity = '0';
-                }
-            },
-
-            logout() {
-                signOut(auth);
-            },
-
-            notify(msg, type = "success") {
-                const toast = document.getElementById('toast');
-                toast.innerText = msg;
-                toast.style.borderLeft = `4px solid ${type === 'success' ? var('--success') : var('--danger')}`;
-                toast.style.transform = 'translateY(0)';
-                setTimeout(() => {
-                    toast.style.transform = 'translateY(150%)';
-                }, 3000);
-            },
-
-            initChart() {
-                const ctx = document.getElementById('dashboardChart').getContext('2d');
-                new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                        datasets: [{
-                            label: 'System Load',
-                            data: [30, 45, 32, 60, 55, 75],
-                            borderColor: '#6366f1',
-                            tension: 0.4,
-                            fill: true,
-                            backgroundColor: 'rgba(99, 102, 241, 0.1)'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#a1a1aa' } },
-                            x: { grid: { display: false }, ticks: { color: '#a1a1aa' } }
-                        }
-                    }
-                });
-            },
-
-            exportUsers() {
-                const data = JSON.stringify(state.users, null, 2);
-                const blob = new Blob([data], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'nexus-users.json';
-                a.click();
+                notify("Profile updated successfully");
+            } catch (err) {
+                notify("Update failed: " + err.message, "danger");
+            } finally {
+                btn.disabled = false;
             }
         };
 
-        // Attach to window for inline onclick handlers
-        window.app = app;
-        app.init();
+        // Real-time Content Listeners
+        function setupAppListeners() {
+            cleanupListeners();
+
+            // Listen to User Profile Changes (Self)
+            const unsubProfile = onSnapshot(doc(db, "users", currentUser.uid), (doc) => {
+                if (doc.exists()) {
+                    currentUserData = doc.data();
+                    renderUserUI();
+                }
+            });
+            unsubscribers.push(unsubProfile);
+
+            // Listen to System Objects
+            const unsubData = onSnapshot(query(collection(db, "system_data"), orderBy("updatedAt", "desc")), (snapshot) => {
+                renderDataTable(snapshot);
+                document.getElementById('stat-data').innerText = snapshot.size;
+            });
+            unsubscribers.push(unsubData);
+
+            // Admin: Listen to all users
+            const unsubUsers = onSnapshot(collection(db, "users"), (snapshot) => {
+                if (currentUserData?.role === 'ADMIN') {
+                    renderAdminUsers(snapshot);
+                    document.getElementById('stat-users').innerText = snapshot.size;
+                }
+            });
+            unsubscribers.push(unsubUsers);
+        }
+
+        function cleanupListeners() {
+            unsubscribers.forEach(unsub => unsub());
+            unsubscribers = [];
+        }
+
+        // View Logic
+        function switchView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+            document.querySelectorAll('nav li').forEach(li => li.classList.remove('active'));
+            
+            const targetView = document.getElementById(`view-${viewId}`);
+            if (targetView) {
+                targetView.classList.remove('hidden');
+                document.querySelector(`nav li[data-view="${viewId}"]`).classList.add('active');
+                activeView = viewId;
+                
+                // Update Headings
+                const titles = {
+                    profile: ['Personal Dashboard', 'Manage your profile and preferences'],
+                    data: ['System Objects', 'Manage real-time data records'],
+                    admin: ['Admin Control', 'Global system oversight and permissions']
+                };
+                document.getElementById('view-title').innerText = titles[viewId][0];
+                document.getElementById('view-subtitle').innerText = titles[viewId][1];
+            }
+        }
+
+        document.querySelectorAll('nav li').forEach(li => {
+            li.onclick = () => switchView(li.dataset.view);
+        });
+
+        // CRUD: System Data
+        function renderDataTable(snapshot) {
+            const container = document.getElementById('data-list-container');
+            if (snapshot.empty) {
+                container.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 40px; color: var(--text-dim);">No objects found. Create your first one.</td></tr>`;
+                return;
+            }
+            container.innerHTML = snapshot.docs.map(doc => {
+                const data = doc.data();
+                const date = data.updatedAt?.toDate()?.toLocaleDateString() || 'Just now';
+                return `
+                    <tr>
+                        <td style="font-weight: 600;">${data.title}</td>
+                        <td style="color: var(--text-dim); max-width: 300px;">${data.description}</td>
+                        <td>${date}</td>
+                        <td>
+                            <div class="flex gap-12">
+                                <button class="btn btn-ghost" style="padding: 4px 10px;" onclick="window.editItem('${doc.id}', '${data.title}', '${data.description}')">Edit</button>
+                                <button class="btn btn-ghost" style="padding: 4px 10px; color: var(--danger); border-color: rgba(239, 68, 68, 0.2);" onclick="window.deleteItem('${doc.id}')">Delete</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Globalized actions for inline JS
+        let editingId = null;
+        window.editItem = (id, title, desc) => {
+            editingId = id;
+            document.getElementById('modal-title').innerText = "Edit Object";
+            document.getElementById('modal-input-title').value = title;
+            document.getElementById('modal-input-desc').value = desc;
+            openModal();
+        };
+
+        window.deleteItem = async (id) => {
+            if (confirm("Permanently delete this object?")) {
+                await deleteDoc(doc(db, "system_data", id));
+                notify("Object deleted", "danger");
+            }
+        };
+
+        document.getElementById('add-data-btn').onclick = () => {
+            editingId = null;
+            document.getElementById('modal-title').innerText = "Create New Object";
+            document.getElementById('modal-input-title').value = "";
+            document.getElementById('modal-input-desc').value = "";
+            openModal();
+        };
+
+        document.getElementById('modal-submit').onclick = async () => {
+            const title = document.getElementById('modal-input-title').value;
+            const desc = document.getElementById('modal-input-desc').value;
+            if (!title) return notify("Title is required", "danger");
+
+            try {
+                const payload = { 
+                    title, 
+                    description: desc, 
+                    updatedAt: serverTimestamp(),
+                    updatedBy: currentUser.uid 
+                };
+
+                if (editingId) {
+                    await updateDoc(doc(db, "system_data", editingId), payload);
+                    notify("Object updated");
+                } else {
+                    await addDoc(collection(db, "system_data"), payload);
+                    notify("Object created");
+                }
+                closeModal();
+            } catch (err) {
+                notify("Error: " + err.message, "danger");
+            }
+        };
+
+        // ADMIN: User Management
+        function renderAdminUsers(snapshot) {
+            const container = document.getElementById('admin-user-list');
+            container.innerHTML = snapshot.docs.map(docSnap => {
+                const user = docSnap.data();
+                const isSelf = user.uid === currentUser.uid;
+                return `
+                    <tr>
+                        <td>
+                            <div class="flex items-center gap-12">
+                                <img src="${user.photoURL}" style="width: 32px; height: 32px; border-radius: 8px;">
+                                <div>
+                                    <div style="font-weight: 600;">${user.displayName} ${isSelf ? '(You)' : ''}</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-dim);">${user.email}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <select onchange="window.updateRole('${user.uid}', this.value)" ${isSelf ? 'disabled' : ''} style="margin:0; padding: 4px 8px; font-size: 0.8rem;">
+                                <option value="USER" ${user.role === 'USER' ? 'selected' : ''}>USER</option>
+                                <option value="ADMIN" ${user.role === 'ADMIN' ? 'selected' : ''}>ADMIN</option>
+                            </select>
+                        </td>
+                        <td style="color: var(--text-dim); font-size: 0.8rem;">
+                            ${user.createdAt?.toDate()?.toLocaleDateString() || 'Legacy'}
+                        </td>
+                        <td>
+                            ${!isSelf ? `<button class="btn btn-ghost" style="color: var(--danger); border: none;" onclick="window.adminDeleteUser('${user.uid}')">Remove</button>` : '-'}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        window.updateRole = async (uid, newRole) => {
+            try {
+                await updateDoc(doc(db, "users", uid), { role: newRole });
+                notify(`Role updated to ${newRole}`);
+            } catch (err) {
+                notify("Permissions denied", "danger");
+            }
+        };
+
+        window.adminDeleteUser = async (uid) => {
+            if (confirm("Delete user record? Note: This does not delete their Google Auth account.")) {
+                await deleteDoc(doc(db, "users", uid));
+                notify("User record removed");
+            }
+        };
+
+        // UI Helpers
+        function showScreen(screen) {
+            if (screen === 'app') {
+                screens.auth.classList.add('hidden');
+                screens.app.classList.remove('hidden');
+                setTimeout(() => screens.app.classList.add('visible'), 50);
+            } else {
+                screens.app.classList.remove('visible');
+                setTimeout(() => {
+                    screens.app.classList.add('hidden');
+                    screens.auth.classList.remove('hidden');
+                }, 500);
+            }
+        }
+
+        function notify(msg, type = "success") {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            if (type === 'danger') toast.style.borderLeftColor = 'var(--danger)';
+            toast.innerText = msg;
+            document.getElementById('toast-container').appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(20px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function openModal() { document.getElementById('modal-overlay').style.display = 'flex'; }
+        window.closeModal = () => { document.getElementById('modal-overlay').style.display = 'none'; };
+
+        // Handle Reconnects & Status
+        window.addEventListener('online', () => notify("System online - Synced"));
+        window.addEventListener('offline', () => notify("System offline - Working locally", "danger"));
+        
     </script>
 </body>
 </html>
