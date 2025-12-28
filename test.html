@@ -3,150 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CryptoRank Clone | Advanced Terminal</title>
-    
-    <!-- Tailwind CSS & Lucide Icons -->
+    <title>Nexus Terminal | Professional Crypto Suite</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Firebase SDK -->
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <!-- Web3 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0b0e11; /* Màu chuẩn sàn Binance/CoinGecko */
-            color: #eaecef;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #1e2329; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #474d57; border-radius: 10px; }
-
-        .coin-table-row:hover { background-color: #1e2329 !important; transition: 0.2s; }
-        
-        .up-flash { animation: flash-green 0.8s; }
-        .down-flash { animation: flash-red 0.8s; }
-        @keyframes flash-green { 0% { background: rgba(14, 203, 129, 0.2); } 100% { background: transparent; } }
-        @keyframes flash-red { 0% { background: rgba(246, 70, 93, 0.2); } 100% { background: transparent; } }
-
-        .glass { background: rgba(24, 26, 32, 0.8); backdrop-filter: blur(10px); }
-        .sticky-header { position: sticky; top: 0; z-index: 50; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #05070a; color: #e2e8f0; }
+        .glass { background: rgba(13, 17, 23, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
+        .active-tab { border-bottom: 2px solid #6366f1; color: #6366f1; }
+        .shimmer { animation: shimmer 2s infinite; background: linear-gradient(90deg, #0d1117 25%, #161b22 50%, #0d1117 75%); background-size: 200% 100%; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .xp-bar { height: 6px; border-radius: 3px; background: #1e293b; overflow: hidden; }
+        .xp-progress { height: 100%; background: linear-gradient(90deg, #6366f1, #a855f7); width: 45%; transition: 0.5s; }
     </style>
 </head>
-<body class="custom-scrollbar">
+<body>
 
-    <!-- TOP GLOBAL BAR (Y chang CoinGecko) -->
-    <div class="bg-[#181a20] border-b border-gray-800 text-[11px] py-2 px-4 flex gap-6 overflow-x-auto whitespace-nowrap text-gray-400">
-        <div>Coins: <span class="text-indigo-400" id="g-coins">0</span></div>
-        <div>Exchanges: <span class="text-indigo-400" id="g-exchanges">0</span></div>
-        <div>Market Cap: <span class="text-indigo-400" id="g-mcap">0</span></div>
-        <div>24h Vol: <span class="text-indigo-400" id="g-vol">0</span></div>
-        <div>Dominance: <span class="text-indigo-400">BTC: <span id="g-dom-btc">0</span>% ETH: <span id="g-dom-eth">0</span>%</span></div>
-        <div class="flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3 text-yellow-500"></i> ETH Gas: <span class="text-indigo-400" id="g-gas">21 Gwei</span></div>
-    </div>
-
-    <!-- MAIN NAV -->
-    <nav class="sticky-header glass border-b border-gray-800 px-6 py-4 flex justify-between items-center">
-        <div class="flex items-center gap-8">
-            <div class="text-2xl font-extrabold tracking-tighter flex items-center gap-2">
-                <div class="bg-indigo-600 p-1 rounded-lg"><i data-lucide="bar-chart-3" class="text-white"></i></div>
-                CRYPTO<span class="text-indigo-500">RANK</span>
-            </div>
-            <div class="hidden md:flex gap-6 text-sm font-medium text-gray-400">
-                <a href="#" class="hover:text-white transition">Cryptocurrencies</a>
-                <a href="#" class="hover:text-white transition">Exchanges</a>
-                <a href="#" class="hover:text-white transition">NFT</a>
-                <a href="#" class="hover:text-white transition">Portfolio</a>
-            </div>
+    <!-- SIDEBAR -->
+    <aside class="fixed left-0 top-0 h-full w-64 glass hidden lg:flex flex-col z-50">
+        <div class="p-6 text-xl font-extrabold tracking-tighter text-indigo-500 flex items-center gap-2">
+            <i data-lucide="layout-grid"></i> NEXUS PRO
         </div>
+        <nav class="flex-1 px-4 space-y-2">
+            <div onclick="switchTab('market')" class="nav-btn active-tab flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-white/5 transition">
+                <i data-lucide="line-chart"></i> Thị trường
+            </div>
+            <div onclick="switchTab('portfolio')" class="nav-btn flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-white/5 transition">
+                <i data-lucide="briefcase"></i> Portfolio
+            </div>
+            <div onclick="switchTab('airdrops')" class="nav-btn flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-white/5 transition">
+                <i data-lucide="gift"></i> Airdrops
+            </div>
+            <div onclick="switchTab('gamification')" class="nav-btn flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-white/5 transition">
+                <i data-lucide="award"></i> Quest & XP
+            </div>
+            <div id="admin-nav" onclick="switchTab('admin')" class="hidden flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-white/5 text-red-400">
+                <i data-lucide="shield-check"></i> Admin
+            </div>
+        </nav>
         
-        <div class="flex items-center gap-4">
-            <div class="relative hidden sm:block">
+        <!-- USER PROFILE PREVIEW -->
+        <div id="user-preview" class="p-4 border-t border-white/5 hidden">
+            <div class="flex items-center gap-3 mb-3">
+                <img id="u-avatar" src="" class="w-10 h-10 rounded-full">
+                <div class="overflow-hidden">
+                    <p id="u-name" class="font-bold text-sm truncate">User</p>
+                    <p class="text-[10px] text-gray-500">Lv. <span id="u-level">1</span> Trader</p>
+                </div>
+            </div>
+            <div class="xp-bar mb-2"><div id="u-xp-progress" class="xp-progress"></div></div>
+            <button onclick="logout()" class="text-xs text-gray-500 hover:text-red-400">Đăng xuất</button>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="lg:ml-64 p-4 lg:p-8 pb-24">
+        <!-- HEADER -->
+        <header class="flex justify-between items-center mb-8">
+            <div class="search-box relative hidden sm:block">
                 <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-500"></i>
-                <input type="text" id="mainSearch" placeholder="Search coins..." class="bg-[#2b2f36] rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 w-64">
+                <input type="text" placeholder="Tìm coin, airdrop..." class="glass rounded-full py-2 pl-10 pr-4 text-sm w-80 focus:ring-1 ring-indigo-500 outline-none">
             </div>
-            <button id="loginBtn" onclick="login()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition">Login</button>
-            <div id="userArea" class="hidden flex items-center gap-3">
-                <img id="uPhoto" src="" class="w-8 h-8 rounded-full border border-indigo-500">
-                <button onclick="logout()" class="text-gray-400 hover:text-white"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+            <div class="flex gap-3">
+                <button id="btn-login" onclick="login()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl text-sm font-bold flex items-center gap-2">
+                    <i data-lucide="log-in"></i> Đăng nhập
+                </button>
+                <button id="btn-wallet" onclick="connectWallet()" class="glass px-5 py-2 rounded-xl text-sm font-bold flex items-center gap-2">
+                    <i data-lucide="wallet"></i> <span id="wallet-addr">Kết nối ví</span>
+                </button>
             </div>
-        </div>
-    </nav>
+        </header>
 
-    <main class="max-w-[1400px] mx-auto px-6 py-8">
-        
-        <!-- HERO / TRENDING CARDS -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
-            <div class="bg-[#1e2329] rounded-2xl p-5 border border-gray-800">
-                <div class="flex justify-between mb-4">
-                    <h3 class="font-bold flex items-center gap-2"><i data-lucide="trending-up" class="text-green-500"></i> Trending</h3>
-                    <a href="#" class="text-indigo-500 text-xs">View more</a>
-                </div>
-                <div id="trending-list" class="space-y-4 text-sm">
-                    <!-- Dynamic trending -->
+        <!-- TAB: MARKET (CRYPTRANK CLONE) -->
+        <section id="tab-market" class="tab-content">
+            <div class="flex justify-between items-end mb-6">
+                <h1 class="text-3xl font-black">Thị trường</h1>
+                <div class="flex gap-2 text-xs">
+                    <span class="text-gray-500">Global Cap:</span> <span class="text-indigo-400" id="global-cap">--</span>
                 </div>
             </div>
-            <div class="bg-[#1e2329] rounded-2xl p-5 border border-gray-800">
-                <div class="flex justify-between mb-4">
-                    <h3 class="font-bold flex items-center gap-2"><i data-lucide="clock" class="text-indigo-500"></i> Recently Added</h3>
-                    <a href="#" class="text-indigo-500 text-xs">View more</a>
-                </div>
-                <div id="recent-list" class="space-y-4 text-sm">
-                    <!-- Dynamic recent -->
-                </div>
-            </div>
-            <div class="bg-indigo-600/10 rounded-2xl p-6 border border-indigo-500/30 relative overflow-hidden">
-                <h3 class="text-xl font-black mb-2">Nexus Pro Terminal</h3>
-                <p class="text-gray-400 text-sm mb-4">Truy cập dữ liệu On-chain real-time và tín hiệu cá voi.</p>
-                <button class="bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold text-sm">Upgrade Now</button>
-                <i data-lucide="crown" class="absolute -right-4 -bottom-4 w-32 h-32 opacity-10 rotate-12"></i>
-            </div>
-        </div>
-
-        <!-- CATEGORY TABS -->
-        <div class="flex gap-4 mb-6 overflow-x-auto pb-2 text-sm">
-            <button class="px-4 py-2 bg-[#2b3139] rounded-lg border border-indigo-500 text-white font-bold whitespace-nowrap">Top Cryptocurrencies</button>
-            <button class="px-4 py-2 bg-[#1e2329] rounded-lg text-gray-400 hover:text-white transition whitespace-nowrap">DeFi</button>
-            <button class="px-4 py-2 bg-[#1e2329] rounded-lg text-gray-400 hover:text-white transition whitespace-nowrap">Stablecoins</button>
-            <button class="px-4 py-2 bg-[#1e2329] rounded-lg text-gray-400 hover:text-white transition whitespace-nowrap">Memes</button>
-            <button class="px-4 py-2 bg-[#1e2329] rounded-lg text-gray-400 hover:text-white transition whitespace-nowrap">Layer 1 / Layer 2</button>
-        </div>
-
-        <!-- MAIN TABLE -->
-        <div class="bg-[#181a20] rounded-3xl border border-gray-800 overflow-hidden shadow-2xl">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-[#1e2329] text-gray-400 font-medium">
+            <div class="glass rounded-3xl overflow-hidden border border-white/5">
+                <table class="w-full text-left">
+                    <thead class="bg-white/5 text-gray-400 text-xs">
                         <tr>
-                            <th class="py-4 px-6">#</th>
-                            <th class="py-4 px-6">Name</th>
-                            <th class="py-4 px-6 text-right">Price</th>
-                            <th class="py-4 px-6 text-right">1h %</th>
-                            <th class="py-4 px-6 text-right">24h %</th>
-                            <th class="py-4 px-6 text-right">7d %</th>
-                            <th class="py-4 px-6 text-right hidden lg:table-cell">Market Cap</th>
-                            <th class="py-4 px-6 text-right hidden xl:table-cell">Volume(24h)</th>
-                            <th class="py-4 px-6 text-center">Last 7 Days</th>
+                            <th class="p-4">#</th>
+                            <th class="p-4">Tên</th>
+                            <th class="p-4 text-right">Giá</th>
+                            <th class="p-4 text-right">24h%</th>
+                            <th class="p-4 text-right">Vốn hóa</th>
+                            <th class="p-4 text-center">7 Ngày</th>
                         </tr>
                     </thead>
-                    <tbody id="coin-tbody">
-                        <!-- Skeleton Loaders -->
-                        <tr class="animate-pulse border-b border-gray-800">
-                            <td colspan="9" class="py-8 text-center text-gray-600">Syncing with blockchain nodes...</td>
-                        </tr>
-                    </tbody>
+                    <tbody id="market-tbody"></tbody>
                 </table>
             </div>
-        </div>
+        </section>
+
+        <!-- TAB: PORTFOLIO (PnL Tracking) -->
+        <section id="tab-portfolio" class="tab-content hidden">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="glass p-6 rounded-3xl">
+                    <p class="text-gray-500 text-sm">Tổng tài sản</p>
+                    <h2 class="text-3xl font-bold" id="p-total">$0.00</h2>
+                </div>
+                <div class="glass p-6 rounded-3xl">
+                    <p class="text-gray-500 text-sm">Lợi nhuận (PnL)</p>
+                    <h2 class="text-3xl font-bold text-green-400" id="p-pnl">+$0.00</h2>
+                </div>
+                <div class="glass p-6 rounded-3xl flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">Độ phân bổ</p>
+                        <p class="font-bold">Đa dạng hóa</p>
+                    </div>
+                    <canvas id="p-chart" class="w-16 h-16"></canvas>
+                </div>
+            </div>
+            <div class="glass rounded-3xl p-6">
+                <div class="flex justify-between mb-4">
+                    <h3 class="font-bold">Danh mục tài sản</h3>
+                    <button onclick="addAssetManual()" class="text-xs bg-indigo-600 px-3 py-1 rounded-lg">+ Thêm thủ công</button>
+                </div>
+                <div id="portfolio-list" class="space-y-4">
+                    <!-- Portfolio Items -->
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB: AIRDROPS -->
+        <section id="tab-airdrops" class="tab-content hidden">
+            <h1 class="text-3xl font-black mb-6">Airdrops Tiềm Năng</h1>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="airdrop-list">
+                <!-- Airdrop Card -->
+            </div>
+        </section>
+
+        <!-- TAB: GAMIFICATION -->
+        <section id="tab-gamification" class="tab-content hidden">
+            <div class="max-w-2xl mx-auto text-center py-10">
+                <div class="mb-6 relative inline-block">
+                    <div class="w-32 h-32 bg-indigo-600 rounded-full flex items-center justify-center mx-auto text-4xl shadow-2xl shadow-indigo-500/50">
+                        🏆
+                    </div>
+                    <div class="absolute -bottom-2 -right-2 bg-yellow-500 text-black px-3 py-1 rounded-full text-xs font-bold">Lv. <span id="u-level-big">1</span></div>
+                </div>
+                <h2 class="text-2xl font-bold mb-2" id="u-name-big">Crypto Explorer</h2>
+                <p class="text-gray-500 mb-8">Hoàn thành nhiệm vụ để nhận XP và đổi lấy NFT Pro.</p>
+                <div class="grid grid-cols-1 gap-4 text-left">
+                    <div class="glass p-4 rounded-2xl flex justify-between items-center">
+                        <div class="flex gap-4 items-center">
+                            <div class="p-3 bg-white/5 rounded-xl"><i data-lucide="calendar"></i></div>
+                            <div>
+                                <p class="font-bold">Điểm danh hàng ngày</p>
+                                <p class="text-xs text-indigo-400">+10 XP</p>
+                            </div>
+                        </div>
+                        <button onclick="claimXP(10, 'daily')" class="bg-indigo-600 px-4 py-2 rounded-lg text-xs font-bold">Nhận</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
     </main>
 
+    <!-- MOBILE NAV -->
+    <div class="fixed bottom-0 w-full glass border-t border-white/5 flex lg:hidden justify-around p-4 z-50">
+        <i data-lucide="line-chart" onclick="switchTab('market')"></i>
+        <i data-lucide="briefcase" onclick="switchTab('portfolio')"></i>
+        <i data-lucide="award" onclick="switchTab('gamification')"></i>
+        <i data-lucide="user" onclick="switchTab('profile')"></i>
+    </div>
+
     <script>
-        // --- CONFIG ---
+        // --- 1. CONFIGURATION ---
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
@@ -156,167 +192,176 @@
             appId: "1:914980131889:web:72f8da15c42dbee671b110"
         };
         firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
         lucide.createIcons();
 
-        // --- STATE ---
-        let coinsData = [];
+        let currentUser = null;
+        let userData = { xp: 0, level: 1, portfolio: [] };
+        const ADMIN_EMAIL = "your-email@gmail.com";
 
-        // --- AUTH ---
-        function login() { firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
-        function logout() { firebase.auth().signOut(); }
-        firebase.auth().onAuthStateChanged(user => {
-            if (user) {
-                document.getElementById('loginBtn').classList.add('hidden');
-                document.getElementById('userArea').classList.remove('hidden');
-                document.getElementById('uPhoto').src = user.photoURL;
+        // --- 2. AUTH & USER SYNC ---
+        async function login() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            const result = await auth.signInWithPopup(provider);
+            await syncUser(result.user);
+        }
+
+        async function syncUser(user) {
+            const userRef = db.collection('users').doc(user.uid);
+            const doc = await userRef.get();
+            
+            if (!doc.exists) {
+                const newProfile = {
+                    uid: user.uid,
+                    email: user.email,
+                    name: user.displayName,
+                    photo: user.photoURL,
+                    xp: 0,
+                    level: 1,
+                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                await userRef.set(newProfile);
+                userData = newProfile;
             } else {
-                document.getElementById('loginBtn').classList.remove('hidden');
-                document.getElementById('userArea').classList.add('hidden');
+                userData = doc.data();
+                await userRef.update({ lastLogin: firebase.firestore.FieldValue.serverTimestamp() });
+            }
+            updateUI();
+        }
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                syncUser(user);
+                document.getElementById('btn-login').classList.add('hidden');
+                document.getElementById('user-preview').classList.remove('hidden');
+                if(user.email === ADMIN_EMAIL) document.getElementById('admin-nav').classList.remove('hidden');
             }
         });
 
-        // --- CORE LOGIC ---
-        async function fetchAllData() {
-            try {
-                // 1. Global Data
-                const gRes = await fetch('https://api.coingecko.com/api/v3/global');
-                const { data: g } = await gRes.json();
-                document.getElementById('g-coins').innerText = g.active_cryptocurrencies.toLocaleString();
-                document.getElementById('g-exchanges').innerText = g.markets;
-                document.getElementById('g-mcap').innerText = '$' + (g.total_market_cap.usd / 1e12).toFixed(2) + 'T';
-                document.getElementById('g-vol').innerText = '$' + (g.total_volume.usd / 1e9).toFixed(2) + 'B';
-                document.getElementById('g-dom-btc').innerText = g.market_cap_percentage.btc.toFixed(1);
-                document.getElementById('g-dom-eth').innerText = g.market_cap_percentage.eth.toFixed(1);
+        function logout() { auth.signOut(); location.reload(); }
 
-                // 2. Market Table Data (with Sparkline)
-                const mRes = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=1&sparkline=true&price_change_percentage=1h,24h,7d');
-                coinsData = await mRes.json();
-                renderTable(coinsData);
-
-                // 3. Trending
-                const tRes = await fetch('https://api.coingecko.com/api/v3/search/trending');
-                const { coins: trending } = await tRes.json();
-                renderTrending(trending);
-
-            } catch (err) { console.error("Rate Limit Coingecko!"); }
+        // --- 3. MARKET DATA ---
+        async function fetchMarket() {
+            const res = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&sparkline=true');
+            const coins = await res.json();
+            const tbody = document.getElementById('market-tbody');
+            tbody.innerHTML = coins.map((c, i) => `
+                <tr class="border-b border-white/5 hover:bg-white/5 transition cursor-pointer">
+                    <td class="p-4 text-gray-500">${i+1}</td>
+                    <td class="p-4 flex items-center gap-3">
+                        <img src="${c.image}" class="w-6 h-6">
+                        <span class="font-bold">${c.name}</span> <span class="text-xs text-gray-500 uppercase">${c.symbol}</span>
+                    </td>
+                    <td class="p-4 text-right font-medium">$${c.current_price.toLocaleString()}</td>
+                    <td class="p-4 text-right ${c.price_change_percentage_24h >= 0 ? 'text-green-400' : 'text-red-400'}">
+                        ${c.price_change_percentage_24h.toFixed(2)}%
+                    </td>
+                    <td class="p-4 text-right text-gray-400 text-xs">$${(c.market_cap / 1e9).toFixed(2)}B</td>
+                    <td class="p-4"><canvas id="spark-${c.id}" width="80" height="30"></canvas></td>
+                </tr>
+            `).join('');
+            
+            // Render Sparklines
+            coins.forEach(c => renderSpark(`spark-${c.id}`, c.sparkline_in_7d.price, c.price_change_percentage_24h >= 0 ? '#4ade80' : '#f87171'));
         }
 
-        function renderTable(data) {
-            const tbody = document.getElementById('coin-tbody');
-            tbody.innerHTML = '';
-
-            data.forEach((coin, i) => {
-                const tr = document.createElement('tr');
-                tr.className = 'border-b border-gray-800 coin-table-row group cursor-pointer';
-                
-                const p1h = coin.price_change_percentage_1h_in_currency || 0;
-                const p24h = coin.price_change_percentage_24h_in_currency || 0;
-                const p7d = coin.price_change_percentage_7d_in_currency || 0;
-
-                tr.innerHTML = `
-                    <td class="py-5 px-6 text-gray-500">${i+1}</td>
-                    <td class="py-5 px-6">
-                        <div class="flex items-center gap-3">
-                            <img src="${coin.image}" class="w-8 h-8 rounded-full">
-                            <div>
-                                <div class="font-bold text-white">${coin.name}</div>
-                                <div class="text-[11px] text-gray-500 uppercase">${coin.symbol}</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="py-5 px-6 text-right font-bold tracking-tight text-white" id="price-${coin.symbol}">
-                        $${coin.current_price.toLocaleString(undefined, {minimumFractionDigits: 2})}
-                    </td>
-                    <td class="py-5 px-6 text-right font-medium ${p1h >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}">
-                        ${p1h.toFixed(2)}%
-                    </td>
-                    <td class="py-5 px-6 text-right font-medium ${p24h >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}">
-                        ${p24h.toFixed(2)}%
-                    </td>
-                    <td class="py-5 px-6 text-right font-medium ${p7d >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}">
-                        ${p7d.toFixed(2)}%
-                    </td>
-                    <td class="py-5 px-6 text-right text-gray-300 hidden lg:table-cell">$${(coin.market_cap / 1e9).toFixed(2)}B</td>
-                    <td class="py-5 px-6 text-right text-gray-300 hidden xl:table-cell">$${(coin.total_volume / 1e9).toFixed(2)}B</td>
-                    <td class="py-5 px-6">
-                        <canvas id="spark-${coin.id}" class="mx-auto" width="120" height="40"></canvas>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-                renderSparkline(`spark-${coin.id}`, coin.sparkline_in_7d.price, p7d >= 0 ? '#0ecb81' : '#f6465d');
-            });
-        }
-
-        function renderSparkline(id, points, color) {
+        function renderSpark(id, data, color) {
             const ctx = document.getElementById(id).getContext('2d');
             new Chart(ctx, {
                 type: 'line',
-                data: {
-                    labels: points.map((_, i) => i),
-                    datasets: [{
-                        data: points,
-                        borderColor: color,
-                        borderWidth: 1.5,
-                        fill: true,
-                        backgroundColor: color + '10',
-                        pointRadius: 0,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: false,
-                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
-                    scales: { x: { display: false }, y: { display: false } }
-                }
+                data: { labels: data.map((_,i)=>i), datasets: [{ data: data, borderColor: color, borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.4 }] },
+                options: { responsive: false, plugins: { legend: { display: false }, tooltip: { enabled: false } }, scales: { x: { display: false }, y: { display: false } } }
             });
         }
 
-        function renderTrending(coins) {
-            const container = document.getElementById('trending-list');
-            container.innerHTML = coins.slice(0, 4).map(c => `
-                <div class="flex justify-between items-center">
-                    <div class="flex items-center gap-2">
-                        <img src="${c.item.small}" class="w-5 h-5 rounded-full">
-                        <span>${c.item.name} <span class="text-gray-500 text-[10px]">${c.item.symbol}</span></span>
+        // --- 4. PORTFOLIO LOGIC ---
+        function addAssetManual() {
+            if(!currentUser) return alert("Vui lòng đăng nhập!");
+            const coin = prompt("Nhập ID coin (ví dụ: bitcoin):");
+            const amount = prompt("Số lượng:");
+            const price = prompt("Giá vốn (USD):");
+            
+            if(coin && amount) {
+                db.collection('users').doc(currentUser.uid).collection('portfolio').add({
+                    coinId: coin, amount: parseFloat(amount), avgPrice: parseFloat(price), date: new Date()
+                });
+                alert("Đã thêm vào Portfolio!");
+                loadPortfolio();
+            }
+        }
+
+        async function loadPortfolio() {
+            if(!currentUser) return;
+            const snap = await db.collection('users').doc(currentUser.uid).collection('portfolio').get();
+            // Xử lý tính toán PnL ở đây bằng cách fetch giá hiện tại...
+            document.getElementById('portfolio-list').innerHTML = `<p class="text-gray-500 text-center py-10">Danh mục đang được đồng bộ hóa...</p>`;
+        }
+
+        // --- 5. GAMIFICATION ---
+        async function claimXP(amt, type) {
+            if(!currentUser) return alert("Login first!");
+            const userRef = db.collection('users').doc(currentUser.uid);
+            userData.xp += amt;
+            if(userData.xp >= 100) { userData.level += 1; userData.xp = 0; }
+            await userRef.update({ xp: userData.xp, level: userData.level });
+            updateUI();
+            alert(`Bạn đã nhận được ${amt} XP!`);
+        }
+
+        // --- 6. AIRDROPS ---
+        function loadAirdrops() {
+            const airdrops = [
+                { name: "LayerZero", status: "Live", reward: "High", icon: "🔗" },
+                { name: "ZkSync", status: "Ended", reward: "Very High", icon: "⚡" },
+                { name: "Linea", status: "Upcoming", reward: "Medium", icon: "🌿" }
+            ];
+            document.getElementById('airdrop-list').innerHTML = airdrops.map(a => `
+                <div class="glass p-6 rounded-3xl hover:border-indigo-500/50 transition cursor-pointer">
+                    <div class="text-4xl mb-4">${a.icon}</div>
+                    <h3 class="text-xl font-bold mb-1">${a.name}</h3>
+                    <div class="flex justify-between items-center mt-4">
+                        <span class="text-xs px-2 py-1 rounded bg-white/5">${a.status}</span>
+                        <span class="text-indigo-400 font-bold">${a.reward} Reward</span>
                     </div>
-                    <span class="text-[#0ecb81] font-bold">#${c.item.market_cap_rank}</span>
                 </div>
             `).join('');
         }
 
-        // --- LIVE PRICE WEBSOCKET (BINANCE) ---
-        function initLivePrices() {
-            const symbols = ['btcusdt', 'ethusdt', 'bnbusdt', 'solusdt', 'adarusdt'];
-            const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbols.map(s => s + '@ticker').join('/')}`);
-            
-            ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                const symbol = data.s.toLowerCase().replace('usdt', '');
-                const priceEl = document.getElementById(`price-${symbol}`);
-                
-                if (priceEl) {
-                    const newPrice = parseFloat(data.c);
-                    const oldPrice = parseFloat(priceEl.innerText.replace('$', '').replace(',', ''));
-                    
-                    priceEl.innerText = `$${newPrice.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-                    
-                    // Hiệu ứng flash giá
-                    if (newPrice > oldPrice) {
-                        priceEl.classList.add('up-flash');
-                        setTimeout(() => priceEl.classList.remove('up-flash'), 800);
-                    } else if (newPrice < oldPrice) {
-                        priceEl.classList.add('down-flash');
-                        setTimeout(() => priceEl.classList.remove('down-flash'), 800);
-                    }
-                }
-            };
+        // --- UTILS ---
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active-tab'));
+            document.getElementById(`tab-${tab}`).classList.remove('hidden');
+            event.currentTarget.classList.add('active-tab');
         }
 
-        // --- INIT ---
+        function updateUI() {
+            document.getElementById('u-name').innerText = userData.name;
+            document.getElementById('u-avatar').src = userData.photo;
+            document.getElementById('u-level').innerText = userData.level;
+            document.getElementById('u-level-big').innerText = userData.level;
+            document.getElementById('u-xp-progress').style.width = userData.xp + "%";
+        }
+
+        async function connectWallet() {
+            if (window.ethereum) {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const addr = await signer.getAddress();
+                document.getElementById('wallet-addr').innerText = addr.slice(0,6) + "..." + addr.slice(-4);
+                // Sync address to Firestore...
+            } else {
+                alert("Hãy cài đặt MetaMask!");
+            }
+        }
+
+        // INIT
         window.onload = () => {
-            fetchAllData();
-            initLivePrices();
-            setInterval(fetchAllData, 60000); // Refresh data mỗi phút
+            fetchMarket();
+            loadAirdrops();
+            setInterval(fetchMarket, 60000);
         };
     </script>
 </body>
