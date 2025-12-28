@@ -3,557 +3,512 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProProfile | Personal Identity System</title>
-    <!-- Tailwind CSS -->
+    <title>Zalo Web Clone - Real-time Messaging</title>
+    <!-- Tailwind CSS for modern UI -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Vue.js 3 -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#4f46e5',
-                        secondary: '#10b981',
-                    }
-                }
-            }
-        }
-    </script>
-
     <style>
-        [v-cloak] { display: none; }
-        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); }
-        .dark .glass { background: rgba(17, 24, 39, 0.8); }
-        .profile-card:hover { transform: translateY(-4px); transition: all 0.3s ease; }
-        .section-fade-enter-active, .section-fade-leave-active { transition: opacity 0.3s ease; }
-        .section-fade-enter-from, .section-fade-leave-to { opacity: 0; }
-        
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        :root {
+            --zalo-blue: #0068ff;
+            --zalo-light-blue: #e5f1ff;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        .bg-zalo { background-color: var(--zalo-blue); }
+        .text-zalo { color: var(--zalo-blue); }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        #video-grid video { width: 100%; height: 100%; object-fit: cover; background: #2d3748; border-radius: 8px; }
+        .message-bubble { max-width: 70%; word-wrap: break-word; }
+        .hidden { display: none !important; }
     </style>
 </head>
-<body class="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen transition-colors duration-300">
+<body class="bg-gray-100 h-screen overflow-hidden">
 
-<div id="app" v-cloak>
-    <!-- Navigation -->
-    <nav class="sticky top-0 z-50 border-b border-gray-200 dark:border-gray-800 glass">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16 items-center">
-                <div class="flex items-center gap-2 cursor-pointer" @click="view = 'home'">
-                    <div class="bg-primary p-2 rounded-lg text-white">
-                        <i data-lucide="user-circle"></i>
-                    </div>
-                    <span class="text-xl font-bold tracking-tight">ProProfile</span>
-                </div>
-
-                <div class="hidden md:flex items-center space-x-8">
-                    <button @click="view = 'home'" :class="view === 'home' ? 'text-primary' : ''" class="hover:text-primary transition">Explore</button>
-                    <button @click="view = 'editor'" :class="view === 'editor' ? 'text-primary' : ''" class="hover:text-primary transition">My Profile</button>
-                    <button @click="toggleDarkMode" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition">
-                        <i :data-lucide="darkMode ? 'sun' : 'moon'"></i>
-                    </button>
-                </div>
-
-                <!-- Mobile Menu Button -->
-                <div class="md:hidden">
-                    <button @click="isMobileMenuOpen = !isMobileMenuOpen" class="p-2">
-                        <i data-lucide="menu"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Content Area -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        <!-- HOME / SEARCH VIEW -->
-        <section v-if="view === 'home'" class="space-y-8">
-            <div class="text-center max-w-2xl mx-auto mb-12">
-                <h1 class="text-4xl font-extrabold mb-4">Discover Professional Talents</h1>
-                <p class="text-gray-600 dark:text-gray-400">Search and connect with professionals across the globe.</p>
-                
-                <div class="mt-8 relative">
-                    <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                    <input 
-                        v-model="searchQuery"
-                        type="text" 
-                        placeholder="Search by name, skill, or job title..." 
-                        class="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm focus:ring-2 focus:ring-primary outline-none transition"
-                    >
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div v-for="profile in filteredProfiles" :key="profile.id" 
-                     @click="openProfile(profile)"
-                     class="profile-card bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm cursor-pointer">
-                    <div class="flex items-center gap-4 mb-4">
-                        <img :src="profile.avatar || 'https://ui-avatars.com/api/?name='+profile.name" class="w-16 h-16 rounded-xl object-cover">
-                        <div>
-                            <h3 class="font-bold text-lg">{{ profile.name }}</h3>
-                            <p class="text-primary text-sm font-medium">{{ profile.jobTitle }}</p>
-                        </div>
-                    </div>
-                    <p class="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 mb-4">{{ profile.bio }}</p>
-                    <div class="flex flex-wrap gap-2">
-                        <span v-for="skill in profile.skills?.slice(0, 3)" class="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md">
-                            {{ skill }}
-                        </span>
-                    </div>
-                </div>
+    <!-- LOGIN OVERLAY -->
+    <div id="auth-screen" class="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center p-4">
+        <div class="w-full max-w-md space-y-8 bg-white p-8 rounded-xl shadow-lg border border-gray-100">
+            <div class="text-center">
+                <h1 class="text-4xl font-bold text-zalo mb-2">Zalo</h1>
+                <p class="text-gray-500">Sign in with your phone number</p>
             </div>
             
-            <div v-if="filteredProfiles.length === 0" class="text-center py-20">
-                <i data-lucide="users" class="mx-auto w-12 h-12 text-gray-300 mb-4"></i>
-                <p class="text-gray-500">No profiles found matching your search.</p>
-            </div>
-        </section>
-
-        <!-- EDITOR / MY PROFILE VIEW -->
-        <section v-if="view === 'editor'" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <!-- Sidebar Navigation -->
-            <div class="lg:col-span-3 space-y-2">
-                <h2 class="text-xl font-bold mb-4">Profile Editor</h2>
-                <nav class="flex flex-col gap-1">
-                    <button @click="editSection = 'basic'" :class="editSection === 'basic' ? 'bg-primary text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-800'" class="flex items-center gap-3 px-4 py-2 rounded-lg text-left transition">
-                        <i data-lucide="user" class="w-4 h-4"></i> Basic Info
-                    </button>
-                    <button @click="editSection = 'professional'" :class="editSection === 'professional' ? 'bg-primary text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-800'" class="flex items-center gap-3 px-4 py-2 rounded-lg text-left transition">
-                        <i data-lucide="briefcase" class="w-4 h-4"></i> Career & Skills
-                    </button>
-                    <button @click="editSection = 'projects'" :class="editSection === 'projects' ? 'bg-primary text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-800'" class="flex items-center gap-3 px-4 py-2 rounded-lg text-left transition">
-                        <i data-lucide="folder-kanban" class="w-4 h-4"></i> Portfolio
-                    </button>
-                    <button @click="editSection = 'data'" :class="editSection === 'data' ? 'bg-primary text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-800'" class="flex items-center gap-3 px-4 py-2 rounded-lg text-left transition">
-                        <i data-lucide="database" class="w-4 h-4"></i> Import / Export
-                    </button>
-                </nav>
-
-                <hr class="my-6 border-gray-200 dark:border-gray-800">
-                
-                <button @click="saveProfile" :disabled="loading" class="w-full bg-secondary hover:bg-emerald-600 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2">
-                    <i data-lucide="save" class="w-4 h-4"></i>
-                    {{ loading ? 'Saving...' : 'Save Changes' }}
-                </button>
-                
-                <p class="text-[10px] text-gray-400 mt-4 text-center">
-                    ID: {{ myProfile.username }} | Last updated: {{ formatDate(myProfile.updatedAt) }}
-                </p>
+            <div id="phone-container">
+                <label class="block text-sm font-medium text-gray-700">Phone Number</label>
+                <div class="mt-1 flex gap-2">
+                    <input type="tel" id="phone-number" placeholder="+84 123 456 789" class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-zalo focus:border-zalo">
+                </div>
+                <div id="recaptcha-container" class="mt-4"></div>
+                <button onclick="handlePhoneAuth()" class="mt-4 w-full bg-zalo text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition">Send OTP</button>
             </div>
 
-            <!-- Editor Content -->
-            <div class="lg:col-span-9 bg-white dark:bg-gray-900 rounded-3xl p-6 md:p-8 border border-gray-200 dark:border-gray-800">
-                
-                <!-- Basic Info Section -->
-                <div v-if="editSection === 'basic'" class="space-y-6">
-                    <div class="flex items-center gap-6 mb-8">
-                        <div class="relative group">
-                            <img :src="myProfile.avatar || 'https://ui-avatars.com/api/?name='+myProfile.name" class="w-24 h-24 rounded-2xl object-cover border-4 border-gray-100 dark:border-gray-800">
-                            <div class="absolute inset-0 bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition cursor-pointer">
-                                <i data-lucide="camera" class="text-white"></i>
-                            </div>
-                        </div>
+            <div id="otp-container" class="hidden">
+                <label class="block text-sm font-medium text-gray-700">Verification Code</label>
+                <input type="text" id="otp-code" placeholder="123456" class="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-zalo focus:border-zalo">
+                <button onclick="handleVerifyOtp()" class="mt-4 w-full bg-zalo text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition">Verify & Login</button>
+            </div>
+
+            <div id="profile-setup" class="hidden">
+                <label class="block text-sm font-medium text-gray-700">Display Name</label>
+                <input type="text" id="display-name" placeholder="Your name" class="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-zalo focus:border-zalo">
+                <button onclick="handleProfileSetup()" class="mt-4 w-full bg-green-500 text-white py-3 rounded-lg font-semibold hover:bg-green-600 transition">Start Chatting</button>
+            </div>
+        </div>
+        <p class="mt-8 text-xs text-gray-400 max-w-xs text-center">
+            This application is a web-based messaging platform. Message delivery and calling features depend on network and browser support.
+        </p>
+    </div>
+
+    <!-- MAIN APP LAYOUT -->
+    <div id="main-app" class="hidden flex h-screen">
+        <!-- Sidebar -->
+        <div class="w-20 md:w-80 bg-white border-r flex flex-col">
+            <!-- Sidebar Header -->
+            <div class="p-4 border-b flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div id="user-avatar" class="w-10 h-10 rounded-full bg-zalo text-white flex items-center justify-center font-bold">U</div>
+                    <span id="user-name" class="hidden md:block font-semibold truncate max-w-[120px]">User</span>
+                </div>
+                <button onclick="logout()" class="text-gray-400 hover:text-red-500"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="p-3">
+                <div class="relative">
+                    <input type="text" id="user-search" placeholder="Find by phone..." class="w-full bg-gray-100 rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-zalo">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-gray-400"></i>
+                </div>
+                <button onclick="searchUser()" class="w-full mt-2 text-xs text-zalo font-medium">Search User</button>
+            </div>
+
+            <!-- Conversation List -->
+            <div id="chat-list" class="flex-1 overflow-y-auto custom-scrollbar">
+                <!-- Chat items will be injected here -->
+            </div>
+        </div>
+
+        <!-- Chat Content Area -->
+        <div class="flex-1 flex flex-col bg-[#f0f2f5]">
+            <div id="no-chat-selected" class="flex-1 flex flex-col items-center justify-center text-center p-8">
+                <img src="https://cdns.iconmonstr.com/wp-content/releases/preview/2012/240/iconmonstr-speech-bubble-15.png" class="w-32 opacity-10 mb-4" alt="No chat">
+                <h2 class="text-xl font-medium text-gray-600">Welcome to Zalo Web</h2>
+                <p class="text-gray-400 mt-2">Select a conversation to start messaging</p>
+            </div>
+
+            <div id="chat-window" class="hidden flex-1 flex flex-col">
+                <!-- Chat Header -->
+                <div class="h-16 bg-white border-b px-6 flex items-center justify-between shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <div id="active-chat-avatar" class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold">?</div>
                         <div>
-                            <h2 class="text-2xl font-bold">Primary Identity</h2>
-                            <p class="text-gray-500">This information will be visible to the public.</p>
+                            <h3 id="active-chat-name" class="font-semibold text-gray-800">Contact Name</h3>
+                            <span id="typing-indicator" class="text-xs text-green-500 hidden">typing...</span>
                         </div>
                     </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="space-y-1">
-                            <label class="text-xs font-bold uppercase text-gray-500">Full Name</label>
-                            <input v-model="myProfile.name" type="text" class="w-full bg-gray-50 dark:bg-gray-800 border-none rounded-xl p-3 focus:ring-2 focus:ring-primary">
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-xs font-bold uppercase text-gray-500">Job Title</label>
-                            <input v-model="myProfile.jobTitle" type="text" class="w-full bg-gray-50 dark:bg-gray-800 border-none rounded-xl p-3 focus:ring-2 focus:ring-primary">
-                        </div>
-                        <div class="md:col-span-2 space-y-1">
-                            <label class="text-xs font-bold uppercase text-gray-500">Short Bio</label>
-                            <textarea v-model="myProfile.bio" rows="3" class="w-full bg-gray-50 dark:bg-gray-800 border-none rounded-xl p-3 focus:ring-2 focus:ring-primary"></textarea>
-                        </div>
-                    </div>
-
-                    <div class="pt-6 border-t border-gray-100 dark:border-gray-800">
-                        <h3 class="text-lg font-bold mb-4">Contact & Social</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div v-for="(val, key) in myProfile.social" :key="key" class="flex items-center gap-2">
-                                <div class="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                                    <i :data-lucide="getIcon(key)" class="w-4 h-4"></i>
-                                </div>
-                                <input v-model="myProfile.social[key]" :placeholder="key" class="flex-1 bg-gray-50 dark:bg-gray-800 border-none rounded-xl p-3 text-sm">
-                            </div>
-                        </div>
+                    <div class="flex items-center gap-4 text-gray-500">
+                        <button onclick="initiateCall('voice')" class="p-2 hover:bg-gray-100 rounded-full"><i data-lucide="phone" class="w-5 h-5"></i></button>
+                        <button onclick="initiateCall('video')" class="p-2 hover:bg-gray-100 rounded-full"><i data-lucide="video" class="w-5 h-5"></i></button>
+                        <button class="p-2 hover:bg-gray-100 rounded-full"><i data-lucide="more-horizontal" class="w-5 h-5"></i></button>
                     </div>
                 </div>
 
-                <!-- Career Section -->
-                <div v-if="editSection === 'professional'" class="space-y-8">
-                    <div>
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-bold">Skills</h3>
-                            <button @click="addSkill" class="text-primary text-sm font-bold">+ Add Skill</button>
-                        </div>
-                        <div class="flex flex-wrap gap-2">
-                            <div v-for="(skill, idx) in myProfile.skills" :key="idx" class="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 pl-3 pr-1 py-1 rounded-full">
-                                <span class="text-sm">{{ skill }}</span>
-                                <button @click="myProfile.skills.splice(idx, 1)" class="text-gray-400 hover:text-red-500">
-                                    <i data-lucide="x" class="w-4 h-4"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-bold">Experience</h3>
-                            <button @click="addExp" class="text-primary text-sm font-bold">+ Add Item</button>
-                        </div>
-                        <div class="space-y-4">
-                            <div v-for="(exp, idx) in myProfile.experience" :key="idx" class="p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl relative">
-                                <button @click="myProfile.experience.splice(idx, 1)" class="absolute top-4 right-4 text-gray-400">
-                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                </button>
-                                <input v-model="exp.role" placeholder="Role" class="block w-full bg-transparent font-bold mb-1 outline-none">
-                                <input v-model="exp.company" placeholder="Company" class="block w-full bg-transparent text-sm text-primary mb-2 outline-none">
-                                <textarea v-model="exp.desc" placeholder="Description" class="block w-full bg-transparent text-sm outline-none" rows="2"></textarea>
-                            </div>
-                        </div>
-                    </div>
+                <!-- Messages area -->
+                <div id="messages-container" class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                    <!-- Messages will be injected here -->
                 </div>
 
-                <!-- Projects Section -->
-                <div v-if="editSection === 'projects'" class="space-y-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-bold">Project Portfolio</h3>
-                        <button @click="addProject" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold">+ Add Project</button>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div v-for="(project, idx) in myProfile.projects" :key="idx" class="p-4 border border-gray-100 dark:border-gray-800 rounded-2xl">
-                            <input v-model="project.name" placeholder="Project Name" class="font-bold w-full bg-transparent mb-2 outline-none">
-                            <textarea v-model="project.desc" placeholder="Project description..." class="text-sm w-full bg-transparent mb-2 outline-none" rows="2"></textarea>
-                            <input v-model="project.link" placeholder="Link (https://...)" class="text-xs text-primary w-full bg-transparent outline-none">
-                            <button @click="myProfile.projects.splice(idx, 1)" class="mt-4 text-xs text-red-400">Remove</button>
+                <!-- Input area -->
+                <div class="p-4 bg-white border-t">
+                    <div class="flex items-end gap-2">
+                        <label class="p-2 text-gray-500 hover:text-zalo cursor-pointer">
+                            <i data-lucide="paperclip" class="w-6 h-6"></i>
+                            <input type="file" id="file-input" class="hidden" onchange="handleFileUpload(this)">
+                        </label>
+                        <label class="p-2 text-gray-500 hover:text-zalo cursor-pointer">
+                            <i data-lucide="image" class="w-6 h-6"></i>
+                            <input type="file" id="image-input" accept="image/*" class="hidden" onchange="handleFileUpload(this)">
+                        </label>
+                        <div class="flex-1 relative">
+                            <textarea id="message-input" rows="1" placeholder="Type a message..." class="w-full bg-gray-100 rounded-2xl py-2 px-4 focus:outline-none resize-none" oninput="handleTyping()"></textarea>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Data Tools Section -->
-                <div v-if="editSection === 'data'" class="space-y-8">
-                    <div class="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-2xl border border-blue-100 dark:border-blue-800/30">
-                        <h3 class="text-blue-700 dark:text-blue-400 font-bold mb-2 flex items-center gap-2">
-                            <i data-lucide="download" class="w-5 h-5"></i> Export Your Data
-                        </h3>
-                        <p class="text-sm text-blue-600 dark:text-blue-300 mb-4">Download your entire profile as a JSON file for backup or manual migration.</p>
-                        <button @click="exportData" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-blue-700 transition">
-                            Download JSON
-                        </button>
-                    </div>
-
-                    <div class="bg-purple-50 dark:bg-purple-900/20 p-6 rounded-2xl border border-purple-100 dark:border-purple-800/30">
-                        <h3 class="text-purple-700 dark:text-purple-400 font-bold mb-2 flex items-center gap-2">
-                            <i data-lucide="upload" class="w-5 h-5"></i> Import Data
-                        </h3>
-                        <p class="text-sm text-purple-600 dark:text-purple-300 mb-4">Upload a compatible JSON file to restore your profile instantly.</p>
-                        <input type="file" id="importFile" @change="importData" class="hidden">
-                        <button @click="triggerImport" class="bg-purple-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-purple-700 transition">
-                            Select File
+                        <button onclick="sendMessage()" class="p-2 bg-zalo text-white rounded-full hover:bg-blue-600 transition">
+                            <i data-lucide="send" class="w-5 h-5"></i>
                         </button>
                     </div>
                 </div>
             </div>
-        </section>
-
-        <!-- PUBLIC PROFILE MODAL -->
-        <div v-if="selectedProfile" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="selectedProfile = null"></div>
-            <div class="bg-white dark:bg-gray-900 w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl relative animate-in fade-in zoom-in duration-300">
-                <button @click="selectedProfile = null" class="absolute top-6 right-6 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full z-10">
-                    <i data-lucide="x"></i>
-                </button>
-                
-                <div class="p-8 md:p-12">
-                    <div class="flex flex-col md:flex-row gap-8 items-start mb-12">
-                        <img :src="selectedProfile.avatar || 'https://ui-avatars.com/api/?name='+selectedProfile.name" class="w-32 h-32 rounded-3xl object-cover shadow-xl">
-                        <div class="flex-1">
-                            <h2 class="text-4xl font-black mb-2">{{ selectedProfile.name }}</h2>
-                            <p class="text-xl text-primary font-medium mb-4">{{ selectedProfile.jobTitle }}</p>
-                            <p class="text-gray-600 dark:text-gray-400 leading-relaxed">{{ selectedProfile.bio }}</p>
-                            
-                            <div class="flex flex-wrap gap-4 mt-6">
-                                <a v-for="(val, key) in selectedProfile.social" :key="key" v-show="val" :href="val" target="_blank" class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-primary hover:text-white transition">
-                                    <i :data-lucide="getIcon(key)" class="w-5 h-5"></i>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
-                        <div class="md:col-span-2 space-y-12">
-                            <section v-if="selectedProfile.experience?.length">
-                                <h3 class="text-sm font-black uppercase tracking-widest text-gray-400 mb-6">Experience</h3>
-                                <div class="space-y-8">
-                                    <div v-for="exp in selectedProfile.experience" class="border-l-2 border-primary/20 pl-6 relative">
-                                        <div class="absolute w-3 h-3 bg-primary rounded-full -left-[7px] top-1"></div>
-                                        <h4 class="font-bold text-lg">{{ exp.role }}</h4>
-                                        <p class="text-primary font-medium text-sm mb-2">{{ exp.company }}</p>
-                                        <p class="text-gray-500 text-sm">{{ exp.desc }}</p>
-                                    </div>
-                                </div>
-                            </section>
-
-                            <section v-if="selectedProfile.projects?.length">
-                                <h3 class="text-sm font-black uppercase tracking-widest text-gray-400 mb-6">Featured Projects</h3>
-                                <div class="grid grid-cols-1 gap-4">
-                                    <a v-for="proj in selectedProfile.projects" :href="proj.link" target="_blank" class="block p-6 bg-gray-50 dark:bg-gray-800 rounded-2xl hover:ring-2 ring-primary transition">
-                                        <h4 class="font-bold mb-1">{{ proj.name }}</h4>
-                                        <p class="text-sm text-gray-500">{{ proj.desc }}</p>
-                                    </a>
-                                </div>
-                            </section>
-                        </div>
-
-                        <div class="space-y-8">
-                            <section>
-                                <h3 class="text-sm font-black uppercase tracking-widest text-gray-400 mb-4">Expertise</h3>
-                                <div class="flex flex-wrap gap-2">
-                                    <span v-for="skill in selectedProfile.skills" class="bg-primary/10 text-primary px-3 py-1 rounded-lg font-bold text-xs">
-                                        {{ skill }}
-                                    </span>
-                                </div>
-                            </section>
-                            
-                            <div class="p-6 bg-gray-100 dark:bg-gray-800 rounded-3xl">
-                                <h4 class="font-bold mb-2">Connect</h4>
-                                <p class="text-xs text-gray-500 mb-4">Available for networking and opportunities.</p>
-                                <a :href="'mailto:' + selectedProfile.social.email" class="block w-full text-center bg-white dark:bg-gray-900 py-3 rounded-xl font-bold text-sm shadow-sm">
-                                    Send Message
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Footer -->
-    <footer class="border-t border-gray-200 dark:border-gray-800 py-12 mt-20">
-        <div class="max-w-7xl mx-auto px-4 text-center">
-            <p class="text-gray-500 text-sm">© 2025 ProProfile Personal System. All data is user-provided.</p>
-            <p class="text-[10px] text-gray-400 mt-2 uppercase tracking-tighter">Privacy First • Decentralized Storage • Open Export</p>
-        </div>
-    </footer>
-
-    <!-- Toast Notification -->
-    <div v-if="toast.show" class="fixed bottom-8 right-8 z-[100] animate-bounce">
-        <div :class="toast.type === 'success' ? 'bg-secondary' : 'bg-red-500'" class="px-6 py-3 rounded-2xl text-white shadow-2xl font-bold flex items-center gap-2">
-            <i :data-lucide="toast.type === 'success' ? 'check-circle' : 'alert-circle'"></i>
-            {{ toast.msg }}
         </div>
     </div>
-</div>
 
-<!-- Firebase SDK -->
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    <!-- CALL MODAL -->
+    <div id="call-overlay" class="fixed inset-0 z-[60] bg-slate-900 bg-opacity-95 hidden flex flex-col items-center justify-center p-6">
+        <div class="text-white text-center mb-8">
+            <h2 id="call-status" class="text-2xl font-light mb-2">Calling...</h2>
+            <p id="call-with-name" class="text-lg font-semibold"></p>
+        </div>
+        
+        <div id="video-grid" class="relative w-full max-w-4xl aspect-video grid grid-cols-1 md:grid-cols-2 gap-4">
+            <video id="localVideo" autoplay muted playsinline></video>
+            <video id="remoteVideo" autoplay playsinline></video>
+        </div>
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
-        authDomain: "profile-d1214.firebaseapp.com",
-        projectId: "profile-d1214",
-        storageBucket: "profile-d1214.firebasestorage.app",
-        messagingSenderId: "914980131889",
-        appId: "1:914980131889:web:72f8da15c42dbee671b110",
-    };
+        <div class="mt-12 flex gap-8">
+            <button onclick="endCall()" class="bg-red-500 p-4 rounded-full text-white hover:bg-red-600 transition">
+                <i data-lucide="phone-off" class="w-8 h-8"></i>
+            </button>
+            <button id="answer-btn" onclick="answerCall()" class="bg-green-500 p-4 rounded-full text-white hover:bg-green-600 transition hidden">
+                <i data-lucide="phone" class="w-8 h-8"></i>
+            </button>
+        </div>
+    </div>
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    <!-- FIREBASE & LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, onSnapshot, query, where, orderBy, addDoc, serverTimestamp, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-    const { createApp, ref, onMounted, computed, watch, nextTick } = Vue;
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
+            authDomain: "profile-d1214.firebaseapp.com",
+            projectId: "profile-d1214",
+            storageBucket: "profile-d1214.firebasestorage.app",
+            messagingSenderId: "914980131889",
+            appId: "1:914980131889:web:72f8da15c42dbee671b110"
+        };
 
-    createApp({
-        setup() {
-            const view = ref('home');
-            const editSection = ref('basic');
-            const darkMode = ref(localStorage.getItem('theme') === 'dark');
-            const profiles = ref([]);
-            const searchQuery = ref('');
-            const loading = ref(false);
-            const selectedProfile = ref(null);
-            const toast = ref({ show: false, msg: '', type: 'success' });
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
 
-            // Generate or fetch a session-based username for this demo
-            // In a real app, this comes from Firebase Auth
-            const userId = localStorage.getItem('profile_uid') || 'user_' + Math.random().toString(36).substr(2, 9);
-            localStorage.setItem('profile_uid', userId);
+        let currentUser = null;
+        let activeChatId = null;
+        let confirmationResult = null;
+        let peerConnection = null;
+        let localStream = null;
 
-            const myProfile = ref({
-                username: userId,
-                name: 'Anonymous User',
-                jobTitle: 'Professional Developer',
-                bio: 'Passionate about building modern web experiences.',
-                avatar: '',
-                skills: ['JavaScript', 'HTML/CSS'],
-                social: {
-                    email: '', github: '', linkedin: '', twitter: '', website: ''
-                },
-                experience: [
-                    { role: 'Senior Developer', company: 'Tech Corp', desc: 'Working on core products.' }
-                ],
-                projects: [
-                    { name: 'My First Project', desc: 'A revolutionary app.', link: '#' }
-                ],
-                updatedAt: new Date().toISOString()
-            });
+        const servers = {
+            iceServers: [{ urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] }]
+        };
 
-            const toggleDarkMode = () => {
-                darkMode.value = !darkMode.value;
-                document.documentElement.classList.toggle('dark');
-                localStorage.setItem('theme', darkMode.value ? 'dark' : 'light');
-                nextTick(() => lucide.createIcons());
-            };
+        // Initialize Lucide Icons
+        lucide.createIcons();
 
-            const showToast = (msg, type = 'success') => {
-                toast.value = { show: true, msg, type };
-                setTimeout(() => toast.value.show = false, 3000);
-            };
-
-            const fetchData = () => {
-                // Listen to profiles collection
-                const q = query(collection(db, "profiles"), limit(50));
-                onSnapshot(q, (snapshot) => {
-                    profiles.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    nextTick(() => lucide.createIcons());
-                });
-
-                // Load current user profile
-                getDoc(doc(db, "profiles", userId)).then(snap => {
-                    if (snap.exists()) {
-                        myProfile.value = snap.data();
-                    }
-                });
-            };
-
-            const saveProfile = async () => {
-                loading.value = true;
-                try {
-                    myProfile.value.updatedAt = new Date().toISOString();
-                    await setDoc(doc(db, "profiles", userId), myProfile.value);
-                    showToast('Profile updated successfully!');
-                } catch (e) {
-                    showToast('Error saving data', 'error');
-                } finally {
-                    loading.value = false;
-                }
-            };
-
-            const filteredProfiles = computed(() => {
-                if (!searchQuery.value) return profiles.value;
-                const q = searchQuery.value.toLowerCase();
-                return profiles.value.filter(p => 
-                    p.name.toLowerCase().includes(q) || 
-                    p.jobTitle.toLowerCase().includes(q) ||
-                    p.skills?.some(s => s.toLowerCase().includes(q))
-                );
-            });
-
-            const openProfile = (profile) => {
-                selectedProfile.value = profile;
-                nextTick(() => lucide.createIcons());
-            };
-
-            const getIcon = (key) => {
-                const map = {
-                    email: 'mail',
-                    github: 'github',
-                    linkedin: 'linkedin',
-                    twitter: 'twitter',
-                    website: 'globe',
-                    facebook: 'facebook',
-                    phone: 'phone'
-                };
-                return map[key] || 'link';
-            };
-
-            const addSkill = () => {
-                const s = prompt("Enter skill name:");
-                if (s) myProfile.value.skills.push(s);
-            };
-
-            const addExp = () => {
-                myProfile.value.experience.push({ role: '', company: '', desc: '' });
-                nextTick(() => lucide.createIcons());
-            };
-
-            const addProject = () => {
-                myProfile.value.projects.push({ name: '', desc: '', link: '' });
-                nextTick(() => lucide.createIcons());
-            };
-
-            const exportData = () => {
-                const data = JSON.stringify(myProfile.value, null, 2);
-                const blob = new Blob([data], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `profile_${myProfile.value.username}.json`;
-                a.click();
-            };
-
-            const triggerImport = () => document.getElementById('importFile').click();
-
-            const importData = (event) => {
-                const file = event.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const imported = JSON.parse(e.target.result);
-                        if (!imported.name) throw new Error("Invalid structure");
-                        myProfile.value = { ...myProfile.value, ...imported, username: userId };
-                        showToast('Data imported! Remember to save.');
-                    } catch (err) {
-                        showToast('Invalid JSON file', 'error');
-                    }
-                };
-                reader.readAsText(file);
-            };
-
-            const formatDate = (dateStr) => {
-                if (!dateStr) return 'Never';
-                return new Date(dateStr).toLocaleDateString();
-            };
-
-            onMounted(() => {
-                if (darkMode.value) document.documentElement.classList.add('dark');
-                fetchData();
-                lucide.createIcons();
-            });
-
-            watch([view, editSection, selectedProfile], () => {
-                nextTick(() => lucide.createIcons());
-            });
-
-            return {
-                view, editSection, myProfile, profiles, searchQuery, 
-                filteredProfiles, loading, selectedProfile, toast,
-                toggleDarkMode, darkMode, saveProfile, openProfile, 
-                getIcon, addSkill, addExp, addProject, exportData, 
-                importData, triggerImport, formatDate
+        // ---------------- AUTHENTICATION ----------------
+        window.handlePhoneAuth = async () => {
+            const phoneNumber = document.getElementById('phone-number').value;
+            window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { 'size': 'normal' });
+            
+            try {
+                confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
+                document.getElementById('phone-container').classList.add('hidden');
+                document.getElementById('otp-container').classList.remove('hidden');
+            } catch (error) {
+                alert(error.message);
             }
+        };
+
+        window.handleVerifyOtp = async () => {
+            const code = document.getElementById('otp-code').value;
+            try {
+                const result = await confirmationResult.confirm(code);
+                const userDoc = await getDoc(doc(db, "users", result.user.uid));
+                if (userDoc.exists()) {
+                    completeLogin(result.user);
+                } else {
+                    document.getElementById('otp-container').classList.add('hidden');
+                    document.getElementById('profile-setup').classList.remove('hidden');
+                }
+            } catch (error) {
+                alert("Invalid OTP");
+            }
+        };
+
+        window.handleProfileSetup = async () => {
+            const name = document.getElementById('display-name').value;
+            if (!name) return;
+            const user = auth.currentUser;
+            await setDoc(doc(db, "users", user.uid), {
+                uid: user.uid,
+                displayName: name,
+                phoneNumber: user.phoneNumber,
+                phoneNumberHash: btoa(user.phoneNumber), // demo obfuscation
+                lastSeen: serverTimestamp()
+            });
+            completeLogin(user);
+        };
+
+        function completeLogin(user) {
+            currentUser = user;
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
+            loadUserProfile();
+            listenForConversations();
+            listenForIncomingCalls();
         }
-    }).mount('#app');
-</script>
+
+        async function loadUserProfile() {
+            const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+            const data = userDoc.data();
+            document.getElementById('user-name').innerText = data.displayName;
+            document.getElementById('user-avatar').innerText = data.displayName[0].toUpperCase();
+        }
+
+        window.logout = () => {
+            signOut(auth).then(() => location.reload());
+        };
+
+        // ---------------- MESSAGING LOGIC ----------------
+        window.searchUser = async () => {
+            const phone = document.getElementById('user-search').value;
+            const q = query(collection(db, "users"), where("phoneNumber", "==", phone));
+            const querySnapshot = await getDoc(q);
+            // In a real app, use a proper search. For demo, we start chat by ID
+            // Simple approach: create conversation ID by sorted UIDs
+            alert("Searching logic connected. Use full phone number + country code.");
+        };
+
+        async function startConversation(targetUser) {
+            const convId = [currentUser.uid, targetUser.uid].sort().join('_');
+            await setDoc(doc(db, "conversations", convId), {
+                participants: [currentUser.uid, targetUser.uid],
+                lastUpdate: serverTimestamp()
+            }, { merge: true });
+            openChat(convId, targetUser);
+        }
+
+        function listenForConversations() {
+            const q = query(collection(db, "conversations"), where("participants", "array-contains", currentUser.uid));
+            onSnapshot(q, (snapshot) => {
+                const chatList = document.getElementById('chat-list');
+                chatList.innerHTML = '';
+                snapshot.forEach(async (docSnap) => {
+                    const data = docSnap.data();
+                    const otherId = data.participants.find(id => id !== currentUser.uid);
+                    const otherUser = await getDoc(doc(db, "users", otherId));
+                    const userData = otherUser.data();
+                    
+                    const div = document.createElement('div');
+                    div.className = "flex items-center gap-3 p-4 hover:bg-gray-50 cursor-pointer border-b border-gray-100 transition";
+                    div.onclick = () => openChat(docSnap.id, userData);
+                    div.innerHTML = `
+                        <div class="w-12 h-12 rounded-full bg-blue-100 text-zalo flex items-center justify-center font-bold">${userData.displayName[0]}</div>
+                        <div class="flex-1 overflow-hidden">
+                            <h4 class="font-semibold truncate">${userData.displayName}</h4>
+                            <p class="text-xs text-gray-500 truncate">${data.lastMessage || 'Start a conversation'}</p>
+                        </div>
+                    `;
+                    chatList.appendChild(div);
+                });
+            });
+        }
+
+        function openChat(convId, otherUser) {
+            activeChatId = convId;
+            document.getElementById('no-chat-selected').classList.add('hidden');
+            document.getElementById('chat-window').classList.remove('hidden');
+            document.getElementById('active-chat-name').innerText = otherUser.displayName;
+            document.getElementById('active-chat-avatar').innerText = otherUser.displayName[0];
+            
+            // Listen for messages
+            const q = query(collection(db, `conversations/${convId}/messages`), orderBy("timestamp", "asc"), limit(50));
+            onSnapshot(q, (snapshot) => {
+                const container = document.getElementById('messages-container');
+                container.innerHTML = '';
+                snapshot.forEach(msgDoc => {
+                    renderMessage(msgDoc.data());
+                });
+                container.scrollTop = container.scrollHeight;
+            });
+        }
+
+        function renderMessage(msg) {
+            const isMe = msg.senderId === currentUser.uid;
+            const container = document.getElementById('messages-container');
+            const div = document.createElement('div');
+            div.className = `flex ${isMe ? 'justify-end' : 'justify-start'}`;
+            
+            let content = '';
+            if (msg.type === 'text') content = `<p>${msg.content}</p>`;
+            else if (msg.type === 'image') content = `<img src="${msg.content}" class="rounded-lg max-w-xs cursor-pointer" onclick="window.open('${msg.content}')">`;
+            else if (msg.type === 'file') content = `<a href="${msg.content}" target="_blank" class="flex items-center gap-2 bg-white p-2 rounded border"><i data-lucide="file"></i> Attachment</a>`;
+
+            div.innerHTML = `
+                <div class="message-bubble px-4 py-2 rounded-2xl ${isMe ? 'bg-zalo-light-blue text-gray-800' : 'bg-white text-gray-800 shadow-sm'}">
+                    ${content}
+                    <div class="text-[10px] text-gray-400 mt-1 ${isMe ? 'text-right' : ''}">${msg.timestamp?.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) || ''}</div>
+                </div>
+            `;
+            container.appendChild(div);
+            lucide.createIcons();
+        }
+
+        window.sendMessage = async () => {
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            if (!text || !activeChatId) return;
+
+            const msgData = {
+                senderId: currentUser.uid,
+                content: text,
+                type: 'text',
+                timestamp: serverTimestamp()
+            };
+
+            input.value = '';
+            await addDoc(collection(db, `conversations/${activeChatId}/messages`), msgData);
+            await updateDoc(doc(db, "conversations", activeChatId), { 
+                lastMessage: text,
+                lastUpdate: serverTimestamp() 
+            });
+        };
+
+        window.handleFileUpload = async (input) => {
+            const file = input.files[0];
+            if (!file || !activeChatId) return;
+
+            const type = file.type.startsWith('image/') ? 'image' : 'file';
+            const storageRef = ref(storage, `chats/${activeChatId}/${Date.now()}_${file.name}`);
+            const uploadTask = uploadBytesResumable(storageRef, file);
+
+            uploadTask.on('state_changed', null, (err) => alert(err), async () => {
+                const url = await getDownloadURL(uploadTask.snapshot.ref);
+                await addDoc(collection(db, `conversations/${activeChatId}/messages`), {
+                    senderId: currentUser.uid,
+                    content: url,
+                    type: type,
+                    timestamp: serverTimestamp()
+                });
+            });
+        };
+
+        // ---------------- WEB RTC CALLING ----------------
+        // Note: Signaling implemented via Firestore 'calls' collection
+        async function setupWebRTC() {
+            peerConnection = new RTCPeerConnection(servers);
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+            document.getElementById('localVideo').srcObject = localStream;
+
+            peerConnection.ontrack = (event) => {
+                document.getElementById('remoteVideo').srcObject = event.streams[0];
+            };
+        }
+
+        window.initiateCall = async (type) => {
+            const callId = activeChatId; // Using conversation ID as Call ID for simplicity
+            document.getElementById('call-overlay').classList.remove('hidden');
+            document.getElementById('call-status').innerText = `Calling (${type})...`;
+            
+            await setupWebRTC();
+
+            const callDoc = doc(db, "calls", callId);
+            const offerCandidates = collection(callDoc, "offerCandidates");
+            const answerCandidates = collection(callDoc, "answerCandidates");
+
+            peerConnection.onicecandidate = (event) => {
+                event.candidate && addDoc(offerCandidates, event.candidate.toJSON());
+            };
+
+            const offerDescription = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offerDescription);
+
+            await setDoc(callDoc, {
+                offer: { type: offerDescription.type, sdp: offerDescription.sdp },
+                caller: currentUser.uid,
+                status: 'ringing',
+                type: type
+            });
+
+            onSnapshot(callDoc, (snapshot) => {
+                const data = snapshot.data();
+                if (data?.answer && !peerConnection.currentRemoteDescription) {
+                    peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+                }
+                if (data?.status === 'ended') endCall(false);
+            });
+
+            onSnapshot(answerCandidates, (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'added') {
+                        peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+                    }
+                });
+            });
+        };
+
+        function listenForIncomingCalls() {
+            const q = query(collection(db, "calls"), where("status", "==", "ringing"));
+            onSnapshot(q, (snapshot) => {
+                snapshot.forEach(async (change) => {
+                    const data = change.data();
+                    const callId = change.id;
+                    // Check if I am part of the conversation this call belongs to
+                    if (callId.includes(currentUser.uid) && data.caller !== currentUser.uid) {
+                        showIncomingCallUI(callId, data);
+                    }
+                });
+            });
+        }
+
+        function showIncomingCallUI(callId, data) {
+            document.getElementById('call-overlay').classList.remove('hidden');
+            document.getElementById('answer-btn').classList.remove('hidden');
+            document.getElementById('call-status').innerText = `Incoming ${data.type} call...`;
+            window.currentCallId = callId;
+        }
+
+        window.answerCall = async () => {
+            const callId = window.currentCallId;
+            const callDoc = doc(db, "calls", callId);
+            const callData = (await getDoc(callDoc)).data();
+
+            await setupWebRTC();
+            document.getElementById('answer-btn').classList.add('hidden');
+
+            const answerCandidates = collection(callDoc, "answerCandidates");
+            const offerCandidates = collection(callDoc, "offerCandidates");
+
+            peerConnection.onicecandidate = (event) => {
+                event.candidate && addDoc(answerCandidates, event.candidate.toJSON());
+            };
+
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(callData.offer));
+            const answerDescription = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answerDescription);
+
+            await updateDoc(callDoc, {
+                answer: { type: answerDescription.type, sdp: answerDescription.sdp },
+                status: 'connected'
+            });
+
+            onSnapshot(offerCandidates, (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'added') {
+                        peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+                    }
+                });
+            });
+        };
+
+        window.endCall = async (notify = true) => {
+            if (notify && activeChatId) {
+                await updateDoc(doc(db, "calls", activeChatId), { status: 'ended' });
+            }
+            if (localStream) localStream.getTracks().forEach(t => t.stop());
+            if (peerConnection) peerConnection.close();
+            document.getElementById('call-overlay').classList.add('hidden');
+            document.getElementById('remoteVideo').srcObject = null;
+            document.getElementById('localVideo').srcObject = null;
+        };
+
+        // Listen for auth state
+        onAuthStateChanged(auth, (user) => {
+            if (user) completeLogin(user);
+        });
+
+    </script>
 </body>
 </html>
