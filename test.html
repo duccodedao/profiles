@@ -3,261 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexus Quant | Multi-Exchange Intelligence</title>
+    <title>CryptoRank Clone | Advanced Terminal</title>
     
-    <!-- Libraries -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tailwind CSS & Lucide Icons -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 
     <style>
-        :root {
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
-            --accent: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --bg: #0b0f1a;
-            --sidebar: rgba(15, 23, 42, 0.9);
-            --card: rgba(30, 41, 59, 0.5);
-            --border: rgba(255, 255, 255, 0.08);
-            --text-main: #f1f5f9;
-            --text-dim: #94a3b8;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
         body {
-            background-color: var(--bg);
-            color: var(--text-main);
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0e11; /* Màu chuẩn sàn Binance/CoinGecko */
+            color: #eaecef;
         }
 
-        /* Responsive Layout */
-        .app-shell { display: flex; width: 100%; height: 100%; display: none; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1e2329; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #474d57; border-radius: 10px; }
 
-        /* Sidebar */
-        aside {
-            width: 280px; background: var(--sidebar); backdrop-filter: blur(20px);
-            border-right: 1px solid var(--border); display: flex; flex-direction: column;
-            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 100;
-        }
+        .coin-table-row:hover { background-color: #1e2329 !important; transition: 0.2s; }
+        
+        .up-flash { animation: flash-green 0.8s; }
+        .down-flash { animation: flash-red 0.8s; }
+        @keyframes flash-green { 0% { background: rgba(14, 203, 129, 0.2); } 100% { background: transparent; } }
+        @keyframes flash-red { 0% { background: rgba(246, 70, 93, 0.2); } 100% { background: transparent; } }
 
-        @media (max-width: 1024px) {
-            aside { position: fixed; left: -280px; height: 100%; }
-            aside.open { left: 0; }
-        }
-
-        .brand { padding: 30px; display: flex; align-items: center; gap: 12px; font-size: 1.4rem; font-weight: 800; color: var(--primary); }
-
-        .nav-group { padding: 0 15px; flex: 1; }
-        .nav-item {
-            padding: 14px 20px; border-radius: 12px; cursor: pointer; margin-bottom: 5px;
-            display: flex; align-items: center; gap: 12px; color: var(--text-dim); transition: 0.2s;
-        }
-        .nav-item:hover, .nav-item.active { background: rgba(99, 102, 241, 0.1); color: white; }
-        .nav-item i { width: 20px; text-align: center; }
-
-        /* Main Content */
-        main { flex: 1; overflow-y: auto; position: relative; padding: 30px; }
-
-        /* Header */
-        header {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 30px; gap: 20px;
-        }
-
-        .search-bar {
-            background: var(--card); border: 1px solid var(--border);
-            padding: 12px 20px; border-radius: 15px; display: flex; align-items: center; gap: 10px; flex: 1; max-width: 500px;
-        }
-        .search-bar input { background: none; border: none; color: white; outline: none; width: 100%; }
-
-        /* System Info Badge */
-        .system-info {
-            background: rgba(255,255,255,0.05); padding: 10px 15px; border-radius: 12px;
-            font-size: 0.75rem; border: 1px solid var(--border); display: flex; gap: 15px;
-        }
-
-        /* Dashboard Widgets */
-        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
-        @media (max-width: 768px) { .grid-3 { grid-template-columns: 1fr; } }
-
-        .widget {
-            background: var(--card); border: 1px solid var(--border);
-            border-radius: 24px; padding: 25px; backdrop-filter: blur(10px);
-            position: relative; overflow: hidden;
-        }
-        .widget::after {
-            content: ''; position: absolute; top: 0; right: 0; width: 100px; height: 100px;
-            background: var(--primary); filter: blur(80px); opacity: 0.1;
-        }
-
-        /* Crypto Table */
-        .table-container { background: var(--card); border-radius: 24px; border: 1px solid var(--border); overflow: hidden; }
-        table { width: 100%; border-collapse: collapse; }
-        th { background: rgba(0,0,0,0.2); padding: 20px; text-align: left; color: var(--text-dim); font-size: 0.85rem; }
-        td { padding: 20px; border-bottom: 1px solid var(--border); }
-        .binance-tag { background: #f3ba2f; color: black; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 800; }
-
-        /* Login Screen */
-        #login-screen {
-            height: 100vh; width: 100%; display: flex; justify-content: center; align-items: center;
-            background: radial-gradient(circle at top right, #1e1b4b, #0b0f1a);
-        }
-        .login-card {
-            background: rgba(15, 23, 42, 0.8); padding: 50px; border-radius: 32px;
-            border: 1px solid var(--border); backdrop-filter: blur(20px); text-align: center;
-            width: 100%; max-width: 450px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
-        }
-
-        /* Utilities */
-        .up { color: var(--accent); }
-        .down { color: var(--danger); }
-        .btn-primary { 
-            background: var(--primary); color: white; border: none; padding: 12px 25px; 
-            border-radius: 12px; cursor: pointer; font-weight: 600; width: 100%; transition: 0.3s;
-        }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3); }
-
-        /* News Section */
-        .news-item { padding: 15px 0; border-bottom: 1px solid var(--border); display: flex; gap: 15px; }
-        .news-item:last-child { border: none; }
-        .news-thumb { width: 60px; height: 60px; border-radius: 12px; background: #1e293b; object-fit: cover; }
-
-        #mobile-toggle { display: none; font-size: 1.5rem; cursor: pointer; }
-        @media (max-width: 1024px) { #mobile-toggle { display: block; } }
-
+        .glass { background: rgba(24, 26, 32, 0.8); backdrop-filter: blur(10px); }
+        .sticky-header { position: sticky; top: 0; z-index: 50; }
     </style>
 </head>
-<body>
+<body class="custom-scrollbar">
 
-    <!-- LOGIN SCREEN -->
-    <div id="login-screen">
-        <div class="login-card fade-in">
-            <div class="brand" style="justify-content: center; padding-bottom: 10px;">
-                <i class="fas fa-layer-group"></i> NEXUS QUANT
+    <!-- TOP GLOBAL BAR (Y chang CoinGecko) -->
+    <div class="bg-[#181a20] border-b border-gray-800 text-[11px] py-2 px-4 flex gap-6 overflow-x-auto whitespace-nowrap text-gray-400">
+        <div>Coins: <span class="text-indigo-400" id="g-coins">0</span></div>
+        <div>Exchanges: <span class="text-indigo-400" id="g-exchanges">0</span></div>
+        <div>Market Cap: <span class="text-indigo-400" id="g-mcap">0</span></div>
+        <div>24h Vol: <span class="text-indigo-400" id="g-vol">0</span></div>
+        <div>Dominance: <span class="text-indigo-400">BTC: <span id="g-dom-btc">0</span>% ETH: <span id="g-dom-eth">0</span>%</span></div>
+        <div class="flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3 text-yellow-500"></i> ETH Gas: <span class="text-indigo-400" id="g-gas">21 Gwei</span></div>
+    </div>
+
+    <!-- MAIN NAV -->
+    <nav class="sticky-header glass border-b border-gray-800 px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-8">
+            <div class="text-2xl font-extrabold tracking-tighter flex items-center gap-2">
+                <div class="bg-indigo-600 p-1 rounded-lg"><i data-lucide="bar-chart-3" class="text-white"></i></div>
+                CRYPTO<span class="text-indigo-500">RANK</span>
             </div>
-            <h2 style="margin-bottom: 10px;">Hệ thống quản trị Web3</h2>
-            <p style="color: var(--text-dim); margin-bottom: 30px;">Vui lòng xác thực quyền truy cập qua Google</p>
-            <button class="btn-primary" onclick="login()">
-                <i class="fab fa-google"></i> Đăng nhập với Google
-            </button>
-            <div style="margin-top: 20px; font-size: 0.8rem; color: var(--text-dim);" id="os-detect-login"></div>
+            <div class="hidden md:flex gap-6 text-sm font-medium text-gray-400">
+                <a href="#" class="hover:text-white transition">Cryptocurrencies</a>
+                <a href="#" class="hover:text-white transition">Exchanges</a>
+                <a href="#" class="hover:text-white transition">NFT</a>
+                <a href="#" class="hover:text-white transition">Portfolio</a>
+            </div>
         </div>
-    </div>
-
-    <!-- APP SHELL -->
-    <div class="app-shell" id="app-shell">
-        <aside id="sidebar">
-            <div class="brand">
-                <i class="fas fa-layer-group"></i> Nexus Pro
+        
+        <div class="flex items-center gap-4">
+            <div class="relative hidden sm:block">
+                <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-500"></i>
+                <input type="text" id="mainSearch" placeholder="Search coins..." class="bg-[#2b2f36] rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 w-64">
             </div>
-            <nav class="nav-group">
-                <div class="nav-item active" onclick="showTab('market')"><i class="fas fa-chart-area"></i> Thị trường</div>
-                <div class="nav-item" onclick="showTab('exchange')"><i class="fas fa- University"></i> Sàn Binance</div>
-                <div class="nav-item" onclick="showTab('news')"><i class="fas fa-newspaper"></i> Tin tức News</div>
-                <div id="admin-only" class="nav-item" style="display: none;" onclick="showTab('admin')"><i class="fas fa-user-shield"></i> Admin Panel</div>
-            </nav>
-
-            <div style="padding: 20px; border-top: 1px solid var(--border);">
-                <div style="display: flex; align-items:center; gap: 10px; margin-bottom: 15px;">
-                    <img id="u-photo" src="" style="width: 40px; border-radius: 50%; border: 2px solid var(--primary);">
-                    <div>
-                        <div id="u-name" style="font-weight: 700; font-size: 0.85rem;">User Name</div>
-                        <div id="u-role" style="font-size: 0.7rem; color: var(--text-dim);">Tiêu chuẩn</div>
-                    </div>
-                </div>
-                <button onclick="logout()" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--danger); background: none; color: var(--danger); cursor: pointer;">Đăng xuất</button>
+            <button id="loginBtn" onclick="login()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition">Login</button>
+            <div id="userArea" class="hidden flex items-center gap-3">
+                <img id="uPhoto" src="" class="w-8 h-8 rounded-full border border-indigo-500">
+                <button onclick="logout()" class="text-gray-400 hover:text-white"><i data-lucide="log-out" class="w-5 h-5"></i></button>
             </div>
-        </aside>
+        </div>
+    </nav>
 
-        <main>
-            <header>
-                <div id="mobile-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></div>
-                <div class="search-bar">
-                    <i class="fas fa-search"></i>
-                    <input type="text" placeholder="Tìm kiếm tài sản, tin tức, địa chỉ ví...">
+    <main class="max-w-[1400px] mx-auto px-6 py-8">
+        
+        <!-- HERO / TRENDING CARDS -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+            <div class="bg-[#1e2329] rounded-2xl p-5 border border-gray-800">
+                <div class="flex justify-between mb-4">
+                    <h3 class="font-bold flex items-center gap-2"><i data-lucide="trending-up" class="text-green-500"></i> Trending</h3>
+                    <a href="#" class="text-indigo-500 text-xs">View more</a>
                 </div>
-                <div class="system-info" id="sys-details">
-                    <!-- OS/Browser Info goes here -->
-                </div>
-            </header>
-
-            <!-- TAB: MARKET -->
-            <div id="tab-market" class="tab-content">
-                <div class="grid-3">
-                    <div class="widget">
-                        <p style="color: var(--text-dim);">Vốn hóa toàn cầu</p>
-                        <h2 id="m-cap" style="margin: 10px 0;">--</h2>
-                        <span class="up"><i class="fas fa-arrow-up"></i> Live</span>
-                    </div>
-                    <div class="widget">
-                        <p style="color: var(--text-dim);">Chỉ số Fear & Greed</p>
-                        <h2 id="fng-val" style="margin: 10px 0;">--</h2>
-                        <span id="fng-text" style="font-weight: 700;">Loading...</span>
-                    </div>
-                    <div class="widget">
-                        <p style="color: var(--text-dim);">Gas Fee (ETH)</p>
-                        <h2 id="gas-val" style="margin: 10px 0;">24 Gwei</h2>
-                        <span style="color: var(--warning);">Medium</span>
-                    </div>
-                </div>
-
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ĐỒNG COIN</th>
-                                <th>GIÁ (USD)</th>
-                                <th>24H %</th>
-                                <th>VỐN HÓA</th>
-                                <th>BIỂU ĐỒ</th>
-                            </tr>
-                        </thead>
-                        <tbody id="market-tbody"></tbody>
-                    </table>
+                <div id="trending-list" class="space-y-4 text-sm">
+                    <!-- Dynamic trending -->
                 </div>
             </div>
-
-            <!-- TAB: BINANCE EXCHANGE -->
-            <div id="tab-exchange" class="tab-content" style="display: none;">
-                <h2 style="margin-bottom: 20px;">Trực tiếp từ Binance <span class="binance-tag">LIVE</span></h2>
-                <div class="grid-3" id="binance-ticker">
-                    <!-- Binance tickers -->
+            <div class="bg-[#1e2329] rounded-2xl p-5 border border-gray-800">
+                <div class="flex justify-between mb-4">
+                    <h3 class="font-bold flex items-center gap-2"><i data-lucide="clock" class="text-indigo-500"></i> Recently Added</h3>
+                    <a href="#" class="text-indigo-500 text-xs">View more</a>
                 </div>
-                <div class="widget" style="margin-top: 20px;">
-                    <canvas id="binanceChart" height="100"></canvas>
+                <div id="recent-list" class="space-y-4 text-sm">
+                    <!-- Dynamic recent -->
                 </div>
             </div>
-
-            <!-- TAB: NEWS -->
-            <div id="tab-news" class="tab-content" style="display: none;">
-                <h2>Tin tức thị trường mới nhất</h2>
-                <div class="widget" style="margin-top: 20px;" id="news-container">
-                    <!-- News feed -->
-                </div>
+            <div class="bg-indigo-600/10 rounded-2xl p-6 border border-indigo-500/30 relative overflow-hidden">
+                <h3 class="text-xl font-black mb-2">Nexus Pro Terminal</h3>
+                <p class="text-gray-400 text-sm mb-4">Truy cập dữ liệu On-chain real-time và tín hiệu cá voi.</p>
+                <button class="bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold text-sm">Upgrade Now</button>
+                <i data-lucide="crown" class="absolute -right-4 -bottom-4 w-32 h-32 opacity-10 rotate-12"></i>
             </div>
+        </div>
 
-            <!-- TAB: ADMIN -->
-            <div id="tab-admin" class="tab-content" style="display: none;">
-                <h2 style="color: var(--danger);">Admin Security Control</h2>
-                <div class="grid-3" style="margin-top: 20px;">
-                    <div class="widget"><h4>Lượt truy cập</h4><p>1,284</p></div>
-                    <div class="widget"><h4>API Calls/Min</h4><p>42/100</p></div>
-                    <div class="widget"><h4>Server Status</h4><p class="up">Online</p></div>
-                </div>
+        <!-- CATEGORY TABS -->
+        <div class="flex gap-4 mb-6 overflow-x-auto pb-2 text-sm">
+            <button class="px-4 py-2 bg-[#2b3139] rounded-lg border border-indigo-500 text-white font-bold whitespace-nowrap">Top Cryptocurrencies</button>
+            <button class="px-4 py-2 bg-[#1e2329] rounded-lg text-gray-400 hover:text-white transition whitespace-nowrap">DeFi</button>
+            <button class="px-4 py-2 bg-[#1e2329] rounded-lg text-gray-400 hover:text-white transition whitespace-nowrap">Stablecoins</button>
+            <button class="px-4 py-2 bg-[#1e2329] rounded-lg text-gray-400 hover:text-white transition whitespace-nowrap">Memes</button>
+            <button class="px-4 py-2 bg-[#1e2329] rounded-lg text-gray-400 hover:text-white transition whitespace-nowrap">Layer 1 / Layer 2</button>
+        </div>
+
+        <!-- MAIN TABLE -->
+        <div class="bg-[#181a20] rounded-3xl border border-gray-800 overflow-hidden shadow-2xl">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-[#1e2329] text-gray-400 font-medium">
+                        <tr>
+                            <th class="py-4 px-6">#</th>
+                            <th class="py-4 px-6">Name</th>
+                            <th class="py-4 px-6 text-right">Price</th>
+                            <th class="py-4 px-6 text-right">1h %</th>
+                            <th class="py-4 px-6 text-right">24h %</th>
+                            <th class="py-4 px-6 text-right">7d %</th>
+                            <th class="py-4 px-6 text-right hidden lg:table-cell">Market Cap</th>
+                            <th class="py-4 px-6 text-right hidden xl:table-cell">Volume(24h)</th>
+                            <th class="py-4 px-6 text-center">Last 7 Days</th>
+                        </tr>
+                    </thead>
+                    <tbody id="coin-tbody">
+                        <!-- Skeleton Loaders -->
+                        <tr class="animate-pulse border-b border-gray-800">
+                            <td colspan="9" class="py-8 text-center text-gray-600">Syncing with blockchain nodes...</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-        </main>
-    </div>
+        </div>
+    </main>
 
     <script>
-        // CONFIGURATION
+        // --- CONFIG ---
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
@@ -267,160 +156,168 @@
             appId: "1:914980131889:web:72f8da15c42dbee671b110"
         };
         firebase.initializeApp(firebaseConfig);
+        lucide.createIcons();
 
-        const ADMIN_EMAIL = "your-admin-email@gmail.com"; 
+        // --- STATE ---
+        let coinsData = [];
 
-        // 1. SYSTEM DETECTION
-        function getSystemInfo() {
-            const ua = navigator.userAgent;
-            let os = "Unknown OS";
-            if (ua.indexOf("Win") != -1) os = "Windows";
-            if (ua.indexOf("Mac") != -1) os = "macOS";
-            if (ua.indexOf("Linux") != -1) os = "Linux";
-            if (ua.indexOf("Android") != -1) os = "Android";
-            if (ua.indexOf("like Mac") != -1) os = "iOS";
-
-            const browser = (function() {
-                if (ua.indexOf("Chrome") != -1) return "Chrome";
-                if (ua.indexOf("Firefox") != -1) return "Firefox";
-                if (ua.indexOf("Safari") != -1) return "Safari";
-                return "Browser";
-            })();
-
-            return { os, browser };
-        }
-
-        // 2. AUTH LOGIC
-        function login() {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            firebase.auth().signInWithPopup(provider);
-        }
-
-        function logout() { firebase.auth().signOut(); location.reload(); }
-
+        // --- AUTH ---
+        function login() { firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+        function logout() { firebase.auth().signOut(); }
         firebase.auth().onAuthStateChanged(user => {
             if (user) {
-                document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('app-shell').style.display = 'flex';
-                document.getElementById('u-name').innerText = user.displayName;
-                document.getElementById('u-photo').src = user.photoURL;
-                
-                if(user.email === ADMIN_EMAIL) {
-                    document.getElementById('admin-only').style.display = 'flex';
-                    document.getElementById('u-role').innerText = "System Admin";
-                }
-
-                const info = getSystemInfo();
-                document.getElementById('sys-details').innerHTML = `
-                    <span><i class="fab fa-apple"></i> ${info.os}</span>
-                    <span><i class="fas fa-globe"></i> ${info.browser}</span>
-                    <span style="color: var(--accent)"><i class="fas fa-shield-alt"></i> SSL Secure</span>
-                `;
-                
-                initApp();
+                document.getElementById('loginBtn').classList.add('hidden');
+                document.getElementById('userArea').classList.remove('hidden');
+                document.getElementById('uPhoto').src = user.photoURL;
+            } else {
+                document.getElementById('loginBtn').classList.remove('hidden');
+                document.getElementById('userArea').classList.add('hidden');
             }
         });
 
-        // 3. API CORE
-        async function initApp() {
-            fetchCoinGeckoMarkets();
-            fetchFearAndGreed();
-            fetchBinanceData();
-            fetchNews();
+        // --- CORE LOGIC ---
+        async function fetchAllData() {
+            try {
+                // 1. Global Data
+                const gRes = await fetch('https://api.coingecko.com/api/v3/global');
+                const { data: g } = await gRes.json();
+                document.getElementById('g-coins').innerText = g.active_cryptocurrencies.toLocaleString();
+                document.getElementById('g-exchanges').innerText = g.markets;
+                document.getElementById('g-mcap').innerText = '$' + (g.total_market_cap.usd / 1e12).toFixed(2) + 'T';
+                document.getElementById('g-vol').innerText = '$' + (g.total_volume.usd / 1e9).toFixed(2) + 'B';
+                document.getElementById('g-dom-btc').innerText = g.market_cap_percentage.btc.toFixed(1);
+                document.getElementById('g-dom-eth').innerText = g.market_cap_percentage.eth.toFixed(1);
+
+                // 2. Market Table Data (with Sparkline)
+                const mRes = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=1&sparkline=true&price_change_percentage=1h,24h,7d');
+                coinsData = await mRes.json();
+                renderTable(coinsData);
+
+                // 3. Trending
+                const tRes = await fetch('https://api.coingecko.com/api/v3/search/trending');
+                const { coins: trending } = await tRes.json();
+                renderTrending(trending);
+
+            } catch (err) { console.error("Rate Limit Coingecko!"); }
         }
 
-        // COINGECKO: Market Data
-        async function fetchCoinGeckoMarkets() {
-            const res = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&price_change_percentage=24h`);
-            const coins = await res.json();
-            const tbody = document.getElementById('market-tbody');
-            tbody.innerHTML = coins.map(c => `
-                <tr>
-                    <td>
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <img src="${c.image}" width="30">
+        function renderTable(data) {
+            const tbody = document.getElementById('coin-tbody');
+            tbody.innerHTML = '';
+
+            data.forEach((coin, i) => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-gray-800 coin-table-row group cursor-pointer';
+                
+                const p1h = coin.price_change_percentage_1h_in_currency || 0;
+                const p24h = coin.price_change_percentage_24h_in_currency || 0;
+                const p7d = coin.price_change_percentage_7d_in_currency || 0;
+
+                tr.innerHTML = `
+                    <td class="py-5 px-6 text-gray-500">${i+1}</td>
+                    <td class="py-5 px-6">
+                        <div class="flex items-center gap-3">
+                            <img src="${coin.image}" class="w-8 h-8 rounded-full">
                             <div>
-                                <div style="font-weight:700">${c.name}</div>
-                                <small style="color:var(--text-dim)">${c.symbol.toUpperCase()}</small>
+                                <div class="font-bold text-white">${coin.name}</div>
+                                <div class="text-[11px] text-gray-500 uppercase">${coin.symbol}</div>
                             </div>
                         </div>
                     </td>
-                    <td style="font-weight:600">$${c.current_price.toLocaleString()}</td>
-                    <td class="${c.price_change_percentage_24h >= 0 ? 'up' : 'down'}">
-                        ${c.price_change_percentage_24h.toFixed(2)}%
+                    <td class="py-5 px-6 text-right font-bold tracking-tight text-white" id="price-${coin.symbol}">
+                        $${coin.current_price.toLocaleString(undefined, {minimumFractionDigits: 2})}
                     </td>
-                    <td style="color:var(--text-dim)">$${(c.market_cap / 1e9).toFixed(1)}B</td>
-                    <td><canvas width="100" height="30" id="chart-${c.id}"></canvas></td>
-                </tr>
-            `).join('');
+                    <td class="py-5 px-6 text-right font-medium ${p1h >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}">
+                        ${p1h.toFixed(2)}%
+                    </td>
+                    <td class="py-5 px-6 text-right font-medium ${p24h >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}">
+                        ${p24h.toFixed(2)}%
+                    </td>
+                    <td class="py-5 px-6 text-right font-medium ${p7d >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}">
+                        ${p7d.toFixed(2)}%
+                    </td>
+                    <td class="py-5 px-6 text-right text-gray-300 hidden lg:table-cell">$${(coin.market_cap / 1e9).toFixed(2)}B</td>
+                    <td class="py-5 px-6 text-right text-gray-300 hidden xl:table-cell">$${(coin.total_volume / 1e9).toFixed(2)}B</td>
+                    <td class="py-5 px-6">
+                        <canvas id="spark-${coin.id}" class="mx-auto" width="120" height="40"></canvas>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+                renderSparkline(`spark-${coin.id}`, coin.sparkline_in_7d.price, p7d >= 0 ? '#0ecb81' : '#f6465d');
+            });
         }
 
-        // ALTERNATIVE.ME: Fear & Greed
-        async function fetchFearAndGreed() {
-            const res = await fetch('https://api.alternative.me/fng/');
-            const { data } = await res.json();
-            const val = data[0].value;
-            document.getElementById('fng-val').innerText = val;
-            document.getElementById('fng-text').innerText = data[0].value_classification;
-            document.getElementById('fng-text').style.color = val > 50 ? 'var(--accent)' : 'var(--danger)';
+        function renderSparkline(id, points, color) {
+            const ctx = document.getElementById(id).getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: points.map((_, i) => i),
+                    datasets: [{
+                        data: points,
+                        borderColor: color,
+                        borderWidth: 1.5,
+                        fill: true,
+                        backgroundColor: color + '10',
+                        pointRadius: 0,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    scales: { x: { display: false }, y: { display: false } }
+                }
+            });
         }
 
-        // BINANCE: Live Tickers
-        async function fetchBinanceData() {
-            const symbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT'];
-            const res = await fetch(`https://api.binance.com/api/v3/ticker/24hr`);
-            const allTickers = await res.json();
-            const filtered = allTickers.filter(t => symbols.includes(t.symbol));
-
-            document.getElementById('binance-ticker').innerHTML = filtered.map(t => `
-                <div class="widget">
-                    <p style="color:#f3ba2f">Binance ${t.symbol}</p>
-                    <h2 style="margin:10px 0;">$${parseFloat(t.lastPrice).toLocaleString()}</h2>
-                    <span class="${parseFloat(t.priceChangePercent) >= 0 ? 'up' : 'down'}">
-                        ${t.priceChangePercent}%
-                    </span>
-                </div>
-            `).join('');
-        }
-
-        // COINGECKO: News (Using Status Updates)
-        async function fetchNews() {
-            // CoinGecko không có API news public mạnh, ta dùng placeholder data hoặc có thể fetch từ CryptoPanic nếu có key
-            const news = [
-                { title: "Bitcoin vượt mốc 70,000 USD khi dòng vốn ETF đổ vào", source: "CoinDesk", time: "2h ago" },
-                { title: "Ethereum chuẩn bị cho nâng cấp Pectra vào năm 2025", source: "CoinTelegraph", time: "5h ago" },
-                { title: "Binance công bố dự án Launchpool thứ 60", source: "Binance News", time: "8h ago" }
-            ];
-            document.getElementById('news-container').innerHTML = news.map(n => `
-                <div class="news-item">
-                    <div style="flex:1">
-                        <h4 style="margin-bottom:5px;">${n.title}</h4>
-                        <small style="color:var(--text-dim)">${n.source} • ${n.time}</small>
+        function renderTrending(coins) {
+            const container = document.getElementById('trending-list');
+            container.innerHTML = coins.slice(0, 4).map(c => `
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <img src="${c.item.small}" class="w-5 h-5 rounded-full">
+                        <span>${c.item.name} <span class="text-gray-500 text-[10px]">${c.item.symbol}</span></span>
                     </div>
-                    <i class="fas fa-chevron-right" style="color:var(--text-dim)"></i>
+                    <span class="text-[#0ecb81] font-bold">#${c.item.market_cap_rank}</span>
                 </div>
             `).join('');
         }
 
-        // UI FUNCTIONS
-        function showTab(name) {
-            document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById(`tab-${name}`).style.display = 'block';
-            event.currentTarget.classList.add('active');
-            if(window.innerWidth <= 1024) toggleSidebar();
+        // --- LIVE PRICE WEBSOCKET (BINANCE) ---
+        function initLivePrices() {
+            const symbols = ['btcusdt', 'ethusdt', 'bnbusdt', 'solusdt', 'adarusdt'];
+            const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbols.map(s => s + '@ticker').join('/')}`);
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                const symbol = data.s.toLowerCase().replace('usdt', '');
+                const priceEl = document.getElementById(`price-${symbol}`);
+                
+                if (priceEl) {
+                    const newPrice = parseFloat(data.c);
+                    const oldPrice = parseFloat(priceEl.innerText.replace('$', '').replace(',', ''));
+                    
+                    priceEl.innerText = `$${newPrice.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+                    
+                    // Hiệu ứng flash giá
+                    if (newPrice > oldPrice) {
+                        priceEl.classList.add('up-flash');
+                        setTimeout(() => priceEl.classList.remove('up-flash'), 800);
+                    } else if (newPrice < oldPrice) {
+                        priceEl.classList.add('down-flash');
+                        setTimeout(() => priceEl.classList.remove('down-flash'), 800);
+                    }
+                }
+            };
         }
 
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('open');
-        }
-
-        // Detect OS for Login Screen
+        // --- INIT ---
         window.onload = () => {
-            const info = getSystemInfo();
-            document.getElementById('os-detect-login').innerText = `Phát hiện: ${info.os} - ${info.browser} v1.0.4`;
-        }
-
+            fetchAllData();
+            initLivePrices();
+            setInterval(fetchAllData, 60000); // Refresh data mỗi phút
+        };
     </script>
 </body>
 </html>
