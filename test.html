@@ -3,346 +3,238 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Báo Cáo Y Tế Tuyến Cơ Sở</title>
+    <title>Báo Cáo Hợp Nhất - Hệ Thống Y Tế Tuyến Cơ Sở</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
         :root {
-            --primary-color: #2563eb;
-            --secondary-color: #10b981;
-            --bg-gradient: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-            --card-bg: rgba(255, 255, 255, 0.95);
-            --text-main: #1e293b;
-            --border-radius: 12px;
+            --nhamat-color: #3b82f6;
+            --hiepthanh-color: #10b981;
+            --vinh-trach-color: #f59e0b;
+            --bg-body: #f1f5f9;
         }
 
         * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        
-        body {
-            background: var(--bg-gradient);
-            background-attachment: fixed;
-            color: var(--text-main);
-            margin: 0;
-            padding: 20px;
-            min-height: 100vh;
+        body { background: var(--bg-body); margin: 0; padding: 10px; color: #1e293b; }
+
+        .container { max-width: 1200px; margin: 0 auto; padding-bottom: 100px; }
+
+        /* UI Header */
+        .main-header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white; padding: 25px; border-radius: 15px;
+            text-align: center; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1);
         }
 
-        .container { max-width: 1000px; margin: 0 auto; }
-
-        /* Header & Sticky Top Bar */
-        .header {
-            text-align: center;
+        /* Thanh điều hướng cố định */
+        .control-panel {
+            background: white; padding: 20px; border-radius: 12px;
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;
+            position: sticky; top: 10px; z-index: 1000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;
             margin-bottom: 30px;
-            animation: fadeInDown 0.8s ease;
         }
 
-        .header h1 { color: #1e3a8a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+        .input-group { display: flex; flex-direction: column; gap: 5px; }
+        .input-group label { font-weight: 700; font-size: 0.85rem; color: #64748b; }
+        .form-control { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; }
+        .form-control:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
 
-        .sticky-nav {
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: var(--border-radius);
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            margin-bottom: 30px;
-            position: sticky;
-            top: 10px;
-            z-index: 100;
-            border: 1px solid #e2e8f0;
+        /* Card Layout */
+        .card { background: white; border-radius: 15px; padding: 25px; margin-bottom: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .card-title { 
+            font-size: 1.1rem; font-weight: 800; color: #1e3a8a; 
+            margin-bottom: 20px; display: flex; align-items: center; gap: 10px;
+            border-left: 5px solid #3b82f6; padding-left: 15px;
         }
 
-        .form-control {
-            padding: 10px 15px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            font-size: 15px;
-            outline: none;
-            transition: all 0.3s;
+        /* Phân chia màu sắc cho 3 đơn vị */
+        .col-nhamat { background-color: rgba(59, 130, 246, 0.05) !important; }
+        .col-hiepthanh { background-color: rgba(16, 185, 129, 0.05) !important; }
+        .col-vinhtrach { background-color: rgba(245, 158, 11, 0.05) !important; }
+
+        /* Table */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
+        th { background: #f8fafc; padding: 12px; border: 1px solid #e2e8f0; color: #475569; }
+        td { border: 1px solid #e2e8f0; padding: 8px; }
+
+        /* Grid Khóm cho Module A */
+        .module-a-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;
         }
-
-        .form-control:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
-
-        /* Card Style */
-        .card {
-            background: var(--card-bg);
-            border-radius: var(--border-radius);
-            padding: 25px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-            border: 1px solid #f1f5f9;
-            transition: transform 0.2s;
+        .khom-card {
+            background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;
+            display: flex; flex-direction: column; gap: 5px;
         }
+        .khom-card span { font-size: 0.8rem; font-weight: 600; color: #475569; }
 
-        .card:hover { transform: translateY(-2px); }
-
-        .card-title {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: #1e40af;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #dbeafe;
-            padding-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        /* Tình trạng nhập liệu */
+        .status-badge {
+            padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700;
+            display: inline-block; margin-top: 5px;
         }
-
-        /* Module A1 Grid */
-        .grid-khom {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 15px;
-        }
-
-        .khom-item {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .khom-item label { font-size: 0.85rem; font-weight: 600; color: #475569; }
-
-        .input-group-custom {
-            display: flex;
-            align-items: center;
-            background: #f8fafc;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-        }
-
-        .input-group-custom input {
-            width: 100%;
-            border: none;
-            background: transparent;
-            padding: 8px;
-            text-align: right;
-        }
-
-        .input-group-custom span { padding: 0 8px; color: #64748b; font-weight: 600; }
-
-        /* Table Style */
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #e2e8f0; padding: 12px; text-align: center; }
-        th { background: #f8fafc; color: #334155; font-size: 0.9rem; }
-
-        .btn {
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s;
-            border: none;
-        }
-
-        .btn-add { background: #0ea5e9; color: white; margin-top: 10px; }
-        .btn-add:hover { background: #0284c7; }
+        .active-unit { border: 2px solid #3b82f6 !important; background: #eff6ff !important; }
 
         .btn-save {
-            background: #059669;
-            color: white;
-            width: 100%;
-            font-size: 1.1rem;
-            padding: 15px;
-            margin-top: 20px;
-            box-shadow: 0 4px 10px rgba(5, 150, 105, 0.3);
+            position: fixed; bottom: 20px; right: 20px;
+            background: #1e3a8a; color: white; padding: 15px 40px;
+            border-radius: 50px; font-weight: 700; border: none; cursor: pointer;
+            box-shadow: 0 10px 20px rgba(30, 58, 138, 0.3);
+            display: flex; align-items: center; gap: 10px; transition: 0.3s;
         }
+        .btn-save:hover { transform: scale(1.05); background: #1e40af; }
 
-        .btn-save:hover { background: #047857; transform: scale(1.01); }
-
-        .total-badge {
-            background: #dcfce7;
-            color: #166534;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-weight: 700;
-        }
-
-        @keyframes fadeInDown {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 600px) {
-            .sticky-nav { flex-direction: column; }
-            .grid-khom { grid-template-columns: 1fr 1fr; }
+        .total-row { background: #f1f5f9; font-weight: 700; }
+        
+        /* Responsive */
+        @media (max-width: 900px) {
+            .module-a-grid { grid-template-columns: 1fr 1fr; }
+            .control-panel { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="header">
-        <h1>Báo Cáo Hoạt Động Y Tế</h1>
-        <p>Trung tâm Y tế Thành phố Bạc Liêu</p>
+    <div class="main-header">
+        <h1>BÁO CÁO CÔNG TÁC Y TẾ HỢP NHẤT</h1>
+        <p>Phường Nhà Mát - Xã Hiệp Thành - Xã Vĩnh Trạch Đông</p>
     </div>
 
-    <!-- PHẦN CHỌN ĐƠN VỊ & THÁNG -->
-    <div class="sticky-nav">
-        <div style="display:flex; flex-direction:column; gap:5px;">
-            <label>Đơn vị báo cáo:</label>
-            <select id="donVi" class="form-control" required>
-                <option value="">-- Chọn đơn vị --</option>
+    <!-- ĐIỀU KHIỂN -->
+    <div class="control-panel">
+        <div class="input-group">
+            <label>1. BẠN LÀ ĐƠN VỊ NÀO?</label>
+            <select id="currentUser" class="form-control" onchange="highlightUnit()">
+                <option value="">-- Chọn đơn vị nhập --</option>
                 <option value="Nhà Mát">Phường Nhà Mát</option>
                 <option value="Hiệp Thành">Xã Hiệp Thành</option>
                 <option value="Vĩnh Trạch Đông">Xã Vĩnh Trạch Đông</option>
             </select>
         </div>
-        <div style="display:flex; flex-direction:column; gap:5px;">
-            <label>Tháng báo cáo:</label>
-            <input type="month" id="thangBaoCao" class="form-control" required>
+        <div class="input-group">
+            <label>2. THÁNG BÁO CÁO CHUNG</label>
+            <input type="month" id="reportMonth" class="form-control" onchange="loadData()">
+        </div>
+        <div class="input-group" style="justify-content: center; align-items: center; font-size: 0.8rem;">
+            <div id="loadStatus">Vui lòng chọn tháng để tải dữ liệu...</div>
         </div>
     </div>
 
-    <!-- MODULE A - MUỐI I-ỐT -->
+    <!-- MODULE A: MUỐI I-ỐT -->
     <div class="card">
-        <div class="card-title">🚀 MODULE A: Tỷ Lệ Hộ Sử Dụng Muối I-ốt</div>
-        <div class="grid-khom" id="khomGrid">
-            <!-- JS sẽ render 16 khóm ở đây -->
+        <div class="card-title">📦 MODULE A: TỶ LỆ HỘ SỬ DỤNG MUỐI I-ỐT (16 KHÓM/ẤP)</div>
+        <div class="module-a-grid" id="gridKhom">
+            <!-- Render từ JS -->
         </div>
-        <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
-            <div>Tổng số hộ: <span id="tongSoHo" class="total-badge">0</span></div>
-            <div>Tỷ lệ sử dụng: <span id="tyLePhanTram" class="total-badge">0%</span></div>
-        </div>
-    </div>
-
-    <!-- MODULE A (TIẾP) - VÃNG GIA -->
-    <div class="card">
-        <div class="card-title">📢 Module A: Truyền Thông Muối I-ốt</div>
-        <div class="table-responsive">
-            <table id="tableVangGia">
-                <thead>
-                    <tr>
-                        <th>Loại hình</th>
-                        <th>Số lần</th>
-                        <th>Thời lượng (phút)</th>
-                        <th>Nội dung</th>
-                        <th>Người tham gia</th>
-                    </tr>
-                </thead>
-                <tbody id="bodyA2">
-                    <tr>
-                        <td><b>Phát thanh</b></td>
-                        <td><input type="number" class="form-control" data-key="times"></td>
-                        <td><input type="number" class="form-control" data-key="duration"></td>
-                        <td><input type="text" class="form-control" value="Tuyên truyền sử dụng muối I-ốt phòng bệnh bướu cổ"></td>
-                        <td><input type="number" class="form-control" data-key="people"></td>
-                    </tr>
-                </tbody>
-            </table>
-            <button class="btn btn-add" onclick="addRow('bodyA2', 5)">+ Thêm dòng truyền thông trực tiếp</button>
+        <div style="margin-top: 20px; display: flex; gap: 20px;">
+            <div class="khom-card"><span>TỔNG SỐ HỘ:</span> <b id="totalA1_Ho">0</b></div>
+            <div class="khom-card"><span>TỶ LỆ CHUNG:</span> <b id="totalA1_Pt">0%</b></div>
         </div>
     </div>
 
-    <!-- MODULE B - COPD & HEN -->
+    <!-- MODULE B: TRUYỀN THÔNG -->
     <div class="card">
-        <div class="card-title">🫁 MODULE B: COPD & HEN</div>
+        <div class="card-title">📢 MODULE B: TRUYỀN THÔNG (COPD & HEN)</div>
         <table>
             <thead>
                 <tr>
-                    <th>Hình thức</th>
-                    <th>Số lần</th>
-                    <th>Nội dung</th>
-                    <th>Người tham gia</th>
+                    <th rowspan="2">Hình thức</th>
+                    <th colspan="2" class="col-nhamat">Nhà Mát</th>
+                    <th colspan="2" class="col-hiepthanh">Hiệp Thành</th>
+                    <th colspan="2" class="col-vinhtrach">Vĩnh Trạch Đông</th>
+                </tr>
+                <tr>
+                    <th class="col-nhamat">Số lần</th><th class="col-nhamat">Người</th>
+                    <th class="col-hiepthanh">Số lần</th><th class="col-hiepthanh">Người</th>
+                    <th class="col-vinhtrach">Số lần</th><th class="col-vinhtrach">Người</th>
                 </tr>
             </thead>
-            <tbody id="bodyB">
-                <tr>
+            <tbody id="bodyModuleB">
+                <tr data-type="phatloa">
                     <td><b>Phát loa</b></td>
-                    <td><input type="number" class="form-control"></td>
-                    <td><input type="text" class="form-control"></td>
-                    <td><input type="number" class="form-control"></td>
+                    <td class="col-nhamat"><input type="number" class="form-control" data-unit="Nhà Mát" data-field="times"></td>
+                    <td class="col-nhamat"><input type="number" class="form-control" data-unit="Nhà Mát" data-field="people"></td>
+                    <td class="col-hiepthanh"><input type="number" class="form-control" data-unit="Hiệp Thành" data-field="times"></td>
+                    <td class="col-hiepthanh"><input type="number" class="form-control" data-unit="Hiệp Thành" data-field="people"></td>
+                    <td class="col-vinhtrach"><input type="number" class="form-control" data-unit="Vĩnh Trạch Đông" data-field="times"></td>
+                    <td class="col-vinhtrach"><input type="number" class="form-control" data-unit="Vĩnh Trạch Đông" data-field="people"></td>
                 </tr>
-                <tr>
+                <tr data-type="tructiep">
                     <td><b>Trực tiếp</b></td>
-                    <td><input type="number" class="form-control"></td>
-                    <td><input type="text" class="form-control"></td>
-                    <td><input type="number" class="form-control"></td>
+                    <td class="col-nhamat"><input type="number" class="form-control" data-unit="Nhà Mát" data-field="times"></td>
+                    <td class="col-nhamat"><input type="number" class="form-control" data-unit="Nhà Mát" data-field="people"></td>
+                    <td class="col-hiepthanh"><input type="number" class="form-control" data-unit="Hiệp Thành" data-field="times"></td>
+                    <td class="col-hiepthanh"><input type="number" class="form-control" data-unit="Hiệp Thành" data-field="people"></td>
+                    <td class="col-vinhtrach"><input type="number" class="form-control" data-unit="Vĩnh Trạch Đông" data-field="times"></td>
+                    <td class="col-vinhtrach"><input type="number" class="form-control" data-unit="Vĩnh Trạch Đông" data-field="people"></td>
                 </tr>
             </tbody>
         </table>
     </div>
 
-    <!-- MODULE C - KHÁM SÀNG LỌC -->
+    <!-- MODULE C: KHÁM SÀNG LỌC -->
     <div class="card">
-        <div class="card-title">🩺 MODULE C: Khám Sàng Lọc</div>
-        <table id="tableModuleC">
+        <div class="card-title">🩺 MODULE C: KẾT QUẢ KHÁM SÀNG LỌC</div>
+        <table>
             <thead>
                 <tr>
                     <th>Chỉ tiêu</th>
-                    <th>Nhà Mát</th>
-                    <th>Hiệp Thành</th>
-                    <th>Vĩnh Trạch Đông</th>
-                    <th>Tổng</th>
+                    <th class="col-nhamat">Nhà Mát</th>
+                    <th class="col-hiepthanh">Hiệp Thành</th>
+                    <th class="col-vinhtrach">Vĩnh Trạch Đông</th>
+                    <th>TỔNG CỘNG</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="bodyModuleC">
                 <tr data-row="HTA">
                     <td><b>Tăng huyết áp</b></td>
-                    <td><input type="number" class="form-control calc-c" data-col="1"></td>
-                    <td><input type="number" class="form-control calc-c" data-col="2"></td>
-                    <td><input type="number" class="form-control calc-c" data-col="3"></td>
-                    <td class="res-c">0</td>
+                    <td class="col-nhamat"><input type="number" class="form-control unit-c" data-unit="Nhà Mát"></td>
+                    <td class="col-hiepthanh"><input type="number" class="form-control unit-c" data-unit="Hiệp Thành"></td>
+                    <td class="col-vinhtrach"><input type="number" class="form-control unit-c" data-unit="Vĩnh Trạch Đông"></td>
+                    <td class="total-row">0</td>
                 </tr>
-                <tr data-row="DTĐ">
+                <tr data-row="DTD">
                     <td><b>Đái tháo đường</b></td>
-                    <td><input type="number" class="form-control calc-c" data-col="1"></td>
-                    <td><input type="number" class="form-control calc-c" data-col="2"></td>
-                    <td><input type="number" class="form-control calc-c" data-col="3"></td>
-                    <td class="res-c">0</td>
-                </tr>
-                <tr data-row="COPD">
-                    <td><b>COPD</b></td>
-                    <td><input type="number" class="form-control calc-c" data-col="1"></td>
-                    <td><input type="number" class="form-control calc-c" data-col="2"></td>
-                    <td><input type="number" class="form-control calc-c" data-col="3"></td>
-                    <td class="res-c">0</td>
-                </tr>
-                <tr data-row="HEN">
-                    <td><b>Hen</b></td>
-                    <td><input type="number" class="form-control calc-c" data-col="1"></td>
-                    <td><input type="number" class="form-control calc-c" data-col="2"></td>
-                    <td><input type="number" class="form-control calc-c" data-col="3"></td>
-                    <td class="res-c">0</td>
+                    <td class="col-nhamat"><input type="number" class="form-control unit-c" data-unit="Nhà Mát"></td>
+                    <td class="col-hiepthanh"><input type="number" class="form-control unit-c" data-unit="Hiệp Thành"></td>
+                    <td class="col-vinhtrach"><input type="number" class="form-control unit-c" data-unit="Vĩnh Trạch Đông"></td>
+                    <td class="total-row">0</td>
                 </tr>
             </tbody>
         </table>
     </div>
 
-    <!-- MODULE D - TRUYỀN THÔNG NCD -->
+    <!-- MODULE D: TRUYỀN THÔNG NCD -->
     <div class="card">
-        <div class="card-title">📊 MODULE D: Truyền Thông Bệnh Không Lây Nhiễm</div>
-        <table>
+        <div class="card-title">📊 MODULE D: TRUYỀN THÔNG BỆNH KHÔNG LÂY NHIỄM</div>
+        <table id="tableD">
             <thead>
                 <tr>
+                    <th>Đơn vị nhập</th>
                     <th>Loại hình</th>
                     <th>Nội dung</th>
                     <th>Số lượt</th>
+                    <th>Thao tác</th>
                 </tr>
             </thead>
-            <tbody id="bodyD">
-                <tr>
-                    <td><input type="text" class="form-control"></td>
-                    <td><input type="text" class="form-control"></td>
-                    <td><input type="number" class="form-control"></td>
-                </tr>
+            <tbody id="bodyModuleD">
+                <!-- Dữ liệu dòng mới sẽ thêm vào đây -->
             </tbody>
         </table>
-        <button class="btn btn-add" onclick="addRow('bodyD', 3)">+ Thêm dòng</button>
+        <button class="form-control" style="margin-top:10px; cursor:pointer;" onclick="addRowD()">+ Thêm dòng truyền thông (cho đơn vị của bạn)</button>
     </div>
 
-    <button class="btn btn-save" onclick="saveData()">💾 LƯU BÁO CÁO GỬI HỆ THỐNG</button>
+    <button class="btn-save" onclick="saveAll()">
+        <span>💾</span> LƯU BÁO CÁO TOÀN ĐOÀN
+    </button>
 </div>
 
-<!-- FIREBASE SDK -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, doc, setDoc, collection } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // --- CẤU HÌNH FIREBASE CỦA BẠN ---
     const firebaseConfig = {
         apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
         authDomain: "profile-d1214.firebaseapp.com",
@@ -355,139 +247,181 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Dữ liệu danh sách Khóm
-    const listKhom = [
+    const dsKhom = [
         "Biển Đông A", "Biển Đông B", "Biển Tây A", "Biển Tây B",
         "Giồng Giữa A", "Giồng Giữa B", "Giồng Giữa", "Xóm Lẩm",
         "Giồng Nhãn", "Giồng Nhãn A", "Đầu Lộ", "Đầu Lộ A",
         "Chòm Xoài", "Nhà Mát", "Bờ Tây", "Kinh Tế"
     ];
 
-    // Render Module A1
-    const grid = document.getElementById('khomGrid');
-    listKhom.forEach(khom => {
+    // Khởi tạo giao diện
+    const grid = document.getElementById('gridKhom');
+    dsKhom.forEach(k => {
         grid.innerHTML += `
-            <div class="khom-item">
-                <label>${khom}</label>
-                <div class="input-group-custom">
-                    <input type="number" class="khom-val" data-name="${khom}" max="21" oninput="calcModuleA1()">
-                    <span>/21</span>
-                </div>
+            <div class="khom-card" data-khom="${k}">
+                <span>${k}</span>
+                <input type="number" class="form-control khom-input" data-khom="${k}" max="21" oninput="calcA1()">
             </div>
         `;
     });
 
-    // Tính toán Module A1
-    window.calcModuleA1 = function() {
-        const inputs = document.querySelectorAll('.khom-val');
+    // Làm nổi bật đơn vị đang nhập
+    window.highlightUnit = function() {
+        const unit = document.getElementById('currentUser').value;
+        document.querySelectorAll('.active-unit').forEach(el => el.classList.remove('active-unit'));
+        
+        if(unit === "Nhà Mát") document.querySelectorAll('.col-nhamat').forEach(el => el.classList.add('active-unit'));
+        if(unit === "Hiệp Thành") document.querySelectorAll('.col-hiepthanh').forEach(el => el.classList.add('active-unit'));
+        if(unit === "Vĩnh Trạch Đông") document.querySelectorAll('.col-vinhtrach').forEach(el => el.classList.add('active-unit'));
+    };
+
+    window.calcA1 = function() {
         let total = 0;
-        inputs.forEach(input => {
-            let val = parseInt(input.value) || 0;
-            if (val > 21) {
-                val = 21;
-                input.value = 21;
-            }
-            total += val;
+        document.querySelectorAll('.khom-input').forEach(i => {
+            let v = parseInt(i.value) || 0;
+            if(v > 21) { v = 21; i.value = 21; }
+            total += v;
         });
-        document.getElementById('tongSoHo').innerText = total;
-        let pt = (total / (listKhom.length * 21)) * 100;
-        document.getElementById('tyLePhanTram').innerText = pt.toFixed(1) + '%';
+        document.getElementById('totalA1_Ho').innerText = total;
+        document.getElementById('totalA1_Pt').innerText = ((total / (16*21))*100).toFixed(1) + '%';
     };
 
-    // Thêm dòng cho các bảng
-    window.addRow = function(id, cols) {
-        const tbody = document.getElementById(id);
-        const tr = document.createElement('tr');
-        for (let i = 0; i < cols; i++) {
-            const td = document.createElement('td');
-            td.innerHTML = `<input type="text" class="form-control">`;
-            tr.appendChild(td);
-        }
-        tbody.appendChild(tr);
-    };
-
-    // Tính toán Module C tự động
-    document.querySelectorAll('.calc-c').forEach(input => {
+    // Module C: Tính tổng dòng
+    document.querySelectorAll('.unit-c').forEach(input => {
         input.addEventListener('input', () => {
-            const row = input.closest('tr');
-            const inputs = row.querySelectorAll('.calc-c');
+            const tr = input.closest('tr');
             let sum = 0;
-            inputs.forEach(i => sum += (parseInt(i.value) || 0));
-            row.querySelector('.res-c').innerText = sum;
+            tr.querySelectorAll('.unit-c').forEach(i => sum += (parseInt(i.value) || 0));
+            tr.querySelector('.total-row').innerText = sum;
         });
     });
 
-    // HÀM LƯU DỮ LIỆU
-    window.saveData = async function() {
-        const donVi = document.getElementById('donVi').value;
-        const thang = document.getElementById('thangBaoCao').value;
+    // Module D: Thêm dòng
+    window.addRowD = function(data = null) {
+        const unit = data ? data.unit : document.getElementById('currentUser').value;
+        if(!unit && !data) { Swal.fire("Lỗi", "Hãy chọn Đơn vị của bạn trước!", "error"); return; }
+        
+        const tbody = document.getElementById('bodyModuleD');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><b>${unit}</b></td>
+            <td><input type="text" class="form-control" value="${data ? data.type : ''}"></td>
+            <td><input type="text" class="form-control" value="${data ? data.content : ''}"></td>
+            <td><input type="number" class="form-control" value="${data ? data.count : ''}"></td>
+            <td><button onclick="this.closest('tr').remove()" style="color:red; border:none; background:none; cursor:pointer;">Xóa</button></td>
+        `;
+        tr.dataset.unit = unit;
+        tbody.appendChild(tr);
+    };
 
-        if (!donVi || !thang) {
-            Swal.fire("Lỗi", "Vui lòng chọn Đơn vị và Tháng báo cáo!", "error");
-            return;
-        }
+    // TẢI DỮ LIỆU TỪ FIREBASE
+    window.loadData = async function() {
+        const month = document.getElementById('reportMonth').value;
+        if(!month) return;
 
-        Swal.fire({ title: 'Đang lưu...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-
-        try {
-            const data = {
-                thongTinChung: { donVi, thang, thoiGianLuu: new Date().toISOString() },
-                moduleA1: {},
-                moduleA2: [],
-                moduleB: [],
-                moduleC: {},
-                moduleD: []
-            };
-
-            // Thu thập Module A1
-            document.querySelectorAll('.khom-val').forEach(el => {
-                data.moduleA1[el.dataset.name] = el.value;
+        document.getElementById('loadStatus').innerHTML = "⏳ Đang tải dữ liệu tháng " + month + "...";
+        
+        const docSnap = await getDoc(doc(db, "BaoCaoHopNhat", month));
+        
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            
+            // Điền Module A
+            document.querySelectorAll('.khom-input').forEach(i => {
+                i.value = data.moduleA[i.dataset.khom] || "";
             });
+            calcA1();
 
-            // Thu thập Module A2
-            document.querySelectorAll('#bodyA2 tr').forEach(tr => {
-                const inputs = tr.querySelectorAll('input');
-                data.moduleA2.push({
-                    times: inputs[0].value,
-                    duration: inputs[1].value,
-                    content: inputs[2].value,
-                    people: inputs[3].value
+            // Điền Module B
+            document.querySelectorAll('#bodyModuleB tr').forEach(tr => {
+                const type = tr.dataset.type;
+                tr.querySelectorAll('input').forEach(i => {
+                    const u = i.dataset.unit;
+                    const f = i.dataset.field;
+                    i.value = data.moduleB[type][u][f] || "";
                 });
             });
 
-            // Thu thập Module B
-            document.querySelectorAll('#bodyB tr').forEach(tr => {
-                const inputs = tr.querySelectorAll('input');
-                data.moduleB.push({ times: inputs[0].value, content: inputs[1].value, people: inputs[2].value });
+            // Điền Module C
+            document.querySelectorAll('#bodyModuleC tr').forEach(tr => {
+                const row = tr.dataset.row;
+                tr.querySelectorAll('.unit-c').forEach(i => {
+                    i.value = data.moduleC[row][i.dataset.unit] || "";
+                });
+                // Kích hoạt tính tổng
+                i.dispatchEvent(new Event('input'));
             });
 
-            // Thu thập Module C
-            document.querySelectorAll('#tableModuleC tbody tr').forEach(tr => {
-                const key = tr.dataset.row;
-                const inputs = tr.querySelectorAll('input');
-                data.moduleC[key] = { nhaMat: inputs[0].value, hiepThanh: inputs[1].value, vinhTrachDong: inputs[2].value };
-            });
+            // Điền Module D
+            document.getElementById('bodyModuleD').innerHTML = "";
+            data.moduleD.forEach(item => addRowD(item));
 
-            // Thu thập Module D
-            document.querySelectorAll('#bodyD tr').forEach(tr => {
-                const inputs = tr.querySelectorAll('input');
-                data.moduleD.push({ type: inputs[0].value, content: inputs[1].value, count: inputs[2].value });
-            });
-
-            // Lưu vào Firebase: Path: BaoCao/{DonVi}_{Thang}
-            const docId = `${donVi}_${thang}`;
-            await setDoc(doc(db, "BaoCaoYTe", docId), data);
-
-            Swal.fire("Thành công!", "Dữ liệu đã được lưu trữ an toàn trên Firebase!", "success");
-
-        } catch (e) {
-            console.error(e);
-            Swal.fire("Lỗi", "Không thể kết nối Firebase: " + e.message, "error");
+            document.getElementById('loadStatus').innerHTML = "✅ Đã tải xong dữ liệu chung.";
+        } else {
+            document.getElementById('loadStatus').innerHTML = "✨ Tháng mới - Chưa có dữ liệu.";
+            // Reset form...
         }
-    }
-</script>
+    };
 
+    // LƯU DỮ LIỆU
+    window.saveAll = async function() {
+        const month = document.getElementById('reportMonth').value;
+        const user = document.getElementById('currentUser').value;
+
+        if(!month || !user) {
+            Swal.fire("Lưu ý", "Hãy chọn Đơn vị và Tháng trước khi lưu!", "warning");
+            return;
+        }
+
+        Swal.fire({ title: 'Đang lưu báo cáo chung...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        try {
+            const finalData = {
+                lastUpdate: new Date().toISOString(),
+                updatedBy: user,
+                moduleA: {},
+                moduleB: { phatloa: { "Nhà Mát":{}, "Hiệp Thành":{}, "Vĩnh Trạch Đông":{} }, tructiep: { "Nhà Mát":{}, "Hiệp Thành":{}, "Vĩnh Trạch Đông":{} } },
+                moduleC: { HTA: {}, DTD: {} },
+                moduleD: []
+            };
+
+            // Gom A
+            document.querySelectorAll('.khom-input').forEach(i => finalData.moduleA[i.dataset.khom] = i.value);
+
+            // Gom B
+            document.querySelectorAll('#bodyModuleB tr').forEach(tr => {
+                const type = tr.dataset.type;
+                tr.querySelectorAll('input').forEach(i => {
+                    finalData.moduleB[type][i.dataset.unit][i.dataset.field] = i.value;
+                });
+            });
+
+            // Gom C
+            document.querySelectorAll('#bodyModuleC tr').forEach(tr => {
+                const row = tr.dataset.row;
+                tr.querySelectorAll('.unit-c').forEach(i => {
+                    finalData.moduleC[row][i.dataset.unit] = i.value;
+                });
+            });
+
+            // Gom D
+            document.querySelectorAll('#bodyModuleD tr').forEach(tr => {
+                const inputs = tr.querySelectorAll('input');
+                finalData.moduleD.push({
+                    unit: tr.dataset.unit,
+                    type: inputs[0].value,
+                    content: inputs[1].value,
+                    count: inputs[2].value
+                });
+            });
+
+            await setDoc(doc(db, "BaoCaoHopNhat", month), finalData);
+            Swal.fire("Thành công", "Báo cáo chung tháng " + month + " đã được cập nhật!", "success");
+        } catch (e) {
+            Swal.fire("Lỗi", e.message, "error");
+        }
+    };
+
+</script>
 </body>
 </html>
-
-
