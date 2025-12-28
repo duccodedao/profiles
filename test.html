@@ -3,296 +3,369 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privacy & Device Transparency Demo</title>
+    <title>PrivacyLens | Browser Transparency Demo</title>
+    <!-- Tailwind CSS for modern 2025 styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        .glass-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(226, 232, 240, 0.8);
-        }
-        .status-dot {
-            height: 10px;
-            width: 10px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 8px;
-        }
-        .status-granted { background-color: #10b981; box-shadow: 0 0 8px #10b981; }
-        .status-denied { background-color: #ef4444; }
-        .status-prompt { background-color: #f59e0b; }
-        
-        #consent-modal {
-            display: flex;
-            transition: opacity 0.3s ease-in-out;
-        }
+        body { font-family: 'Inter', sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3); }
+        .permission-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .permission-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
+        .status-badge { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; padding: 2px 8px; border-radius: 9999px; }
+        .admin-view { border: 2px dashed #94a3b8; }
+        #camera-preview { width: 100%; height: 200px; background: #000; border-radius: 12px; object-fit: cover; display: none; }
         .hidden { display: none !important; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen">
+<body class="bg-slate-50 text-slate-900 min-h-screen">
 
-    <!-- CONSENT MODAL -->
-    <div id="consent-modal" class="fixed inset-0 z-50 items-center justify-center bg-slate-900/80 p-4">
-        <div class="glass-card max-w-md w-full p-8 rounded-2xl shadow-2xl">
-            <div class="text-blue-600 mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04a11.357 11.357 0 00-1.573 1.831c-.246.47-.472.955-.684 1.442a11.41 11.41 0 001.078 10.901c.411.556.88 1.074 1.407 1.545A11.956 11.956 0 0012 21.056a11.956 11.956 0 007.727-2.351a11.956 11.956 0 001.407-1.545 11.41 11.41 0 001.078-10.901 11.411 11.411 0 00-2.257-3.273z" />
-                </svg>
+    <!-- CONSENT OVERLAY -->
+    <div id="consent-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/90 backdrop-blur-sm p-4">
+        <div class="bg-white max-w-xl w-full rounded-2xl p-8 shadow-2xl">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="p-3 bg-blue-100 text-blue-600 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
+                <h2 class="text-2xl font-bold">Privacy Education Demo</h2>
             </div>
-            <h2 class="text-2xl font-bold mb-2">Privacy Education Demo</h2>
-            <p class="text-slate-600 mb-6 text-sm leading-relaxed">
-                This website is a demonstration of what technical information your browser can share with websites. 
+            <p class="text-slate-600 mb-6 leading-relaxed">
+                This website is a technical demonstration. We are about to show you the device data your browser exposes to developers.
                 <br><br>
-                <strong>No data is stored or tracked.</strong> All information is displayed locally on your screen for educational purposes. Sensitive sensors like your camera or location will only be accessed if you click "Enable" inside the app.
+                <span class="font-semibold text-slate-800">No data is sent to a server.</span> Everything you see happens locally on your machine. We will only access sensitive sensors (camera, location) if you explicitly click the "Request" buttons inside.
             </p>
-            <button id="accept-consent" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition duration-200">
-                I Understand & Consent
-            </button>
+            <div class="space-y-3">
+                <button onclick="acceptConsent()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-blue-200">
+                    I Understand & Enter Demo
+                </button>
+            </div>
         </div>
     </div>
 
-    <!-- MAIN DASHBOARD -->
-    <div class="max-w-6xl mx-auto px-4 py-12">
-        <header class="mb-12">
-            <h1 class="text-4xl font-extrabold text-slate-900 mb-2 tracking-tight">Environment Transparency Dashboard</h1>
-            <p class="text-slate-500">Educational tool for browser fingerprinting and permission awareness.</p>
+    <!-- MAIN INTERFACE -->
+    <div id="main-content" class="max-w-7xl mx-auto px-4 py-8 opacity-0 transition-opacity duration-700">
+        
+        <!-- HEADER -->
+        <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
+            <div>
+                <h1 class="text-3xl font-extrabold tracking-tight text-slate-900">PrivacyLens <span class="text-blue-600 text-sm font-medium border border-blue-200 px-2 py-1 rounded-md ml-2">v2025.1</span></h1>
+                <p class="text-slate-500">Real-time Browser Permissions & Capability Audit</p>
+            </div>
+            <div class="flex bg-slate-200 p-1 rounded-xl">
+                <button onclick="toggleView('user')" id="btn-user" class="px-6 py-2 rounded-lg font-semibold text-sm transition bg-white shadow-sm text-blue-600">User Dashboard</button>
+                <button onclick="toggleView('admin')" id="btn-admin" class="px-6 py-2 rounded-lg font-semibold text-sm transition text-slate-600">Admin Preview</button>
+            </div>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- DASHBOARD CONTAINER -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
-            <!-- SYSTEM INFO -->
-            <div class="glass-card p-6 rounded-xl shadow-sm">
-                <h3 class="font-bold text-lg mb-4 flex items-center">
-                    <span class="mr-2">💻</span> System & Browser
-                </h3>
-                <div class="space-y-3 text-sm">
-                    <div class="flex justify-between border-b pb-1">
-                        <span class="text-slate-500">Browser:</span>
-                        <span id="browser-name" class="font-medium text-right">-</span>
+            <!-- LEFT COLUMN: ENVIRONMENT DATA -->
+            <div class="lg:col-span-4 space-y-6">
+                <div class="glass p-6 rounded-2xl shadow-sm">
+                    <h3 class="font-bold text-slate-800 mb-4 flex items-center justify-between">
+                        Environment Info
+                        <span class="status-badge bg-green-100 text-green-700">No Consent Required</span>
+                    </h3>
+                    <div id="env-data" class="space-y-3 text-sm">
+                        <!-- Data injected via JS -->
                     </div>
-                    <div class="flex justify-between border-b pb-1">
-                        <span class="text-slate-500">OS:</span>
-                        <span id="os-name" class="font-medium text-right">-</span>
-                    </div>
-                    <div class="flex justify-between border-b pb-1">
-                        <span class="text-slate-500">Resolution:</span>
-                        <span id="screen-res" class="font-medium">-</span>
-                    </div>
-                    <div class="flex justify-between border-b pb-1">
-                        <span class="text-slate-500">Device Type:</span>
-                        <span id="device-type" class="font-medium">-</span>
+                </div>
+
+                <div class="glass p-6 rounded-2xl shadow-sm">
+                    <h3 class="font-bold text-slate-800 mb-4 flex items-center justify-between">
+                        Network Intelligence
+                        <span id="net-badge" class="status-badge bg-blue-100 text-blue-700">Auto-Detect</span>
+                    </h3>
+                    <div id="net-data" class="space-y-3 text-sm">
+                        <p class="text-slate-400 italic">Detecting network metadata...</p>
                     </div>
                 </div>
             </div>
 
-            <!-- NETWORK INFO -->
-            <div class="glass-card p-6 rounded-xl shadow-sm">
-                <h3 class="font-bold text-lg mb-4 flex items-center">
-                    <span class="mr-2">🌐</span> Network & Location (IP)
-                </h3>
-                <div class="space-y-3 text-sm">
-                    <div class="flex justify-between border-b pb-1">
-                        <span class="text-slate-500">Public IP:</span>
-                        <span id="public-ip" class="font-medium text-blue-600">Loading...</span>
+            <!-- RIGHT COLUMN: SENSITIVE PERMISSIONS -->
+            <div class="lg:col-span-8 space-y-6">
+                
+                <!-- USER VIEW -->
+                <div id="view-user" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- GEOLOCATION CARD -->
+                        <div class="permission-card glass p-6 rounded-2xl">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="p-2 bg-purple-100 text-purple-600 rounded-lg">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                </div>
+                                <span id="geo-status" class="status-badge bg-slate-100 text-slate-600">Prompt</span>
+                            </div>
+                            <h4 class="font-bold mb-1">Precise Location</h4>
+                            <p class="text-xs text-slate-500 mb-4">Websites can ask for GPS coordinates to provide local services.</p>
+                            <div id="geo-result" class="mb-4 text-xs font-mono bg-slate-50 p-2 rounded hidden"></div>
+                            <button onclick="requestGeo()" class="w-full py-2 bg-slate-900 text-white rounded-lg text-sm font-semibold hover:bg-slate-800 transition">Request Access</button>
+                        </div>
+
+                        <!-- CAMERA CARD -->
+                        <div class="permission-card glass p-6 rounded-2xl">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="p-2 bg-red-100 text-red-600 rounded-lg">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                </div>
+                                <span id="cam-status" class="status-badge bg-slate-100 text-slate-600">Prompt</span>
+                            </div>
+                            <h4 class="font-bold mb-1">Camera & Video</h4>
+                            <p class="text-xs text-slate-500 mb-4">Direct hardware access for photos, video calls, or AR.</p>
+                            <video id="camera-preview" autoplay playsinline class="mb-4"></video>
+                            <button id="cam-btn" onclick="requestCamera()" class="w-full py-2 bg-slate-900 text-white rounded-lg text-sm font-semibold hover:bg-slate-800 transition">Enable Camera</button>
+                        </div>
                     </div>
-                    <div class="flex justify-between border-b pb-1">
-                        <span class="text-slate-500">Country:</span>
-                        <span id="ip-country" class="font-medium">-</span>
-                    </div>
-                    <div class="flex justify-between border-b pb-1">
-                        <span class="text-slate-500">Connection:</span>
-                        <span id="net-type" class="font-medium">-</span>
-                    </div>
-                    <div class="flex justify-between border-b pb-1">
-                        <span class="text-slate-500">Timezone:</span>
-                        <span id="timezone" class="font-medium">-</span>
+
+                    <!-- FILE PICKER CARD -->
+                    <div class="permission-card glass p-6 rounded-2xl">
+                        <h4 class="font-bold mb-2">File System Access</h4>
+                        <p class="text-sm text-slate-600 mb-4">Browsers <span class="font-bold text-red-500">cannot</span> see your files unless you manually pick them. This is a secure "sandboxed" action.</p>
+                        <div class="flex items-center gap-4">
+                            <input type="file" id="file-input" onchange="handleFile()" class="hidden">
+                            <button onclick="document.getElementById('file-input').click()" class="bg-blue-50 text-blue-700 border border-blue-200 px-6 py-2 rounded-lg text-sm font-bold hover:bg-blue-100 transition">Select File Manually</button>
+                            <div id="file-name" class="text-sm text-slate-500 italic truncate">No file chosen</div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- PERMISSION STATUS -->
-            <div class="glass-card p-6 rounded-xl shadow-sm">
-                <h3 class="font-bold text-lg mb-4 flex items-center">
-                    <span class="mr-2">🛡️</span> Permission Status
-                </h3>
-                <div class="space-y-3 text-sm">
-                    <div class="flex items-center justify-between">
-                        <span>Geolocation:</span>
-                        <span id="perm-geo" class="flex items-center"><span class="status-dot status-prompt"></span>Prompt</span>
+                <!-- ADMIN VIEW (SIMULATED) -->
+                <div id="view-admin" class="hidden admin-view bg-white p-8 rounded-2xl">
+                    <div class="mb-6">
+                        <h3 class="text-xl font-bold text-slate-800">Admin Audit Dashboard</h3>
+                        <p class="text-sm text-slate-500 italic">This view simulates what is "sent" to our simulated server. Notice that sensitive data is blank unless you clicked 'Allow' in the user view.</p>
                     </div>
-                    <div class="flex items-center justify-between">
-                        <span>Camera:</span>
-                        <span id="perm-cam" class="flex items-center"><span class="status-dot status-prompt"></span>Prompt</span>
+                    <div class="bg-slate-900 rounded-xl p-6 overflow-hidden">
+                        <pre id="admin-json" class="text-green-400 font-mono text-sm leading-relaxed whitespace-pre-wrap"></pre>
                     </div>
-                    <div class="flex items-center justify-between">
-                        <span>Microphone:</span>
-                        <span id="perm-mic" class="flex items-center"><span class="status-dot status-prompt"></span>Prompt</span>
+                    <div class="mt-6 p-4 bg-amber-50 border border-amber-100 rounded-lg">
+                        <p class="text-xs text-amber-800"><strong>Note:</strong> Even if you are an Admin, modern browsers prevent you from silently triggering the camera or GPS. You are limited to viewing what the user has voluntarily provided.</p>
                     </div>
                 </div>
-            </div>
 
-            <!-- SENSITIVE ACTIONS -->
-            <div class="glass-card p-6 rounded-xl shadow-sm lg:col-span-2">
-                <h3 class="font-bold text-lg mb-4 flex items-center">
-                    <span class="mr-2">⚡</span> On-Demand Access
-                </h3>
-                <p class="text-xs text-slate-500 mb-4 italic">Note: These only work after you click "Request". Browser will show a popup.</p>
-                <div class="flex flex-wrap gap-4">
-                    <button onclick="requestGeo()" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-black transition">Request Geolocation</button>
-                    <button onclick="requestMedia('video')" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-black transition">Test Camera</button>
-                    <button onclick="requestMedia('audio')" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-black transition">Test Mic</button>
-                    <label class="cursor-pointer bg-blue-100 text-blue-700 px-4 py-2 rounded-lg text-sm hover:bg-blue-200 transition">
-                        Select File... <input type="file" class="hidden" onchange="handleFile(this)">
-                    </label>
-                </div>
-                <div id="action-output" class="mt-4 p-3 bg-slate-100 rounded border border-dashed border-slate-300 text-sm font-mono min-h-[40px] break-all">
-                    Awaiting user action...
-                </div>
             </div>
-
-            <!-- CLEAR DATA -->
-            <div class="glass-card p-6 rounded-xl shadow-sm border-red-100">
-                <h3 class="font-bold text-lg mb-4">Reset Demo</h3>
-                <p class="text-xs text-slate-500 mb-4">Wipe all collected session data from the UI display.</p>
-                <button onclick="clearData()" class="w-full border border-red-500 text-red-500 hover:bg-red-50 py-2 rounded-lg text-sm transition font-bold">
-                    Clear Collected Data
-                </button>
-            </div>
-
         </div>
 
-        <footer class="mt-12 text-center text-slate-400 text-sm">
-            <p>Built for educational transparency. No data leaves this device.</p>
+        <!-- FOOTER -->
+        <footer class="mt-16 pt-8 border-t border-slate-200 text-center text-slate-400 text-sm">
+            <p>Demo purpose only. No cookies, trackers, or databases were used in this build. &copy; 2025 PrivacyLens.</p>
         </footer>
     </div>
 
     <script>
-        // 1. CONSENT LOGIC
-        const modal = document.getElementById('consent-modal');
-        const acceptBtn = document.getElementById('accept-consent');
+        // DATA MODEL (Privacy-First: In-memory only)
+        const appState = {
+            environment: {
+                browser: navigator.userAgentData ? navigator.userAgentData.brands[0].brand : 'Unknown',
+                os: 'Detecting...',
+                screen: `${window.screen.width}x${window.screen.height}`,
+                language: navigator.language,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                cookiesEnabled: navigator.cookieEnabled
+            },
+            network: {
+                ip: 'Pending Permission...',
+                country: 'Unknown',
+                effectiveType: navigator.connection ? navigator.connection.effectiveType : 'Unknown'
+            },
+            sensitive: {
+                latitude: null,
+                longitude: null,
+                cameraActive: false,
+                lastFileName: null
+            },
+            view: 'user'
+        };
 
-        acceptBtn.addEventListener('click', () => {
-            modal.classList.add('hidden');
-            initializeDemo();
-        });
-
-        // 2. DATA INITIALIZATION
-        function initializeDemo() {
-            // Browser & OS Detection (Basic)
-            const ua = navigator.userAgent;
-            const platform = navigator.platform;
-            
-            document.getElementById('browser-name').innerText = getBrowser(ua);
-            document.getElementById('os-name').innerText = getOS(ua);
-            document.getElementById('screen-res').innerText = `${window.screen.width} x ${window.screen.height}`;
-            document.getElementById('device-type').innerText = /Mobi|Android/i.test(ua) ? 'Mobile Device' : 'Desktop';
-            document.getElementById('timezone').innerText = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            document.getElementById('net-type').innerText = navigator.connection ? navigator.connection.effectiveType : 'Unknown';
-
-            // Fetch IP & Country (The only external call)
-            fetch('https://ipapi.co/json/')
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById('public-ip').innerText = data.ip;
-                    document.getElementById('ip-country').innerText = `${data.country_name} (${data.country_code})`;
-                })
-                .catch(() => {
-                    document.getElementById('public-ip').innerText = "Blocked by AdBlocker/Error";
-                });
-
-            updatePermissionStatus();
+        // 1. INITIALIZATION
+        function acceptConsent() {
+            document.getElementById('consent-modal').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('opacity-0');
+            detectBasics();
+            fetchNetworkData();
+            updateAdminJSON();
+            startPermissionPoller();
         }
 
-        // 3. SENSITIVE ACCESS LOGIC
+        function detectBasics() {
+            // OS Detection
+            const platform = navigator.platform.toLowerCase();
+            if (platform.includes('win')) appState.environment.os = 'Windows';
+            else if (platform.includes('mac')) appState.environment.os = 'macOS';
+            else if (platform.includes('linux')) appState.environment.os = 'Linux';
+            else appState.environment.os = 'Mobile OS';
+
+            const envContainer = document.getElementById('env-data');
+            const fields = [
+                { label: 'OS', val: appState.environment.os },
+                { label: 'Screen', val: appState.environment.screen },
+                { label: 'Timezone', val: appState.environment.timezone },
+                { label: 'Locale', val: appState.environment.language },
+                { label: 'Cookies', val: appState.environment.cookiesEnabled ? '✅ Enabled' : '❌ Blocked' }
+            ];
+
+            envContainer.innerHTML = fields.map(f => `
+                <div class="flex justify-between border-b border-slate-100 pb-2">
+                    <span class="text-slate-500">${f.label}:</span>
+                    <span class="font-semibold text-slate-800">${f.val}</span>
+                </div>
+            `).join('');
+        }
+
+        async function fetchNetworkData() {
+            try {
+                // Using a public IP API for demo purposes
+                const res = await fetch('https://ipapi.co/json/');
+                const data = await res.json();
+                appState.network.ip = data.ip;
+                appState.network.country = data.country_name;
+                
+                document.getElementById('net-data').innerHTML = `
+                    <div class="flex justify-between border-b border-slate-100 pb-2">
+                        <span class="text-slate-500">Public IP:</span>
+                        <span class="font-semibold text-blue-600">${data.ip}</span>
+                    </div>
+                    <div class="flex justify-between border-b border-slate-100 pb-2">
+                        <span class="text-slate-500">Country:</span>
+                        <span class="font-semibold">${data.country_name}</span>
+                    </div>
+                    <div class="flex justify-between border-b border-slate-100 pb-2">
+                        <span class="text-slate-500">Speed:</span>
+                        <span class="font-semibold uppercase">${appState.network.effectiveType}</span>
+                    </div>
+                `;
+            } catch (e) {
+                document.getElementById('net-data').innerHTML = `<p class="text-red-500 text-xs">Network detection blocked by browser security or ad-blocker.</p>`;
+            }
+            updateAdminJSON();
+        }
+
+        // 2. SENSITIVE ACTIONS
         async function requestGeo() {
-            const out = document.getElementById('action-output');
-            out.innerText = "Requesting location...";
+            const btn = document.getElementById('geo-status');
+            const resBox = document.getElementById('geo-result');
             
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
-                    out.innerHTML = `✅ Lat: ${pos.coords.latitude.toFixed(4)}, Lng: ${pos.coords.longitude.toFixed(4)} <br><span class="text-[10px]">(Accuracy: ${pos.coords.accuracy}m)</span>`;
-                    updatePermissionStatus();
+                    appState.sensitive.latitude = pos.coords.latitude;
+                    appState.sensitive.longitude = pos.coords.longitude;
+                    btn.innerText = "Granted";
+                    btn.className = "status-badge bg-green-100 text-green-700";
+                    resBox.innerText = `Lat: ${pos.coords.latitude}, Lon: ${pos.coords.longitude}`;
+                    resBox.classList.remove('hidden');
+                    updateAdminJSON();
                 },
                 (err) => {
-                    out.innerText = `❌ Denied: ${err.message}`;
-                    updatePermissionStatus();
+                    btn.innerText = "Denied";
+                    btn.className = "status-badge bg-red-100 text-red-700";
+                    updateAdminJSON();
                 }
             );
         }
 
-        async function requestMedia(type) {
-            const out = document.getElementById('action-output');
-            const constraints = type === 'video' ? {video: true} : {audio: true};
-            
+        async function requestCamera() {
+            const video = document.getElementById('camera-preview');
+            const btn = document.getElementById('cam-btn');
+            const status = document.getElementById('cam-status');
+
             try {
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
-                const track = stream.getTracks()[0];
-                out.innerText = `✅ Accessed: ${track.label}`;
-                
-                // Immediately stop the track to turn off the hardware light
-                track.stop();
-                updatePermissionStatus();
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                video.style.display = 'block';
+                appState.sensitive.cameraActive = true;
+                status.innerText = "Active";
+                status.className = "status-badge bg-green-100 text-green-700";
+                btn.innerText = "Stop Camera";
+                btn.onclick = () => {
+                    stream.getTracks().forEach(track => track.stop());
+                    video.style.display = 'none';
+                    appState.sensitive.cameraActive = false;
+                    status.innerText = "Stopped";
+                    btn.innerText = "Enable Camera";
+                    btn.onclick = requestCamera;
+                    updateAdminJSON();
+                };
             } catch (err) {
-                out.innerText = `❌ Denied: ${err.name}`;
-                updatePermissionStatus();
+                status.innerText = "Denied";
+                status.className = "status-badge bg-red-100 text-red-700";
+            }
+            updateAdminJSON();
+        }
+
+        function handleFile() {
+            const input = document.getElementById('file-input');
+            const display = document.getElementById('file-name');
+            if (input.files.length > 0) {
+                const name = input.files[0].name;
+                appState.sensitive.lastFileName = name;
+                display.innerText = `Selected: ${name}`;
+                updateAdminJSON();
             }
         }
 
-        function handleFile(input) {
-            const out = document.getElementById('action-output');
-            if (input.files && input.files[0]) {
-                const file = input.files[0];
-                out.innerText = `📄 Manual File Selected: ${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+        // 3. UI LOGIC
+        function toggleView(view) {
+            appState.view = view;
+            const btnUser = document.getElementById('btn-user');
+            const btnAdmin = document.getElementById('btn-admin');
+            const viewUser = document.getElementById('view-user');
+            const viewAdmin = document.getElementById('view-admin');
+
+            if (view === 'admin') {
+                btnAdmin.className = "px-6 py-2 rounded-lg font-semibold text-sm transition bg-white shadow-sm text-blue-600";
+                btnUser.className = "px-6 py-2 rounded-lg font-semibold text-sm transition text-slate-600";
+                viewUser.classList.add('hidden');
+                viewAdmin.classList.remove('hidden');
+            } else {
+                btnUser.className = "px-6 py-2 rounded-lg font-semibold text-sm transition bg-white shadow-sm text-blue-600";
+                btnAdmin.className = "px-6 py-2 rounded-lg font-semibold text-sm transition text-slate-600";
+                viewAdmin.classList.add('hidden');
+                viewUser.classList.remove('hidden');
             }
+            updateAdminJSON();
         }
 
-        // 4. UTILS
-        function getBrowser(ua) {
-            if (ua.includes("Chrome")) return "Google Chrome";
-            if (ua.includes("Firefox")) return "Mozilla Firefox";
-            if (ua.includes("Safari")) return "Safari";
-            return "Unknown Browser";
-        }
-
-        function getOS(ua) {
-            if (ua.indexOf("Win") != -1) return "Windows";
-            if (ua.indexOf("Mac") != -1) return "MacOS";
-            if (ua.indexOf("Linux") != -1) return "Linux";
-            if (ua.indexOf("Android") != -1) return "Android";
-            if (ua.indexOf("like Mac") != -1) return "iOS";
-            return "Unknown OS";
-        }
-
-        async function updatePermissionStatus() {
-            const permissions = ['geolocation', 'camera', 'microphone'];
-            const ids = ['perm-geo', 'perm-cam', 'perm-mic'];
-
-            permissions.forEach(async (p, index) => {
-                try {
-                    const status = await navigator.permissions.query({name: p});
-                    renderStatusBadge(ids[index], status.state);
-                    status.onchange = () => renderStatusBadge(ids[index], status.state);
-                } catch (e) {
-                    // Safari doesn't support some permission queries
-                    renderStatusBadge(ids[index], 'Supported (Interaction Required)');
+        function updateAdminJSON() {
+            const adminData = {
+                session_id: "7892-DEMO-2025",
+                timestamp: new Date().toISOString(),
+                environment: appState.environment,
+                network: appState.network,
+                shared_content: {
+                    location: appState.sensitive.latitude ? { lat: appState.sensitive.latitude, lon: appState.sensitive.longitude } : "NOT_SHARED",
+                    camera_stream: appState.sensitive.cameraActive ? "ACTIVE_LOCAL_PREVIEW" : "INACTIVE",
+                    uploaded_files: appState.sensitive.lastFileName || "NONE"
+                },
+                forbidden_access: {
+                    contacts: "BLOCK_BY_BROWSER",
+                    sms_logs: "BLOCK_BY_BROWSER",
+                    local_ip: "BLOCK_BY_WEBRTC_PRIVACY"
                 }
-            });
+            };
+            document.getElementById('admin-json').textContent = JSON.stringify(adminData, null, 4);
         }
 
-        function renderStatusBadge(id, state) {
-            const el = document.getElementById(id);
-            let dotClass = 'status-prompt';
-            if (state === 'granted') dotClass = 'status-granted';
-            if (state === 'denied') dotClass = 'status-denied';
+        // 4. PERMISSION POLLER (Modern API)
+        function startPermissionPoller() {
+            const check = async (name, elementId) => {
+                try {
+                    const result = await navigator.permissions.query({ name });
+                    const el = document.getElementById(elementId);
+                    if (result.state === 'granted') {
+                        el.innerText = "Granted";
+                        el.className = "status-badge bg-green-100 text-green-700";
+                    } else if (result.state === 'denied') {
+                        el.innerText = "Denied";
+                        el.className = "status-badge bg-red-100 text-red-700";
+                    }
+                } catch (e) { /* Some browsers don't support all queries */ }
+            };
             
-            el.innerHTML = `<span class="status-dot ${dotClass}"></span>${state.charAt(0).toUpperCase() + state.slice(1)}`;
-        }
-
-        function clearData() {
-            const fields = ['browser-name', 'os-name', 'screen-res', 'device-type', 'public-ip', 'ip-country', 'net-type', 'timezone'];
-            fields.forEach(f => document.getElementById(f).innerText = '-');
-            document.getElementById('action-output').innerText = 'Data Cleared. Refresh to restart.';
-            alert("Local display data has been cleared.");
+            setInterval(() => {
+                check('geolocation', 'geo-status');
+                check('camera', 'cam-status');
+            }, 2000);
         }
     </script>
 </body>
