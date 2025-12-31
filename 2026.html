@@ -1,0 +1,469 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I love u Chụt chụt</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Quicksand:wght@300;400;600&family=Playfair+Display:ital,wght@1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <!-- Fancybox -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css"/>
+
+    <style>
+        :root {
+            --primary: #ff758c;
+            --secondary: #ff7eb3;
+            --dark: #24243e;
+            --glass: rgba(255, 255, 255, 0.1);
+            --border: rgba(255, 255, 255, 0.2);
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        #canvas-stars {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1;
+        }
+
+        .wrapper {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        header {
+            min-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding-top: 50px;
+        }
+
+        .meta-info {
+            font-size: 1rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--secondary);
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+            padding: 10px 25px;
+            border-radius: 50px;
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 15px rgba(255, 117, 140, 0.3);
+        }
+
+        h1 {
+            font-family: 'Dancing Script', cursive;
+            font-size: 5rem;
+            background: linear-gradient(to right, #fff, #ff9a9e, #ff758c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+            text-shadow: 0 5px 15px rgba(255, 117, 140, 0.4);
+            line-height: 1.2;
+        }
+
+        .love-circle {
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: var(--glass);
+            border: 1px solid rgba(255,255,255,0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 40px rgba(255, 117, 140, 0.2);
+            position: relative;
+            animation: float 6s ease-in-out infinite;
+            backdrop-filter: blur(10px);
+            margin: 40px 0;
+        }
+
+        .love-circle::after {
+            content: '';
+            position: absolute;
+            top: -10px; left: -10px; right: -10px; bottom: -10px;
+            border-radius: 50%;
+            border: 2px dashed rgba(255, 117, 140, 0.5);
+            animation: spin 20s linear infinite;
+        }
+
+        .days-num { font-size: 4.5rem; font-weight: 700; color: #fff; line-height: 1; text-shadow: 0 0 10px var(--primary); }
+        .days-text { font-size: 1.1rem; text-transform: uppercase; letter-spacing: 2px; color: #ddd; }
+
+        .timeline-bar {
+            display: flex;
+            gap: 30px;
+            margin-top: 30px;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+        }
+        .time-node { opacity: 0.4; transition: 0.3s; }
+        .time-node.active { opacity: 1; color: var(--secondary); font-weight: bold; transform: scale(1.1); text-shadow: 0 0 10px var(--secondary); }
+        .time-node.future { color: #fff; font-weight: bold; animation: pulse 2s infinite; }
+
+        .content-block { padding: 60px 0; }
+
+        .letter-text {
+            background: rgba(255, 255, 255, 0.07);
+            backdrop-filter: blur(20px);
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            line-height: 1.8;
+            font-size: 1.15rem;
+            margin-bottom: 50px;
+            box-shadow: var(--shadow);
+            text-align: justify;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .letter-text::before {
+            content: '\f10d';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            top: 20px; left: 20px;
+            font-size: 3rem;
+            color: rgba(255,255,255,0.05);
+        }
+
+        .highlight { color: var(--secondary); font-weight: bold; }
+
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+        }
+
+        .photo-card {
+            background: #fff;
+            padding: 12px 12px 50px 12px; 
+            border-radius: 4px;
+            transform: rotate(var(--rot));
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+            position: relative;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .photo-card:hover {
+            transform: rotate(0deg) scale(1.05) translateY(-10px);
+            z-index: 10;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+        }
+
+        .photo-card img {
+            width: 100%;
+            height: 350px;
+            object-fit: cover;
+            border-radius: 2px;
+            filter: brightness(0.95);
+        }
+        
+        .photo-caption {
+            position: absolute;
+            bottom: 15px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-family: 'Dancing Script', cursive;
+            color: #444;
+            font-size: 1.6rem;
+        }
+
+        .wishes-box {
+            text-align: center;
+            padding: 60px 30px;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.05), rgba(255, 117, 140, 0.1));
+            border-radius: 30px;
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-top: 50px;
+        }
+
+        .music-control {
+            position: fixed;
+            bottom: 30px; left: 30px;
+            width: 50px; height: 50px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 0 20px rgba(255, 117, 140, 0.6);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 117, 140, 0.7); } 70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(255, 117, 140, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 117, 140, 0); } }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 3rem; }
+            .days-num { font-size: 3.5rem; }
+            .photo-card img { height: auto; aspect-ratio: 3/4; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="canvas-stars"></canvas>
+
+    <div class="music-control" onclick="toggleAudio()">
+        <i class="fas fa-music" id="music-icon" style="color: white;"></i>
+    </div>
+    
+    <audio id="bg-music" loop>
+        <source src="https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3" type="audio/mpeg">
+    </audio>
+
+    <div class="wrapper">
+        
+        <!-- HEADER -->
+        <header>
+            <div class="meta-info" data-aos="fade-down">
+                <i class="fas fa-map-marker-alt"></i> Cà Mau &bull; 10:21 &bull; 31/12/2025
+            </div>
+            
+            <h1 data-aos="zoom-in" data-aos-duration="1500">Huỳnh Ngọc Hân</h1>
+            <p style="font-style: italic; opacity: 0.8; margin-bottom: 20px;" data-aos="fade-up">Người con gái anh yêu...</p>
+
+            <div class="love-circle" data-aos="zoom-in" data-aos-delay="300">
+                <span class="days-num" id="daysCounter">0</span>
+                <span class="days-text">Ngày Bên Nhau</span>
+            </div>
+
+            <div class="timeline-bar" data-aos="fade-up" data-aos-delay="600">
+                <span class="time-node">2023</span>
+                <span class="time-node">2024</span>
+                <span class="time-node active">2025</span>
+                <span class="time-node future">2026 <i class="fas fa-heart"></i></span>
+            </div>
+        </header>
+
+        <!-- PART 1 -->
+        <div class="content-block">
+            <div class="letter-text" data-aos="fade-right">
+                <p>Vậy là anh với em đã cùng nhau đi qua 2023, 2024 và 2025, tròn <span class="highlight">914 ngày</span> với biết bao là kỷ niệm. Một hành trình không hề ngắn, đủ để anh nhận ra rằng tình yêu của tụi mình trải ra rất nhiều rất nhiều chuyện.</p>
+                <br>
+                <p>Có những lúc vui, khi cả hai đạt được điều mình mong muốn, cũng có những lúc buồn, khi mọi thứ không diễn ra đúng như kỳ vọng của anh dí em.</p>
+            </div>
+
+            <!-- 3 Ảnh: Đã xóa tấm 122... và đẩy tấm 123... lên đây cho cân bằng -->
+            <div class="photo-grid">
+                <div class="photo-card" style="--rot: -3deg;" data-aos="fade-up" data-fancybox="gallery" href="img/71079399947613436.jpg">
+                    <img src="img/71079399947613436.jpg" alt="Kỷ niệm">
+                    <div class="photo-caption">Phút giây bên nhau</div>
+                </div>
+                <div class="photo-card" style="--rot: 2deg;" data-aos="fade-up" data-aos-delay="100" data-fancybox="gallery" href="img/1071676743759369270.jpg">
+                    <img src="img/1071676743759369270.jpg" alt="Kỷ niệm">
+                    <div class="photo-caption">Bầu trời năm ấy</div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- PART 2 -->
+        <div class="content-block">
+            <div class="letter-text" data-aos="fade-left">
+                <p>Rồi có cả giận hờn, mệt mỏi, những lúc tưởng chừng như em muốn buông tay luôn dị ă, nhưng chính những khoảnh khắc đó lại giúp mình rút ra được những bài học quý giá. Bài học không nằm ở việc ai đúng, ai sai, mà nằm ở cách cả hai trưởng thành hơn sau mỗi lần cãi vã.</p>
+                <br>
+                <p>Anh học được cách chấp nhận bản thân khi chưa hoàn hảo, học cách kiên nhẫn hơn với em và với chính mình. Em cũng vậy, luôn cố gắng hiểu và bao dung cho anh nhiều hơn qua từng chuyện nhỏ. Anh trân trọng việc tụi em không trách móc anh mãi vì những cái sai đã qua, mà chọn cách cho cho anh cơ hội sửa sai, và nhắc nhau mỗi lần mắc cái gì đó và sửa sai cho nhau.</p>
+            </div>
+
+            <!-- 3 Ảnh còn lại -->
+            <div class="photo-grid">
+              
+                <div class="photo-card" style="--rot: 3deg;" data-aos="zoom-in" data-aos-delay="200" data-fancybox="gallery" href="img/2766368425079087622.jpg">
+                    <img src="img/2766368425079087622.jpg" alt="Kỷ niệm">
+                    <div class="photo-caption">Yêu thương</div>
+                </div>
+                <div class="photo-card" style="--rot: -1deg;" data-aos="zoom-in" data-aos-delay="300" data-fancybox="gallery" href="img/2856455246749365566.jpg">
+                    <img src="img/2856455246749365566.jpg" alt="Kỷ niệm">
+                    <div class="photo-caption">Mãi bên nhau</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PART 3: Wishes -->
+        <div class="content-block" data-aos="fade-up">
+            <div class="letter-text" style="border-color: var(--primary);">
+                <p>Bước sang năm mới, điều anh không muốn quên là những sai lầm, đó là bài học để rút kinh nghiệm không tái phạm nữa, ngoài ra anh còn mang theo niềm tin, <span class="highlight">tin vào em, tin vào anh, và tin vào tụi mình</span>.</p>
+                <p>Tin rằng những cố gắng dù nhỏ bé cũng đều có ý nghĩa. Tin rằng mỗi ngày trôi qua là một cơ hội để cả hai làm tốt hơn hôm qua một chút.</p>
+                <br>
+                <p>Mong rằng anh với em sẽ tiếp tục thúc đẩy nhau cố gắng, nhắc nhau đừng bỏ cuộc vì những chuyện không đáng, cho dù phía trước còn nhiều thử thách, chỉ cần anh và em vẫn đồng hành bên cạnh nhau, vẫn biết an ủi, biết động viên và cùng nhau bước tiếp, thì tất cả khó khăn rồi cũng sẽ trở thành những kỷ niệm đẹp thôi.</p>
+            </div>
+
+            <div class="wishes-box" data-aos="zoom-in-up">
+                <i class="fas fa-star" style="color: gold; font-size: 2rem; margin-bottom: 15px;"></i>
+                <h2 style="font-family: 'Dancing Script'; margin-bottom: 20px; font-size: 2.5rem;">Chúc em năm mới...</h2>
+                <p style="font-size: 1.3rem; line-height: 1.8;">
+                    Có thật nhiều sức khỏe, mãi xinh đẹp,<br>
+                    đạt được cột mốc mà mình đưa ra và thành công với nó.<br>
+                    <span style="font-weight: bold; color: var(--secondary);">Chúc em ngày càng yêu anh nhiều hơn nữa!</span>
+                </p>
+                <div style="margin-top: 30px; font-size: 1.8rem; font-family: 'Dancing Script'; color: var(--primary);">
+                    Mình bắt đầu 2026 nhoaa ❤️
+                </div>
+            </div>
+        </div>
+
+        <footer style="text-align: center; padding: 40px 0; opacity: 0.6; font-size: 0.9rem;">
+            From hongduc.ne with Love - 31/12/2025
+        </footer>
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
+    
+    <script>
+        AOS.init({ once: true, offset: 120, duration: 1000 });
+        Fancybox.bind("[data-fancybox]", {});
+
+        const targetDays = 914;
+        const counterEl = document.getElementById('daysCounter');
+        let current = 0;
+        const updateCounter = () => {
+            const increment = targetDays / 100;
+            if(current < targetDays) {
+                current += increment;
+                counterEl.innerText = Math.ceil(current);
+                setTimeout(updateCounter, 20);
+            } else {
+                counterEl.innerText = targetDays;
+            }
+        };
+        setTimeout(updateCounter, 1000);
+
+        // --- MUSIC LOGIC ---
+        const audio = document.getElementById('bg-music');
+        const icon = document.getElementById('music-icon');
+        let isPlaying = false;
+
+        // Hàm phát nhạc
+        function toggleAudio(){
+            if(isPlaying){
+                audio.pause();
+                icon.className = 'fas fa-music';
+            } else {
+                audio.play();
+                icon.className = 'fas fa-pause';
+            }
+            isPlaying = !isPlaying;
+        }
+
+        // Tự động phát nhạc khi chạm bất kỳ đâu lần đầu tiên
+        document.addEventListener('click', function() {
+            if(!isPlaying) {
+                audio.play().then(() => {
+                    isPlaying = true;
+                    icon.className = 'fas fa-pause';
+                }).catch(err => {
+                    console.log("Trình duyệt chặn autoplay, chờ người dùng tương tác thêm.");
+                });
+            }
+        }, { once: true }); // "once: true" nghĩa là chỉ kích hoạt 1 lần duy nhất
+
+        // --- STARS EFFECT ---
+        const canvas = document.getElementById('canvas-stars');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let stars = [];
+        const numStars = 150;
+
+        class Star {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2;
+                this.speedY = Math.random() * 0.5 + 0.1;
+                this.opacity = Math.random();
+            }
+            update() {
+                this.y -= this.speedY; 
+                if(this.y < 0) this.y = canvas.height;
+                this.opacity += (Math.random() - 0.5) * 0.05;
+                if(this.opacity < 0) this.opacity = 0; 
+                if(this.opacity > 1) this.opacity = 1;
+            }
+            draw() {
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        for(let i=0; i<numStars; i++) stars.push(new Star());
+
+        function animate() {
+            ctx.clearRect(0,0,canvas.width, canvas.height);
+            stars.forEach(s => { s.update(); s.draw(); });
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        // Click Heart Effect
+        document.addEventListener('click', (e) => {
+            if(e.target.closest('.music-control') || e.target.closest('.photo-card')) return;
+            
+            const heart = document.createElement('i');
+            heart.className = 'fas fa-heart';
+            heart.style.position = 'fixed';
+            heart.style.left = e.clientX + 'px';
+            heart.style.top = e.clientY + 'px';
+            heart.style.color = '#ff758c';
+            heart.style.fontSize = Math.random() * 20 + 10 + 'px';
+            heart.style.pointerEvents = 'none';
+            heart.style.transform = 'translate(-50%, -50%)';
+            heart.style.zIndex = 9999;
+            heart.style.animation = 'flyUp 1.5s ease-out forwards';
+            document.body.appendChild(heart);
+            setTimeout(() => heart.remove(), 1500);
+        });
+
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @keyframes flyUp {
+                0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                100% { opacity: 0; transform: translate(-50%, -100px) scale(1.5); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
