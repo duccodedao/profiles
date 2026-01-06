@@ -4,259 +4,342 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Hệ thống Cứu Hộ Quốc Gia 2025</title>
+    <title>Hệ thống Cứu Hộ Quốc Gia 2025 (Pro UI)</title>
 
-    <!-- 1. THƯ VIỆN UI & ICON -->
+    <!-- 1. CORE LIBRARIES -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- 2. EXCEL LIBRARY -->
-    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <!-- 2. UI & ALERTS (SweetAlert2 - Đẹp thay thế alert mặc định) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
-    <!-- 3. FIREBASE SDK -->
+    <!-- 3. EXCEL -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    
+    <!-- 4. FIREBASE -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
-    <!-- 4. MAP -->
+    <!-- 5. MAP -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+    <!-- GOOGLE FONTS -->
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Be Vietnam Pro', sans-serif; background: #f0f2f5; overflow: hidden; }
         
-        /* Map Marker Custom Avatar */
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Markers & Avatar */
         .avatar-marker {
-            width: 40px; height: 40px;
-            border-radius: 50%;
-            border: 3px solid white;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-            overflow: hidden;
-            background: white;
+            width: 48px; height: 48px; border-radius: 50%; 
+            border: 3px solid #fff; box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            background: #fff; overflow: hidden; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             position: relative;
-            transition: transform 0.2s;
         }
-        .avatar-marker img { width: 100%; height: 100%; object-fit: cover; }
-        .avatar-marker:hover { transform: scale(1.1); z-index: 999; }
+        .avatar-marker:hover { transform: scale(1.2) translateY(-5px); z-index: 9999 !important; }
         
-        /* Status Badge on Marker */
-        .marker-status {
-            position: absolute; bottom: 0; right: 0;
-            width: 12px; height: 12px; border-radius: 50%;
-            border: 2px solid white;
+        /* Verified Badge on Marker */
+        .marker-badge {
+            position: absolute; bottom: 0; right: 0; width: 16px; height: 16px;
+            background: #22c55e; border: 2px solid white; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; color: white; font-size: 8px;
         }
-        .status-new { background: #ef4444; } /* Red */
-        .status-process { background: #eab308; } /* Yellow */
-        .status-safe { background: #22c55e; } /* Green */
 
-        /* Animation */
+        /* Pulse Animation for SOS */
+        .sos-pulse::after {
+            content: ''; position: absolute; top: -5px; left: -5px; right: -5px; bottom: -5px;
+            border-radius: 50%; border: 2px solid #ef4444;
+            animation: pulse-ring 1.5s infinite; z-index: -1;
+        }
         @keyframes pulse-ring {
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-            70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.6); opacity: 0; }
         }
-        .sos-pulse { animation: pulse-ring 2s infinite; border-color: #ef4444; }
 
-        /* Scrollbar */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        /* Glassmorphism */
+        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); }
+        .glass-dark { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); }
+
+        /* Status Badges */
+        .badge-verified { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+        .badge-risk { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+
+        /* Popup Styling */
+        .leaflet-popup-content-wrapper { border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); padding: 0; overflow: hidden; }
+        .leaflet-popup-content { margin: 0; width: 280px !important; }
     </style>
 </head>
-<body class="bg-gray-100 h-screen w-screen overflow-hidden flex flex-col md:flex-row">
+<body class="h-screen w-screen flex flex-col md:flex-row text-slate-800">
 
-    <!-- ALERT CONFIG -->
-    <div id="config-alert" class="fixed top-0 inset-x-0 bg-red-600 text-white text-center text-sm py-2 z-[9999] hidden">
-        <b>CẢNH BÁO:</b> Chưa nhập Firebase Config. Vui lòng mở code và điền API Key.
+    <!-- LOADING OVERLAY -->
+    <div id="loading" class="fixed inset-0 bg-white/80 z-[99999] flex flex-col items-center justify-center hidden backdrop-blur-md">
+        <div class="relative">
+            <div class="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+            <div class="absolute inset-0 flex items-center justify-center font-bold text-blue-600 text-xs">VN</div>
+        </div>
+        <p class="mt-4 text-slate-600 font-semibold animate-pulse">Đang đồng bộ dữ liệu...</p>
     </div>
 
-    <!-- TOAST -->
-    <div id="toast-container" class="fixed top-5 right-5 z-[9999] space-y-2 pointer-events-none"></div>
-
-    <!-- LOADING -->
-    <div id="loading" class="fixed inset-0 bg-white/90 z-[9000] flex flex-col items-center justify-center hidden">
-        <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mb-4"></div>
-        <p class="text-blue-800 font-bold animate-pulse">Đang xử lý dữ liệu...</p>
-    </div>
-
-    <!-- LOGIN -->
-    <div id="login-screen" class="fixed inset-0 bg-gradient-to-br from-blue-900 to-slate-900 z-[8000] flex items-center justify-center p-6">
-        <div class="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl text-center">
-            <div class="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-blue-500/50">
-                <i class="fas fa-life-ring text-4xl text-white"></i>
+    <!-- 1. LOGIN SCREEN -->
+    <div id="login-screen" class="fixed inset-0 z-[9000] flex items-center justify-center p-4 bg-[url('https://images.unsplash.com/photo-1454789476662-53eb23ba5907?q=80&w=2552&auto=format&fit=crop')] bg-cover bg-center">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
+        <div class="relative bg-white/90 backdrop-blur-xl rounded-3xl p-8 w-full max-w-sm shadow-2xl border border-white/20 text-center animate__animated animate__zoomIn">
+            <div class="w-20 h-20 bg-gradient-to-tr from-blue-600 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-blue-500/30">
+                <i class="fas fa-shield-alt text-4xl text-white"></i>
             </div>
-            <h1 class="text-2xl font-bold text-gray-800 mb-2">HỆ THỐNG CỨU HỘ QUỐC GIA</h1>
-            <p class="text-gray-500 mb-8 text-sm">Kết nối nguồn lực - Ứng cứu kịp thời</p>
-            <button onclick="loginWithGoogle()" class="w-full bg-white border border-gray-300 py-3 rounded-xl font-bold text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-3 shadow-sm transition">
+            <h1 class="text-2xl font-black text-slate-800 mb-1">CỨU HỘ QUỐC GIA</h1>
+            <p class="text-slate-500 text-sm mb-8 font-medium">Hệ thống phản ứng nhanh 2025</p>
+            
+            <button onclick="loginWithGoogle()" class="w-full bg-white hover:bg-slate-50 text-slate-700 font-bold py-3.5 rounded-xl flex items-center justify-center gap-3 shadow-md transition-all hover:scale-[1.02]">
                 <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-6 h-6">
-                Đăng nhập bằng Google
+                <span>Tiếp tục với Google</span>
             </button>
-            <p class="mt-6 text-xs text-gray-400">Vui lòng bật định vị (GPS) để hệ thống hoạt động chính xác.</p>
         </div>
     </div>
 
-    <!-- PHONE UPDATE -->
-    <div id="phone-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[7000] flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-sm">
-            <h3 class="text-lg font-bold mb-2 text-gray-800">Cập nhật Số điện thoại</h3>
-            <p class="text-sm text-gray-500 mb-4">Để đội cứu hộ liên lạc khi khẩn cấp.</p>
-            <input type="tel" id="phone-input" class="w-full border p-3 rounded-lg text-center font-bold text-lg mb-4 outline-none focus:ring-2 focus:ring-blue-500" placeholder="09xx xxx xxx">
-            <button onclick="updatePhone()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg">Xác nhận</button>
-        </div>
-    </div>
-
-    <!-- === LEFT PANEL (LIST) === -->
-    <div class="w-full md:w-[450px] bg-white flex flex-col shadow-2xl z-[1000] order-2 md:order-1 h-[60vh] md:h-full relative">
-        <!-- Header -->
-        <div class="bg-slate-800 text-white p-4 flex justify-between items-center shrink-0">
-            <div class="flex items-center gap-3">
-                <img id="user-avatar" src="" class="w-10 h-10 rounded-full border-2 border-white bg-gray-300 object-cover">
+    <!-- 2. LEFT PANEL (CONTROLS) -->
+    <div class="w-full md:w-[460px] bg-white flex flex-col shadow-2xl z-[1000] order-2 md:order-1 h-[60vh] md:h-full relative border-r border-gray-200">
+        
+        <!-- User Header -->
+        <div class="bg-slate-800 text-white p-4 flex justify-between items-center shrink-0 shadow-md">
+            <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition" onclick="openProfile()">
+                <div class="relative">
+                    <img id="header-avatar" src="" class="w-10 h-10 rounded-full border-2 border-slate-600 object-cover">
+                    <div id="header-badge" class="absolute -bottom-1 -right-1 bg-green-500 text-[8px] w-4 h-4 flex items-center justify-center rounded-full border border-slate-800"><i class="fas fa-check"></i></div>
+                </div>
                 <div>
-                    <h2 id="user-name" class="font-bold text-sm">Khách</h2>
-                    <span class="text-[10px] text-green-400 flex items-center gap-1"><i class="fas fa-circle text-[8px]"></i> Online</span>
+                    <h2 id="header-name" class="font-bold text-sm truncate max-w-[140px]">Khách</h2>
+                    <span class="text-[10px] text-slate-400 block">Nhấn để xem hồ sơ</span>
                 </div>
             </div>
-            <button onclick="logout()" class="text-gray-400 hover:text-white"><i class="fas fa-sign-out-alt"></i></button>
+            <button onclick="logout()" class="w-9 h-9 rounded-full bg-white/10 hover:bg-red-500 hover:text-white transition flex items-center justify-center backdrop-blur"><i class="fas fa-power-off text-xs"></i></button>
         </div>
 
-        <!-- Navigation -->
-        <div class="flex border-b text-xs font-bold uppercase bg-white shrink-0 overflow-x-auto no-scrollbar">
-            <button onclick="switchTab('warning')" id="tab-warning" class="flex-1 py-3 px-2 border-b-2 border-yellow-500 text-yellow-600 bg-yellow-50 whitespace-nowrap">Cảnh báo</button>
-            <button onclick="switchTab('sos')" id="tab-sos" class="flex-1 py-3 px-2 border-b-2 border-transparent text-gray-500 whitespace-nowrap">Cầu cứu (SOS)</button>
-            <button onclick="switchTab('units')" id="tab-units" class="flex-1 py-3 px-2 border-b-2 border-transparent text-gray-500 whitespace-nowrap">Đơn vị hỗ trợ</button>
-            <button onclick="switchTab('my')" id="tab-my" class="flex-1 py-3 px-2 border-b-2 border-transparent text-blue-600 whitespace-nowrap"><i class="fas fa-user"></i> Của tôi</button>
+        <!-- Tabs -->
+        <div class="flex border-b bg-white shrink-0 shadow-sm z-10">
+            <button onclick="switchTab('warning')" id="tab-warning" class="flex-1 py-3.5 text-[10px] font-bold uppercase border-b-4 border-yellow-500 text-yellow-700 bg-yellow-50/50 transition">Cảnh Báo <span id="cnt-warning" class="ml-1 bg-yellow-200 px-1.5 py-0.5 rounded-full text-[9px]">0</span></button>
+            <button onclick="switchTab('sos')" id="tab-sos" class="flex-1 py-3.5 text-[10px] font-bold uppercase border-b-4 border-transparent text-gray-400 hover:text-red-600 transition">SOS <span id="cnt-sos" class="ml-1 bg-gray-100 px-1.5 py-0.5 rounded-full text-[9px]">0</span></button>
+            <button onclick="switchTab('units')" id="tab-units" class="flex-1 py-3.5 text-[10px] font-bold uppercase border-b-4 border-transparent text-gray-400 hover:text-blue-600 transition">Đơn vị <span id="cnt-units" class="ml-1 bg-gray-100 px-1.5 py-0.5 rounded-full text-[9px]">0</span></button>
+            <button onclick="switchTab('my')" id="tab-my" class="flex-1 py-3.5 text-[10px] font-bold uppercase border-b-4 border-transparent text-blue-600 hover:bg-blue-50 transition"><i class="fas fa-user mr-1"></i>Của tôi</button>
         </div>
 
         <!-- Content Lists -->
-        <div class="flex-1 overflow-y-auto p-3 bg-gray-50">
+        <div class="flex-1 overflow-y-auto p-3 bg-gray-50 relative scroll-smooth">
             
-            <!-- WARNING TAB -->
-            <div id="content-warning" class="space-y-3">
-                <div class="flex justify-between items-center px-1">
-                    <span class="text-xs font-bold text-gray-500">DANH SÁCH CẢNH BÁO</span>
-                    <select id="filter-warning" onchange="renderWarnings()" class="text-[10px] border rounded px-1 py-0.5"><option value="all">Tất cả</option><option value="high">Nguy hiểm</option></select>
+            <!-- WARNING -->
+            <div id="content-warning" class="space-y-3 pb-24">
+                <input type="text" id="search-warning" onkeyup="renderWarnings()" placeholder="🔍 Tìm kiếm cảnh báo..." class="w-full text-sm border-0 ring-1 ring-gray-200 rounded-xl px-4 py-3 shadow-sm focus:ring-2 focus:ring-yellow-500 outline-none mb-2">
+                <div id="list-warning" class="space-y-3"></div>
+            </div>
+
+            <!-- SOS -->
+            <div id="content-sos" class="hidden space-y-3 pb-24">
+                <input type="text" id="search-sos" onkeyup="renderSOS()" placeholder="🔍 Tìm kiếm nạn nhân, vị trí SOS..." class="w-full text-sm border-0 ring-1 ring-gray-200 rounded-xl px-4 py-3 shadow-sm focus:ring-2 focus:ring-red-500 outline-none mb-2">
+                <div id="list-sos" class="space-y-3"></div>
+            </div>
+
+            <!-- UNITS -->
+            <div id="content-units" class="hidden space-y-3 pb-24">
+                <input type="text" id="search-units" onkeyup="renderUnits()" placeholder="🔍 Tìm đội cứu hộ, xe, xuồng..." class="w-full text-sm border-0 ring-1 ring-gray-200 rounded-xl px-4 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 outline-none mb-2">
+                <div class="flex gap-2 mb-2">
+                    <button onclick="downloadExcelTemplate()" class="flex-1 text-[11px] bg-white border border-gray-200 text-gray-600 py-2.5 rounded-xl font-bold hover:bg-gray-100 shadow-sm transition"><i class="fas fa-file-download mr-1"></i> Mẫu Excel</button>
+                    <button onclick="document.getElementById('excel-input').click()" class="flex-1 text-[11px] bg-green-50 border border-green-200 text-green-700 py-2.5 rounded-xl font-bold hover:bg-green-100 shadow-sm transition"><i class="fas fa-file-excel mr-1"></i> Import</button>
+                    <input type="file" id="excel-input" accept=".xlsx" class="hidden" onchange="importExcel(event)">
                 </div>
-                <div id="list-warning" class="space-y-3 pb-20"></div>
+                <div id="list-units" class="space-y-3"></div>
             </div>
 
-            <!-- SOS TAB -->
-            <div id="content-sos" class="hidden space-y-3">
-                <div id="list-sos" class="space-y-3 pb-20"></div>
-            </div>
-
-            <!-- UNITS TAB -->
-            <div id="content-units" class="hidden space-y-3">
-                <div class="bg-white p-3 rounded-lg border shadow-sm space-y-2">
-                    <input type="text" id="unit-search" onkeyup="renderUnits()" placeholder="Tìm kiếm đơn vị..." class="w-full text-sm border rounded px-3 py-2 outline-none focus:border-blue-500">
-                    <div class="flex gap-2">
-                        <button onclick="downloadExcelTemplate()" class="flex-1 text-[10px] bg-gray-100 text-gray-700 py-2 rounded font-bold hover:bg-gray-200"><i class="fas fa-download"></i> Tải mẫu Excel</button>
-                        <button onclick="document.getElementById('excel-input').click()" class="flex-1 text-[10px] bg-green-100 text-green-700 py-2 rounded font-bold hover:bg-green-200"><i class="fas fa-file-excel"></i> Import Excel</button>
-                        <input type="file" id="excel-input" accept=".xlsx" class="hidden" onchange="importExcel(event)">
+            <!-- MY ITEMS -->
+            <div id="content-my" class="hidden space-y-4 pb-24">
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-2xl border border-blue-100 flex gap-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-lg"><i class="fas fa-tasks"></i></div>
+                    <div>
+                        <h4 class="font-bold text-sm text-blue-900">Trung tâm quản lý</h4>
+                        <p class="text-xs text-blue-600 mt-1">Cập nhật trạng thái hoặc xóa tin khi đã xử lý xong.</p>
                     </div>
                 </div>
-                <div id="list-units" class="space-y-3 pb-20"></div>
-            </div>
-
-            <!-- MY ITEMS TAB -->
-            <div id="content-my" class="hidden space-y-3">
-                <div class="bg-blue-50 p-3 rounded-lg text-blue-800 text-xs mb-2">
-                    <i class="fas fa-info-circle"></i> Quản lý các tin bạn đã đăng. Hãy cập nhật trạng thái "Đã an toàn" hoặc xóa khi sự cố kết thúc để tránh gây nhiễu.
-                </div>
-                <div id="list-my" class="space-y-3 pb-20"></div>
+                <div id="my-lists-container" class="space-y-4"></div>
             </div>
         </div>
 
-        <!-- FAB Add Button -->
-        <button onclick="openModal()" id="fab" class="absolute bottom-6 right-6 w-14 h-14 bg-yellow-500 text-white rounded-full shadow-xl flex items-center justify-center text-2xl hover:scale-105 active:scale-95 transition z-[1001]">
+        <!-- FAB BUTTON -->
+        <button onclick="openCreateModal()" id="fab" class="absolute bottom-6 right-6 w-14 h-14 bg-gradient-to-tr from-indigo-600 to-blue-500 text-white rounded-full shadow-lg shadow-blue-500/40 flex items-center justify-center text-2xl hover:scale-110 active:scale-95 transition z-[1001] border-4 border-white">
             <i class="fas fa-plus"></i>
         </button>
     </div>
 
-    <!-- === RIGHT PANEL (MAP) === -->
-    <div class="flex-1 relative order-1 md:order-2 h-[40vh] md:h-full border-l border-gray-200">
-        <div id="map" class="w-full h-full z-0"></div>
-        <button onclick="locateUser()" class="absolute bottom-5 right-5 bg-white p-3 rounded-lg shadow-lg hover:text-blue-600 z-[900]"><i class="fas fa-crosshairs"></i></button>
+    <!-- 3. RIGHT MAP -->
+    <div class="flex-1 relative order-1 md:order-2 h-[45vh] md:h-full border-l border-gray-200 bg-gray-100">
+        <div id="map" class="w-full h-full z-0 outline-none"></div>
+        <div class="absolute bottom-6 right-6 flex flex-col gap-2 z-[900]">
+             <button onclick="locateUser()" class="bg-white text-slate-700 w-12 h-12 rounded-2xl shadow-lg hover:text-blue-600 flex items-center justify-center transition"><i class="fas fa-crosshairs text-lg"></i></button>
+        </div>
+        
+        <!-- Picker Hint -->
+        <div id="map-picker-hint" class="absolute top-6 left-1/2 transform -translate-x-1/2 bg-slate-800/90 backdrop-blur text-white px-6 py-3 rounded-full shadow-2xl z-[9999] hidden flex items-center gap-3 animate-bounce cursor-pointer hover:bg-slate-700" onclick="cancelPick()">
+            <i class="fas fa-map-pin text-yellow-400"></i>
+            <span class="text-sm font-bold">Chạm vào bản đồ để ghim vị trí</span>
+            <span class="text-[10px] bg-white/20 px-2 py-0.5 rounded ml-2 uppercase tracking-wide">Hủy</span>
+        </div>
     </div>
 
-    <!-- === MODAL CREATE === -->
-    <div id="create-modal" class="fixed inset-0 bg-black/60 z-[9999] hidden flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm">
-        <div class="bg-white w-full sm:max-w-lg h-[90vh] sm:h-auto sm:max-h-[90vh] rounded-t-2xl sm:rounded-2xl flex flex-col shadow-2xl overflow-hidden animate-[slideUp_0.3s]">
-            <div class="p-4 border-b flex justify-between items-center bg-gray-50 shrink-0">
-                <h2 id="modal-title" class="font-bold text-lg">Đăng Tin</h2>
-                <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-gray-200 text-gray-600">&times;</button>
+    <!-- 4. PROFILE MODAL -->
+    <div id="profile-modal" class="fixed inset-0 bg-black/50 z-[9999] hidden flex items-center justify-center p-4 backdrop-blur-sm animate__animated animate__fadeIn">
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden relative">
+            <button onclick="closeProfile()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10"><i class="fas fa-times text-xl"></i></button>
+            
+            <div class="bg-gradient-to-r from-slate-800 to-slate-900 h-32 flex items-center justify-center relative">
+                <div class="absolute -bottom-10">
+                    <img id="prof-avatar" src="" class="w-24 h-24 rounded-full border-4 border-white shadow-md bg-gray-200 object-cover">
+                    <div id="prof-badge-icon" class="absolute bottom-1 right-1 w-6 h-6 bg-gray-400 border-2 border-white rounded-full flex items-center justify-center text-white text-xs"><i class="fas fa-check"></i></div>
+                </div>
             </div>
             
-            <div class="p-5 overflow-y-auto space-y-4">
-                <!-- Select Forms -->
-                <div id="form-warning" class="hidden space-y-3">
-                    <label class="text-xs font-bold text-gray-500 uppercase">Loại cảnh báo</label>
-                    <select id="w-type" class="w-full border p-2 rounded bg-gray-50" onchange="checkOther('w-type','w-other')">
-                        <option value="Lũ lụt">🌊 Lũ lụt / Nước dâng</option>
-                        <option value="Sạt lở">🏔️ Sạt lở đất</option>
-                        <option value="Tai nạn">🚗 Tai nạn giao thông</option>
-                        <option value="Khác">✏️ Khác</option>
-                    </select>
-                    <input id="w-other" class="hidden w-full border p-2 rounded mt-1 border-yellow-400" placeholder="Nhập chi tiết...">
-                    <label class="text-xs font-bold text-gray-500 uppercase mt-2 block">Mức độ</label>
-                    <div class="flex gap-2">
-                        <label class="flex-1 cursor-pointer"><input type="radio" name="w-level" value="1" checked class="peer hidden"><div class="border p-2 rounded text-center text-xs peer-checked:bg-yellow-200">Thấp</div></label>
-                        <label class="flex-1 cursor-pointer"><input type="radio" name="w-level" value="3" class="peer hidden"><div class="border p-2 rounded text-center text-xs peer-checked:bg-orange-200">Cao</div></label>
-                        <label class="flex-1 cursor-pointer"><input type="radio" name="w-level" value="5" class="peer hidden"><div class="border p-2 rounded text-center text-xs peer-checked:bg-red-600 peer-checked:text-white">NGUY HIỂM</div></label>
+            <div class="pt-12 pb-6 px-6 text-center">
+                <h3 id="prof-name" class="text-xl font-bold text-slate-800">User Name</h3>
+                <div id="prof-status" class="inline-block mt-1 px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-500">Chưa xác minh</div>
+                
+                <div class="mt-6 space-y-4 text-left">
+                    <div>
+                        <label class="text-xs font-bold text-gray-400 uppercase">Tên hiển thị</label>
+                        <input id="edit-name" type="text" class="w-full border-b border-gray-200 py-2 text-sm font-bold text-slate-700 focus:border-blue-500 outline-none transition">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-400 uppercase">Số điện thoại (2FA)</label>
+                        <div class="flex gap-2">
+                            <input id="edit-phone" type="tel" class="flex-1 border-b border-gray-200 py-2 text-sm font-bold text-slate-700 focus:border-blue-500 outline-none transition" placeholder="Chưa cập nhật">
+                            <button onclick="verifyPhone()" class="text-xs text-blue-600 font-bold hover:underline">Xác minh</button>
+                        </div>
+                    </div>
+                    <div>
+                         <label class="text-xs font-bold text-gray-400 uppercase">Email</label>
+                         <div class="flex justify-between items-center py-2 border-b border-gray-200">
+                             <span id="prof-email" class="text-sm font-medium text-slate-600">email@example.com</span>
+                             <button onclick="sendVerifyEmail()" id="btn-verify-email" class="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-1 rounded font-bold hover:bg-yellow-200">Gửi Mail XM</button>
+                         </div>
                     </div>
                 </div>
 
-                <div id="form-sos" class="hidden space-y-3">
-                    <label class="text-xs font-bold text-gray-500 uppercase">Sự cố</label>
-                    <select id="s-type" class="w-full border p-2 rounded bg-red-50" onchange="checkOther('s-type','s-other')">
-                        <option value="Mắc kẹt">🏠 Mắc kẹt / Cô lập</option>
-                        <option value="Thương tích">🚑 Thương tích / Y tế</option>
-                        <option value="Thiếu lương thực">🍲 Thiếu lương thực</option>
-                        <option value="Khác">✏️ Khác</option>
-                    </select>
-                    <input id="s-other" class="hidden w-full border p-2 rounded mt-1 border-red-400" placeholder="Chi tiết sự cố...">
-                    <div class="flex gap-3">
-                        <div class="flex-1"><label class="text-xs font-bold">Số người</label><input type="number" id="s-count" value="1" class="w-full border p-2 rounded text-center"></div>
-                        <div class="flex-1"><label class="text-xs font-bold">Khẩn cấp</label><select id="s-urgency" class="w-full border p-2 rounded text-red-600 font-bold"><option value="5">🔥 Nguy kịch</option><option value="3">⚠️ Khẩn cấp</option><option value="1">⏳ Cần hỗ trợ</option></select></div>
-                    </div>
-                </div>
+                <button onclick="saveProfile()" class="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-500/30 transition">Lưu Thay Đổi</button>
+            </div>
+        </div>
+    </div>
 
-                <div id="form-units" class="hidden space-y-3">
-                    <label class="text-xs font-bold text-gray-500 uppercase">Tên đơn vị</label>
-                    <input id="u-name" class="w-full border p-2 rounded" placeholder="VD: Đội Xuồng 01...">
-                    <label class="text-xs font-bold text-gray-500 uppercase mt-2 block">Loại hình</label>
-                    <select id="u-type" class="w-full border p-2 rounded" onchange="checkOther('u-type','u-other')">
-                        <option value="Cano">🚤 Cano / Thuyền</option>
-                        <option value="Xe tải">🚛 Xe tải / Bán tải</option>
-                        <option value="Y tế">⚕️ Y tế / Thuốc</option>
-                        <option value="Nhu yếu phẩm">📦 Nhu yếu phẩm</option>
-                        <option value="Khác">✏️ Khác</option>
-                    </select>
-                    <input id="u-other" class="hidden w-full border p-2 rounded mt-1 border-blue-400" placeholder="Chi tiết...">
-                </div>
-
-                <!-- ADDRESS (API 2025) -->
-                <div class="bg-gray-50 p-3 rounded-lg border">
-                    <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Địa chỉ Hành chính (Bắt buộc)</label>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
-                        <select id="addr-province" class="border p-2 rounded text-xs" onchange="loadDistricts()"><option value="">-- Tỉnh/TP --</option></select>
-                        <select id="addr-district" class="border p-2 rounded text-xs" onchange="loadWards()" disabled><option value="">-- Quận/Huyện --</option></select>
-                        <select id="addr-ward" class="border p-2 rounded text-xs" disabled><option value="">-- Phường/Xã --</option></select>
-                    </div>
-                    <textarea id="desc" rows="2" class="w-full border p-2 rounded text-sm" placeholder="Mô tả chi tiết vị trí, số nhà..."></textarea>
-                </div>
-
-                <div class="text-xs text-gray-400 text-center"><i class="fas fa-map-marker-alt"></i> Vị trí GPS hiện tại của bạn sẽ được đính kèm.</div>
+    <!-- 5. DETAIL MODAL -->
+    <div id="detail-modal" class="fixed inset-0 bg-black/60 z-[9999] hidden flex items-center justify-center p-4 backdrop-blur-sm animate__animated animate__fadeIn">
+        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] relative">
+            <button onclick="closeDetail()" class="absolute top-4 right-4 z-10 w-8 h-8 bg-black/20 hover:bg-black/40 text-white rounded-full flex items-center justify-center backdrop-blur transition"><i class="fas fa-times"></i></button>
+            
+            <div id="detail-header-bg" class="h-32 bg-gray-200 relative">
+                <div class="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-white to-transparent"></div>
+                <div id="detail-badge" class="absolute bottom-4 left-6 px-3 py-1 rounded-lg text-[10px] font-black tracking-wider text-white shadow-sm uppercase">Loại tin</div>
             </div>
 
-            <div class="p-4 border-t bg-gray-50 shrink-0">
-                <button onclick="submitData()" id="btn-submit" class="w-full py-3 rounded-xl text-white font-bold shadow-lg uppercase">Gửi tin</button>
+            <div class="px-6 pb-6 overflow-y-auto custom-scrollbar">
+                <h2 id="detail-title" class="text-2xl font-black text-slate-800 leading-tight mb-2">Tiêu đề</h2>
+                
+                <!-- Metadata -->
+                <div class="flex items-center gap-3 text-xs text-gray-500 mb-6">
+                    <span class="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded"><i class="far fa-clock"></i> <span id="detail-time">--</span></span>
+                    <span class="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded"><i class="fas fa-map-marker-alt"></i> <span id="detail-dist">--</span></span>
+                </div>
+
+                <!-- Author -->
+                <div class="flex items-center gap-3 mb-6 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <img id="detail-avatar" class="w-10 h-10 rounded-full border border-white shadow-sm">
+                    <div>
+                        <div class="flex items-center gap-1">
+                            <span id="detail-author" class="font-bold text-sm text-slate-700">Tên người đăng</span>
+                            <span id="detail-verify-icon"></span>
+                        </div>
+                        <div id="detail-phone-display" class="text-xs text-slate-500 font-mono">09xx *** ***</div>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="mb-6">
+                    <h4 class="text-xs font-bold text-gray-400 uppercase mb-2">Nội dung chi tiết</h4>
+                    <p id="detail-desc" class="text-sm text-slate-700 leading-relaxed whitespace-pre-line bg-white border border-gray-100 p-3 rounded-xl shadow-sm">...</p>
+                </div>
+
+                <!-- History -->
+                <div class="mb-4">
+                     <div class="flex justify-between items-center cursor-pointer mb-2" onclick="document.getElementById('hist-log').classList.toggle('hidden')">
+                         <span class="text-xs font-bold text-gray-400 uppercase">Lịch sử chỉnh sửa</span>
+                         <i class="fas fa-chevron-down text-xs text-gray-400"></i>
+                     </div>
+                     <div id="hist-log" class="hidden text-[10px] text-gray-500 space-y-1 pl-3 border-l-2 border-gray-200 py-1"></div>
+                </div>
+
+                <!-- Owner Actions -->
+                <div id="detail-owner-actions" class="hidden grid grid-cols-2 gap-3 mb-4">
+                    <button onclick="editCurrentItem()" class="py-2 rounded-lg bg-blue-50 text-blue-600 font-bold text-xs hover:bg-blue-100">Chỉnh sửa</button>
+                    <button onclick="deleteCurrentItem()" class="py-2 rounded-lg bg-red-50 text-red-600 font-bold text-xs hover:bg-red-100">Xóa tin này</button>
+                </div>
+
+                <!-- Public Actions -->
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <button id="btn-nav" class="py-3.5 rounded-xl border border-gray-200 font-bold text-slate-600 hover:bg-gray-50 flex items-center justify-center gap-2 transition">
+                        <i class="fas fa-directions text-blue-500"></i> Dẫn đường
+                    </button>
+                    <a id="btn-call" href="#" class="py-3.5 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 flex items-center justify-center gap-2 shadow-lg shadow-green-500/30 transition">
+                        <i class="fas fa-phone animate-tada"></i> Gọi Ngay
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. CREATE FORM MODAL -->
+    <div id="create-modal" class="fixed inset-0 bg-black/60 z-[9999] hidden flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate__animated animate__fadeInUp">
+        <div class="bg-white w-full sm:max-w-lg h-[90vh] sm:h-auto sm:max-h-[90vh] rounded-t-3xl sm:rounded-3xl flex flex-col shadow-2xl overflow-hidden">
+            <div class="p-5 border-b flex justify-between items-center bg-white shrink-0">
+                <h2 id="modal-title" class="font-black text-xl text-slate-800 uppercase">Tiêu đề</h2>
+                <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition flex items-center justify-center"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto custom-scrollbar space-y-5">
+                <!-- Location Picker -->
+                <div onclick="startPickLocation()" class="group relative bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 p-4 rounded-2xl cursor-pointer hover:shadow-md transition">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <div class="text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-1">Vị trí sự cố</div>
+                            <div id="loc-text" class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                <i class="fas fa-satellite-dish text-blue-500 animate-pulse"></i> GPS Hiện tại
+                            </div>
+                        </div>
+                        <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-blue-600 shadow-sm group-hover:scale-110 transition"><i class="fas fa-map-marked-alt"></i></div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Form -->
+                <div id="form-container" class="space-y-4"></div>
+
+                <!-- Common Desc -->
+                <div>
+                    <label class="text-xs font-bold text-slate-400 uppercase ml-1">Mô tả chi tiết</label>
+                    <textarea id="inp-desc" rows="3" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition" placeholder="Mô tả cụ thể sự việc, địa chỉ..."></textarea>
+                </div>
+            </div>
+
+            <div class="p-5 border-t bg-white shrink-0">
+                <button onclick="submitData()" id="btn-submit" class="w-full py-4 rounded-2xl text-white font-bold text-lg shadow-xl shadow-blue-500/20 transform active:scale-95 transition">GỬI TIN</button>
             </div>
         </div>
     </div>
 
     <!-- SCRIPT -->
     <script>
-        // --- CONFIGURATION ---
+        // CONFIG
     const firebaseConfig = {
         apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
         authDomain: "profile-d1214.firebaseapp.com",
@@ -266,392 +349,404 @@
         appId: "1:914980131889:web:72f8da15c42dbee671b110",
         measurementId: "G-C587M69LZW"
     };
+        const SOS_CATS = ["Cấp cứu y tế", "Mắc kẹt lũ lụt", "Sập nhà", "Cháy nổ", "Tai nạn GT", "Sạt lở đất", "Đuối nước", "Thiếu lương thực", "Cần thuốc men", "Mất liên lạc", "Khác"];
 
-        // --- GLOBAL VARS ---
-        let auth, db, map, markersGroup, currentUser, userMarker;
+        // STATE
+        let auth, db, map, markersGroup, currentUser, userMarker, tempMarker;
         let currentLocation = { lat: 21.0285, lng: 105.8542 };
+        let pickedLocation = null, isPickingMode = false, isEditMode = false, editingItem = null;
         let currentTab = 'warning';
         let allData = { warnings: [], sos: [], units: [] };
-        let provincesData = [];
 
-        // --- INIT ---
+        // INIT
         document.addEventListener('DOMContentLoaded', () => {
-            if(firebaseConfig.apiKey.includes("xxxx")) {
-                document.getElementById('config-alert').classList.remove('hidden');
-            } else {
+            if(firebaseConfig.apiKey.includes("xxxx")) Swal.fire('Lỗi Config', 'Chưa nhập Firebase API Key!', 'error');
+            else {
                 firebase.initializeApp(firebaseConfig);
                 auth = firebase.auth();
                 db = firebase.firestore();
                 checkAuth();
-                fetchProvinces(); // Load Admin Units
             }
         });
 
-        // --- AUTH ---
+        // AUTH & PROFILE
         function checkAuth() {
-            auth.onAuthStateChanged(async (user) => {
-                if (user) {
-                    currentUser = user;
-                    document.getElementById('user-name').innerText = user.displayName;
-                    document.getElementById('user-avatar').src = user.photoURL || 'https://ui-avatars.com/api/?name='+user.displayName;
+            auth.onAuthStateChanged(async (u) => {
+                if (u) {
+                    currentUser = u;
+                    const doc = await db.collection('users').doc(u.uid).get();
+                    let userData = doc.exists ? doc.data() : {};
+                    // Merge auth data
+                    currentUser.dbPhone = userData.phone || "";
+                    currentUser.displayName = userData.displayName || u.displayName;
+                    
+                    updateHeaderProfile();
                     document.getElementById('login-screen').classList.add('hidden');
-                    
-                    const doc = await db.collection('users').doc(user.uid).get();
-                    if(!doc.exists || !doc.data().phone) document.getElementById('phone-modal').classList.remove('hidden');
-                    else currentUser.phone = doc.data().phone;
-                    
                     initMap();
-                } else {
-                    document.getElementById('login-screen').classList.remove('hidden');
-                }
+                } else document.getElementById('login-screen').classList.remove('hidden');
             });
         }
-        function loginWithGoogle() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(alert); }
-        function logout() { if(confirm("Đăng xuất?")) auth.signOut(); }
-        async function updatePhone() {
-            const p = document.getElementById('phone-input').value;
-            if(p.length<9) return alert("SĐT sai");
-            await db.collection('users').doc(currentUser.uid).set({phone:p, name:currentUser.displayName, photo:currentUser.photoURL},{merge:true});
-            currentUser.phone = p;
-            document.getElementById('phone-modal').classList.add('hidden');
+
+        function loginWithGoogle() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e => Swal.fire('Lỗi', e.message, 'error')); }
+        function logout() { Swal.fire({title:'Đăng xuất?', icon:'question', showCancelButton:true}).then(r=>{ if(r.isConfirmed) auth.signOut(); }); }
+
+        function updateHeaderProfile() {
+            const isVerified = currentUser.emailVerified || (currentUser.dbPhone && currentUser.dbPhone.length > 9);
+            document.getElementById('header-name').innerText = currentUser.displayName;
+            document.getElementById('header-avatar').src = currentUser.photoURL;
+            document.getElementById('header-badge').className = `absolute -bottom-1 -right-1 w-4 h-4 flex items-center justify-center rounded-full border border-white text-[8px] text-white ${isVerified ? 'bg-green-500' : 'bg-orange-400'}`;
+            document.getElementById('header-badge').innerHTML = `<i class="fas fa-${isVerified ? 'check' : 'exclamation'}"></i>`;
         }
 
-        // --- MAP ---
+        // PROFILE MODAL FUNCTIONS
+        function openProfile() {
+            const isVerified = currentUser.emailVerified || (currentUser.dbPhone && currentUser.dbPhone.length > 9);
+            document.getElementById('profile-modal').classList.remove('hidden');
+            document.getElementById('prof-avatar').src = currentUser.photoURL;
+            document.getElementById('prof-name').innerText = currentUser.displayName;
+            document.getElementById('prof-email').innerText = currentUser.email;
+            document.getElementById('edit-name').value = currentUser.displayName;
+            document.getElementById('edit-phone').value = currentUser.dbPhone;
+            
+            // UI State
+            const statusEl = document.getElementById('prof-status');
+            const badgeIcon = document.getElementById('prof-badge-icon');
+            
+            if(isVerified) {
+                statusEl.className = "inline-block mt-1 px-3 py-1 rounded-full text-xs font-bold badge-verified";
+                statusEl.innerText = "Đã xác minh danh tính";
+                badgeIcon.className = "absolute bottom-1 right-1 w-6 h-6 bg-green-500 border-2 border-white rounded-full flex items-center justify-center text-white text-xs";
+            } else {
+                statusEl.className = "inline-block mt-1 px-3 py-1 rounded-full text-xs font-bold badge-risk";
+                statusEl.innerText = "Chưa kiểm chứng";
+                badgeIcon.className = "absolute bottom-1 right-1 w-6 h-6 bg-orange-400 border-2 border-white rounded-full flex items-center justify-center text-white text-xs";
+            }
+
+            // Button states
+            document.getElementById('btn-verify-email').style.display = currentUser.emailVerified ? 'none' : 'block';
+        }
+        function closeProfile() { document.getElementById('profile-modal').classList.add('hidden'); }
+        
+        async function saveProfile() {
+            const name = document.getElementById('edit-name').value;
+            const phone = document.getElementById('edit-phone').value;
+            try {
+                await db.collection('users').doc(currentUser.uid).set({ displayName: name, phone: phone, email: currentUser.email }, { merge: true });
+                await currentUser.updateProfile({ displayName: name });
+                currentUser.displayName = name;
+                currentUser.dbPhone = phone;
+                updateHeaderProfile();
+                closeProfile();
+                Swal.fire('Thành công', 'Đã cập nhật hồ sơ!', 'success');
+            } catch(e) { Swal.fire('Lỗi', e.message, 'error'); }
+        }
+
+        function verifyPhone() { Swal.fire('Tính năng sắp ra mắt', 'Hệ thống xác thực SMS đang được bảo trì.', 'info'); }
+        function sendVerifyEmail() { currentUser.sendEmailVerification().then(()=>Swal.fire('Đã gửi', 'Vui lòng kiểm tra hộp thư (cả mục Spam).', 'success')); }
+
+        // MAP
         function initMap() {
             if(map) return;
             map = L.map('map', {zoomControl:false}).setView([currentLocation.lat, currentLocation.lng], 13);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
             markersGroup = L.layerGroup().addTo(map);
-            
-            if(navigator.geolocation) {
-                navigator.geolocation.watchPosition(pos => {
-                    currentLocation = {lat: pos.coords.latitude, lng: pos.coords.longitude};
-                    if(userMarker) map.removeLayer(userMarker);
-                    userMarker = L.marker([currentLocation.lat, currentLocation.lng], {
-                        icon: L.divIcon({className:'', html:`<div class="w-4 h-4 bg-blue-600 border-2 border-white rounded-full shadow animate-pulse"></div>`})
-                    }).addTo(map);
-                    renderCurrentTab();
-                }, null, {enableHighAccuracy:true});
-            }
-
-            // Load Data
-            listenData('warnings'); listenData('sos'); listenData('units');
+            if(navigator.geolocation) navigator.geolocation.watchPosition(p => {
+                currentLocation = {lat: p.coords.latitude, lng: p.coords.longitude};
+                if(userMarker) userMarker.setLatLng(currentLocation);
+                else userMarker = L.marker(currentLocation, {icon:L.divIcon({className:'', html:`<div class="w-4 h-4 bg-blue-600 border-2 border-white rounded-full shadow animate-pulse"></div>`})}).addTo(map);
+            });
+            map.on('click', e => {
+                if(isPickingMode) {
+                    pickedLocation = e.latlng;
+                    if(tempMarker) tempMarker.remove();
+                    tempMarker = L.marker(pickedLocation).addTo(map);
+                    isPickingMode = false;
+                    document.getElementById('map-picker-hint').classList.add('hidden');
+                    document.getElementById('create-modal').classList.remove('hidden');
+                    document.getElementById('loc-text').innerHTML = `<span class="text-blue-600 font-bold">${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</span>`;
+                }
+            });
+            ['warnings','sos','units'].forEach(c => listenData(c));
         }
-        function locateUser() { map.flyTo([currentLocation.lat, currentLocation.lng], 15); }
 
-        // --- DATA ---
-        function listenData(col) {
-            db.collection(col).orderBy('timestamp', 'desc').onSnapshot(snap => {
-                allData[col] = snap.docs.map(d => ({id:d.id, ...d.data()}));
-                renderCurrentTab();
-                updateMarkers();
+        function listenData(c) {
+            db.collection(c).orderBy('timestamp','desc').onSnapshot(s => {
+                allData[c] = s.docs.map(d => ({id:d.id, col:c, ...d.data()}));
+                updateCounts(); renderCurrentTab(); updateMarkers();
             });
         }
+        function updateCounts() { ['warning','sos','units'].forEach(k => document.getElementById('cnt-'+k).innerText = allData[k==='warning'?'warnings':(k==='sos'?'sos':'units')].length); }
 
-        // --- ADMIN UNITS (API) ---
-        async function fetchProvinces() {
-            try {
-                const res = await fetch('https://provinces.open-api.vn/api/?depth=2');
-                provincesData = await res.json();
-                const sel = document.getElementById('addr-province');
-                provincesData.forEach(p => {
-                    const opt = document.createElement('option');
-                    opt.value = p.code; opt.text = p.name;
-                    sel.appendChild(opt);
-                });
-            } catch(e) { console.error("Error loading provinces"); }
-        }
-        function loadDistricts() {
-            const pCode = document.getElementById('addr-province').value;
-            const dSel = document.getElementById('addr-district');
-            const wSel = document.getElementById('addr-ward');
-            dSel.innerHTML = '<option value="">-- Quận/Huyện --</option>'; dSel.disabled = !pCode;
-            wSel.innerHTML = '<option value="">-- Phường/Xã --</option>'; wSel.disabled = true;
-            
-            if(pCode) {
-                const p = provincesData.find(x => x.code == pCode);
-                p.districts.forEach(d => {
-                    const opt = document.createElement('option'); opt.value = d.code; opt.text = d.name;
-                    dSel.appendChild(opt);
-                });
-            }
-        }
-        async function loadWards() {
-            const dCode = document.getElementById('addr-district').value;
-            const wSel = document.getElementById('addr-ward');
-            wSel.innerHTML = '<option value="">-- Phường/Xã --</option>'; wSel.disabled = !dCode;
-            
-            if(dCode) {
-                const res = await fetch(`https://provinces.open-api.vn/api/d/${dCode}?depth=2`);
-                const d = await res.json();
-                d.wards.forEach(w => {
-                    const opt = document.createElement('option'); opt.value = w.name; opt.text = w.name;
-                    wSel.appendChild(opt);
-                });
-            }
-        }
-        function getAddressString() {
-            const p = document.getElementById('addr-province');
-            const d = document.getElementById('addr-district');
-            const w = document.getElementById('addr-ward');
-            if(!p.value || !d.value || !w.value) return null;
-            return `${w.value}, ${d.options[d.selectedIndex].text}, ${p.options[p.selectedIndex].text}`;
-        }
-
-        // --- RENDERING ---
+        // RENDER LIST
         function switchTab(t) {
             currentTab = t;
             ['warning','sos','units','my'].forEach(k => {
-                const btn = document.getElementById('tab-'+k);
-                const div = document.getElementById('content-'+k);
-                if(k===t) {
-                    div.classList.remove('hidden');
-                    btn.className = `flex-1 py-3 px-2 border-b-2 whitespace-nowrap ${t==='sos'?'border-red-500 text-red-600 bg-red-50':(t==='units'?'border-blue-500 text-blue-600 bg-blue-50':(t==='my'?'border-blue-800 text-blue-800 bg-blue-50':'border-yellow-500 text-yellow-600 bg-yellow-50'))}`;
-                    // FAB Color
-                    const fab = document.getElementById('fab');
-                    if(t==='my') fab.classList.add('hidden');
-                    else {
-                        fab.classList.remove('hidden');
-                        fab.className = `absolute bottom-6 right-6 w-14 h-14 text-white rounded-full shadow-xl flex items-center justify-center text-2xl hover:scale-105 active:scale-95 transition z-[1001] ${t==='sos'?'bg-red-600 animate-pulse':(t==='units'?'bg-blue-600':'bg-yellow-500')}`;
-                    }
-                } else {
-                    div.classList.add('hidden');
-                    btn.className = "flex-1 py-3 px-2 border-b-2 border-transparent text-gray-500 whitespace-nowrap";
-                }
+                document.getElementById('content-'+k).classList.add('hidden');
+                document.getElementById('tab-'+k).className = `flex-1 py-3.5 text-[10px] font-bold uppercase border-b-4 border-transparent text-gray-400 hover:text-gray-600 transition`;
             });
+            document.getElementById('content-'+t).classList.remove('hidden');
+            const activeClass = t==='sos'?'border-red-500 text-red-600 bg-red-50/50':(t==='units'?'border-blue-500 text-blue-600 bg-blue-50/50':(t==='my'?'border-blue-600 text-blue-600 bg-blue-50/50':'border-yellow-500 text-yellow-700 bg-yellow-50/50'));
+            document.getElementById('tab-'+t).className = `flex-1 py-3.5 text-[10px] font-bold uppercase border-b-4 transition ${activeClass}`;
+            document.getElementById('fab').classList.toggle('hidden', t==='my');
             renderCurrentTab();
         }
 
-        function renderCurrentTab() {
-            if(currentTab === 'my') renderMyItems();
-            else if(currentTab === 'warning') renderWarnings();
-            else if(currentTab === 'sos') renderSOS();
-            else renderUnits();
-        }
-
-        function renderCard(item, type) {
-            const dist = getDist(item.lat, item.lng);
-            const statusMap = {'new':'Mới','process':'Đang xử lý','safe':'An toàn/Xong'};
-            const statusColor = {'new':'bg-red-100 text-red-800','process':'bg-yellow-100 text-yellow-800','safe':'bg-green-100 text-green-800'};
-            const st = item.status || 'new';
-
-            // User Info
-            const avatar = item.userPhoto || 'https://ui-avatars.com/api/?name='+item.creatorName;
+        function createCard(i) {
+            const isVerified = i.userVerified; // From data
+            const badge = isVerified ? '<i class="fas fa-check-circle text-green-500 ml-1"></i>' : '';
+            const color = i.col==='sos'?'border-l-4 border-red-500':(i.col==='warning'?'border-l-4 border-yellow-500':'border-l-4 border-blue-500');
             
-            return `
-            <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition cursor-pointer" onclick="flyTo(${item.lat},${item.lng})">
-                <div class="flex items-start justify-between">
-                    <div class="flex items-center gap-2 mb-2">
-                        <img src="${avatar}" class="w-6 h-6 rounded-full border border-gray-200">
-                        <div>
-                            <span class="text-[10px] text-gray-500 block leading-tight">Đăng bởi ${item.creatorName}</span>
-                            <span class="text-[10px] text-gray-400 block leading-tight">${timeAgo(item.timestamp)}</span>
+            return `<div onclick="flyAndShow('${i.col}','${i.id}', ${i.lat}, ${i.lng})" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition cursor-pointer group ${color}">
+                <div class="flex justify-between items-start mb-2">
+                    <div class="flex items-center gap-2">
+                        <img src="${i.userPhoto}" class="w-8 h-8 rounded-full border border-gray-100">
+                        <div class="leading-tight">
+                            <div class="text-xs font-bold text-slate-700 flex items-center">${i.creatorName} ${badge}</div>
+                            <div class="text-[10px] text-slate-400">${timeAgo(i.timestamp)}</div>
                         </div>
                     </div>
-                    <span class="text-[10px] px-2 py-0.5 rounded font-bold ${statusColor[st]}">${statusMap[st]}</span>
+                    <span class="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">${getDist(i.lat,i.lng)}km</span>
                 </div>
-                
-                <h4 class="font-bold text-gray-800 text-sm ${type==='sos'?'text-red-700 uppercase':''}">${item.type || item.name}</h4>
-                <p class="text-xs text-gray-600 line-clamp-2 mt-1"><i class="fas fa-map-marker-alt text-[10px] mr-1"></i> ${item.address || 'Không có địa chỉ'}</p>
-                <p class="text-xs text-gray-500 mt-1 italic">"${item.desc}"</p>
-                
-                <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100">
-                    <span class="text-xs font-bold text-blue-600">${dist} km</span>
-                    ${type==='sos' || type==='units' ? `<a href="tel:${item.phone}" onclick="event.stopPropagation()" class="bg-green-500 text-white px-3 py-1 rounded text-xs font-bold hover:bg-green-600"><i class="fas fa-phone"></i> Gọi</a>` : ''}
-                </div>
+                <h4 class="font-bold text-sm text-slate-800 group-hover:text-blue-600 transition ${i.col==='sos'?'text-red-600':''}">${i.type||i.name}</h4>
+                <p class="text-xs text-slate-500 line-clamp-2 mt-1">${i.desc}</p>
             </div>`;
         }
 
-        function renderWarnings() {
-            const div = document.getElementById('list-warning'); div.innerHTML = '';
-            const filter = document.getElementById('filter-warning').value;
-            let data = allData.warnings.sort((a,b)=>getDistVal(a)-getDistVal(b));
-            if(filter==='high') data = data.filter(i=>parseInt(i.severity)>=3);
-            data.forEach(i => div.innerHTML += renderCard(i, 'warning'));
-        }
-
-        function renderSOS() {
-            const div = document.getElementById('list-sos'); div.innerHTML = '';
-            allData.sos.sort((a,b)=>b.urgency-a.urgency || getDistVal(a)-getDistVal(b))
-                .forEach(i => div.innerHTML += renderCard(i, 'sos'));
-        }
-
-        function renderUnits() {
-            const div = document.getElementById('list-units'); div.innerHTML = '';
-            const key = document.getElementById('unit-search').value.toLowerCase();
-            allData.units.filter(i=>i.name.toLowerCase().includes(key))
-                .sort((a,b)=>getDistVal(a)-getDistVal(b))
-                .forEach(i => div.innerHTML += renderCard(i, 'units'));
-        }
-
-        function renderMyItems() {
-            const div = document.getElementById('list-my'); div.innerHTML = '';
-            const myItems = [
-                ...allData.warnings.map(i=>({...i, col:'warnings'})),
-                ...allData.sos.map(i=>({...i, col:'sos'})),
-                ...allData.units.map(i=>({...i, col:'units'}))
-            ].filter(i => i.uid === currentUser.uid);
-
-            if(myItems.length === 0) div.innerHTML = '<p class="text-center text-gray-400 text-xs py-5">Bạn chưa tạo tin nào.</p>';
-
-            myItems.forEach(i => {
-                const st = i.status || 'new';
-                div.innerHTML += `
-                <div class="bg-white p-3 rounded-lg border-l-4 border-blue-500 shadow-sm relative">
-                    <h4 class="font-bold text-sm text-gray-800">${i.type || i.name}</h4>
-                    <p class="text-xs text-gray-500">${timeAgo(i.timestamp)}</p>
-                    <div class="mt-2 flex gap-2">
-                        <select onchange="updateStatus('${i.col}','${i.id}',this.value)" class="text-xs border p-1 rounded bg-gray-50">
-                            <option value="new" ${st=='new'?'selected':''}>Mới tạo</option>
-                            <option value="process" ${st=='process'?'selected':''}>Đang xử lý</option>
-                            <option value="safe" ${st=='safe'?'selected':''}>Đã xong/An toàn</option>
-                        </select>
-                        <button onclick="deleteItem('${i.col}','${i.id}')" class="text-xs text-red-500 font-bold ml-auto">XÓA</button>
+        function renderCurrentTab() {
+            if(currentTab==='my') {
+                const row = i => `<div class="bg-white p-3 rounded-xl border border-slate-200 flex justify-between items-center mb-2">
+                    <div onclick="openDetail('${i.col}','${i.id}')" class="cursor-pointer">
+                        <div class="font-bold text-xs text-slate-700">${i.type||i.name}</div>
+                        <div class="text-[10px] text-slate-400">${timeAgo(i.timestamp)}</div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="editItem('${i.col}','${i.id}')" class="w-7 h-7 bg-blue-50 text-blue-600 rounded flex items-center justify-center hover:bg-blue-100"><i class="fas fa-edit text-xs"></i></button>
+                        <button onclick="deleteItem('${i.col}','${i.id}')" class="w-7 h-7 bg-red-50 text-red-600 rounded flex items-center justify-center hover:bg-red-100"><i class="fas fa-trash text-xs"></i></button>
                     </div>
                 </div>`;
+                const my = (k) => allData[k].filter(i=>i.uid==currentUser.uid).map(row).join('');
+                document.getElementById('my-lists-container').innerHTML = `
+                    <div class="mb-4"><h5 class="text-xs font-bold text-yellow-600 uppercase mb-2">Cảnh báo</h5>${my('warnings')||'<span class="text-xs italic text-gray-400">Trống</span>'}</div>
+                    <div class="mb-4"><h5 class="text-xs font-bold text-red-600 uppercase mb-2">SOS</h5>${my('sos')||'<span class="text-xs italic text-gray-400">Trống</span>'}</div>
+                    <div><h5 class="text-xs font-bold text-blue-600 uppercase mb-2">Đơn vị</h5>${my('units')||'<span class="text-xs italic text-gray-400">Trống</span>'}</div>`;
+            } else {
+                let d = allData[currentTab==='warning'?'warnings':(currentTab==='sos'?'sos':'units')];
+                const k = document.getElementById('search-'+currentTab).value.toLowerCase();
+                d = d.filter(i=>(i.desc+i.type+i.name).toLowerCase().includes(k)).sort((a,b)=>getDistVal(a)-getDistVal(b));
+                document.getElementById('list-'+currentTab).innerHTML = d.map(createCard).join('');
+            }
+        }
+
+        // INTERACTION
+        function flyAndShow(col, id, lat, lng) {
+            map.flyTo([lat, lng], 16, {duration: 1.5});
+            if(window.innerWidth < 768) document.getElementById('map').scrollIntoView({behavior:'smooth'});
+            // Auto open popup via marker loop
+            markersGroup.eachLayer(l => { 
+                if(l.getLatLng().lat == lat && l.getLatLng().lng == lng) l.openPopup(); 
             });
         }
 
-        // --- MAP MARKERS ---
         function updateMarkers() {
             if(!map) return;
             markersGroup.clearLayers();
-            
-            const createMarker = (i, color, z) => {
-                const avatar = i.userPhoto || 'https://ui-avatars.com/api/?name='+i.creatorName;
-                const statusColor = i.status === 'safe' ? 'status-safe' : (i.status === 'process' ? 'status-process' : 'status-new');
-                const pulseClass = (i.col === 'sos' && i.status !== 'safe') ? 'sos-pulse' : '';
+            const add = (i, col, color, z) => {
+                const pulse = col==='sos'?'sos-pulse':'';
+                const badge = i.userVerified ? `<div class="marker-badge"><i class="fas fa-check"></i></div>` : '';
+                const icon = L.divIcon({className:'', html:`<div class="avatar-marker ${pulse}" style="border-color:${color}"><img src="${i.userPhoto}">${badge}</div>`, iconSize:[48,48], iconAnchor:[24,48]});
                 
-                const icon = L.divIcon({
-                    className: '',
-                    html: `
-                        <div class="avatar-marker ${pulseClass}" style="border-color:${color}">
-                            <img src="${avatar}">
-                            <div class="marker-status ${statusColor}"></div>
-                        </div>`,
-                    iconSize: [40, 40], iconAnchor: [20, 40]
-                });
-                L.marker([i.lat, i.lng], {icon, zIndexOffset:z}).addTo(markersGroup)
-                 .bindPopup(`<b>${i.type||i.name}</b><br>${i.desc}<br><small>Bởi: ${i.creatorName}</small>`);
+                // Popup Content
+                const pop = `
+                    <div class="p-3 font-sans">
+                        <div class="flex gap-2 items-center mb-2">
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded text-white" style="background:${color}">${col.toUpperCase()}</span>
+                            <span class="text-[10px] text-gray-400">${timeAgo(i.timestamp)}</span>
+                        </div>
+                        <h3 class="font-bold text-sm text-slate-800 mb-1 leading-tight">${i.type||i.name}</h3>
+                        <p class="text-xs text-slate-500 line-clamp-2 mb-3">${i.desc}</p>
+                        <button onclick="openDetail('${col}','${i.id}')" class="w-full bg-slate-800 text-white text-xs font-bold py-2 rounded-lg hover:bg-black transition">Xem Chi Tiết</button>
+                    </div>`;
+                
+                L.marker([i.lat,i.lng], {icon, zIndexOffset:z}).addTo(markersGroup).bindPopup(pop);
             };
-
-            allData.warnings.forEach(i => createMarker({...i, col:'warning'}, '#eab308', 100));
-            allData.sos.forEach(i => createMarker({...i, col:'sos'}, '#ef4444', 1000));
-            allData.units.forEach(i => createMarker({...i, col:'units'}, '#3b82f6', 50));
+            allData.warnings.forEach(i=>add(i,'warning','#eab308',100));
+            allData.sos.forEach(i=>add(i,'sos','#ef4444',1000));
+            allData.units.forEach(i=>add(i,'units','#3b82f6',50));
         }
 
-        // --- EXCEL ---
-        function downloadExcelTemplate() {
-            const wb = XLSX.utils.book_new();
-            const ws_data = [
-                ["Tên Đơn vị", "Loại hình (Cano/Xe tải/Y tế...)", "SĐT", "Kinh độ", "Vĩ độ", "Mô tả"],
-                ["Đội Xuồng 01", "Cano", "0912345678", "105.85", "21.02", "Có 2 xuồng máy"]
-            ];
-            const ws = XLSX.utils.aoa_to_sheet(ws_data);
-            XLSX.utils.book_append_sheet(wb, ws, "Mau_Don_Vi");
-            XLSX.writeFile(wb, "Mau_Them_Don_Vi.xlsx");
-        }
+        // DETAIL MODAL
+        function openDetail(col, id) {
+            const i = allData[col==='warning'?'warnings':(col==='sos'?'sos':'units')].find(x=>x.id===id);
+            if(!i) return;
+            
+            document.getElementById('detail-modal').classList.remove('hidden');
+            const colors = {warning:'from-yellow-400 to-orange-500', sos:'from-red-500 to-pink-600', units:'from-blue-400 to-indigo-600'};
+            
+            document.getElementById('detail-header-bg').className = `h-32 relative bg-gradient-to-r ${colors[col]}`;
+            document.getElementById('detail-badge').innerText = col.toUpperCase();
+            document.getElementById('detail-title').innerText = i.type||i.name;
+            document.getElementById('detail-desc').innerText = i.desc;
+            document.getElementById('detail-time').innerText = timeAgo(i.timestamp);
+            document.getElementById('detail-dist').innerText = getDist(i.lat,i.lng)+' km';
+            document.getElementById('detail-author').innerText = i.creatorName;
+            document.getElementById('detail-avatar').src = i.userPhoto;
+            document.getElementById('detail-phone-display').innerText = i.phone || 'Không có SĐT';
+            document.getElementById('btn-call').href = `tel:${i.phone}`;
+            document.getElementById('btn-nav').onclick = () => window.open(`https://www.google.com/maps/dir/?api=1&destination=${i.lat},${i.lng}`, '_blank');
 
-        function importExcel(e) {
-            const f = e.target.files[0];
-            if(!f) return;
-            const r = new FileReader();
-            r.onload = function(evt) {
-                const d = new Uint8Array(evt.target.result);
-                const wb = XLSX.read(d, {type:'array'});
-                const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-                if(confirm(`Import ${json.length} dòng?`)) {
-                    const batch = db.batch();
-                    json.forEach(row => {
-                        const ref = db.collection('units').doc();
-                        batch.set(ref, {
-                            name: row['Tên Đơn vị']||'Noname', type: row['Loại hình']||'Khác', phone: row['SĐT']||'',
-                            lat: parseFloat(row['Vĩ độ']||0), lng: parseFloat(row['Kinh độ']||0), desc: row['Mô tả']||'',
-                            uid: currentUser.uid, creatorName: currentUser.displayName, userPhoto: currentUser.photoURL,
-                            timestamp: firebase.firestore.FieldValue.serverTimestamp(), status: 'new', address: 'Import từ Excel'
-                        });
-                    });
-                    batch.commit().then(()=>alert("Thành công!"));
-                }
-            };
-            r.readAsArrayBuffer(f);
-        }
+            // Verification Icon in Detail
+            const vIcon = document.getElementById('detail-verify-icon');
+            if(i.userVerified) vIcon.innerHTML = '<i class="fas fa-check-circle text-green-500 text-xs"></i>';
+            else vIcon.innerHTML = '<span class="text-[10px] bg-orange-100 text-orange-600 px-1 rounded border border-orange-200">Chưa xác minh</span>';
 
-        // --- ACTIONS ---
-        function openModal() {
-            if(!currentUser) return;
+            // Actions
+            const isOwner = currentUser.uid === i.uid;
+            document.getElementById('detail-owner-actions').classList.toggle('hidden', !isOwner);
+            editingItem = {col, id, data:i}; // Store for owner actions
+
+            // History
+            const hist = document.getElementById('hist-log');
+            hist.innerHTML = i.editHistory ? i.editHistory.map(h=>`<div>${new Date(h.time).toLocaleString('vi-VN')}: ${h.action}</div>`).join('') : 'Chưa có chỉnh sửa';
+        }
+        function closeDetail() { document.getElementById('detail-modal').classList.add('hidden'); }
+        function editCurrentItem() { closeDetail(); editItem(editingItem.col, editingItem.id); }
+        function deleteCurrentItem() { closeDetail(); deleteItem(editingItem.col, editingItem.id); }
+
+        // CREATE / EDIT LOGIC
+        function openCreateModal() {
+            isEditMode=false; editingItem=null; pickedLocation=null;
+            document.getElementById('modal-title').innerText = currentTab==='sos'?"GỬI SOS":(currentTab==='units'?"ĐĂNG KÝ ĐƠN VỊ":"TẠO CẢNH BÁO");
+            document.getElementById('btn-submit').innerText = "ĐĂNG TIN";
+            document.getElementById('btn-submit').className = "w-full py-4 rounded-2xl text-white font-bold text-lg shadow-xl uppercase " + (currentTab==='sos'?'bg-red-600':(currentTab==='units'?'bg-blue-600':'bg-yellow-500'));
+            
             document.getElementById('create-modal').classList.remove('hidden');
-            ['warning','sos','units'].forEach(k=>document.getElementById('form-'+k).classList.add('hidden'));
-            
-            const title = document.getElementById('modal-title');
-            const btn = document.getElementById('btn-submit');
-            const formId = 'form-'+(currentTab==='my'?'warning':currentTab);
-            document.getElementById(formId).classList.remove('hidden');
-            
-            const config = {
-                warning: {t:'TẠO CẢNH BÁO', c:'bg-yellow-500'},
-                sos: {t:'YÊU CẦU CỨU HỘ', c:'bg-red-600'},
-                units: {t:'THÊM ĐƠN VỊ', c:'bg-blue-600'}
-            };
-            const cfg = config[currentTab==='my'?'warning':currentTab];
-            title.innerText = cfg.t; btn.className = `w-full py-3 rounded-xl text-white font-bold shadow-lg uppercase ${cfg.c}`;
+            document.getElementById('inp-desc').value = "";
+            document.getElementById('loc-text').innerHTML = `<i class="fas fa-satellite-dish text-blue-500 animate-pulse"></i> GPS Hiện tại`;
+            renderForm(currentTab);
         }
-        function closeModal() { document.getElementById('create-modal').classList.add('hidden'); }
-        
-        function checkOther(selId, inpId) {
-            const v = document.getElementById(selId).value;
-            const inp = document.getElementById(inpId);
-            if(v==='Khác') { inp.classList.remove('hidden'); inp.focus(); } else inp.classList.add('hidden');
+
+        function editItem(col, id) {
+            isEditMode=true;
+            const i = allData[col==='warning'?'warnings':(col==='sos'?'sos':'units')].find(x=>x.id===id);
+            editingItem = {col, id, data:i};
+            pickedLocation = {lat:i.lat, lng:i.lng};
+
+            document.getElementById('create-modal').classList.remove('hidden');
+            document.getElementById('modal-title').innerText = "CHỈNH SỬA";
+            document.getElementById('btn-submit').innerText = "CẬP NHẬT";
+            document.getElementById('inp-desc').value = i.desc;
+            document.getElementById('loc-text').innerHTML = `${i.lat.toFixed(5)}, ${i.lng.toFixed(5)}`;
+            
+            renderForm(col); // Fill fields
+            setTimeout(() => { // Populate values
+                if(col==='warning') document.getElementById('w-type').value=i.type;
+                if(col==='sos') document.getElementById('s-type').value=i.type;
+                if(col==='units') { document.getElementById('u-name').value=i.name; document.getElementById('u-phone').value=i.phone; }
+            }, 50);
+        }
+
+        function renderForm(type) {
+            const c = document.getElementById('form-container');
+            if(type==='warning' || type==='my') {
+                c.innerHTML = `
+                <label class="text-xs font-bold text-slate-400 uppercase ml-1">Loại cảnh báo</label>
+                <select id="w-type" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none">
+                    <option value="Lũ lụt">Lũ lụt / Ngập</option><option value="Sạt lở">Sạt lở đất</option><option value="Tai nạn">Tai nạn giao thông</option><option value="Cháy">Cháy nổ</option><option value="Khác">Khác</option>
+                </select>
+                <div class="mt-3 text-xs font-bold text-slate-400 uppercase ml-1">Mức độ</div>
+                <div class="flex gap-2 mt-1"><label class="flex-1 cursor-pointer"><input type="radio" name="w-lvl" value="1" checked class="peer hidden"><div class="p-2 rounded-xl border text-center font-bold peer-checked:bg-yellow-200">Thấp</div></label><label class="flex-1 cursor-pointer"><input type="radio" name="w-lvl" value="5" class="peer hidden"><div class="p-2 rounded-xl border text-center font-bold peer-checked:bg-red-500 peer-checked:text-white">NGUY HIỂM</div></label></div>`;
+            } else if(type==='sos') {
+                c.innerHTML = `
+                <label class="text-xs font-bold text-slate-400 uppercase ml-1">Sự cố</label>
+                <select id="s-type" class="w-full mt-1 bg-red-50 border border-red-100 rounded-xl p-3 outline-none font-bold text-red-700">${SOS_CATS.map(x=>`<option value="${x}">${x}</option>`).join('')}</select>
+                <div class="flex gap-3 mt-3"><div class="flex-1"><label class="text-xs font-bold text-slate-400">Số người</label><input type="number" id="s-cnt" value="1" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 text-center font-bold"></div><div class="flex-1"><label class="text-xs font-bold text-slate-400">Độ khẩn</label><select id="s-urg" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 font-bold text-red-600"><option value="5">Nguy kịch</option><option value="3">Khẩn cấp</option><option value="1">Hỗ trợ</option></select></div></div>`;
+            } else {
+                c.innerHTML = `
+                <label class="text-xs font-bold text-slate-400 uppercase ml-1">Tên đơn vị</label><input id="u-name" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none" placeholder="VD: Đội Xuồng 01">
+                <label class="text-xs font-bold text-slate-400 uppercase ml-1 mt-3 block">SĐT Đơn vị</label><input id="u-phone" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none" placeholder="${currentUser.dbPhone}">
+                <label class="text-xs font-bold text-slate-400 uppercase ml-1 mt-3 block">Loại hình</label><select id="u-type" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none"><option value="Cano">Cano/Thuyền</option><option value="Xe tải">Xe bán tải</option><option value="Y tế">Y tế</option><option value="Nhu yếu phẩm">Nhu yếu phẩm</option><option value="Khác">Khác</option></select>`;
+            }
         }
 
         async function submitData() {
             document.getElementById('loading').classList.remove('hidden');
-            const addr = getAddressString();
-            if(!addr) { alert("Vui lòng chọn đầy đủ Tỉnh/Huyện/Xã"); document.getElementById('loading').classList.add('hidden'); return; }
+            const desc = document.getElementById('inp-desc').value;
+            const lat = pickedLocation?pickedLocation.lat:currentLocation.lat;
+            const lng = pickedLocation?pickedLocation.lng:currentLocation.lng;
             
-            const desc = document.getElementById('desc').value;
-            const common = {
-                uid: currentUser.uid, creatorName: currentUser.displayName, userPhoto: currentUser.photoURL,
-                phone: currentUser.phone, timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                lat: currentLocation.lat, lng: currentLocation.lng, address: addr, desc: desc, status: 'new'
-            };
+            let d = { desc, lat, lng, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() };
+            let col = '';
 
-            const tab = currentTab === 'my' ? 'warning' : currentTab;
+            const tab = currentTab==='my'?'warning':currentTab;
+            if((!isEditMode && tab==='warning') || (isEditMode && editingItem.col==='warning')) {
+                col='warnings'; d.type=document.getElementById('w-type').value; d.severity=document.querySelector('input[name="w-lvl"]:checked').value;
+            } else if((!isEditMode && tab==='sos') || (isEditMode && editingItem.col==='sos')) {
+                col='sos'; d.type=document.getElementById('s-type').value; d.victims=document.getElementById('s-cnt').value; d.urgency=document.getElementById('s-urg').value;
+            } else {
+                col='units'; d.name=document.getElementById('u-name').value; d.type=document.getElementById('u-type').value; d.phone=document.getElementById('u-phone').value;
+            }
+
+            if(!isEditMode) {
+                d.uid=currentUser.uid; d.creatorName=currentUser.displayName; d.userPhoto=currentUser.photoURL; 
+                d.userVerified = !!(currentUser.emailVerified || (currentUser.dbPhone && currentUser.dbPhone.length > 9));
+                d.timestamp=firebase.firestore.FieldValue.serverTimestamp(); 
+                if(!d.phone) d.phone=currentUser.dbPhone; // Default phone for warning/sos
+                d.editHistory=[];
+            } else {
+                d.editHistory = firebase.firestore.FieldValue.arrayUnion({action:'Đã chỉnh sửa', time:new Date().toISOString(), by:currentUser.displayName});
+            }
+
             try {
-                if(tab==='warning') {
-                    let type = document.getElementById('w-type').value; if(type==='Khác') type = document.getElementById('w-other').value;
-                    const sev = document.querySelector('input[name="w-level"]:checked').value;
-                    await db.collection('warnings').add({...common, type, severity: sev});
-                } else if(tab==='sos') {
-                    let type = document.getElementById('s-type').value; if(type==='Khác') type = document.getElementById('s-other').value;
-                    await db.collection('sos').add({...common, type, victims: document.getElementById('s-count').value, urgency: document.getElementById('s-urgency').value});
-                } else {
-                    let type = document.getElementById('u-type').value; if(type==='Khác') type = document.getElementById('u-other').value;
-                    await db.collection('units').add({...common, name: document.getElementById('u-name').value, type});
-                }
+                if(isEditMode) await db.collection(col).doc(editingItem.id).update(d);
+                else await db.collection(col).add(d);
                 closeModal();
-                alert("Đăng tin thành công!");
-            } catch(e) { alert("Lỗi: "+e.message); }
+                Swal.fire({title:'Thành công', icon:'success', timer:1500, showConfirmButton:false});
+            } catch(e) { Swal.fire('Lỗi', e.message, 'error'); }
             finally { document.getElementById('loading').classList.add('hidden'); }
         }
 
-        async function updateStatus(col, id, val) { await db.collection(col).doc(id).update({status: val}); }
-        async function deleteItem(col, id) { if(confirm("Xóa tin này?")) await db.collection(col).doc(id).delete(); }
+        // MAP PICKER
+        function startPickLocation() { isPickingMode=true; document.getElementById('create-modal').classList.add('hidden'); document.getElementById('map-picker-hint').classList.remove('hidden'); }
+        function cancelPick() { isPickingMode=false; if(tempMarker) tempMarker.remove(); document.getElementById('map-picker-hint').classList.add('hidden'); document.getElementById('create-modal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('create-modal').classList.add('hidden'); }
+        function deleteItem(c,i) { Swal.fire({title:'Xóa tin này?', showCancelButton:true, confirmButtonText:'Xóa', confirmButtonColor:'#d33'}).then(r=>{if(r.isConfirmed) db.collection(c).doc(i).delete();}); }
 
-        // --- UTILS ---
-        function getDist(lat, lng) {
-            const R = 6371; const dLat = (lat-currentLocation.lat)*Math.PI/180; const dLon = (lng-currentLocation.lng)*Math.PI/180;
-            const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(currentLocation.lat*Math.PI/180)*Math.cos(lat*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
-            return (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))).toFixed(1);
+        // EXCEL
+        function downloadExcelTemplate() { XLSX.writeFile(XLSX.utils.book_new(XLSX.utils.book_append_sheet(XLSX.utils.book_new(), XLSX.utils.aoa_to_sheet([["Ten","Loai","SDT","MoTa","Lat","Lng"]]), "Mau")), "Mau_Don_Vi.xlsx"); }
+        function importExcel(e) {
+            const f=e.target.files[0]; if(!f) return;
+            const r=new FileReader();
+            r.onload=evt=>{
+                const j=XLSX.utils.sheet_to_json(XLSX.read(new Uint8Array(evt.target.result),{type:'array'}).Sheets[XLSX.read(new Uint8Array(evt.target.result),{type:'array'}).SheetNames[0]]);
+                Swal.fire({title:`Import ${j.length} dòng?`, showCancelButton:true}).then(res=>{
+                    if(res.isConfirmed) {
+                        const b=db.batch();
+                        j.forEach(r=>{
+                            // Nếu không có Lat/Lng trong excel, dùng vị trí hiện tại của người import
+                            const uLat = r['Lat'] || currentLocation.lat;
+                            const uLng = r['Lng'] || currentLocation.lng;
+                            const uDesc = r['MoTa'] + (r['Lat']?'':' (Cần cập nhật vị trí)'); // Ghi chú nếu thiếu
+
+                            b.set(db.collection('units').doc(), {
+                                name:r['Ten']||'NoName', type:r['Loai']||'Khác', phone:r['SDT']||currentUser.dbPhone, 
+                                lat:parseFloat(uLat), lng:parseFloat(uLng), desc:uDesc, 
+                                uid:currentUser.uid, creatorName:currentUser.displayName, userPhoto:currentUser.photoURL,
+                                userVerified: !!(currentUser.emailVerified || currentUser.dbPhone.length>9),
+                                timestamp:firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                        });
+                        b.commit().then(()=>Swal.fire('Xong!','Import thành công. Vui lòng kiểm tra lại vị trí các đơn vị.','success'));
+                    }
+                });
+            };
+            r.readAsArrayBuffer(f);
         }
-        function getDistVal(i) { return parseFloat(getDist(i.lat, i.lng)); }
-        function flyTo(lat, lng) { map.flyTo([lat, lng], 16); if(window.innerWidth<768) document.getElementById('map').scrollIntoView(); }
-        function timeAgo(ts) { if(!ts) return ''; const s = (new Date()-ts.toDate())/1000; if(s<60) return 'Vừa xong'; if(s<3600) return Math.floor(s/60)+' phút trước'; return Math.floor(s/3600)+' giờ trước'; }
 
-        // CSS Animation
-        const st = document.createElement('style');
-        st.innerHTML = `@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}`;
-        document.head.appendChild(st);
+        // UTILS
+        function getDist(lat,lng) { return (6371*2*Math.atan2(Math.sqrt(Math.sin((lat-currentLocation.lat)*Math.PI/180/2)**2 + Math.cos(currentLocation.lat*Math.PI/180)*Math.cos(lat*Math.PI/180)*Math.sin((lng-currentLocation.lng)*Math.PI/180/2)**2), Math.sqrt(1-Math.sin((lat-currentLocation.lat)*Math.PI/180/2)**2 - Math.cos(currentLocation.lat*Math.PI/180)*Math.cos(lat*Math.PI/180)*Math.sin((lng-currentLocation.lng)*Math.PI/180/2)**2))).toFixed(1); }
+        function getDistVal(i) { return parseFloat(getDist(i.lat,i.lng)); }
+        function timeAgo(ts) { if(!ts) return ''; const s=(new Date()-ts.toDate())/1000; return s<60?'Vừa xong':(s<3600?Math.floor(s/60)+'p trước':Math.floor(s/3600)+'h trước'); }
+        function renderWarnings(){ renderCurrentTab(); } function renderSOS(){ renderCurrentTab(); } function renderUnits(){ renderCurrentTab(); }
     </script>
 </body>
 </html>
