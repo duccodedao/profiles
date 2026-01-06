@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SOS Cứu Hộ Thiên Tai | Realtime Map</title>
+    <title>SOS Cứu Hộ Thiên Tai | Hệ thống toàn diện</title>
     
     <!-- FONTS & ICONS -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -13,7 +13,7 @@
     <!-- LEAFLET MAP CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-    <!-- FIREBASE SDK (Compat version for simplicity in 1 file) -->
+    <!-- FIREBASE SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -21,591 +21,703 @@
     <!-- LEAFLET JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+    <!-- SHEETJS (Excel Import) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
     <style>
         /* --- CSS VARIABLES & RESET --- */
         :root {
-            --primary: #2196F3;
+            --primary: #007AFF;
             --danger: #FF3B30;
             --warning: #FF9500;
+            --success: #34C759;
             --dark: #1C1C1E;
             --light: #F2F2F7;
             --white: #FFFFFF;
-            --glass: rgba(255, 255, 255, 0.95);
+            --gray: #8E8E93;
+            --nav-height: 60px;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Roboto', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--light); color: var(--dark); overflow: hidden; height: 100vh; width: 100vw; }
+        body { background: var(--light); color: var(--dark); overflow: hidden; height: 100vh; width: 100vw; display: flex; flex-direction: column; }
 
-        /* --- UI COMPONENTS --- */
-        .btn {
-            padding: 12px 20px; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.2s;
-            display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
-        }
-        .btn:active { transform: scale(0.96); }
+        /* --- UTILS --- */
+        .hidden { display: none !important; }
+        .text-danger { color: var(--danger); }
+        .text-warning { color: var(--warning); }
+        .text-success { color: var(--success); }
+        .flex-center { display: flex; align-items: center; justify-content: center; }
+        .w-100 { width: 100%; }
+        
+        /* --- BUTTONS --- */
+        .btn { padding: 10px 16px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; transition: 0.2s; }
+        .btn:active { opacity: 0.8; transform: scale(0.98); }
         .btn-primary { background: var(--primary); color: white; }
         .btn-danger { background: var(--danger); color: white; }
         .btn-warning { background: var(--warning); color: white; }
-        .btn-outline { background: transparent; border: 2px solid #ddd; color: #555; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-outline { background: transparent; border: 1px solid #ccc; color: var(--dark); }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
 
-        /* --- LOGIN SCREEN --- */
-        #login-screen {
-            position: fixed; inset: 0; background: var(--white); z-index: 9999;
-            display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;
-        }
-        .login-box { text-align: center; max-width: 400px; width: 100%; }
-        .logo-large { font-size: 80px; color: var(--danger); margin-bottom: 20px; animation: pulse 2s infinite; }
+        /* --- LOGIN & MODALS --- */
+        #login-screen, #phone-update-screen { position: fixed; inset: 0; background: var(--white); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000; display: none; align-items: flex-end; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: var(--white); width: 100%; max-width: 600px; height: 90vh; border-radius: 20px 20px 0 0; padding: 20px; display: flex; flex-direction: column; animation: slideUp 0.3s ease; }
+        @media(min-width: 768px) { .modal { align-items: center; } .modal-content { height: auto; max-height: 90vh; border-radius: 12px; } }
 
-        /* --- MAIN APP LAYOUT --- */
-        #app-container { display: none; height: 100%; position: relative; }
+        /* --- MAIN LAYOUT --- */
+        #app-container { flex: 1; position: relative; display: flex; flex-direction: column; overflow: hidden; }
         
         /* HEADER */
-        .header {
-            position: absolute; top: 0; left: 0; right: 0; height: 60px;
-            background: var(--glass); backdrop-filter: blur(10px); z-index: 1000;
-            display: flex; align-items: center; justify-content: space-between; padding: 0 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .header-title { font-weight: 700; font-size: 18px; display: flex; align-items: center; gap: 8px; }
-        .user-info { display: flex; align-items: center; gap: 10px; font-size: 14px; }
-        .avatar { width: 32px; height: 32px; border-radius: 50%; background: #ddd; object-fit: cover; }
+        .header { height: 50px; background: var(--white); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid #ddd; z-index: 100; flex-shrink: 0; }
+        .user-chip { background: #f0f0f0; padding: 4px 10px; border-radius: 20px; display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; }
+        .user-chip img { width: 24px; height: 24px; border-radius: 50%; }
 
-        /* MAP */
-        #map { width: 100%; height: 100%; z-index: 1; }
-
-        /* BOTTOM CONTROLS */
-        .bottom-controls {
-            position: absolute; bottom: 30px; left: 0; right: 0; z-index: 1000;
-            display: flex; justify-content: center; gap: 15px; padding: 0 20px; pointer-events: none;
-        }
-        .control-btn {
-            pointer-events: auto;
-            width: 60px; height: 60px; border-radius: 50%; border: none;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-size: 24px; color: white;
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
-        }
-        .btn-sos { background: var(--danger); width: 70px; height: 70px; font-size: 28px; animation: pulse-red 1.5s infinite; }
-        .btn-alert { background: var(--warning); }
-        .btn-locate { background: var(--white); color: var(--dark); position: absolute; right: 20px; bottom: 100px; width: 50px; height: 50px; }
-
-        /* MODALS */
-        .modal {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000;
-            display: none; align-items: flex-end; justify-content: center;
-        }
-        .modal.active { display: flex; }
-        .modal-content {
-            background: var(--white); width: 100%; max-width: 500px;
-            border-radius: 20px 20px 0 0; padding: 25px; animation: slideUp 0.3s ease;
-            max-height: 90vh; overflow-y: auto;
-        }
-        .form-group { margin-bottom: 15px; }
-        .form-label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px; color: #555; }
-        .form-input, .form-select, .form-textarea {
-            width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; background: #fafafa;
-        }
-        .form-textarea { resize: none; height: 80px; }
+        /* CONTENT TABS */
+        .tab-content { display: none; flex: 1; overflow: hidden; position: relative; }
+        .tab-content.active { display: block; }
         
-        /* TOAST NOTIFICATION */
-        .toast {
-            position: fixed; top: 80px; right: 20px; background: #333; color: white;
-            padding: 12px 20px; border-radius: 8px; z-index: 3000; font-size: 14px;
-            transform: translateX(120%); transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
+        /* MAP TAB */
+        #map-container { width: 100%; height: 100%; }
+        #map { width: 100%; height: 100%; }
+
+        /* LIST TABS */
+        .list-container { padding: 15px; overflow-y: auto; height: 100%; background: #f8f9fa; }
+        .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); position: relative; border-left: 4px solid #ccc; }
+        .card.alert-card { border-left-color: var(--warning); }
+        .card.rescue-card { border-left-color: var(--danger); }
+        .card.unit-card { border-left-color: var(--success); }
+        .card-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+        .card-time { font-size: 12px; color: var(--gray); }
+        .card-actions { margin-top: 10px; display: flex; gap: 10px; border-top: 1px solid #eee; padding-top: 10px; }
+        
+        /* BOTTOM NAV */
+        .bottom-nav { height: var(--nav-height); background: var(--white); border-top: 1px solid #ddd; display: flex; justify-content: space-around; align-items: center; z-index: 100; flex-shrink: 0; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 10px; color: var(--gray); background: none; border: none; cursor: pointer; gap: 4px; padding: 5px; width: 25%; }
+        .nav-item i { font-size: 20px; }
+        .nav-item.active { color: var(--primary); font-weight: bold; }
+
+        /* FAB BUTTONS ON MAP */
+        .fab-container { position: absolute; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 999; }
+        .fab { width: 50px; height: 50px; border-radius: 50%; border: none; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; }
+        .fab.fab-alert { background: var(--warning); color: white; }
+        .fab.fab-rescue { background: var(--danger); color: white; animation: pulse 2s infinite; }
+        
+        /* FORMS */
+        .form-group { margin-bottom: 15px; }
+        .form-label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px; }
+        .form-control { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+        textarea.form-control { resize: none; height: 80px; }
+
+        /* TOAST */
+        .toast { position: fixed; top: 70px; right: 20px; background: rgba(0,0,0,0.8); color: white; padding: 12px 20px; border-radius: 8px; z-index: 3000; font-size: 14px; transform: translateX(120%); transition: 0.3s; }
         .toast.show { transform: translateX(0); }
 
-        /* ANIMATIONS */
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); opacity: 0.8; } 100% { transform: scale(1); } }
-        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(255, 59, 48, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); } }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-
-        /* UTILS */
-        .hidden { display: none !important; }
-        .text-danger { color: var(--danger); font-weight: bold; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(255, 59, 48, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); } }
     </style>
 </head>
 <body>
 
-    <!-- 1. MÀN HÌNH ĐĂNG NHẬP -->
+    <!-- 1. LOGIN SCREEN -->
     <div id="login-screen">
-        <div class="login-box">
-            <i class="fa-solid fa-house-medical logo-large"></i>
-            <h2>SOS Cứu Hộ</h2>
-            <p style="color: #666; margin: 10px 0 30px;">Cảnh báo & Yêu cầu cứu hộ khẩn cấp</p>
-            
-            <button class="btn btn-outline" style="margin-bottom: 10px;" onclick="handleGoogleLogin()">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" alt="">
-                Đăng nhập bằng Google
-            </button>
-            <div style="font-size: 12px; color: #999; margin-top: 20px;">
-                Vị trí của bạn sẽ được bảo mật và chỉ chia sẻ khi bạn yêu cầu.
-            </div>
-        </div>
+        <i class="fa-solid fa-hands-holding-circle" style="font-size: 60px; color: var(--primary); margin-bottom: 20px;"></i>
+        <h2>Hệ Thống Cứu Hộ</h2>
+        <p style="color: #666; margin-bottom: 30px;">Kết nối & Hỗ trợ thiên tai thời gian thực</p>
+        <button class="btn btn-outline" onclick="handleGoogleLogin()">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" alt="">
+            Đăng nhập với Google
+        </button>
     </div>
 
-    <!-- 2. GIAO DIỆN CHÍNH -->
-    <div id="app-container">
+    <!-- 2. FORCE PHONE UPDATE SCREEN -->
+    <div id="phone-update-screen" class="hidden">
+        <h3>Cập nhật thông tin</h3>
+        <p style="text-align: center; margin: 10px 0; color: #555;">Để đảm bảo liên lạc khi khẩn cấp, vui lòng cung cấp số điện thoại của bạn.</p>
+        <div class="form-group w-100" style="max-width: 300px;">
+            <input type="tel" id="force-phone" class="form-control" placeholder="Số điện thoại của bạn">
+        </div>
+        <button class="btn btn-primary" onclick="updateUserPhone()">Lưu & Tiếp tục</button>
+    </div>
+
+    <!-- 3. MAIN APP -->
+    <div id="app-container" class="hidden">
         <!-- Header -->
         <header class="header">
-            <div class="header-title">
-                <i class="fa-solid fa-tower-broadcast text-danger"></i> SOS MAP
+            <div style="font-weight: bold; color: var(--primary); display: flex; align-items: center; gap: 5px;">
+                <i class="fa-solid fa-shield-heart"></i> SOS VIETNAM
             </div>
-            <div class="user-info">
-                <span id="user-name">Khách</span>
-                <img id="user-avatar" class="avatar" src="" alt="">
-                <i class="fa-solid fa-right-from-bracket" style="cursor: pointer; padding: 5px;" onclick="handleLogout()"></i>
+            <div class="user-chip" onclick="handleLogout()">
+                <img id="header-avatar" src="" alt="">
+                <span id="header-name">User</span>
+                <i class="fa-solid fa-power-off" style="font-size: 10px; margin-left: 5px;"></i>
             </div>
         </header>
 
-        <!-- Bản đồ -->
-        <div id="map"></div>
-
-        <!-- Nút điều khiển -->
-        <div class="bottom-controls">
-            <!-- Nút tạo cảnh báo -->
-            <button class="control-btn btn-alert" onclick="openModal('alert-modal')">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-            </button>
-            
-            <!-- Nút SOS khẩn cấp -->
-            <button class="control-btn btn-sos" onclick="openModal('rescue-modal')">
-                <i class="fa-solid fa-life-ring"></i>
-            </button>
-
-            <!-- Nút vị trí của tôi -->
-            <button class="control-btn btn-locate" onclick="centerMapToUser()">
-                <i class="fa-solid fa-location-crosshairs"></i>
-            </button>
+        <!-- Tab 1: Map -->
+        <div id="tab-map" class="tab-content active">
+            <div id="map"></div>
+            <div class="fab-container">
+                <button class="fab fab-alert" onclick="checkLocationAndOpen('alert-modal')"><i class="fa-solid fa-bullhorn"></i></button>
+                <button class="fab fab-rescue" onclick="checkLocationAndOpen('rescue-modal')"><i class="fa-solid fa-life-ring"></i></button>
+                <button class="fab" onclick="centerMapToUser()"><i class="fa-solid fa-location-crosshairs"></i></button>
+            </div>
         </div>
+
+        <!-- Tab 2: Alerts List -->
+        <div id="tab-alerts" class="tab-content">
+            <div class="list-container" id="alerts-list">
+                <!-- Javascript will populate this -->
+            </div>
+        </div>
+
+        <!-- Tab 3: Rescues List -->
+        <div id="tab-rescues" class="tab-content">
+            <div class="list-container" id="rescues-list">
+                <!-- Javascript will populate this -->
+            </div>
+        </div>
+
+        <!-- Tab 4: Rescue Units -->
+        <div id="tab-units" class="tab-content">
+            <div style="background: white; padding: 10px 15px; border-bottom: 1px solid #eee; display: flex; gap: 10px;">
+                <button class="btn btn-sm btn-success" onclick="openModal('unit-modal')"><i class="fa-solid fa-plus"></i> Thêm Đơn Vị</button>
+                <button class="btn btn-sm btn-outline" onclick="openModal('import-modal')"><i class="fa-solid fa-file-excel"></i> Nhập Excel</button>
+            </div>
+            <div class="list-container" id="units-list">
+                <!-- Javascript will populate this -->
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" onclick="switchTab('map')">
+                <i class="fa-solid fa-map-location-dot"></i> Bản đồ
+            </button>
+            <button class="nav-item" onclick="switchTab('alerts')">
+                <i class="fa-solid fa-triangle-exclamation"></i> Cảnh báo
+            </button>
+            <button class="nav-item" onclick="switchTab('rescues')">
+                <i class="fa-solid fa-life-ring"></i> Cứu hộ
+            </button>
+            <button class="nav-item" onclick="switchTab('units')">
+                <i class="fa-solid fa-kit-medical"></i> Đội cứu hộ
+            </button>
+        </nav>
     </div>
 
-    <!-- 3. MODAL CẢNH BÁO (ALERTS) -->
-    <div id="alert-modal" class="modal" onclick="closeModalOnOutside(event, 'alert-modal')">
+    <!-- --- MODALS --- -->
+
+    <!-- Modal Alert -->
+    <div id="alert-modal" class="modal" onclick="clickOutside(event, this)">
         <div class="modal-content">
-            <h3 style="margin-bottom: 15px; color: var(--warning);"><i class="fa-solid fa-triangle-exclamation"></i> Báo Tin Thiên Tai</h3>
-            
+            <h3>⚠️ Tạo Cảnh Báo</h3>
             <div class="form-group">
                 <label class="form-label">Loại thiên tai</label>
-                <select id="alert-type" class="form-select">
-                    <option value="flood">Lũ lụt / Nước dâng</option>
-                    <option value="landslide">Sạt lở đất</option>
-                    <option value="storm">Bão / Gió lớn</option>
-                    <option value="fire">Cháy</option>
-                    <option value="other">Khác</option>
+                <select id="alert-type" class="form-control" onchange="toggleOtherInput('alert-type', 'alert-other-div')">
+                    <option value="Lũ lụt">Lũ lụt / Ngập úng</option>
+                    <option value="Sạt lở">Sạt lở đất</option>
+                    <option value="Bão">Bão / Gió giật</option>
+                    <option value="Cháy">Cháy nổ</option>
+                    <option value="other">Khác (Nhập bên dưới)</option>
                 </select>
             </div>
-
-            <div class="form-group">
-                <label class="form-label">Mức độ nghiêm trọng</label>
-                <select id="alert-severity" class="form-select">
-                    <option value="low">Thấp</option>
-                    <option value="medium">Trung bình</option>
-                    <option value="high">Cao</option>
-                    <option value="critical">Khẩn cấp</option>
-                </select>
+            <div id="alert-other-div" class="form-group hidden">
+                <input type="text" id="alert-other" class="form-control" placeholder="Nhập loại thiên tai...">
             </div>
-
             <div class="form-group">
-                <label class="form-label">Mô tả tình hình</label>
-                <textarea id="alert-desc" class="form-textarea" placeholder="Ví dụ: Nước ngập qua đầu gối, đường bị chia cắt..."></textarea>
+                <label class="form-label">Mô tả chi tiết</label>
+                <textarea id="alert-desc" class="form-control" placeholder="Mô tả tình hình hiện tại..."></textarea>
             </div>
-
-            <div class="form-group">
-                <label class="form-label">SĐT Liên hệ (Tùy chọn)</label>
-                <input type="tel" id="alert-phone" class="form-input" placeholder="Số điện thoại của bạn">
-            </div>
-
-            <button class="btn btn-warning" onclick="submitAlert()">Gửi Cảnh Báo</button>
-            <button class="btn btn-outline" style="margin-top: 10px;" onclick="closeModal('alert-modal')">Hủy</button>
+            <button class="btn btn-warning w-100" onclick="submitAlert()">Đăng Cảnh Báo</button>
+            <button class="btn btn-outline w-100" style="margin-top: 10px;" onclick="closeModal('alert-modal')">Hủy</button>
         </div>
     </div>
 
-    <!-- 4. MODAL YÊU CẦU CỨU HỘ (RESCUE) -->
-    <div id="rescue-modal" class="modal" onclick="closeModalOnOutside(event, 'rescue-modal')">
+    <!-- Modal Rescue -->
+    <div id="rescue-modal" class="modal" onclick="clickOutside(event, this)">
         <div class="modal-content">
-            <h3 style="margin-bottom: 5px; color: var(--danger);"><i class="fa-solid fa-life-ring"></i> YÊU CẦU CỨU HỘ</h3>
-            <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Vị trí của bạn sẽ được chia sẻ trực tiếp với đội cứu hộ.</p>
-
+            <h3>🆘 Yêu Cầu Cứu Hộ</h3>
             <div class="form-group">
-                <label class="form-label">Tình trạng hiện tại <span style="color:red">*</span></label>
-                <select id="rescue-status" class="form-select">
-                    <option value="trapped">Bị mắc kẹt (không thể di chuyển)</option>
-                    <option value="injured">Có người bị thương</option>
-                    <option value="danger">Nguy hiểm tính mạng</option>
-                    <option value="food">Cần lương thực/thuốc men</option>
+                <label class="form-label">Tình trạng</label>
+                <select id="rescue-status" class="form-control" onchange="toggleOtherInput('rescue-status', 'rescue-other-div')">
+                    <option value="Mắc kẹt">Bị mắc kẹt</option>
+                    <option value="Bị thương">Có người bị thương</option>
+                    <option value="Nguy hiểm">Nguy hiểm tính mạng</option>
+                    <option value="Thiếu lương thực">Cần lương thực/thuốc</option>
+                    <option value="other">Khác (Nhập bên dưới)</option>
                 </select>
             </div>
-
-            <div class="form-group">
-                <label class="form-label">Mức độ khẩn cấp (1-5)</label>
-                <input type="range" id="rescue-urgency" min="1" max="5" value="5" style="width: 100%;">
-                <div style="display:flex; justify-content:space-between; font-size: 12px;">
-                    <span>Bình thường</span><span>Rất khẩn cấp</span>
-                </div>
+            <div id="rescue-other-div" class="form-group hidden">
+                <input type="text" id="rescue-other" class="form-control" placeholder="Nhập tình trạng...">
             </div>
-
             <div class="form-group">
-                <label class="form-label">SĐT Liên hệ (Bắt buộc) <span style="color:red">*</span></label>
-                <input type="tel" id="rescue-phone" class="form-input" placeholder="Nhập số điện thoại...">
+                <label class="form-label">Chi tiết / Số lượng người</label>
+                <textarea id="rescue-desc" class="form-control"></textarea>
             </div>
-
-            <div class="form-group">
-                <label class="form-label">Mô tả / Số lượng người</label>
-                <textarea id="rescue-desc" class="form-textarea" placeholder="Ví dụ: Nhà có 2 người già, 1 trẻ em, nước đang lên nhanh..."></textarea>
-            </div>
-
-            <button class="btn btn-danger" onclick="submitRescue()">GỬI YÊU CẦU CỨU HỘ</button>
-            <button class="btn btn-outline" style="margin-top: 10px;" onclick="closeModal('rescue-modal')">Hủy</button>
+            <button class="btn btn-danger w-100" onclick="submitRescue()">Gửi Yêu Cầu Ngay</button>
+            <button class="btn btn-outline w-100" style="margin-top: 10px;" onclick="closeModal('rescue-modal')">Hủy</button>
         </div>
     </div>
 
-    <!-- TOAST -->
-    <div id="toast" class="toast">Thông báo ở đây</div>
+    <!-- Modal Add Unit -->
+    <div id="unit-modal" class="modal" onclick="clickOutside(event, this)">
+        <div class="modal-content">
+            <h3>🚑 Thêm Đơn Vị Cứu Hộ</h3>
+            <p style="font-size:12px; color: #666; margin-bottom: 10px;">Vị trí sẽ được lấy tại nơi bạn đang ghim trên bản đồ.</p>
+            <div class="form-group">
+                <label class="form-label">Tên đơn vị / Cá nhân</label>
+                <input type="text" id="unit-name" class="form-control">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Số điện thoại</label>
+                <input type="tel" id="unit-phone" class="form-control">
+            </div>
+            <div class="form-group">
+                <button class="btn btn-outline w-100" onclick="startPickingLocation()">
+                    <i class="fa-solid fa-map-pin"></i> Chọn vị trí trên bản đồ
+                </button>
+                <input type="hidden" id="unit-lat"><input type="hidden" id="unit-lng">
+                <div id="picked-loc-msg" style="font-size: 12px; color: green; margin-top: 5px; display: none;">Đã chọn vị trí!</div>
+            </div>
+            <button class="btn btn-success w-100" onclick="submitUnit()">Lưu Đơn Vị</button>
+            <button class="btn btn-outline w-100" style="margin-top: 10px;" onclick="closeModal('unit-modal')">Hủy</button>
+        </div>
+    </div>
 
-    <!-- JAVASCRIPT LOGIC -->
+    <!-- Modal Import Excel -->
+    <div id="import-modal" class="modal" onclick="clickOutside(event, this)">
+        <div class="modal-content" style="max-height: 50vh;">
+            <h3>📂 Nhập từ Excel</h3>
+            <p style="font-size: 13px; color: #555; margin-bottom: 15px;">Tải lên danh sách các đơn vị cứu hộ.</p>
+            
+            <button class="btn btn-outline w-100" style="margin-bottom: 15px;" onclick="downloadTemplate()">
+                <i class="fa-solid fa-download"></i> Tải file mẫu
+            </button>
+
+            <input type="file" id="excel-file" accept=".xlsx, .xls" class="form-control" style="margin-bottom: 15px;">
+            
+            <button class="btn btn-primary w-100" onclick="processImport()">Nhập Dữ Liệu</button>
+        </div>
+    </div>
+
+    <!-- Modal Navigation Choice -->
+    <div id="nav-modal" class="modal" onclick="clickOutside(event, this)">
+        <div class="modal-content" style="max-height: 40vh;">
+            <h3>🗺️ Chọn bản đồ dẫn đường</h3>
+            <div style="display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 20px;">
+                <button class="btn btn-outline w-100" id="btn-google-maps">
+                    <i class="fa-brands fa-google"></i> Google Maps
+                </button>
+                <button class="btn btn-outline w-100" id="btn-apple-maps">
+                    <i class="fa-brands fa-apple"></i> Apple Maps
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">Thông báo</div>
+
     <script>
-        // ---------------------------------------------------------
-        // 1. CẤU HÌNH FIREBASE (THAY THẾ BẰNG CONFIG CỦA BẠN)
-        // ---------------------------------------------------------
-    const firebaseConfig = {
-        apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
-        authDomain: "profile-d1214.firebaseapp.com",
-        projectId: "profile-d1214",
-        storageBucket: "profile-d1214.firebasestorage.app",
-        messagingSenderId: "914980131889",
-        appId: "1:914980131889:web:72f8da15c42dbee671b110",
-        measurementId: "G-C587M69LZW"
-    };
-
-        // Khởi tạo Firebase
-        // Lưu ý: Nếu chưa nhập config đúng, web sẽ báo lỗi trong Console
-        try {
-            firebase.initializeApp(firebaseConfig);
-        } catch (e) {
-            console.error("Lỗi khởi tạo Firebase. Hãy chắc chắn bạn đã thay config!", e);
-            alert("Vui lòng chỉnh sửa file HTML và thêm Firebase Config để chạy!");
-        }
-
+        // --- CẤU HÌNH FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyD_API_KEY_CUA_BAN",
+            authDomain: "project-id.firebaseapp.com",
+            projectId: "project-id",
+            storageBucket: "project-id.appspot.com",
+            messagingSenderId: "xxxx",
+            appId: "xxxx"
+        };
+        
+        try { firebase.initializeApp(firebaseConfig); } catch(e) { console.error("Chưa config Firebase", e); }
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // Biến toàn cục
+        // --- GLOBAL STATE ---
         let currentUser = null;
-        let map = null;
-        let userMarker = null;
-        let currentPos = { lat: 10.762622, lng: 106.660172 }; // Mặc định HCM
-        let watchId = null;
-        let activeRescueId = null;
+        let map = null, userMarker = null;
+        let currentPos = { lat: 0, lng: 0 };
+        let markers = { alerts: [], rescues: [], units: [] };
+        let tempMarker = null; // Marker tạm khi chọn vị trí
+        let isPickingLocation = false;
 
-        // ---------------------------------------------------------
-        // 2. AUTHENTICATION (ĐĂNG NHẬP/ĐĂNG XUẤT)
-        // ---------------------------------------------------------
-        auth.onAuthStateChanged((user) => {
+        // --- AUTH & USER ---
+        auth.onAuthStateChanged(async (user) => {
             if (user) {
-                currentUser = user;
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('app-container').style.display = 'block';
-                
-                // Cập nhật UI Header
-                document.getElementById('user-name').innerText = user.displayName || user.phoneNumber || "Người dùng";
-                document.getElementById('user-avatar').src = user.photoURL || "https://ui-avatars.com/api/?name=" + (user.displayName || "User");
-                
-                // Khởi tạo Map
-                initMap();
-                
-                // Bắt đầu theo dõi vị trí
-                startTrackingLocation();
-                
-                // Lắng nghe dữ liệu
-                listenToAlerts();
-                listenToRescues();
-
-                showToast(`Xin chào, ${user.displayName}!`);
+                // Kiểm tra xem user có sđt trong Firestore chưa (nếu login google chưa có sđt)
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                if (!userDoc.exists || !userDoc.data().phone) {
+                    currentUser = user;
+                    document.getElementById('login-screen').classList.add('hidden');
+                    document.getElementById('phone-update-screen').classList.remove('hidden');
+                } else {
+                    completeLogin(user, userDoc.data());
+                }
             } else {
-                currentUser = null;
                 document.getElementById('login-screen').classList.remove('hidden');
-                document.getElementById('app-container').style.display = 'none';
+                document.getElementById('app-container').classList.add('hidden');
             }
         });
 
         function handleGoogleLogin() {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider).catch((error) => {
-                console.error("Lỗi đăng nhập:", error);
-                showToast("Đăng nhập thất bại: " + error.message);
-            });
+            auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(err => showToast("Lỗi: " + err.message));
         }
 
-        function handleLogout() {
-            auth.signOut();
-            if (watchId) navigator.geolocation.clearWatch(watchId);
-        }
+        function handleLogout() { auth.signOut().then(() => window.location.reload()); }
 
-        // ---------------------------------------------------------
-        // 3. MAP & LOCATION LOGIC
-        // ---------------------------------------------------------
-        function initMap() {
-            if (map) return; // Đã khởi tạo rồi thì thôi
-
-            // Tạo map với Leaflet (OpenStreetMap)
-            map = L.map('map', { zoomControl: false }).setView([currentPos.lat, currentPos.lng], 13);
+        function updateUserPhone() {
+            const phone = document.getElementById('force-phone').value;
+            if (phone.length < 9) return alert("Vui lòng nhập SĐT hợp lệ");
             
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(map);
-
-            // Icon User
-            const userIcon = L.divIcon({
-                className: 'user-marker-icon',
-                html: '<div style="width: 15px; height: 15px; background: blue; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px blue;"></div>',
-                iconSize: [20, 20]
+            db.collection('users').doc(currentUser.uid).set({
+                uid: currentUser.uid,
+                name: currentUser.displayName,
+                email: currentUser.email,
+                phone: phone,
+                photo: currentUser.photoURL
+            }, { merge: true }).then(() => {
+                document.getElementById('phone-update-screen').classList.add('hidden');
+                completeLogin(currentUser, { phone: phone, name: currentUser.displayName, photo: currentUser.photoURL });
             });
-
-            userMarker = L.marker([currentPos.lat, currentPos.lng], {icon: userIcon}).addTo(map);
         }
 
-        function startTrackingLocation() {
-            if (!navigator.geolocation) {
-                showToast("Trình duyệt không hỗ trợ GPS.");
-                return;
+        function completeLogin(user, userData) {
+            currentUser = { ...user, ...userData }; // Merge auth info & firestore info
+            document.getElementById('app-container').classList.remove('hidden');
+            document.getElementById('header-name').innerText = userData.name || "User";
+            document.getElementById('header-avatar').src = userData.photo || "https://ui-avatars.com/api/?name=User";
+            
+            initMap();
+            listenRealtimeData();
+        }
+
+        // --- MAP LOGIC ---
+        function initMap() {
+            if (map) return;
+            map = L.map('map', { zoomControl: false }).setView([10.762, 106.660], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OSM' }).addTo(map);
+
+            if (navigator.geolocation) {
+                navigator.geolocation.watchPosition(pos => {
+                    currentPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                    if (!userMarker) {
+                        const icon = L.divIcon({ className: 'my-loc', html: '<div style="width:16px;height:16px;background:blue;border:2px solid white;border-radius:50%;box-shadow:0 0 10px blue;"></div>' });
+                        userMarker = L.marker([currentPos.lat, currentPos.lng], { icon: icon }).addTo(map);
+                        map.setView([currentPos.lat, currentPos.lng], 15);
+                    } else {
+                        userMarker.setLatLng([currentPos.lat, currentPos.lng]);
+                    }
+                }, err => console.warn(err), { enableHighAccuracy: true });
             }
 
-            watchId = navigator.geolocation.watchPosition(
-                (position) => {
-                    const lat = position.coords.latitude;
-                    const lng = position.coords.longitude;
-                    currentPos = { lat, lng };
-
-                    // Cập nhật marker trên bản đồ
-                    if (userMarker) userMarker.setLatLng([lat, lng]);
+            // Click map to pick location (for Unit)
+            map.on('click', (e) => {
+                if (isPickingLocation) {
+                    if (tempMarker) map.removeLayer(tempMarker);
+                    tempMarker = L.marker(e.latlng, { draggable: true }).addTo(map);
+                    document.getElementById('unit-lat').value = e.latlng.lat;
+                    document.getElementById('unit-lng').value = e.latlng.lng;
+                    document.getElementById('picked-loc-msg').style.display = 'block';
                     
-                    // Nếu là lần đầu load, zoom tới user
-                    if (!map.getCenter()) map.setView([lat, lng], 15);
-
-                    // Cập nhật vị trí realtime lên DB nếu đang có yêu cầu cứu hộ
-                    if (activeRescueId) {
-                        updateRescueLocation(lat, lng);
-                    }
-                },
-                (error) => {
-                    console.warn("Lỗi lấy vị trí:", error);
-                    showToast("Không thể lấy vị trí. Vui lòng bật GPS.");
-                },
-                { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
-            );
+                    // Delay open modal back
+                    setTimeout(() => {
+                        isPickingLocation = false;
+                        openModal('unit-modal');
+                    }, 500);
+                }
+            });
         }
 
         function centerMapToUser() {
-            if (map && currentPos) {
-                map.setView([currentPos.lat, currentPos.lng], 16, { animate: true });
-            }
+            if(map && currentPos.lat !== 0) map.setView([currentPos.lat, currentPos.lng], 16);
+            else showToast("Đang lấy vị trí...");
         }
 
-        // ---------------------------------------------------------
-        // 4. DATABASE & REALTIME LISTENERS
-        // ---------------------------------------------------------
-        
-        // --- 4.1 CẢNH BÁO (ALERTS) ---
-        function submitAlert() {
-            const type = document.getElementById('alert-type').value;
-            const severity = document.getElementById('alert-severity').value;
-            const desc = document.getElementById('alert-desc').value;
-            const phone = document.getElementById('alert-phone').value;
+        // --- TABS & NAVIGATION ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById('tab-' + tabId).classList.add('active');
+            document.querySelector(`.nav-item[onclick="switchTab('${tabId}')"]`).classList.add('active');
 
-            if (!currentUser) return;
+            if (tabId === 'map') setTimeout(() => map.invalidateSize(), 100);
+        }
+
+        // --- DATA HANDLERS (ALERTS, RESCUES, UNITS) ---
+        function listenRealtimeData() {
+            // Alerts
+            db.collection('alerts').orderBy('timestamp', 'desc').onSnapshot(snap => {
+                const list = document.getElementById('alerts-list');
+                list.innerHTML = '';
+                markers.alerts.forEach(m => map.removeLayer(m));
+                markers.alerts = [];
+
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    renderItem('alert', doc.id, data, list);
+                    addMapMarker('alert', doc.id, data);
+                });
+            });
+
+            // Rescues
+            db.collection('rescues').orderBy('timestamp', 'desc').onSnapshot(snap => {
+                const list = document.getElementById('rescues-list');
+                list.innerHTML = '';
+                markers.rescues.forEach(m => map.removeLayer(m));
+                markers.rescues = [];
+
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    renderItem('rescue', doc.id, data, list);
+                    addMapMarker('rescue', doc.id, data);
+                });
+            });
+
+            // Units
+            db.collection('units').onSnapshot(snap => {
+                const list = document.getElementById('units-list');
+                // Keep the header buttons
+                const header = list.parentNode.querySelector('div:first-child').outerHTML; 
+                // Don't clear list completely, handled by separate container if needed, but for now simple innerHTML reset excluding buttons
+                list.innerHTML = '';
+                markers.units.forEach(m => map.removeLayer(m));
+                markers.units = [];
+
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    renderItem('unit', doc.id, data, list);
+                    addMapMarker('unit', doc.id, data);
+                });
+            });
+        }
+
+        function renderItem(type, id, data, container) {
+            const isOwner = data.uid === currentUser.uid;
+            const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleString() : '';
+            let icon, color, title, desc;
+
+            if (type === 'alert') {
+                icon = 'fa-triangle-exclamation'; color = 'var(--warning)'; 
+                title = data.type; desc = data.desc;
+            } else if (type === 'rescue') {
+                icon = 'fa-life-ring'; color = 'var(--danger)'; 
+                title = data.status; desc = data.desc;
+            } else {
+                icon = 'fa-kit-medical'; color = 'var(--success)'; 
+                title = data.name; desc = data.phone;
+            }
+
+            const html = `
+                <div class="card ${type}-card">
+                    <div class="card-header">
+                        <div style="font-weight:bold; display:flex; gap:8px; align-items:center;">
+                            <i class="fa-solid ${icon}" style="color:${color}"></i> ${title}
+                        </div>
+                        ${isOwner ? `<button class="btn-sm btn-outline text-danger" onclick="deleteItem('${type}s', '${id}')"><i class="fa-solid fa-trash"></i></button>` : ''}
+                    </div>
+                    <div style="font-size:14px; margin-bottom:5px;">${desc}</div>
+                    <div class="card-time"><i class="fa-regular fa-clock"></i> ${date} - Bởi: ${data.creatorName || 'Ẩn danh'}</div>
+                    <div class="card-actions">
+                        <button class="btn btn-sm btn-outline" onclick="locateOnMap(${data.lat}, ${data.lng})">
+                            <i class="fa-solid fa-location-dot"></i> Vị trí
+                        </button>
+                        <button class="btn btn-sm btn-primary" onclick="openNavModal(${data.lat}, ${data.lng})">
+                            <i class="fa-solid fa-diamond-turn-right"></i> Chỉ đường
+                        </button>
+                        <a href="tel:${data.phone}" class="btn btn-sm btn-success">
+                            <i class="fa-solid fa-phone"></i> Gọi: ${data.phone}
+                        </a>
+                    </div>
+                </div>
+            `;
+            container.innerHTML += html;
+        }
+
+        function addMapMarker(type, id, data) {
+            let color = type === 'alert' ? 'orange' : (type === 'rescue' ? 'red' : 'green');
+            let iconClass = type === 'rescue' ? 'fa-beat-fade' : '';
+            
+            const html = `<div style="background:${color};width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;border:2px solid white;box-shadow:0 3px 6px rgba(0,0,0,0.3);">
+                <i class="fa-solid fa-${type === 'alert' ? 'triangle-exclamation' : (type === 'rescue' ? 'life-ring' : 'kit-medical')} ${iconClass}"></i>
+            </div>`;
+            
+            const icon = L.divIcon({ html: html, className: '', iconSize: [30, 30] });
+            const marker = L.marker([data.lat, data.lng], { icon: icon }).bindPopup(`
+                <b>${data.type || data.status || data.name}</b><br>
+                ${data.desc || data.phone}<br>
+                <button onclick="openNavModal(${data.lat}, ${data.lng})" style="margin-top:5px; padding:5px; border:1px solid #ccc; background:#fff; cursor:pointer;">Chỉ đường</button>
+            `);
+            
+            marker.addTo(map);
+            if (type === 'alert') markers.alerts.push(marker);
+            else if (type === 'rescue') markers.rescues.push(marker);
+            else markers.units.push(marker);
+        }
+
+        // --- ACTIONS ---
+        function checkLocationAndOpen(modalId) {
+            if (currentPos.lat === 0) {
+                alert("Vui lòng cho phép truy cập vị trí để sử dụng tính năng này!");
+                return;
+            }
+            openModal(modalId);
+        }
+
+        function toggleOtherInput(selectId, divId) {
+            const val = document.getElementById(selectId).value;
+            if (val === 'other') document.getElementById(divId).classList.remove('hidden');
+            else document.getElementById(divId).classList.add('hidden');
+        }
+
+        function getInputValue(selectId, inputId) {
+            const val = document.getElementById(selectId).value;
+            return val === 'other' ? document.getElementById(inputId).value : val;
+        }
+
+        // CREATE
+        function submitAlert() {
+            const type = getInputValue('alert-type', 'alert-other');
+            const desc = document.getElementById('alert-desc').value;
+            if(!type || !desc) return alert("Vui lòng nhập đủ thông tin");
 
             db.collection('alerts').add({
                 uid: currentUser.uid,
-                creatorName: currentUser.displayName,
+                creatorName: currentUser.name,
+                phone: currentUser.phone,
                 type: type,
-                severity: severity,
-                description: desc,
-                phone: phone,
+                desc: desc,
                 lat: currentPos.lat,
                 lng: currentPos.lng,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => {
-                closeModal('alert-modal');
-                showToast("Đã gửi cảnh báo thành công!");
-                // Reset form
-                document.getElementById('alert-desc').value = '';
-            }).catch(err => {
-                showToast("Lỗi gửi cảnh báo: " + err.message);
-            });
+            }).then(() => { closeModal('alert-modal'); showToast("Đã tạo cảnh báo!"); });
         }
 
-        function listenToAlerts() {
-            // Lấy cảnh báo trong 24h qua (đơn giản hóa query)
-            db.collection('alerts').orderBy('timestamp', 'desc').limit(50)
-                .onSnapshot(snapshot => {
-                    snapshot.docChanges().forEach(change => {
-                        if (change.type === "added") {
-                            addAlertMarker(change.doc.data(), change.doc.id);
-                        }
-                    });
-                });
-        }
-
-        function addAlertMarker(data, id) {
-            let color = 'orange';
-            if (data.severity === 'critical') color = 'red';
-            if (data.severity === 'low') color = 'green';
-
-            const iconHtml = `<div style="background:${color}; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; border:2px solid white; box-shadow:0 3px 6px rgba(0,0,0,0.3);">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-            </div>`;
-
-            const icon = L.divIcon({ html: iconHtml, className: 'alert-icon', iconSize: [30, 30] });
-            
-            const marker = L.marker([data.lat, data.lng], { icon: icon }).addTo(map);
-            
-            // Popup nội dung
-            const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleString() : 'Vừa xong';
-            const popupContent = `
-                <b>${getDisasterName(data.type)}</b> (${getSeverityName(data.severity)})<br>
-                <small>${date}</small><br>
-                <p>${data.description}</p>
-                ${data.phone ? `<a href="tel:${data.phone}">📞 ${data.phone}</a><br>` : ''}
-                <br>
-                <button class="btn-primary" style="padding:5px 10px; font-size:12px; border-radius:4px; border:none; cursor:pointer;" onclick="openGoogleMaps(${data.lat}, ${data.lng})">
-                   <i class="fa-solid fa-diamond-turn-right"></i> Chỉ đường
-                </button>
-            `;
-            marker.bindPopup(popupContent);
-        }
-
-        // --- 4.2 CỨU HỘ (RESCUE) ---
         function submitRescue() {
-            const status = document.getElementById('rescue-status').value;
-            const urgency = document.getElementById('rescue-urgency').value;
-            const phone = document.getElementById('rescue-phone').value;
+            const status = getInputValue('rescue-status', 'rescue-other');
             const desc = document.getElementById('rescue-desc').value;
+            if(!status) return alert("Vui lòng chọn tình trạng");
 
-            if (!phone) {
-                alert("Vui lòng nhập số điện thoại để đội cứu hộ liên hệ!");
-                return;
-            }
-
-            db.collection('rescue_requests').add({
+            db.collection('rescues').add({
                 uid: currentUser.uid,
-                name: currentUser.displayName,
+                creatorName: currentUser.name,
+                phone: currentUser.phone,
                 status: status,
-                urgency: parseInt(urgency),
-                phone: phone,
-                description: desc,
+                desc: desc,
                 lat: currentPos.lat,
                 lng: currentPos.lng,
-                active: true, // Trạng thái active để cập nhật realtime
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            }).then((docRef) => {
-                activeRescueId = docRef.id; // Lưu ID để update vị trí
-                closeModal('rescue-modal');
-                showToast("🆘 Đã gửi yêu cầu cứu hộ! Giữ kết nối GPS.");
-            }).catch(err => {
-                showToast("Lỗi: " + err.message);
-            });
+            }).then(() => { closeModal('rescue-modal'); showToast("Đã gửi yêu cầu cứu hộ!"); });
         }
 
-        function updateRescueLocation(lat, lng) {
-            if (!activeRescueId) return;
-            db.collection('rescue_requests').doc(activeRescueId).update({
+        function startPickingLocation() {
+            closeModal('unit-modal');
+            isPickingLocation = true;
+            showToast("Chạm vào bản đồ để chọn vị trí");
+        }
+
+        function submitUnit() {
+            const name = document.getElementById('unit-name').value;
+            const phone = document.getElementById('unit-phone').value;
+            const lat = parseFloat(document.getElementById('unit-lat').value);
+            const lng = parseFloat(document.getElementById('unit-lng').value);
+
+            if(!name || !phone || isNaN(lat)) return alert("Nhập tên, SĐT và chọn vị trí!");
+
+            db.collection('units').add({
+                uid: currentUser.uid, // Track creator
+                name: name,
+                phone: phone,
                 lat: lat,
                 lng: lng,
-                lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => { 
+                closeModal('unit-modal'); 
+                if(tempMarker) map.removeLayer(tempMarker);
+                showToast("Đã thêm đơn vị cứu hộ!"); 
             });
         }
 
-        // Lưu trữ markers cứu hộ để có thể update vị trí
-        const rescueMarkers = {};
-
-        function listenToRescues() {
-            db.collection('rescue_requests').where('active', '==', true)
-                .onSnapshot(snapshot => {
-                    snapshot.docChanges().forEach(change => {
-                        const data = change.doc.data();
-                        const id = change.doc.id;
-
-                        if (change.type === "added" || change.type === "modified") {
-                            updateRescueMarker(data, id);
-                        }
-                        if (change.type === "removed") {
-                            if (rescueMarkers[id]) {
-                                map.removeLayer(rescueMarkers[id]);
-                                delete rescueMarkers[id];
-                            }
-                        }
-                    });
-                });
-        }
-
-        function updateRescueMarker(data, id) {
-            // Nếu marker đã có -> xóa cũ vẽ mới (hoặc setLatLng)
-            if (rescueMarkers[id]) {
-                rescueMarkers[id].setLatLng([data.lat, data.lng]);
-            } else {
-                // Tạo marker mới
-                const iconHtml = `<div style="background:var(--danger); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; border:3px solid white; box-shadow:0 0 10px var(--danger); animation: pulse 1s infinite;">
-                    <i class="fa-solid fa-life-ring"></i>
-                </div>`;
-                const icon = L.divIcon({ html: iconHtml, className: 'rescue-icon', iconSize: [40, 40] });
-                
-                const marker = L.marker([data.lat, data.lng], { icon: icon }).addTo(map);
-                
-                // Tính khoảng cách sơ bộ (tuỳ chọn)
-                
-                const popupContent = `
-                    <b style="color:red">🆘 CẦN CỨU HỘ</b><br>
-                    <b>${data.name}</b> - SĐT: <a href="tel:${data.phone}"><b>${data.phone}</b></a><br>
-                    Trạng thái: ${getStatusName(data.status)}<br>
-                    Mức độ: ${data.urgency}/5<br>
-                    <p style="background:#eee; padding:5px; border-radius:4px;">"${data.description}"</p>
-                    <button class="btn-danger" style="padding:5px 10px; font-size:12px; width:100%; border-radius:4px; border:none; cursor:pointer;" onclick="openGoogleMaps(${data.lat}, ${data.lng})">
-                       🚀 Đến Cứu Hộ
-                    </button>
-                `;
-                marker.bindPopup(popupContent);
-                rescueMarkers[id] = marker;
+        // DELETE
+        function deleteItem(collection, id) {
+            if(confirm("Bạn có chắc muốn xóa tin này không?")) {
+                db.collection(collection).doc(id).delete().then(() => showToast("Đã xóa!"));
             }
         }
 
-        // ---------------------------------------------------------
-        // 5. HELPER FUNCTIONS
-        // ---------------------------------------------------------
-        function openModal(id) {
-            document.getElementById(id).classList.add('active');
+        // NAVIGATE
+        function locateOnMap(lat, lng) {
+            switchTab('map');
+            map.setView([lat, lng], 18);
         }
 
-        function closeModal(id) {
-            document.getElementById(id).classList.remove('active');
+        function openNavModal(lat, lng) {
+            openModal('nav-modal');
+            document.getElementById('btn-google-maps').onclick = () => window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+            document.getElementById('btn-apple-maps').onclick = () => window.open(`http://maps.apple.com/?daddr=${lat},${lng}`, '_blank');
         }
 
-        function closeModalOnOutside(event, id) {
-            if (event.target.id === id) closeModal(id);
+        // --- EXCEL IMPORT ---
+        function downloadTemplate() {
+            const ws = XLSX.utils.json_to_sheet([{ "Tên đơn vị": "Đội SOS A", "Số điện thoại": "0909123456", "Vĩ độ (Lat)": 10.762, "Kinh độ (Lng)": 106.660 }]);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Mau_Don_Vi");
+            XLSX.writeFile(wb, "Mau_Nhap_Don_Vi_Cuu_Ho.xlsx");
         }
 
+        function processImport() {
+            const file = document.getElementById('excel-file').files[0];
+            if (!file) return alert("Vui lòng chọn file!");
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+
+                if (json.length === 0) return alert("File trống!");
+
+                let batch = db.batch();
+                let count = 0;
+                json.forEach(row => {
+                    // Mapping columns (Adjust based on template)
+                    const name = row['Tên đơn vị'] || row['Ten don vi'] || row['name'];
+                    const phone = row['Số điện thoại'] || row['So dien thoai'] || row['phone'];
+                    const lat = row['Vĩ độ (Lat)'] || row['lat'];
+                    const lng = row['Kinh độ (Lng)'] || row['lng'];
+
+                    if (name && lat && lng) {
+                        const ref = db.collection('units').doc();
+                        batch.set(ref, {
+                            uid: currentUser.uid,
+                            name: name,
+                            phone: phone || '',
+                            lat: parseFloat(lat),
+                            lng: parseFloat(lng),
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        count++;
+                    }
+                });
+
+                batch.commit().then(() => {
+                    closeModal('import-modal');
+                    showToast(`Đã nhập thành công ${count} đơn vị!`);
+                }).catch(err => alert("Lỗi nhập liệu: " + err));
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // --- HELPER UI ---
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+        function clickOutside(e, el) { if (e.target === el) el.classList.remove('active'); }
         function showToast(msg) {
-            const toast = document.getElementById('toast');
-            toast.innerText = msg;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 3000);
-        }
-
-        function openGoogleMaps(lat, lng) {
-            window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
-        }
-
-        function getDisasterName(type) {
-            const map = { flood: '🌊 Lũ lụt', landslide: '⛰️ Sạt lở', storm: '🌪️ Bão', fire: '🔥 Cháy', other: '⚠️ Khác' };
-            return map[type] || type;
-        }
-
-        function getSeverityName(level) {
-            const map = { low: 'Thấp', medium: 'Trung bình', high: 'Cao', critical: 'Khẩn cấp' };
-            return map[level] || level;
-        }
-
-        function getStatusName(status) {
-            const map = { trapped: 'Bị mắc kẹt', injured: 'Bị thương', danger: 'Nguy hiểm', food: 'Cần lương thực' };
-            return map[status] || status;
+            const t = document.getElementById('toast');
+            t.innerText = msg; t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
         }
     </script>
 </body>
