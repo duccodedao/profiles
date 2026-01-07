@@ -1,0 +1,186 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ thống Tải lên & Quản trị</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
+        .hidden { display: none; }
+        .btn { padding: 10px 20px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; margin: 5px 0; }
+        .btn-logout { background: #dc3545; }
+        #admin-panel { background: #f8f9fa; border: 2px solid #333; padding: 15px; margin-top: 20px; }
+        .data-item { border-bottom: 1px solid #ccc; padding: 10px; }
+        img { max-width: 100px; display: block; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+    <h1>Hệ thống Dữ liệu</h1>
+
+    <!-- Màn hình Đăng nhập -->
+    <div id="login-screen">
+        <p>Vui lòng đăng nhập để tiếp tục</p>
+        <button class="btn" onclick="loginGoogle()">Đăng nhập bằng Google</button>
+    </div>
+
+    <!-- Màn hình Chính (User) -->
+    <div id="user-screen" class="hidden">
+        <p>Xin chào, <span id="username"></span>!</p>
+        
+        <h3>1. Gửi Ảnh</h3>
+        <input type="file" id="file-input" multiple>
+        <button class="btn" onclick="uploadFiles()">Tải ảnh lên Server</button>
+
+        <h3>2. Gửi Danh bạ (Đã chọn)</h3>
+        <button class="btn" onclick="shareContacts()">Chọn & Gửi Danh Bạ</button>
+        
+        <br><br>
+        <button class="btn btn-logout" onclick="logout()">Đăng xuất</button>
+    </div>
+
+    <!-- Màn hình Admin (Chỉ hiện nếu đúng UID) -->
+    <div id="admin-panel" class="hidden">
+        <h2>👑 ADMIN PANEL</h2>
+        <p>Danh sách dữ liệu từ tất cả người dùng:</p>
+        <div id="admin-data-list">Loading...</div>
+        <button class="btn" onclick="loadAdminData()">Làm mới dữ liệu</button>
+    </div>
+
+    <!-- Tích hợp Firebase (Sử dụng phiên bản CDN module) -->
+    <script type="module">
+        // --- CẤU HÌNH FIREBASE (THAY THẾ BẰNG CỦA BẠN) ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
+        authDomain: "profile-d1214.firebaseapp.com",
+        projectId: "profile-d1214",
+        storageBucket: "profile-d1214.firebasestorage.app",
+        messagingSenderId: "914980131889",
+        appId: "1:914980131889:web:72f8da15c42dbee671b110",
+        measurementId: "G-C587M69LZW"
+    };
+
+        // Khởi tạo
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+        const ADMIN_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1";
+
+        // --- XỬ LÝ AUTH ---
+        window.loginGoogle = () => {
+            const provider = new GoogleAuthProvider();
+            signInWithPopup(auth, provider).catch(err => alert(err.message));
+        };
+
+        window.logout = () => signOut(auth);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('user-screen').classList.remove('hidden');
+                document.getElementById('username').innerText = user.displayName;
+
+                // Kiểm tra nếu là Admin
+                if (user.uid === ADMIN_UID) {
+                    document.getElementById('admin-panel').classList.remove('hidden');
+                    loadAdminData();
+                }
+            } else {
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('user-screen').classList.add('hidden');
+                document.getElementById('admin-panel').classList.add('hidden');
+            }
+        });
+
+        // --- CHỨC NĂNG USER: TẢI ẢNH ---
+        window.uploadFiles = async () => {
+            const files = document.getElementById('file-input').files;
+            if (files.length === 0) return alert("Chưa chọn file!");
+
+            const user = auth.currentUser;
+            for (let file of files) {
+                try {
+                    // Upload lên Storage
+                    const storageRef = ref(storage, `uploads/${user.uid}/${Date.now()}_${file.name}`);
+                    await uploadBytes(storageRef, file);
+                    const url = await getDownloadURL(storageRef);
+
+                    // Lưu link vào Firestore
+                    await addDoc(collection(db, "uploads"), {
+                        type: "image",
+                        url: url,
+                        userEmail: user.email,
+                        userName: user.displayName,
+                        timestamp: Date.now()
+                    });
+                } catch (e) { console.error(e); }
+            }
+            alert("Đã gửi ảnh thành công!");
+        };
+
+        // --- CHỨC NĂNG USER: GỬI DANH BẠ ---
+        window.shareContacts = async () => {
+            if (!('contacts' in navigator && 'ContactsManager' in window)) {
+                return alert("Trình duyệt không hỗ trợ lấy danh bạ.");
+            }
+            try {
+                const contacts = await navigator.contacts.select(['name', 'tel'], { multiple: true });
+                const user = auth.currentUser;
+                
+                // Lưu danh bạ vào Firestore
+                await addDoc(collection(db, "uploads"), {
+                    type: "contact",
+                    data: contacts,
+                    userEmail: user.email,
+                    timestamp: Date.now()
+                });
+                alert("Đã gửi danh bạ thành công!");
+            } catch (err) {
+                console.error(err);
+            }
+        };
+
+        // --- CHỨC NĂNG ADMIN: XEM DỮ LIỆU ---
+        window.loadAdminData = async () => {
+            const listDiv = document.getElementById('admin-data-list');
+            listDiv.innerHTML = "Đang tải...";
+            
+            try {
+                const q = query(collection(db, "uploads"), orderBy("timestamp", "desc"));
+                const querySnapshot = await getDocs(q);
+                
+                listDiv.innerHTML = "";
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    let contentHtml = "";
+
+                    if (data.type === 'image') {
+                        contentHtml = `<img src="${data.url}" alt="User Image">`;
+                    } else if (data.type === 'contact') {
+                        contentHtml = `<pre>${JSON.stringify(data.data, null, 2)}</pre>`;
+                    }
+
+                    const date = new Date(data.timestamp).toLocaleString();
+                    const item = document.createElement('div');
+                    item.className = 'data-item';
+                    item.innerHTML = `
+                        <strong>User:</strong> ${data.userEmail} <br>
+                        <small>${date}</small> <br>
+                        ${contentHtml}
+                    `;
+                    listDiv.appendChild(item);
+                });
+            } catch (e) {
+                listDiv.innerHTML = "Lỗi tải dữ liệu (Có thể bạn không phải Admin hoặc chưa setup Rules): " + e.message;
+            }
+        };
+    </script>
+</body>
+</html>
