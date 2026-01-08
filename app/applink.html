@@ -3,12 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enterprise Portal & Secure Directory</title>
+    <title>Hub Portal Enterprise - Data Secure</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="icon" href="https://bmass.vercel.app/img/bmasslogo.png" type="image/png">
+    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Drag & Drop -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <!-- Excel Library (SheetJS) -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -22,6 +28,8 @@
         .dark .glass { background: rgba(15, 23, 42, 0.8); border-bottom: 1px solid rgba(255,255,255,0.05); }
         .app-item { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .drag-ghost { opacity: 0.3; background: #4f46e5 !important; border-radius: 1rem; }
+        .tab-active { color: #4f46e5; border-bottom: 2px solid #4f46e5; }
+        .dark .tab-active { color: #818cf8; border-bottom: 2px solid #818cf8; }
     </style>
 </head>
 <body class="min-h-screen pb-24">
@@ -30,7 +38,7 @@
     <header class="sticky top-0 z-[100] glass px-6 py-3 flex justify-between items-center">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg">
-                <i data-lucide="shield-check" class="w-6 h-6"></i>
+                <i data-lucide="database" class="w-6 h-6"></i>
             </div>
             <div>
                 <h1 class="text-xs font-black tracking-tighter uppercase leading-none">Hub Portal</h1>
@@ -79,18 +87,20 @@
         </div>
     </div>
 
-    <!-- Modal Management -->
+    <!-- Modal Management (Tabs: Cat, Deputy, Data) -->
     <div id="modal-mgmt" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl">
+        <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl border dark:border-white/10">
             <div class="p-6 border-b dark:border-white/5 flex justify-between items-center">
                 <div class="flex gap-6 text-[10px] font-black tracking-widest text-slate-400">
                     <button onclick="switchTab('tab-cat')" id="btn-tab-cat" class="text-primary border-b-2 border-primary pb-1">DANH MỤC</button>
-                    <button onclick="switchTab('tab-deputy')" id="btn-tab-deputy" class="pb-1">PHÓ ADMIN</button>
+                    <button onclick="switchTab('tab-deputy')" id="btn-tab-deputy" class="pb-1 uppercase">Phó Admin</button>
+                    <button onclick="switchTab('tab-data')" id="btn-tab-data" class="pb-1 uppercase">Dữ liệu</button>
                 </div>
                 <button onclick="closeModal('modal-mgmt')" class="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             
             <div class="flex-1 overflow-y-auto p-8">
+                <!-- Tab Categories -->
                 <div id="tab-cat" class="space-y-6">
                     <div class="flex gap-2">
                         <input type="text" id="new-cat-name" placeholder="Tên danh mục..." class="flex-1 px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary">
@@ -100,14 +110,49 @@
                     <ul id="cat-list-admin" class="space-y-2"></ul>
                 </div>
 
+                <!-- Tab Deputy -->
                 <div id="tab-deputy" class="hidden space-y-6">
-                    <div id="deputy-guard" class="hidden p-4 bg-amber-50 dark:bg-amber-900/20 text-amber-600 rounded-xl text-xs font-bold uppercase tracking-widest">Chỉ Super Admin mới quản lý được mục này.</div>
+                    <div id="deputy-guard" class="hidden p-4 bg-amber-50 dark:bg-amber-900/20 text-amber-600 rounded-xl text-xs font-bold uppercase">Chỉ Super Admin mới quản lý được mục này.</div>
                     <div id="deputy-ui" class="space-y-4">
                         <div class="flex gap-2">
                             <input type="email" id="new-deputy-email" placeholder="Gmail phó admin..." class="flex-1 px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary">
                             <button onclick="addDeputy()" class="bg-primary text-white px-8 rounded-xl font-bold text-xs">CẤP QUYỀN</button>
                         </div>
                         <div id="deputy-list" class="space-y-2"></div>
+                    </div>
+                </div>
+
+                <!-- Tab Data Export/Import -->
+                <div id="tab-data" class="hidden space-y-8">
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <!-- Export Section -->
+                        <div class="p-6 bg-slate-50 dark:bg-white/5 rounded-[2rem] border dark:border-white/5 space-y-4">
+                            <h4 class="text-xs font-black uppercase tracking-widest text-primary">Xuất dữ liệu (Export)</h4>
+                            <p class="text-xs text-slate-500 font-medium">Lưu trữ lại toàn bộ cấu hình Ứng dụng và Danh mục hiện có trên site.</p>
+                            <div class="flex flex-col gap-2">
+                                <button onclick="handleExport('json')" class="flex items-center justify-between w-full px-5 py-3 bg-white dark:bg-slate-800 rounded-xl hover:ring-2 ring-indigo-500 transition shadow-sm">
+                                    <span class="text-sm font-bold">Xuất file JSON</span>
+                                    <i data-lucide="download" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="handleExport('excel')" class="flex items-center justify-between w-full px-5 py-3 bg-white dark:bg-slate-800 rounded-xl hover:ring-2 ring-indigo-500 transition shadow-sm">
+                                    <span class="text-sm font-bold">Xuất file EXCEL</span>
+                                    <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Import Section -->
+                        <div class="p-6 bg-slate-50 dark:bg-white/5 rounded-[2rem] border dark:border-white/5 space-y-4">
+                            <h4 class="text-xs font-black uppercase tracking-widest text-secondary">Nhập dữ liệu (Import)</h4>
+                            <p class="text-xs text-slate-500 font-medium">Khôi phục dữ liệu từ file JSON hoặc Excel đã lưu trước đó. <br><b>Lưu ý:</b> Dữ liệu mới sẽ được thêm vào.</p>
+                            <div class="relative">
+                                <input type="file" id="import-file" accept=".json, .xlsx" onchange="handleImport(event)" class="hidden">
+                                <label for="import-file" class="flex items-center justify-center gap-3 w-full px-5 py-4 bg-slate-900 text-white dark:bg-white dark:text-slate-900 rounded-xl cursor-pointer hover:opacity-90 transition font-bold text-xs uppercase">
+                                    <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+                                    Chọn file để khôi phục
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -118,7 +163,7 @@
     <div id="modal-app" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[210] hidden flex items-center justify-center p-4">
         <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden">
             <div class="p-6 border-b dark:border-white/5 flex justify-between items-center">
-                <h3 id="app-modal-title" class="font-bold uppercase text-sm">Cấu hình</h3>
+                <h3 id="app-modal-title" class="font-bold uppercase text-sm tracking-widest">Cấu hình</h3>
                 <button onclick="closeModal('modal-app')" class="p-2 rounded-lg hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <form id="app-form" class="p-8 space-y-4">
@@ -140,15 +185,23 @@
                     <input type="text" id="app-link" required class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium">
                 </div>
                 <div class="space-y-1">
-                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Icon URL (Để trống = Tự lấy)</label>
-                    <input type="text" id="app-icon" class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Icon URL</label>
+                    <input type="text" id="app-icon" placeholder="Để trống để tự lấy" class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium">
                 </div>
                 <div class="flex items-center gap-3 p-2">
                     <input type="checkbox" id="app-visible" checked class="w-5 h-5 accent-primary">
                     <label class="text-xs font-bold opacity-60">Hiển thị công khai</label>
                 </div>
-                <button type="submit" class="w-full py-4 bg-primary text-white rounded-xl font-bold shadow-lg shadow-indigo-500/30">LƯU THÔNG TIN</button>
+                <button type="submit" class="w-full py-4 bg-primary text-white rounded-xl font-bold shadow-lg shadow-indigo-500/30 uppercase text-xs">Lưu ứng dụng</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-10 right-10 z-[300] transform translate-y-20 opacity-0 transition-all duration-500">
+        <div class="bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border dark:border-white/10">
+            <i data-lucide="check-circle" class="w-5 h-5 text-green-500"></i>
+            <span id="toast-msg" class="text-sm font-bold tracking-tight">Thành công!</span>
         </div>
     </div>
 
@@ -156,7 +209,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc, arrayUnion, arrayRemove, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
@@ -169,14 +222,14 @@
         };
         const SUPER_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1";
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        const fbApp = initializeApp(firebaseConfig);
+        const auth = getAuth(fbApp);
+        const db = getFirestore(fbApp);
         const provider = new GoogleAuthProvider();
 
         let currentUser = null, isAdmin = false, isSuper = false, apps = [], categories = [], deputies = [], currentFilter = 'all', searchQuery = '', viewMode = 'grid';
 
-        // Auth Listener
+        // --- AUTH & INITIAL ---
         onAuthStateChanged(auth, async (user) => {
             currentUser = user;
             if (user) {
@@ -184,10 +237,10 @@
                 const snap = await getDoc(doc(db, "settings", "admins"));
                 deputies = snap.exists() ? snap.data().deputy_emails || [] : [];
                 isAdmin = isSuper || deputies.includes(user.email);
-                document.getElementById('auth-section').innerHTML = `<div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 pr-3 rounded-lg border dark:border-white/10"><img src="${currentUser.photoURL}" class="w-7 h-7 rounded-md"><button onclick="window.logout()" class="text-[9px] font-black uppercase text-red-500">EXIT</button></div>`;
+                renderAuthUI();
             } else {
                 isAdmin = isSuper = false;
-                document.getElementById('auth-section').innerHTML = `<button onclick="window.login()" class="bg-primary text-white px-5 py-2 rounded-lg text-xs font-bold">LOGIN</button>`;
+                document.getElementById('auth-section').innerHTML = `<button onclick="window.login()" class="bg-primary text-white px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-widest">Login</button>`;
             }
             document.getElementById('role-status').innerText = isSuper ? 'SUPER' : (isAdmin ? 'DEPUTY' : 'GUEST');
             document.getElementById('admin-controls').classList.toggle('hidden', !isAdmin);
@@ -200,7 +253,11 @@
         window.login = () => signInWithPopup(auth, provider);
         window.logout = () => signOut(auth).then(() => location.reload());
 
-        // Sync Data
+        function renderAuthUI() {
+            document.getElementById('auth-section').innerHTML = `<div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 pr-3 rounded-lg border dark:border-white/10"><img src="${currentUser.photoURL}" class="w-7 h-7 rounded-md"><button onclick="window.logout()" class="text-[9px] font-black uppercase text-red-500">Exit</button></div>`;
+        }
+
+        // --- DATA REALTIME ---
         onSnapshot(query(collection(db, "categories"), orderBy("order", "asc")), (snap) => {
             categories = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             renderCategories();
@@ -211,26 +268,15 @@
             renderApps();
         });
 
-        // APP RENDERING LOGIC (The Core Change)
+        // --- RENDERING APP ---
         window.renderApps = () => {
             const container = document.getElementById('app-container');
-            
             const filtered = apps.filter(a => {
                 const cat = categories.find(c => c.id === a.categoryId);
-                
-                // Logic: Nếu đang chọn "Tất cả", lọc bỏ những app thuộc danh mục "Số điện thoại"
-                if (currentFilter === 'all') {
-                    if (cat?.name === "Số điện thoại") return false;
-                } else {
-                    // Nếu đang chọn 1 danh mục cụ thể, chỉ hiện app thuộc danh mục đó
-                    if (a.categoryId !== currentFilter) return false;
-                }
-
-                // Search & Visibility
+                if (currentFilter === 'all') { if (cat?.name === "Số điện thoại") return false; } 
+                else { if (a.categoryId !== currentFilter) return false; }
                 const matchSearch = a.name.toLowerCase().includes(searchQuery.toLowerCase()) || (a.position && a.position.toLowerCase().includes(searchQuery.toLowerCase()));
-                const matchVisible = isAdmin || a.visible;
-                
-                return matchSearch && matchVisible;
+                return matchSearch && (isAdmin || a.visible);
             });
 
             if (viewMode === 'grid') {
@@ -239,10 +285,9 @@
                     const isAppPhone = categories.find(c => c.id === a.categoryId)?.name === "Số điện thoại";
                     const domain = a.url.startsWith('http') ? new URL(a.url).hostname : '';
                     const icon = a.iconUrl || (isAppPhone ? 'https://cdn-icons-png.flaticon.com/512/3059/3059502.png' : `https://unavatar.io/${domain}?fallback=https://www.google.com/s2/favicons?domain=${domain}&sz=128`);
-                    
                     return `
                     <div class="app-item group flex flex-col items-center relative" data-id="${a.id}">
-                        <a href="${isAppPhone ? 'tel:' + a.url : a.url}" class="w-full aspect-square bg-white dark:bg-slate-800 rounded-2xl shadow-sm border dark:border-white/5 flex items-center justify-center p-3 mb-2 hover:shadow-xl hover:-translate-y-1 transition-all">
+                        <a href="${isAppPhone ? 'tel:' + a.url : a.url}" target="_blank" class="w-full aspect-square bg-white dark:bg-slate-800 rounded-2xl shadow-sm border dark:border-white/5 flex items-center justify-center p-3 mb-2 hover:shadow-xl hover:-translate-y-1 transition-all">
                             <img src="${icon}" class="w-full h-full object-contain rounded-lg">
                         </a>
                         <span class="text-[10px] font-bold text-slate-500 text-center truncate w-full uppercase tracking-tighter">${a.name}</span>
@@ -254,12 +299,13 @@
                 container.className = "flex flex-col max-w-4xl mx-auto space-y-1";
                 container.innerHTML = filtered.map((a, idx) => {
                     const isAppPhone = categories.find(c => c.id === a.categoryId)?.name === "Số điện thoại";
-                    const icon = a.iconUrl || (isAppPhone ? 'https://cdn-icons-png.flaticon.com/512/3059/3059502.png' : `https://www.google.com/s2/favicons?domain=${new URL(a.url).hostname}&sz=128`);
+                    const domain = a.url.startsWith('http') ? new URL(a.url).hostname : '';
+                    const icon = a.iconUrl || (isAppPhone ? 'https://cdn-icons-png.flaticon.com/512/3059/3059502.png' : `https://unavatar.io/${domain}?fallback=https://www.google.com/s2/favicons?domain=${domain}&sz=128`);
                     return `<div class="flex items-center gap-4 bg-white dark:bg-slate-900 p-3 rounded-xl border dark:border-white/5 group shadow-sm" data-id="${a.id}">
                         <span class="text-[9px] font-black text-slate-300 w-4">${idx+1}</span>
                         <img src="${icon}" class="w-8 h-8 rounded-lg object-contain">
-                        <div class="flex-1 min-w-0"><h4 class="text-xs font-bold truncate">${a.name}</h4><p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${a.position || (isAppPhone ? a.url : 'Link')}</p></div>
-                        <div class="flex items-center gap-2"><a href="${isAppPhone ? 'tel:' + a.url : a.url}" class="p-2 text-primary hover:bg-primary hover:text-white rounded-lg transition"><i data-lucide="${isAppPhone ? 'phone' : 'external-link'}" class="w-4 h-4"></i></a>
+                        <div class="flex-1 min-w-0"><h4 class="text-xs font-bold truncate">${a.name}</h4><p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${a.position || (isAppPhone ? a.url : 'Web App')}</p></div>
+                        <div class="flex items-center gap-2"><a href="${isAppPhone ? 'tel:' + a.url : a.url}" target="_blank" class="p-2 text-primary hover:bg-primary hover:text-white rounded-lg transition"><i data-lucide="${isAppPhone ? 'phone' : 'external-link'}" class="w-4 h-4"></i></a>
                         ${isAdmin ? `<button onclick="window.editApp('${a.id}')" class="p-2 hover:bg-slate-100 rounded-lg"><i data-lucide="edit-3" class="w-4 h-4"></i></button><i data-lucide="grip-vertical" class="w-4 h-4 text-slate-300 cursor-move"></i>` : ''}</div></div>`;
                 }).join('');
             }
@@ -267,27 +313,135 @@
             if(isAdmin) new Sortable(container, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(container.children).forEach((el, i) => { if(el.dataset.id) updateDoc(doc(db, "apps", el.dataset.id), { order: i }); }); }});
         }
 
-        // Category Rendering
-        function renderCategories() {
-            const bar = document.getElementById('category-bar');
-            let html = `<button onclick="window.setFilter('all')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all ${currentFilter === 'all' ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">TẤT CẢ</button>`;
-            categories.forEach(c => {
-                html += `<button onclick="window.setFilter('${c.id}')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center gap-2 ${currentFilter === c.id ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">
-                    ${c.icon ? `<img src="${c.icon}" class="w-3 h-3 object-contain">` : ''} ${c.name.toUpperCase()}
-                </button>`;
-            });
-            bar.innerHTML = html;
+        // --- DATA IMPORT/EXPORT LOGIC ---
+        window.handleExport = (type) => {
+            const data = {
+                apps: apps.map(({id, ...rest}) => rest),
+                categories: categories.map(({id, ...rest}) => rest),
+                exportedAt: new Date().toISOString(),
+                version: "2.0"
+            };
 
-            const list = document.getElementById('cat-list-admin');
-            list.innerHTML = categories.map(c => `<li class="flex flex-col gap-2 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border dark:border-white/5" data-id="${c.id}"><div class="flex items-center gap-3"><i data-lucide="grip-vertical" class="text-slate-300 cursor-move"></i><input type="text" value="${c.name}" onblur="window.updateCatField('${c.id}', 'name', this.value)" class="flex-1 bg-transparent border-none font-bold text-sm outline-none"><button onclick="window.deleteCat('${c.id}')" class="text-red-500 p-2"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div><input type="text" value="${c.icon || ''}" onblur="window.updateCatField('${c.id}', 'icon', this.value)" placeholder="Link Icon cho danh mục này" class="text-[10px] bg-white dark:bg-black/20 px-4 py-2 rounded-lg outline-none w-full"></li>`).join('');
-            lucide.createIcons();
-            if(isAdmin) new Sortable(list, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(list.children).forEach((el, i) => updateDoc(doc(db, "categories", el.dataset.id), { order: i })); }});
-            document.getElementById('app-category').innerHTML = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-        }
+            if (type === 'json') {
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `hub-portal-backup-${new Date().toLocaleDateString()}.json`;
+                a.click();
+            } else if (type === 'excel') {
+                const wb = XLSX.utils.book_new();
+                
+                // Sheet Apps
+                const wsApps = XLSX.utils.json_to_sheet(apps.map(a => {
+                    const cat = categories.find(c => c.id === a.categoryId);
+                    return {
+                        'Tên': a.name,
+                        'URL/SĐT': a.url,
+                        'Chức vụ': a.position || '',
+                        'Danh mục': cat ? cat.name : '',
+                        'Icon URL': a.iconUrl || '',
+                        'Hiển thị': a.visible ? 'Bật' : 'Tắt',
+                        'Thứ tự': a.order
+                    }
+                }));
+                XLSX.utils.book_append_sheet(wb, wsApps, "Apps");
 
-        // Logic & Functions
-        window.setFilter = (id) => { currentFilter = id; renderCategories(); renderApps(); };
-        window.setView = (mode) => { viewMode = mode; renderApps(); };
+                // Sheet Categories
+                const wsCats = XLSX.utils.json_to_sheet(categories.map(c => ({
+                    'Tên danh mục': c.name,
+                    'Icon Logo': c.icon || '',
+                    'Thứ tự': c.order
+                })));
+                XLSX.utils.book_append_sheet(wb, wsCats, "Categories");
+
+                XLSX.writeFile(wb, `hub-portal-data-${new Date().toLocaleDateString()}.xlsx`);
+            }
+            showToast("Đã xuất dữ liệu thành công!");
+        };
+
+        window.handleImport = async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!confirm("Hành động này sẽ thêm dữ liệu từ file vào site hiện tại. Tiếp tục?")) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    let importedData = { categories: [], apps: [] };
+
+                    if (file.name.endsWith('.json')) {
+                        importedData = JSON.parse(e.target.result);
+                    } else if (file.name.endsWith('.xlsx')) {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        
+                        // Parse Categories first to build ID map
+                        const catSheet = workbook.Sheets["Categories"];
+                        if (catSheet) {
+                            const rawCats = XLSX.utils.sheet_to_json(catSheet);
+                            importedData.categories = rawCats.map(c => ({
+                                name: c['Tên danh mục'],
+                                icon: c['Icon Logo'] || '',
+                                order: parseInt(c['Thứ tự']) || 0
+                            }));
+                        }
+
+                        // Parse Apps
+                        const appSheet = workbook.Sheets["Apps"];
+                        if (appSheet) {
+                            const rawApps = XLSX.utils.sheet_to_json(appSheet);
+                            importedData.apps = rawApps.map(a => ({
+                                name: a['Tên'],
+                                url: a['URL/SĐT'],
+                                position: a['Chức vụ'] || '',
+                                categoryName: a['Danh mục'], // Use name for mapping
+                                iconUrl: a['Icon URL'] || '',
+                                visible: a['Hiển thị'] === 'Bật',
+                                order: parseInt(a['Thứ tự']) || 0
+                            }));
+                        }
+                    }
+
+                    // --- UPLOAD TO FIRESTORE ---
+                    // 1. Tạo danh mục và lưu lại Map ID mới
+                    const categoryIdMap = {}; // { "Tên danh mục": "ID mới" }
+                    
+                    for (const cat of importedData.categories) {
+                        // Tránh tạo trùng tên danh mục nếu đã có
+                        const existing = categories.find(c => c.name === cat.name);
+                        if (existing) {
+                            categoryIdMap[cat.name] = existing.id;
+                        } else {
+                            const docRef = await addDoc(collection(db, "categories"), cat);
+                            categoryIdMap[cat.name] = docRef.id;
+                        }
+                    }
+
+                    // 2. Tạo Apps với ID danh mục mới
+                    for (const appData of importedData.apps) {
+                        const { categoryName, ...rest } = appData;
+                        const finalAppData = {
+                            ...rest,
+                            categoryId: categoryIdMap[categoryName] || '' // Link by Name
+                        };
+                        await addDoc(collection(db, "apps"), finalAppData);
+                    }
+
+                    showToast("Khôi phục dữ liệu thành công!");
+                    event.target.value = ''; // Reset input
+                } catch (error) {
+                    console.error(error);
+                    alert("Lỗi phân tích file. Vui lòng kiểm tra lại định dạng.");
+                }
+            };
+
+            if (file.name.endsWith('.json')) reader.readAsText(file);
+            else reader.readAsArrayBuffer(file);
+        };
+
+        // --- OTHER UTILS ---
         window.updateCatField = (id, field, val) => updateDoc(doc(db, "categories", id), { [field]: val });
         window.deleteCat = (id) => confirm("Xóa danh mục này?") && deleteDoc(doc(db, "categories", id));
         window.addCategory = async () => {
@@ -314,7 +468,7 @@
         };
 
         window.removeDeputy = async (email) => {
-            if(!confirm("Xóa quyền của email này?") || !isSuper) return;
+            if(!confirm("Xóa quyền phó admin?") || !isSuper) return;
             await setDoc(doc(db, "settings", "admins"), { deputy_emails: arrayRemove(email) }, { merge: true });
             location.reload();
         };
@@ -350,20 +504,48 @@
         };
 
         window.deleteApp = (id) => confirm("Xóa mục này?") && deleteDoc(doc(db, "apps", id));
+
+        window.renderCategories = renderCategories; // Assign to global
+        function renderCategories() {
+            const bar = document.getElementById('category-bar');
+            let html = `<button onclick="window.setFilter('all')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all ${currentFilter === 'all' ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">TẤT CẢ</button>`;
+            categories.forEach(c => {
+                html += `<button onclick="window.setFilter('${c.id}')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center gap-2 ${currentFilter === c.id ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">
+                    ${c.icon ? `<img src="${c.icon}" class="w-3 h-3 object-contain">` : ''} ${c.name.toUpperCase()}
+                </button>`;
+            });
+            bar.innerHTML = html;
+
+            const list = document.getElementById('cat-list-admin');
+            list.innerHTML = categories.map(c => `<li class="flex flex-col gap-2 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border dark:border-white/5" data-id="${c.id}"><div class="flex items-center gap-3"><i data-lucide="grip-vertical" class="text-slate-300 cursor-move"></i><input type="text" value="${c.name}" onblur="window.updateCatField('${c.id}', 'name', this.value)" class="flex-1 bg-transparent border-none font-bold text-sm outline-none"><button onclick="window.deleteCat('${c.id}')" class="text-red-500 p-2"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div><input type="text" value="${c.icon || ''}" onblur="window.updateCatField('${c.id}', 'icon', this.value)" placeholder="Icon URL" class="text-[10px] bg-white dark:bg-black/20 px-4 py-2 rounded-lg outline-none w-full border-none shadow-inner"></li>`).join('');
+            lucide.createIcons();
+            if(isAdmin) new Sortable(list, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(list.children).forEach((el, i) => updateDoc(doc(db, "categories", el.dataset.id), { order: i })); }});
+            document.getElementById('app-category').innerHTML = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        }
+
         window.openModal = (id) => document.getElementById(id).classList.remove('hidden');
         window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
         window.switchTab = (tabId) => {
-            document.getElementById('tab-cat').classList.add('hidden');
-            document.getElementById('tab-deputy').classList.add('hidden');
-            document.getElementById('btn-tab-cat').classList.remove('text-primary', 'border-b-2', 'border-primary');
-            document.getElementById('btn-tab-deputy').classList.remove('text-primary', 'border-b-2', 'border-primary');
+            ['tab-cat', 'tab-deputy', 'tab-data'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            ['btn-tab-cat', 'btn-tab-deputy', 'btn-tab-data'].forEach(id => document.getElementById(id).classList.remove('text-primary', 'border-b-2', 'border-primary'));
             document.getElementById(tabId).classList.remove('hidden');
             document.getElementById('btn-' + tabId).classList.add('text-primary', 'border-b-2', 'border-primary');
         };
         window.toggleTheme = () => { document.documentElement.classList.toggle('dark'); localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light'; };
         document.getElementById('search-input').oninput = (e) => { searchQuery = e.target.value; renderApps(); };
+        window.setFilter = (id) => { currentFilter = id; renderCategories(); renderApps(); };
+        window.setView = (mode) => { viewMode = mode; renderApps(); };
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            t.classList.remove('opacity-0', 'translate-y-20');
+            setTimeout(() => t.classList.add('opacity-0', 'translate-y-20'), 3000);
+            lucide.createIcons();
+        }
+
         if(localStorage.theme === 'dark') document.documentElement.classList.add('dark');
         lucide.createIcons();
+        window.setView('grid');
     </script>
 </body>
 </html>
