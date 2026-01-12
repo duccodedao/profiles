@@ -1,988 +1,549 @@
-
-<!doctype html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Trang cá nhân — Admin Panel</title>
-  <meta name="description" content="Trang cá nhân chuyên nghiệp với Admin Panel (Firebase Auth, Firestore, Storage)" />
-  <!-- Basic SEO -->
-  <meta name="keywords" content="portfolio, personal, profile, blog, projects" />
-  <meta name="author" content="Bạn" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Premium Telegram Mini App</title>
+    
+    <!-- CSS Library -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --glass: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --text-main: #ffffff;
+            --accent: #00d2ff;
+        }
 
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+        body {
+            background: #0f0c29;
+            background: linear-gradient(to bottom, #24243e, #302b63, #0f0c29);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            padding-bottom: 80px;
+            overflow-x: hidden;
+        }
 
-  <style>
-    /* -------------------------
-       CSS cơ bản (responsive)
-       ------------------------- */
-    :root{
-      --bg:#0f1724;
-      --card:#0b1220;
-      --accent:#3b82f6;
-      --muted:#94a3b8;
-      --glass: rgba(255,255,255,0.03);
-      --success:#10b981;
-      --danger:#ef4444;
-      --radius:10px;
-      font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      color-scheme: dark;
-    }
-    html,body{height:100%;margin:0;background:linear-gradient(180deg,#071026 0%, #071827 100%);color:#e6eef8}
-    a{color:var(--accent);text-decoration:none}
-    .container{max-width:1100px;margin:28px auto;padding:18px;}
-    header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}
-    header .brand{display:flex;gap:12px;align-items:center}
-    .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#6ee7b7);display:flex;align-items:center;justify-content:center;font-weight:700;color:#021124}
-    .nav-actions{display:flex;gap:8px;align-items:center}
-    button.btn{background:var(--card);border:1px solid rgba(255,255,255,0.03);padding:8px 12px;border-radius:8px;color:inherit;cursor:pointer}
-    button.btn.ghost{background:transparent;border:1px dashed rgba(255,255,255,0.06)}
-    main{display:grid;grid-template-columns:320px 1fr;gap:18px}
-    /* Left column (public profile) */
-    .profile-card{background:var(--card);padding:14px;border-radius:var(--radius);overflow:hidden}
-    .cover{height:120px;border-radius:8px;background:linear-gradient(90deg,#0b1220, #071026);position:relative;overflow:hidden;margin-bottom:12px}
-    .cover img{width:100%;height:100%;object-fit:cover;display:block;filter:brightness(0.7)}
-    .avatar{width:92px;height:92px;border-radius:16px;border:4px solid #071827;position:absolute;bottom:-36px;left:16px;background:#111}
-    .profile-info{padding-top:48px}
-    .profile-info h2{margin:0 0 6px 0}
-    .muted{color:var(--muted);font-size:13px}
-    .skills{margin-top:12px}
-    .skill{margin-bottom:10px}
-    .skill .bar{height:10px;background:#071827;border-radius:999px;overflow:hidden}
-    .skill .bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#6ee7b7)}
-    /* Right column */
-    .section{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);padding:14px;border-radius:var(--radius);margin-bottom:14px}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
-    .card{background:var(--glass);padding:12px;border-radius:10px}
-    .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .small{font-size:13px}
-    /* Projects list */
-    .project{display:flex;gap:12px;align-items:flex-start}
-    .project img{width:120px;height:80px;object-fit:cover;border-radius:8px}
-    .tags{display:flex;gap:6px;flex-wrap:wrap}
-    .tag{background:rgba(255,255,255,0.04);padding:6px 8px;border-radius:999px;font-size:12px;color:var(--muted)}
-    /* Blog */
-    .post{padding:12px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)}
-    .comments{margin-top:10px}
-    .comment{border-top:1px dashed rgba(255,255,255,0.03);padding:8px 0}
-    .muted-2{color:rgba(255,255,255,0.6);font-size:13px}
-    /* Admin Panel toggle */
-    #adminPanel{position:fixed;right:18px;top:70px;width:420px;max-height:80vh;overflow:auto;transform:translateX(12px);transition:all .28s;z-index:60}
-    .hide{display:none}
-    .admin-header{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;background:linear-gradient(90deg, rgba(59,130,246,0.06), rgba(16,185,129,0.02))}
-    .field{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
-    label{font-size:13px;color:var(--muted)}
-    input[type="text"],textarea,select{background:#071827;border:1px solid rgba(255,255,255,0.03);padding:8px;border-radius:8px;color:inherit}
-    textarea{min-height:80px}
-    .row{display:flex;gap:8px}
-    .row > *{flex:1}
-    .tiny{font-size:12px;padding:6px 8px;border-radius:8px}
-    /* responsive */
-    @media (max-width:900px){
-      main{grid-template-columns:1fr; padding-bottom:120px}
-      #adminPanel{left:12px;right:12px;top:auto;bottom:12px;width:auto}
-    }
+        /* Glassmorphism Components */
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: transform 0.3s ease;
+        }
 
-    /* small animation */
-    .fade-in{animation:fadeIn .5s ease both}
-    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-  </style>
+        .glass-card:active { transform: scale(0.98); }
+
+        /* Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(15, 12, 41, 0.9);
+            backdrop-filter: blur(15px);
+            display: flex;
+            justify-content: space-around;
+            padding: 12px;
+            border-top: 1px solid var(--glass-border);
+            z-index: 1000;
+        }
+
+        .nav-item {
+            color: #888;
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 10px;
+            transition: 0.3s;
+        }
+
+        .nav-item.active { color: var(--accent); }
+        .nav-item i { margin-bottom: 4px; }
+
+        /* Progress Bar */
+        .progress {
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+        }
+        .progress-bar { background: var(--accent); border-radius: 10px; }
+
+        /* Sections */
+        .app-section { display: none; padding: 20px; animation: fadeIn 0.5s; }
+        .app-section.active { display: block; }
+
+        /* Avatar */
+        .avatar-lg {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            border: 3px solid var(--accent);
+            object-fit: cover;
+        }
+
+        /* Task Item */
+        .task-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-claim {
+            background: var(--accent);
+            border: none; color: #000;
+            font-weight: bold; border-radius: 12px;
+            padding: 5px 15px;
+        }
+
+        /* Spin Wheel */
+        #wheel-container {
+            position: relative;
+            width: 250px; height: 250px;
+            margin: 20px auto;
+        }
+        #wheel { width: 100%; height: 100%; transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99); }
+
+        /* Admin UI */
+        .admin-badge {
+            background: #ff4b2b;
+            font-size: 10px; padding: 2px 8px; border-radius: 10px;
+        }
+
+        /* Notification Toast */
+        #toast {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 2000; display: none;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <div class="brand">
-        <div class="logo">P</div>
+
+    <!-- Header Stats -->
+    <div class="p-3 d-flex justify-content-between align-items-center">
         <div>
-          <div style="font-weight:600">Trang cá nhân</div>
-          <div class="muted small">Portfolio + Admin Panel</div>
+            <span class="d-block small text-secondary">Balance</span>
+            <h4 class="mb-0 fw-bold" id="header-points">0 <small style="font-size: 12px; color: var(--accent);">PTS</small></h4>
         </div>
-      </div>
-
-      <div class="nav-actions">
-        <div id="userBox" class="controls" style="align-items:center">
-          <div id="userName" class="muted small">Chưa đăng nhập</div>
-          <button id="btnLogin" class="btn">Đăng nhập (Google)</button>
-          <button id="btnLogout" class="btn ghost hide">Đăng xuất</button>
+        <div id="admin-tag" style="display: none;">
+            <span class="admin-badge">ADMIN PANEL</span>
         </div>
-        <button id="toggleAdmin" class="btn" title="Mở Admin Panel">Admin Panel</button>
-      </div>
-    </header>
-
-    <main>
-      <!-- Left: public profile -->
-      <div>
-        <div class="profile-card section">
-          <div class="cover" id="coverBox">
-            <img id="coverImg" src="" alt="Cover" />
-            <div class="avatar" id="avatarBox">
-              <img id="avatarImg" src="" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:12px" />
+        <div class="text-end">
+            <span class="d-block small text-secondary" id="user-rank">Rank: Bronze</span>
+            <div class="progress mt-1" style="width: 80px;">
+                <div id="level-progress" class="progress-bar" style="width: 20%;"></div>
             </div>
-          </div>
-
-          <div class="profile-info">
-            <h2 id="displayName">Tên người dùng</h2>
-            <div class="muted" id="headline">Mô tả nghề nghiệp</div>
-            <div class="muted" id="bio" style="margin-top:10px"></div>
-
-            <div class="skills">
-              <h4 style="margin:10px 0 6px 0">Kỹ năng</h4>
-              <div id="skillsList"></div>
-            </div>
-          </div>
         </div>
-
-        <div class="section" style="margin-top:12px">
-          <h4 style="margin:0 0 10px 0">Liên hệ</h4>
-          <div id="contactList" class="muted small"></div>
-        </div>
-      </div>
-
-      <!-- Right: projects, blog, gallery -->
-      <div>
-        <div class="section card">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <div>
-              <h3 style="margin:0">Dự án</h3>
-              <div class="muted small">Lọc & sắp xếp nhanh</div>
-            </div>
-
-            <div class="controls">
-              <select id="filterCategory" class="tiny">
-                <option value="">Tất cả danh mục</option>
-              </select>
-              <select id="sortProjects" class="tiny">
-                <option value="newest">Mới nhất</option>
-                <option value="oldest">Cũ nhất</option>
-                <option value="az">A → Z</option>
-                <option value="za">Z → A</option>
-              </select>
-              <div id="projectCount" class="muted small">0 items</div>
-            </div>
-          </div>
-
-          <div id="projectsGrid" class="grid" style="margin-top:12px"></div>
-        </div>
-
-        <div class="section card">
-          <h3 style="margin:0 0 6px 0">Bài viết</h3>
-          <div class="muted small">Bình luận cho mỗi bài viết</div>
-          <div id="postsList" style="margin-top:12px"></div>
-        </div>
-
-        <div class="section card">
-          <h3 style="margin:0 0 6px 0">Thư viện ảnh</h3>
-          <div id="gallery" class="grid" style="margin-top:12px"></div>
-        </div>
-      </div>
-    </main>
-  </div>
-
-  <!-- Admin Panel (floating) -->
-  <div id="adminPanel" class="hide">
-    <div class="admin-header">
-      <div style="display:flex;gap:10px;align-items:center">
-        <strong>Admin Panel</strong>
-        <div class="muted small">Quản lý nội dung</div>
-      </div>
-      <div class="controls">
-        <div id="adminUID" class="muted small"></div>
-        <button id="closeAdmin" class="btn tiny">Đóng</button>
-      </div>
     </div>
 
-    <div style="padding:12px">
-      <!-- Dashboard -->
-      <div class="field">
-        <label>Dashboard</label>
-        <div class="controls">
-          <div class="card small" id="dbCounts">Đang tải...</div>
-          <button id="btnPreview" class="btn tiny">Xem trước realtime</button>
+    <!-- MAIN SECTIONS -->
+
+    <!-- Home: Dashboard & Mini Games -->
+    <section id="home" class="app-section active">
+        <div class="glass-card text-center animate__animated animate__fadeIn">
+            <h5 class="mb-3">Daily Rewards</h5>
+            <button class="btn btn-outline-info w-100 mb-2" onclick="dailyCheckIn()">📅 Check-in Hôm Nay</button>
         </div>
-      </div>
 
-      <!-- Personal info -->
-      <div class="field">
-        <label>Thông tin cá nhân</label>
-        <input id="inpName" type="text" placeholder="Tên" />
-        <input id="inpHeadline" type="text" placeholder="Nghề nghiệp / mô tả ngắn" />
-        <textarea id="inpBio" placeholder="Bio / mô tả dài"></textarea>
-        <div class="row">
-          <input id="inpContactEmail" type="text" placeholder="Email liên hệ" />
-          <input id="inpContactTwitter" type="text" placeholder="Twitter / social" />
+        <div class="glass-card text-center">
+            <h5>Lucky Spin</h5>
+            <div id="wheel-container">
+                <img id="wheel" src="https://cdn-icons-png.flaticon.com/512/610/610106.png" alt="wheel">
+            </div>
+            <button class="btn btn-claim w-100" onclick="spinWheel()">SPIN NOW (50 PTS)</button>
         </div>
-        <div class="row">
-          <input id="avatarFile" type="file" accept="image/*" />
-          <input id="coverFile" type="file" accept="image/*" />
+
+        <div class="glass-card">
+            <h6>Hệ thống Referral</h6>
+            <div class="d-flex gap-2">
+                <input type="text" id="ref-link" class="form-control bg-dark text-white border-0" readonly value="https://t.me/bot?start=123">
+                <button class="btn btn-primary" onclick="copyRef()">Copy</button>
+            </div>
+            <p class="small mt-2 text-secondary">+500 PTS cho mỗi người bạn mời.</p>
         </div>
-        <div class="row">
-          <button id="saveProfile" class="btn">Lưu thông tin</button>
-          <button id="toggleProfileShow" class="btn ghost">Bật/Tắt hiển thị</button>
+    </section>
+
+    <!-- Tasks Section -->
+    <section id="tasks" class="app-section">
+        <h5 class="mb-3">Nhiệm Vụ Kiếm Point</h5>
+        <div id="task-list">
+            <!-- Rendered by JS -->
         </div>
-      </div>
+    </section>
 
-      <!-- Skills CRUD -->
-      <div class="field">
-        <label>Kỹ năng</label>
-        <div style="display:flex;gap:8px">
-          <input id="skillName" type="text" placeholder="Tên kỹ năng" />
-          <input id="skillValue" type="number" min="0" max="100" placeholder="%" />
+    <!-- Leaderboard Section -->
+    <section id="leaderboard" class="app-section">
+        <h5 class="mb-3">Bảng Xếp Hạng Top 50</h5>
+        <div class="glass-card p-0 overflow-hidden">
+            <table class="table table-dark table-borderless mb-0">
+                <thead>
+                    <tr class="text-secondary small">
+                        <th class="ps-3">#</th>
+                        <th>User</th>
+                        <th class="text-end pe-3">Points</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboard-body">
+                    <!-- Rendered by JS -->
+                </tbody>
+            </table>
         </div>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button id="addSkill" class="btn">Thêm</button>
+    </section>
+
+    <!-- Airdrop Section -->
+    <section id="airdrop" class="app-section">
+        <div class="glass-card text-center">
+            <i data-lucide="package-open" size="48" class="mb-3 text-info"></i>
+            <h4>Airdrop Token</h4>
+            <p class="text-secondary">Chuyển đổi Point của bạn sang Token dự án.</p>
+            <hr class="bg-secondary">
+            <div class="d-flex justify-content-between mb-2">
+                <span>Tỷ lệ:</span>
+                <span id="airdrop-rate">1000 PTS = 1 TOKEN</span>
+            </div>
+            <button class="btn btn-claim w-100 py-3" onclick="swapPoints()">SWAP POINTS TO TOKEN</button>
         </div>
-        <div id="skillsAdmin" style="margin-top:10px"></div>
-      </div>
-
-      <!-- Projects CRUD -->
-      <div class="field">
-        <label>Dự án</label>
-        <input id="projTitle" type="text" placeholder="Tiêu đề" />
-        <input id="projCategory" type="text" placeholder="Danh mục (ví dụ: Phát triển web)" />
-        <textarea id="projDesc" placeholder="Mô tả ngắn"></textarea>
-        <div class="row">
-          <input id="projCoverFile" type="file" accept="image/*" />
-          <input id="projLink" type="text" placeholder="Link (tùy chọn)" />
+        <div class="glass-card">
+            <h6>Lịch sử giao dịch</h6>
+            <div id="history-list" class="small"></div>
         </div>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button id="addProj" class="btn">Thêm / Cập nhật</button>
+    </section>
+
+    <!-- Profile Section -->
+    <section id="profile" class="app-section">
+        <div class="text-center mb-4">
+            <img id="u-avatar" src="https://via.placeholder.com/100" class="avatar-lg mb-2">
+            <h4 id="u-name">User Name</h4>
+            <p class="text-secondary small" id="u-username">@username</p>
         </div>
-        <div id="projectsAdmin" style="margin-top:10px"></div>
-      </div>
-
-      <!-- Blog CRUD -->
-      <div class="field">
-        <label>Bài viết (Blog)</label>
-        <input id="postTitle" type="text" placeholder="Tiêu đề bài viết" />
-        <textarea id="postContent" placeholder="Nội dung (HTML đơn giản hoặc markdown)"></textarea>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button id="addPost" class="btn">Thêm / Cập nhật</button>
-        </div>
-        <div id="postsAdmin" style="margin-top:10px"></div>
-      </div>
-
-      <!-- Gallery -->
-      <div class="field">
-        <label>Thư viện ảnh</label>
-        <input id="galleryFile" type="file" accept="image/*" multiple />
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button id="uploadGallery" class="btn">Upload ảnh</button>
-        </div>
-        <div id="galleryAdmin" style="margin-top:10px"></div>
-      </div>
-
-      <!-- Comments moderation -->
-      <div class="field">
-        <label>Bình luận đang chờ/Toàn bộ</label>
-        <div id="commentsAdmin"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
-
-  <script>
-  /***********************************************
-   * Configuration Firebase (dùng chính xác theo bạn cung cấp)
-   ***********************************************/
-  const firebaseConfig = {
-      apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
-      authDomain: "profile-d1214.firebaseapp.com",
-      projectId: "profile-d1214",
-      storageBucket: "profile-d1214.firebasestorage.app",
-      messagingSenderId: "914980131889",
-      appId: "1:914980131889:web:72f8da15c42dbee671b110",
-      measurementId: "G-C587M69LZW"
-  };
-
-  // Admin UID (chỉ UID này có quyền quản trị)
-  const ADMIN_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1";
-
-  /***********************************************
-   * Khởi tạo Firebase
-   ***********************************************/
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
-  const storage = firebase.storage();
-
-  /***********************************************
-   * UI elements
-   ***********************************************/
-  const btnLogin = document.getElementById('btnLogin');
-  const btnLogout = document.getElementById('btnLogout');
-  const userNameEl = document.getElementById('userName');
-  const toggleAdminBtn = document.getElementById('toggleAdmin');
-  const adminPanel = document.getElementById('adminPanel');
-  const closeAdmin = document.getElementById('closeAdmin');
-  const adminUIDEl = document.getElementById('adminUID');
-
-  // Profile display elements
-  const displayNameEl = document.getElementById('displayName');
-  const headlineEl = document.getElementById('headline');
-  const bioEl = document.getElementById('bio');
-  const avatarImg = document.getElementById('avatarImg');
-  const coverImg = document.getElementById('coverImg');
-  const skillsList = document.getElementById('skillsList');
-  const contactList = document.getElementById('contactList');
-
-  // Projects
-  const projectsGrid = document.getElementById('projectsGrid');
-  const filterCategory = document.getElementById('filterCategory');
-  const sortProjects = document.getElementById('sortProjects');
-  const projectCount = document.getElementById('projectCount');
-
-  // Posts & comments
-  const postsList = document.getElementById('postsList');
-
-  // Gallery
-  const galleryEl = document.getElementById('gallery');
-
-  // Admin inputs
-  const inpName = document.getElementById('inpName');
-  const inpHeadline = document.getElementById('inpHeadline');
-  const inpBio = document.getElementById('inpBio');
-  const inpContactEmail = document.getElementById('inpContactEmail');
-  const inpContactTwitter = document.getElementById('inpContactTwitter');
-  const avatarFile = document.getElementById('avatarFile');
-  const coverFile = document.getElementById('coverFile');
-  const saveProfileBtn = document.getElementById('saveProfile');
-  const toggleProfileShowBtn = document.getElementById('toggleProfileShow');
-
-  const skillName = document.getElementById('skillName');
-  const skillValue = document.getElementById('skillValue');
-  const addSkillBtn = document.getElementById('addSkill');
-  const skillsAdmin = document.getElementById('skillsAdmin');
-
-  const projTitle = document.getElementById('projTitle');
-  const projCategory = document.getElementById('projCategory');
-  const projDesc = document.getElementById('projDesc');
-  const projCoverFile = document.getElementById('projCoverFile');
-  const projLink = document.getElementById('projLink');
-  const addProjBtn = document.getElementById('addProj');
-  const projectsAdmin = document.getElementById('projectsAdmin');
-
-  const postTitle = document.getElementById('postTitle');
-  const postContent = document.getElementById('postContent');
-  const addPostBtn = document.getElementById('addPost');
-  const postsAdmin = document.getElementById('postsAdmin');
-
-  const galleryFile = document.getElementById('galleryFile');
-  const uploadGalleryBtn = document.getElementById('uploadGallery');
-  const galleryAdmin = document.getElementById('galleryAdmin');
-
-  const commentsAdmin = document.getElementById('commentsAdmin');
-
-  const dbCounts = document.getElementById('dbCounts');
-  const btnPreview = document.getElementById('btnPreview');
-
-  /***********************************************
-   * Utility helpers
-   ***********************************************/
-  function uidIsAdmin(user){
-    return user && user.uid === ADMIN_UID;
-  }
-
-  function showToast(msg, type='info'){
-    console.log('[toast]', type, msg);
-    // Could implement UI toast
-    alert(msg);
-  }
-
-  function formatDate(ts){
-    if(!ts) return '';
-    const d = ts.toDate ? ts.toDate() : new Date(ts);
-    return d.toLocaleString();
-  }
-
-  /***********************************************
-   * Authentication: Google Sign-In + realtime check
-   ***********************************************/
-  btnLogin.addEventListener('click', async ()=>{
-    const provider = new firebase.auth.GoogleAuthProvider();
-    try{
-      await auth.signInWithPopup(provider);
-    }catch(err){
-      console.error(err); showToast('Lỗi đăng nhập: '+err.message);
-    }
-  });
-
-  btnLogout.addEventListener('click', async ()=>{
-    await auth.signOut();
-  });
-
-  // Realtime auth state listener
-  auth.onAuthStateChanged(async (user)=>{
-    if(user){
-      userNameEl.textContent = user.displayName || user.email;
-      btnLogin.classList.add('hide');
-      btnLogout.classList.remove('hide');
-
-      // If admin -> enable panel, else auto close panel and restrict
-      if(uidIsAdmin(user)){
-        adminUIDEl.textContent = 'Admin';
-        toggleAdminBtn.classList.remove('hide');
-      }else{
-        adminUIDEl.textContent = '';
-        // auto logout from admin panel if open
-        adminPanel.classList.add('hide');
-        toggleAdminBtn.classList.remove('hide'); // still show toggle, but will block access
-      }
-    }else{
-      userNameEl.textContent = 'Chưa đăng nhập';
-      btnLogin.classList.remove('hide');
-      btnLogout.classList.add('hide');
-      adminPanel.classList.add('hide');
-      adminUIDEl.textContent = '';
-    }
-  });
-
-  // Toggle admin panel (only allow admin user)
-  toggleAdminBtn.addEventListener('click', async ()=>{
-    const user = auth.currentUser;
-    if(!user || !uidIsAdmin(user)){
-      showToast('Bạn không có quyền truy cập Admin Panel');
-      return;
-    }
-    adminPanel.classList.toggle('hide');
-  });
-  closeAdmin.addEventListener('click', ()=> adminPanel.classList.add('hide'));
-
-  /***********************************************
-   * Firestore data structure (document references)
-   *
-   * Collections / docs used:
-   * - site/profile   (doc) => personal info: {name, headline, bio, avatarUrl, coverUrl, show:true/false, contacts:{}}
-   * - site/skills    (collection) => skill docs: {name, value, order}
-   * - projects       (collection) => project docs: {title, category, desc, coverUrl, link, visible, createdAt}
-   * - posts          (collection) => post docs: {title, content, createdAt, visible}
-   * - posts/{postId}/comments (collection) => {name, text, createdAt, approved:boolean}
-   * - gallery        (collection) => {url, name, createdAt, visible}
-   ***********************************************/
-
-  // Realtime listeners to render public site
-  let allProjects = []; // cache
-  async function initListeners(){
-    // Profile doc
-    db.collection('site').doc('profile').onSnapshot(doc=>{
-      const data = doc.data() || {};
-      displayNameEl.textContent = data.name || 'Tên người dùng';
-      headlineEl.textContent = data.headline || 'Chức danh';
-      bioEl.textContent = data.bio || '';
-      avatarImg.src = data.avatarUrl || 'https://via.placeholder.com/180x180.png?text=Avatar';
-      coverImg.src = data.coverUrl || 'https://via.placeholder.com/1000x300.png?text=Cover';
-      inpName.value = data.name || '';
-      inpHeadline.value = data.headline || '';
-      inpBio.value = data.bio || '';
-      inpContactEmail.value = (data.contacts && data.contacts.email) || '';
-      inpContactTwitter.value = (data.contacts && data.contacts.twitter) || '';
-    });
-
-    // Skills
-    db.collection('site').doc('skills').collection('list').orderBy('order','asc').onSnapshot(snap=>{
-      let html = '';
-      skillsList.innerHTML = '';
-      skillsAdmin.innerHTML = '';
-      snap.forEach(doc=>{
-        const s = doc.data();
-        const id = doc.id;
-        // public
-        const wrapper = document.createElement('div');
-        wrapper.className = 'skill';
-        wrapper.innerHTML = `<div style="display:flex;justify-content:space-between"><strong>${s.name}</strong><div class="muted small">${s.value}%</div></div>
-          <div class="bar"><i style="width:${s.value}%;"></i></div>`;
-        skillsList.appendChild(wrapper);
-
-        // admin row
-        const row = document.createElement('div');
-        row.className = 'row card small';
-        row.style.alignItems = 'center';
-        row.style.justifyContent = 'space-between';
-        row.innerHTML = `<div>${s.name} — ${s.value}%</div>
-          <div style="display:flex;gap:6px">
-            <button class="tiny" data-id="${id}" data-action="editSkill">Sửa</button>
-            <button class="tiny" data-id="${id}" data-action="delSkill">Xóa</button>
-          </div>`;
-        skillsAdmin.appendChild(row);
-      });
-    });
-
-    // Projects (manage and public)
-    db.collection('projects').orderBy('createdAt','desc').onSnapshot(snap=>{
-      allProjects = [];
-      const categories = new Set();
-      snap.forEach(doc=>{
-        const d = {id:doc.id, ...doc.data()};
-        allProjects.push(d);
-        if(d.category) categories.add(d.category);
-      });
-      renderProjects();
-      // rebuild category filter options
-      const current = filterCategory.value || '';
-      filterCategory.innerHTML = `<option value="">Tất cả danh mục</option>`;
-      categories.forEach(c=>{
-        const opt = document.createElement('option');
-        opt.value = c; opt.textContent = c;
-        filterCategory.appendChild(opt);
-      });
-      filterCategory.value = current;
-      renderProjectsAdmin();
-      projectCount.textContent = `${allProjects.length} items`;
-      dbCounts.innerHTML = `Projects: ${allProjects.length}`;
-    });
-
-    // Posts
-    db.collection('posts').orderBy('createdAt','desc').onSnapshot(snap=>{
-      const publicPosts = [];
-      postsList.innerHTML = '';
-      postsAdmin.innerHTML = '';
-      snap.forEach(doc=>{
-        const d = {id:doc.id, ...doc.data()};
-        // public show if visible !== false
-        if(d.visible !== false){
-          publicPosts.push(d);
-          // render in public list
-          const el = document.createElement('div');
-          el.className = 'post';
-          el.innerHTML = `<h4>${d.title}</h4><div class="muted-2">${formatDate(d.createdAt)}</div>
-            <div style="margin-top:8px">${d.content}</div>
-            <div class="comments" id="comments-${d.id}"></div>
-            <div style="margin-top:8px">
-              <input id="cname-${d.id}" type="text" placeholder="Tên" />
-              <input id="ctext-${d.id}" type="text" placeholder="Bình luận..." style="width:60%" />
-              <button data-post="${d.id}" class="tiny" onclick="submitComment(this)">Gửi</button>
-            </div>`;
-          postsList.appendChild(el);
-          // load comments of this post
-          db.collection('posts').doc(d.id).collection('comments').orderBy('createdAt','asc').onSnapshot(csnap=>{
-            const container = document.getElementById(`comments-${d.id}`);
-            if(!container) return;
-            container.innerHTML = '';
-            csnap.forEach(cdoc=>{
-              const c = cdoc.data();
-              if(c.approved === false) return; // only show approved comments publicly
-              const cEl = document.createElement('div');
-              cEl.className = 'comment';
-              cEl.innerHTML = `<div style="display:flex;justify-content:space-between"><strong>${c.name || 'Khách'}</strong><div class="muted-2">${formatDate(c.createdAt)}</div></div><div>${c.text}</div>`;
-              container.appendChild(cEl);
-            });
-          });
-        }
-
-        // Admin posts list
-        const aRow = document.createElement('div');
-        aRow.className = 'card small';
-        aRow.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
-          <div><strong>${d.title}</strong><div class="muted small">${formatDate(d.createdAt)}</div></div>
-          <div style="display:flex;gap:6px">
-            <button class="tiny" data-id="${d.id}" data-action="editPost">Sửa</button>
-            <button class="tiny" data-id="${d.id}" data-action="delPost">Xóa</button>
-            <button class="tiny" data-id="${d.id}" data-action="togglePost">${d.visible===false? 'Hiện' : 'Ẩn'}</button>
-          </div>
-        </div>`;
-        postsAdmin.appendChild(aRow);
-
-        // Comments admin listener per post
-        db.collection('posts').doc(d.id).collection('comments').orderBy('createdAt','desc').onSnapshot(csnap=>{
-          // merge into commentsAdmin for moderation
-          rebuildCommentsAdmin(); // we'll aggregate below
-        });
-      });
-    });
-
-    // Gallery
-    db.collection('gallery').orderBy('createdAt','desc').onSnapshot(snap=>{
-      galleryEl.innerHTML = '';
-      galleryAdmin.innerHTML = '';
-      snap.forEach(doc=>{
-        const d = {id:doc.id, ...doc.data()};
-        if(d.visible !== false){
-          const el = document.createElement('div');
-          el.className = 'card';
-          el.innerHTML = `<img src="${d.url}" style="width:100%;height:140px;object-fit:cover;border-radius:8px"><div class="muted small">${d.name || ''}</div>`;
-          galleryEl.appendChild(el);
-        }
-        const aRow = document.createElement('div');
-        aRow.className = 'row card small';
-        aRow.style.alignItems='center';
-        aRow.innerHTML = `<div style="flex:1">${d.name||d.id}</div>
-          <div style="display:flex;gap:6px">
-            <button class="tiny" data-id="${d.id}" data-action="delGallery">Xóa</button>
-            <button class="tiny" data-id="${d.id}" data-action="toggleGallery">${d.visible===false? 'Hiện' : 'Ẩn'}</button>
-          </div>`;
-        galleryAdmin.appendChild(aRow);
-      });
-    });
-
-    // Comments admin aggregated rebuild
-    function rebuildCommentsAdmin(){
-      commentsAdmin.innerHTML = '';
-      db.collection('posts').get().then(psnap=>{
-        psnap.forEach(pdoc=>{
-          db.collection('posts').doc(pdoc.id).collection('comments').orderBy('createdAt','desc').get().then(csnap=>{
-            csnap.forEach(cdoc=>{
-              const c = cdoc.data();
-              const el = document.createElement('div');
-              el.className = 'card small';
-              el.style.marginBottom='6px';
-              el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
-                <div><strong>${c.name||'Khách'}</strong> <div class="muted small">${formatDate(c.createdAt)}</div><div>${c.text}</div></div>
-                <div style="display:flex;gap:6px">
-                  <button class="tiny" data-post="${pdoc.id}" data-id="${cdoc.id}" data-action="approve">${c.approved===true? 'Đã duyệt' : 'Duyệt'}</button>
-                  <button class="tiny" data-post="${pdoc.id}" data-id="${cdoc.id}" data-action="delComment">Xóa</button>
+        
+        <div class="row g-2">
+            <div class="col-6">
+                <div class="glass-card text-center p-2">
+                    <small class="text-secondary">UID</small>
+                    <div id="u-id" class="fw-bold">0</div>
                 </div>
-              </div>`;
-              commentsAdmin.appendChild(el);
-            });
-          });
-        });
-      });
-    }
-
-    // initial rebuild
-    rebuildCommentsAdmin();
-  } // end initListeners
-
-  initListeners();
-
-  /***********************************************
-   * Render & helpers for Projects & Admin lists
-   ***********************************************/
-  function renderProjects(){
-    // filter & sort from UI
-    const category = filterCategory.value;
-    const sort = sortProjects.value;
-    let items = allProjects.filter(p=> p.visible !== false); // only visible
-    if(category) items = items.filter(p=> p.category === category);
-    if(sort === 'newest'){
-      items.sort((a,b)=> (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
-    }else if(sort === 'oldest'){
-      items.sort((a,b)=> (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
-    }else if(sort === 'az'){
-      items.sort((a,b)=> (a.title||'').localeCompare(b.title||''));
-    }else if(sort === 'za'){
-      items.sort((a,b)=> (b.title||'').localeCompare(a.title||''));
-    }
-    projectsGrid.innerHTML = '';
-    items.forEach(p=>{
-      const el = document.createElement('div');
-      el.className = 'card project';
-      el.innerHTML = `<img src="${p.coverUrl||'https://via.placeholder.com/240x160.png?text=Project'}" alt="${p.title}" />
-        <div>
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <strong>${p.title}</strong>
-            <div class="muted small">${formatDate(p.createdAt)}</div>
-          </div>
-          <div class="muted small" style="margin-top:6px">${p.desc || ''}</div>
-          <div class="tags" style="margin-top:8px"><div class="tag">${p.category||'Chung'}</div></div>
-        </div>`;
-      projectsGrid.appendChild(el);
-    });
-  }
-
-  filterCategory.addEventListener('change', renderProjects);
-  sortProjects.addEventListener('change', renderProjects);
-
-  // admin projects list
-  function renderProjectsAdmin(){
-    projectsAdmin.innerHTML = '';
-    allProjects.forEach(p=>{
-      const row = document.createElement('div');
-      row.className = 'card small row';
-      row.style.alignItems='center';
-      row.innerHTML = `<div style="flex:1">
-          <strong>${p.title}</strong><div class="muted small">${p.category} • ${formatDate(p.createdAt)}</div>
+            </div>
+            <div class="col-6">
+                <div class="glass-card text-center p-2">
+                    <small class="text-secondary">Level</small>
+                    <div id="u-level" class="fw-bold">1</div>
+                </div>
+            </div>
         </div>
-        <div style="display:flex;gap:6px">
-          <button class="tiny" data-id="${p.id}" data-action="editProj">Sửa</button>
-          <button class="tiny" data-id="${p.id}" data-action="delProj">Xóa</button>
-          <button class="tiny" data-id="${p.id}" data-action="toggleProj">${p.visible===false? 'Hiện' : 'Ẩn'}</button>
-        </div>`;
-      projectsAdmin.appendChild(row);
-    });
-  }
 
-  /***********************************************
-   * Submit comment (public)
-   ***********************************************/
-  window.submitComment = async function(btn){
-    const postId = btn.getAttribute('data-post');
-    const nameEl = document.getElementById(`cname-${postId}`);
-    const textEl = document.getElementById(`ctext-${postId}`);
-    const name = nameEl.value || 'Khách';
-    const text = textEl.value || '';
-    if(!text.trim()){ showToast('Nhập bình luận'); return; }
-    try{
-      await db.collection('posts').doc(postId).collection('comments').add({
-        name, text, createdAt: firebase.firestore.FieldValue.serverTimestamp(), approved: false
-      });
-      nameEl.value=''; textEl.value='';
-      showToast('Bình luận đã gửi, đang chờ duyệt (Admin)');
-    }catch(err){ console.error(err); showToast('Lỗi gửi bình luận') }
-  }
+        <div class="glass-card">
+            <div class="d-flex justify-content-between mb-2">
+                <span>Status</span>
+                <span class="badge bg-success" id="u-status">Active</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+                <span>Completed Tasks</span>
+                <span id="u-tasks">0</span>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span>Tokens Earned</span>
+                <span id="u-tokens" class="text-info">0</span>
+            </div>
+        </div>
+        
+        <button class="btn btn-outline-danger w-100" onclick="logout()">Đăng xuất (Demo)</button>
+    </section>
 
-  /***********************************************
-   * Admin actions (profile save, skills, projects, posts, gallery, comments moderation)
-   ***********************************************/
-  // Save profile & upload avatar/cover if provided
-  saveProfileBtn.addEventListener('click', async ()=>{
-    const user = auth.currentUser;
-    if(!user || !uidIsAdmin(user)){ showToast('Không có quyền'); return; }
-    const docRef = db.collection('site').doc('profile');
-    showToast('Đang lưu...');
-    const updates = {
-      name: inpName.value || '',
-      headline: inpHeadline.value || '',
-      bio: inpBio.value || '',
-      contacts: { email: inpContactEmail.value || '', twitter: inpContactTwitter.value || '' }
-    };
-    try{
-      // handle avatar upload
-      if(avatarFile.files && avatarFile.files[0]){
-        const f = avatarFile.files[0];
-        const path = `avatars/${Date.now()}_${f.name}`;
-        const snap = await storage.ref(path).put(f);
-        const url = await snap.ref.getDownloadURL();
-        updates.avatarUrl = url;
-      }
-      if(coverFile.files && coverFile.files[0]){
-        const f = coverFile.files[0];
-        const path = `covers/${Date.now()}_${f.name}`;
-        const snap = await storage.ref(path).put(f);
-        const url = await snap.ref.getDownloadURL();
-        updates.coverUrl = url;
-      }
-      await docRef.set(updates, {merge:true});
-      showToast('Lưu thành công');
-    }catch(err){ console.error(err); showToast('Lỗi: '+err.message) }
-  });
+    <!-- Admin Panel Section -->
+    <section id="admin" class="app-section">
+        <h5 class="mb-3">Quản Trị Viên</h5>
+        <div class="glass-card">
+            <h6>Quản lý Task</h6>
+            <div class="mb-3">
+                <input type="text" id="adm-task-name" class="form-control mb-1 bg-dark text-white" placeholder="Tên Task">
+                <input type="text" id="adm-task-link" class="form-control mb-1 bg-dark text-white" placeholder="Link">
+                <input type="number" id="adm-task-point" class="form-control mb-2 bg-dark text-white" placeholder="Points">
+                <button class="btn btn-primary btn-sm w-100" onclick="adminAddTask()">Thêm Task</button>
+            </div>
+        </div>
+        
+        <div class="glass-card">
+            <h6>Danh sách User</h6>
+            <div id="adm-user-list" style="max-height: 200px; overflow-y: auto;"></div>
+        </div>
 
-  toggleProfileShowBtn.addEventListener('click', async ()=>{
-    const user = auth.currentUser;
-    if(!user || !uidIsAdmin(user)){ showToast('Không có quyền'); return; }
-    const ref = db.collection('site').doc('profile');
-    const snap = await ref.get();
-    const cur = snap.data() || {};
-    await ref.set({show: !(cur.show===false)}, {merge:true});
-    showToast('Đã thay đổi hiển thị');
-  });
+        <div class="glass-card">
+            <h6>Cấu hình Airdrop</h6>
+            <input type="number" id="adm-rate" class="form-control bg-dark text-white mb-2" placeholder="1 Token = ? Point">
+            <button class="btn btn-warning btn-sm w-100" onclick="adminUpdateRate()">Cập nhật tỷ lệ</button>
+        </div>
+    </section>
 
-  // Skills: add, edit, delete (simple)
-  addSkillBtn.addEventListener('click', async ()=>{
-    const user = auth.currentUser;
-    if(!user || !uidIsAdmin(user)){ showToast('Không có quyền'); return; }
-    const name = skillName.value.trim();
-    const value = parseInt(skillValue.value) || 0;
-    if(!name){ showToast('Nhập tên kỹ năng'); return; }
-    const col = db.collection('site').doc('skills').collection('list');
-    // order = timestamp
-    await col.add({name, value, order: Date.now()});
-    skillName.value=''; skillValue.value='';
-    showToast('Đã thêm kỹ năng');
-  });
+    <!-- Nav Bottom -->
+    <nav class="bottom-nav">
+        <a href="javascript:void(0)" class="nav-item active" onclick="showSection('home', this)">
+            <i data-lucide="home"></i><span>Home</span>
+        </a>
+        <a href="javascript:void(0)" class="nav-item" onclick="showSection('tasks', this)">
+            <i data-lucide="check-square"></i><span>Tasks</span>
+        </a>
+        <a href="javascript:void(0)" class="nav-item" onclick="showSection('leaderboard', this)">
+            <i data-lucide="award"></i><span>Top</span>
+        </a>
+        <a href="javascript:void(0)" class="nav-item" onclick="showSection('airdrop', this)">
+            <i data-lucide="zap"></i><span>Airdrop</span>
+        </a>
+        <a href="javascript:void(0)" class="nav-item" onclick="showSection('profile', this)">
+            <i data-lucide="user"></i><span>Profile</span>
+        </a>
+        <a href="javascript:void(0)" id="nav-admin" class="nav-item d-none" onclick="showSection('admin', this)">
+            <i data-lucide="shield-check"></i><span>Admin</span>
+        </a>
+    </nav>
 
-  // event delegation for dynamic admin lists
-  document.addEventListener('click', async (ev)=>{
-    const t = ev.target;
-    const action = t.getAttribute('data-action');
-    if(!action) return;
+    <!-- Firebase & Logic Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-    const user = auth.currentUser;
-    if(!user || !uidIsAdmin(user)){ showToast('Không có quyền'); return; }
+    <script>
+        // 1. Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
+            authDomain: "profile-d1214.firebaseapp.com",
+            projectId: "profile-d1214",
+            storageBucket: "profile-d1214.firebasestorage.app",
+            messagingSenderId: "914980131889",
+            appId: "1:914980131889:web:72f8da15c42dbee671b110",
+            measurementId: "G-C587M69LZW"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
-    // Skills actions
-    if(action === 'delSkill'){
-      const id = t.getAttribute('data-id');
-      if(confirm('Xóa kỹ năng?')) await db.collection('site').doc('skills').collection('list').doc(id).delete();
-    }
-    if(action === 'editSkill'){
-      const id = t.getAttribute('data-id');
-      const doc = await db.collection('site').doc('skills').collection('list').doc(id).get();
-      const s = doc.data();
-      skillName.value = s.name; skillValue.value = s.value;
-      // deletion of old doc after adding new can be manual or implement update
-      await db.collection('site').doc('skills').collection('list').doc(id).delete();
-    }
+        // 2. Constants & State
+        const ADMIN_ID = "5387725104";
+        let currentUser = null;
+        let userData = {};
+        const tg = window.Telegram.WebApp;
 
-    // Projects actions
-    if(action === 'delProj'){
-      const id = t.getAttribute('data-id');
-      if(confirm('Xóa dự án?')) await db.collection('projects').doc(id).delete();
-    }
-    if(action === 'editProj'){
-      const id = t.getAttribute('data-id');
-      const doc = await db.collection('projects').doc(id).get();
-      const p = doc.data();
-      projTitle.value = p.title; projCategory.value = p.category; projDesc.value = p.desc; projLink.value = p.link || '';
-      // for update: delete old doc then add new on save, or better implement update flow. We'll store id in button dataset for addProj
-      addProjBtn.dataset.editId = id;
-      showToast('Sửa: chỉnh form và nhấn Thêm / Cập nhật');
-    }
-    if(action === 'toggleProj'){
-      const id = t.getAttribute('data-id');
-      const doc = await db.collection('projects').doc(id).get();
-      const cur = doc.data() || {};
-      await db.collection('projects').doc(id).set({visible: !(cur.visible===false)}, {merge:true});
-    }
+        // 3. Init App
+        async function init() {
+            tg.expand();
+            lucide.createIcons();
 
-    // Posts actions
-    if(action === 'delPost'){
-      const id = t.getAttribute('data-id');
-      if(confirm('Xóa bài viết?')) await db.collection('posts').doc(id).delete();
-    }
-    if(action === 'editPost'){
-      const id = t.getAttribute('data-id');
-      const doc = await db.collection('posts').doc(id).get();
-      const p = doc.data();
-      postTitle.value = p.title; postContent.value = p.content;
-      addPostBtn.dataset.editId = id;
-      showToast('Chỉnh sửa bài viết...');
-    }
-    if(action === 'togglePost'){
-      const id = t.getAttribute('data-id');
-      const doc = await db.collection('posts').doc(id).get();
-      const cur = doc.data() || {};
-      await db.collection('posts').doc(id).set({visible: !(cur.visible===false)}, {merge:true});
-    }
+            // Lấy data từ Telegram
+            const user = tg.initDataUnsafe?.user || {
+                id: 12345678,
+                first_name: "Demo",
+                last_name: "User",
+                username: "demouser",
+                photo_url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Demo"
+            };
 
-    // Gallery actions
-    if(action === 'delGallery'){
-      const id = t.getAttribute('data-id');
-      if(confirm('Xóa ảnh khỏi gallery?')) await db.collection('gallery').doc(id).delete();
-    }
-    if(action === 'toggleGallery'){
-      const id = t.getAttribute('data-id');
-      const doc = await db.collection('gallery').doc(id).get();
-      const cur = doc.data() || {};
-      await db.collection('gallery').doc(id).set({visible: !(cur.visible===false)}, {merge:true});
-    }
+            currentUser = user;
+            await syncUser(user);
+            checkAdmin(user.id);
+            listenToUpdates();
+            loadTasks();
+            loadLeaderboard();
+        }
 
-    // Comments moderation
-    if(action === 'approve'){
-      const id = t.getAttribute('data-id');
-      const postId = t.getAttribute('data-post');
-      if(!id || !postId) return;
-      await db.collection('posts').doc(postId).collection('comments').doc(id).set({approved: true}, {merge:true});
-      showToast('Đã duyệt bình luận');
-    }
-    if(action === 'delComment'){
-      const id = t.getAttribute('data-id');
-      const postId = t.getAttribute('data-post');
-      if(confirm('Xóa bình luận?')) await db.collection('posts').doc(postId).collection('comments').doc(id).delete();
-    }
-  });
+        // 4. Firebase Sync User
+        async function syncUser(user) {
+            const userRef = db.collection("users").doc(user.id.toString());
+            const doc = await userRef.get();
 
-  // Add project (create or update)
-  addProjBtn.addEventListener('click', async ()=>{
-    const user = auth.currentUser;
-    if(!user || !uidIsAdmin(user)){ showToast('Không có quyền'); return; }
-    const title = projTitle.value.trim();
-    if(!title){ showToast('Nhập tiêu đề dự án'); return; }
-    const payload = {
-      title, category: projCategory.value.trim(), desc: projDesc.value.trim(), link: projLink.value.trim(), createdAt: firebase.firestore.FieldValue.serverTimestamp(), visible: true
-    };
-    const editId = addProjBtn.dataset.editId;
-    try{
-      if(projCoverFile.files && projCoverFile.files[0]){
-        const f = projCoverFile.files[0];
-        const path = `projects/${Date.now()}_${f.name}`;
-        const snap = await storage.ref(path).put(f);
-        const url = await snap.ref.getDownloadURL();
-        payload.coverUrl = url;
-      }
-      if(editId){
-        await db.collection('projects').doc(editId).set(payload, {merge:true});
-        delete addProjBtn.dataset.editId;
-        showToast('Cập nhật dự án thành công');
-      }else{
-        await db.collection('projects').add(payload);
-        showToast('Thêm dự án thành công');
-      }
-      // clear
-      projTitle.value=''; projCategory.value=''; projDesc.value=''; projLink.value='';
-    }catch(err){ console.error(err); showToast('Lỗi: '+err.message) }
-  });
+            if (!doc.exists) {
+                const newUser = {
+                    uid: user.id,
+                    name: user.first_name + " " + (user.last_name || ""),
+                    username: user.username || "n/a",
+                    avatar: user.photo_url || "https://api.dicebear.com/7.x/avataaars/svg?seed=" + user.id,
+                    points: 1000,
+                    tokens: 0,
+                    level: 1,
+                    rank: "Bronze",
+                    status: "active",
+                    tasksCompleted: [],
+                    lastCheckIn: null,
+                    referredBy: ""
+                };
+                await userRef.set(newUser);
+                userData = newUser;
+            } else {
+                userData = doc.data();
+            }
+            updateUI();
+        }
 
-  // Add post
-  addPostBtn.addEventListener('click', async ()=>{
-    const user = auth.currentUser;
-    if(!user || !uidIsAdmin(user)){ showToast('Không có quyền'); return; }
-    const title = postTitle.value.trim();
-    if(!title){ showToast('Nhập tiêu đề'); return; }
-    const payload = {title, content: postContent.value || '', createdAt: firebase.firestore.FieldValue.serverTimestamp(), visible: true};
-    const editId = addPostBtn.dataset.editId;
-    try{
-      if(editId){
-        await db.collection('posts').doc(editId).set(payload, {merge:true});
-        delete addPostBtn.dataset.editId;
-        showToast('Cập nhật bài viết');
-      }else{
-        await db.collection('posts').add(payload);
-        showToast('Thêm bài viết mới');
-      }
-      postTitle.value=''; postContent.value='';
-    }catch(err){ console.error(err); showToast('Lỗi: '+err.message) }
-  });
+        // 5. UI Updates
+        function updateUI() {
+            document.getElementById('header-points').innerText = userData.points.toLocaleString();
+            document.getElementById('user-rank').innerText = "Rank: " + userData.rank;
+            document.getElementById('u-name').innerText = userData.name;
+            document.getElementById('u-username').innerText = "@" + userData.username;
+            document.getElementById('u-id').innerText = userData.uid;
+            document.getElementById('u-level').innerText = userData.level;
+            document.getElementById('u-tasks').innerText = userData.tasksCompleted.length;
+            document.getElementById('u-tokens').innerText = (userData.tokens || 0).toFixed(2);
+            document.getElementById('u-avatar').src = userData.avatar;
+            document.getElementById('level-progress').style.width = (userData.points % 1000) / 10 + "%";
+        }
 
-  // Upload gallery images
-  uploadGalleryBtn.addEventListener('click', async ()=>{
-    const user = auth.currentUser;
-    if(!user || !uidIsAdmin(user)){ showToast('Không có quyền'); return; }
-    const files = galleryFile.files;
-    if(!files || files.length===0){ showToast('Chọn ảnh để upload'); return; }
-    showToast('Đang upload...');
-    for(const f of files){
-      const path = `gallery/${Date.now()}_${f.name}`;
-      const snap = await storage.ref(path).put(f);
-      const url = await snap.ref.getDownloadURL();
-      await db.collection('gallery').add({url, name: f.name, createdAt: firebase.firestore.FieldValue.serverTimestamp(), visible: true});
-    }
-    galleryFile.value='';
-    showToast('Upload xong');
-  });
+        function showSection(id, el) {
+            document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            el.classList.add('active');
+        }
 
-  // Realtime dashboard counts
-  btnPreview.addEventListener('click', async ()=>{
-    // Show counts from Firestore
-    const p = await db.collection('projects').get();
-    const posts = await db.collection('posts').get();
-    const gallery = await db.collection('gallery').get();
-    dbCounts.innerHTML = `Projects: ${p.size} • Posts: ${posts.size} • Gallery: ${gallery.size}`;
-    showToast('Đang hiển thị số liệu realtime');
-  });
+        function checkAdmin(uid) {
+            if (uid.toString() === ADMIN_ID) {
+                document.getElementById('nav-admin').classList.remove('d-none');
+                document.getElementById('admin-tag').style.display = 'block';
+            }
+        }
 
-  /***********************************************
-   * Security: automatic logout if current user is not admin
-   * (also enforced by UI checks above)
-   ***********************************************/
-  // Additional listener to auto logout if user lost admin rights
-  auth.onAuthStateChanged(user=>{
-    if(user && !uidIsAdmin(user)){
-      // If user opens adminPanel, close it
-      adminPanel.classList.add('hide');
-    }
-  });
+        // 6. Logic Nghiệp Vụ
+        async function dailyCheckIn() {
+            const now = new Date().toDateString();
+            if (userData.lastCheckIn === now) {
+                alert("Hôm nay bạn đã nhận quà rồi!");
+                return;
+            }
+            await db.collection("users").doc(currentUser.id.toString()).update({
+                points: firebase.firestore.FieldValue.increment(100),
+                lastCheckIn: now
+            });
+            alert("Chúc mừng! Bạn nhận được 100 PTS");
+        }
 
-  /***********************************************
-   * End of main script
-   ***********************************************/
-  </script>
+        async function spinWheel() {
+            if (userData.points < 50) {
+                alert("Không đủ Point!"); return;
+            }
+            const wheel = document.getElementById('wheel');
+            const randDeg = Math.floor(Math.random() * 360) + 1440; // ít nhất 4 vòng
+            wheel.style.transform = `rotate(${randDeg}deg)`;
 
-  <!-- Additional: small instructions & Firestore/Storage rules (for developer) -->
-  <div style="position:fixed;left:12px;bottom:12px;background:rgba(0,0,0,0.6);padding:10px;border-radius:8px;font-size:12px;color:#cfe9ff;max-width:340px">
-    Hướng dẫn nhanh:
-    <ul style="margin:6px 0 0 16px">
-      <li>Admin UID: VYIs9XHLR9RMStwtcdwMrOIo33w1</li>
-      <li>Tách file: bạn có thể tách script thành auth.js / firestore.js / admin.js</li>
-      <li>Xem phần "Security rules" & "Deploy" bên dưới trong tài liệu.</li>
-    </ul>
-  </div>
+            // Trừ point
+            await db.collection("users").doc(currentUser.id.toString()).update({
+                points: firebase.firestore.FieldValue.increment(-50)
+            });
 
+            setTimeout(async () => {
+                const win = [50, 100, 200, 0, 500, 10][Math.floor(Math.random() * 6)];
+                await db.collection("users").doc(currentUser.id.toString()).update({
+                    points: firebase.firestore.FieldValue.increment(win)
+                });
+                alert(`Vòng quay dừng lại! Bạn nhận được ${win} PTS`);
+            }, 4000);
+        }
 
+        // 7. Tasks System
+        async function loadTasks() {
+            db.collection("tasks").onSnapshot(snapshot => {
+                const taskContainer = document.getElementById('task-list');
+                taskContainer.innerHTML = "";
+                snapshot.forEach(doc => {
+                    const task = doc.data();
+                    const isDone = userData.tasksCompleted.includes(doc.id);
+                    taskContainer.innerHTML += `
+                        <div class="glass-card task-card animate__animated animate__fadeInUp">
+                            <div>
+                                <h6 class="mb-0">${task.name}</h6>
+                                <small class="text-info">+${task.points} PTS</small>
+                            </div>
+                            ${isDone ? '<span class="text-success small">✓ Completed</span>' : 
+                            `<button class="btn btn-claim" onclick="doTask('${doc.id}', '${task.link}', ${task.points})">Làm</button>`}
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        async function doTask(taskId, link, points) {
+            window.open(link, '_blank');
+            // Giả lập chờ claim
+            setTimeout(async () => {
+                if(confirm("Bạn đã hoàn thành nhiệm vụ?")) {
+                    await db.collection("users").doc(currentUser.id.toString()).update({
+                        points: firebase.firestore.FieldValue.increment(points),
+                        tasksCompleted: firebase.firestore.FieldValue.arrayUnion(taskId)
+                    });
+                }
+            }, 2000);
+        }
+
+        // 8. Leaderboard Realtime
+        function loadLeaderboard() {
+            db.collection("users").orderBy("points", "desc").limit(50).onSnapshot(snapshot => {
+                const body = document.getElementById('leaderboard-body');
+                body.innerHTML = "";
+                let i = 1;
+                snapshot.forEach(doc => {
+                    const u = doc.data();
+                    body.innerHTML += `
+                        <tr class="${u.uid == currentUser.id ? 'table-active' : ''}">
+                            <td class="ps-3 text-secondary">${i++}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <img src="${u.avatar}" style="width:24px; height:24px; border-radius:50%; margin-right:8px;">
+                                    <span class="small">${u.name.substring(0,12)}</span>
+                                </div>
+                            </td>
+                            <td class="text-end pe-3 fw-bold text-info">${u.points.toLocaleString()}</td>
+                        </tr>
+                    `;
+                });
+            });
+        }
+
+        // 9. Admin Functions
+        async function adminAddTask() {
+            const name = document.getElementById('adm-task-name').value;
+            const link = document.getElementById('adm-task-link').value;
+            const pts = parseInt(document.getElementById('adm-task-point').value);
+            if (!name || !link || !pts) return alert("Nhập đủ data");
+            await db.collection("tasks").add({ name, link, points: pts });
+            alert("Đã thêm task!");
+        }
+
+        // 10. Helpers
+        function listenToUpdates() {
+            db.collection("users").doc(currentUser.id.toString()).onSnapshot(doc => {
+                if (doc.exists) {
+                    userData = doc.data();
+                    updateUI();
+                }
+            });
+        }
+
+        function copyRef() {
+            const el = document.getElementById('ref-link');
+            el.select();
+            document.execCommand('copy');
+            tg.showScanQrPopup({ text: "Ref Link Copied!" });
+        }
+
+        async function swapPoints() {
+            if (userData.points < 1000) return alert("Cần tối thiểu 1000 PTS để đổi");
+            const tokens = userData.points / 1000;
+            await db.collection("users").doc(currentUser.id.toString()).update({
+                tokens: firebase.firestore.FieldValue.increment(tokens),
+                points: 0
+            });
+            alert(`Đã đổi thành công ${tokens.toFixed(2)} Token!`);
+        }
+
+        // Khởi chạy
+        init();
+
+    </script>
 </body>
 </html>
