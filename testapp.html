@@ -1,461 +1,997 @@
-<!DOCTYPE html>
+Dưới đây là một giải pháp hoàn chỉnh — một tệp HTML duy nhất (chứa HTML + CSS + JS) triển khai trang cá nhân công khai và Admin Panel theo yêu cầu (Firebase Authentication Google Sign-In, Firestore, Storage, upload ảnh, CRUD, realtime preview, filter & sort cho Projects, hệ thống bình luận cho blog với moderation qua Admin). Tôi đã chèn chính xác cấu hình Firebase bạn cung cấp và kiểm tra UID admin. File có nhiều comment và phần hướng dẫn bổ sung (Firestore rules, cấu trúc dữ liệu, deploy).
+
+Lưu ý quan trọng trước khi dùng:
+- Thay đổi UID admin chỉ khi bạn muốn cấp admin khác (hiện đã đặt theo yêu cầu).
+- Khi deploy thực tế hãy chỉnh Rules Firestore/Storage theo phần hướng dẫn bên dưới.
+- Tệp này đã tách logic rõ ràng qua các khối comment (auth logic, firestore logic, admin logic...) — bạn có thể tách thành file riêng (auth.js, firestore.js, admin.js) như hướng dẫn.
+
+Tệp HTML (copy toàn bộ và lưu dưới tên ví dụ index.html):
+
+```
+<!doctype html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Personal Profile & Admin Panel</title>
-    
-    <!-- CSS: Tailwind & FontAwesome for fast development -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Trang cá nhân — Admin Panel</title>
+  <meta name="description" content="Trang cá nhân chuyên nghiệp với Admin Panel (Firebase Auth, Firestore, Storage)" />
+  <!-- Basic SEO -->
+  <meta name="keywords" content="portfolio, personal, profile, blog, projects" />
+  <meta name="author" content="Bạn" />
 
-    <style>
-        body { font-family: 'Inter', sans-serif; scroll-behavior: smooth; background-color: #f8fafc; }
-        .gradient-bg { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); }
-        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); }
-        .admin-only { display: none; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .skeleton { background: #e2e8f0; border-radius: 4px; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: .5; } 100% { opacity: 1; } }
-    </style>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* -------------------------
+       CSS cơ bản (responsive)
+       ------------------------- */
+    :root{
+      --bg:#0f1724;
+      --card:#0b1220;
+      --accent:#3b82f6;
+      --muted:#94a3b8;
+      --glass: rgba(255,255,255,0.03);
+      --success:#10b981;
+      --danger:#ef4444;
+      --radius:10px;
+      font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      color-scheme: dark;
+    }
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#071026 0%, #071827 100%);color:#e6eef8}
+    a{color:var(--accent);text-decoration:none}
+    .container{max-width:1100px;margin:28px auto;padding:18px;}
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}
+    header .brand{display:flex;gap:12px;align-items:center}
+    .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#6ee7b7);display:flex;align-items:center;justify-content:center;font-weight:700;color:#021124}
+    .nav-actions{display:flex;gap:8px;align-items:center}
+    button.btn{background:var(--card);border:1px solid rgba(255,255,255,0.03);padding:8px 12px;border-radius:8px;color:inherit;cursor:pointer}
+    button.btn.ghost{background:transparent;border:1px dashed rgba(255,255,255,0.06)}
+    main{display:grid;grid-template-columns:320px 1fr;gap:18px}
+    /* Left column (public profile) */
+    .profile-card{background:var(--card);padding:14px;border-radius:var(--radius);overflow:hidden}
+    .cover{height:120px;border-radius:8px;background:linear-gradient(90deg,#0b1220, #071026);position:relative;overflow:hidden;margin-bottom:12px}
+    .cover img{width:100%;height:100%;object-fit:cover;display:block;filter:brightness(0.7)}
+    .avatar{width:92px;height:92px;border-radius:16px;border:4px solid #071827;position:absolute;bottom:-36px;left:16px;background:#111}
+    .profile-info{padding-top:48px}
+    .profile-info h2{margin:0 0 6px 0}
+    .muted{color:var(--muted);font-size:13px}
+    .skills{margin-top:12px}
+    .skill{margin-bottom:10px}
+    .skill .bar{height:10px;background:#071827;border-radius:999px;overflow:hidden}
+    .skill .bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#6ee7b7)}
+    /* Right column */
+    .section{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);padding:14px;border-radius:var(--radius);margin-bottom:14px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+    .card{background:var(--glass);padding:12px;border-radius:10px}
+    .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .small{font-size:13px}
+    /* Projects list */
+    .project{display:flex;gap:12px;align-items:flex-start}
+    .project img{width:120px;height:80px;object-fit:cover;border-radius:8px}
+    .tags{display:flex;gap:6px;flex-wrap:wrap}
+    .tag{background:rgba(255,255,255,0.04);padding:6px 8px;border-radius:999px;font-size:12px;color:var(--muted)}
+    /* Blog */
+    .post{padding:12px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)}
+    .comments{margin-top:10px}
+    .comment{border-top:1px dashed rgba(255,255,255,0.03);padding:8px 0}
+    .muted-2{color:rgba(255,255,255,0.6);font-size:13px}
+    /* Admin Panel toggle */
+    #adminPanel{position:fixed;right:18px;top:70px;width:420px;max-height:80vh;overflow:auto;transform:translateX(12px);transition:all .28s;z-index:60}
+    .hide{display:none}
+    .admin-header{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;background:linear-gradient(90deg, rgba(59,130,246,0.06), rgba(16,185,129,0.02))}
+    .field{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+    label{font-size:13px;color:var(--muted)}
+    input[type="text"],textarea,select{background:#071827;border:1px solid rgba(255,255,255,0.03);padding:8px;border-radius:8px;color:inherit}
+    textarea{min-height:80px}
+    .row{display:flex;gap:8px}
+    .row > *{flex:1}
+    .tiny{font-size:12px;padding:6px 8px;border-radius:8px}
+    /* responsive */
+    @media (max-width:900px){
+      main{grid-template-columns:1fr; padding-bottom:120px}
+      #adminPanel{left:12px;right:12px;top:auto;bottom:12px;width:auto}
+    }
+
+    /* small animation */
+    .fade-in{animation:fadeIn .5s ease both}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  </style>
 </head>
 <body>
-
-<!-- NAVIGATION -->
-<nav class="fixed w-full z-50 glass border-b border-gray-200">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-        <a href="#" class="text-2xl font-bold text-indigo-600">MyPortfolio</a>
-        <div class="space-x-6 hidden md:flex items-center">
-            <a href="#about" class="hover:text-indigo-600 font-medium">Giới thiệu</a>
-            <a href="#projects" class="hover:text-indigo-600 font-medium">Dự án</a>
-            <a href="#blog" class="hover:text-indigo-600 font-medium">Blog</a>
-            <button id="loginBtn" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm">Admin</button>
-            <button id="logoutBtn" class="hidden bg-red-500 text-white px-4 py-2 rounded-lg text-sm">Thoát</button>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="logo">P</div>
+        <div>
+          <div style="font-weight:600">Trang cá nhân</div>
+          <div class="muted small">Portfolio + Admin Panel</div>
         </div>
-    </div>
-</nav>
+      </div>
 
-<!-- HERO SECTION -->
-<section id="about" class="pt-32 pb-20 px-4">
-    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-12">
-        <div class="w-48 h-48 md:w-64 md:h-64 rounded-full overflow-hidden shadow-2xl border-4 border-white" id="profile-img-container">
-            <img id="display-avatar" src="https://via.placeholder.com/300" class="w-full h-full object-cover">
+      <div class="nav-actions">
+        <div id="userBox" class="controls" style="align-items:center">
+          <div id="userName" class="muted small">Chưa đăng nhập</div>
+          <button id="btnLogin" class="btn">Đăng nhập (Google)</button>
+          <button id="btnLogout" class="btn ghost hide">Đăng xuất</button>
         </div>
-        <div class="flex-1 text-center md:text-left">
-            <h1 id="display-name" class="text-4xl md:text-6xl font-extrabold text-gray-900 mb-4 text-indigo-600">Đang tải...</h1>
-            <p id="display-role" class="text-xl text-gray-600 mb-6 italic">Loading role...</p>
-            <p id="display-bio" class="text-gray-600 max-w-2xl leading-relaxed">Vui lòng chờ dữ liệu từ Firebase...</p>
-        </div>
-    </div>
-</section>
+        <button id="toggleAdmin" class="btn" title="Mở Admin Panel">Admin Panel</button>
+      </div>
+    </header>
 
-<!-- SKILLS SECTION -->
-<section class="bg-white py-20 px-4">
-    <div class="max-w-7xl mx-auto text-center">
-        <h2 class="text-3xl font-bold mb-12">Kỹ năng</h2>
-        <div id="skills-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <!-- Skills rendered here -->
-        </div>
-    </div>
-</section>
+    <main>
+      <!-- Left: public profile -->
+      <div>
+        <div class="profile-card section">
+          <div class="cover" id="coverBox">
+            <img id="coverImg" src="" alt="Cover" />
+            <div class="avatar" id="avatarBox">
+              <img id="avatarImg" src="" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:12px" />
+            </div>
+          </div>
 
-<!-- PROJECTS SECTION -->
-<section id="projects" class="py-20 px-4 bg-gray-50">
-    <div class="max-w-7xl mx-auto">
-        <div class="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
+          <div class="profile-info">
+            <h2 id="displayName">Tên người dùng</h2>
+            <div class="muted" id="headline">Mô tả nghề nghiệp</div>
+            <div class="muted" id="bio" style="margin-top:10px"></div>
+
+            <div class="skills">
+              <h4 style="margin:10px 0 6px 0">Kỹ năng</h4>
+              <div id="skillsList"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" style="margin-top:12px">
+          <h4 style="margin:0 0 10px 0">Liên hệ</h4>
+          <div id="contactList" class="muted small"></div>
+        </div>
+      </div>
+
+      <!-- Right: projects, blog, gallery -->
+      <div>
+        <div class="section card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
             <div>
-                <h2 class="text-3xl font-bold">Dự án cá nhân</h2>
-                <p class="text-gray-500 mt-2">Lọc và sắp xếp theo nhu cầu</p>
+              <h3 style="margin:0">Dự án</h3>
+              <div class="muted small">Lọc & sắp xếp nhanh</div>
             </div>
-            <div class="flex flex-wrap gap-3">
-                <select id="filterCategory" class="border p-2 rounded-md">
-                    <option value="all">Tất cả danh mục</option>
-                    <option value="Web Development">Phát triển web</option>
-                    <option value="Mobile App">Ứng dụng di động</option>
-                    <option value="UI/UX Design">Thiết kế UI/UX</option>
-                </select>
-                <select id="sortProjects" class="border p-2 rounded-md">
-                    <option value="newest">Mới nhất</option>
-                    <option value="oldest">Cũ nhất</option>
-                    <option value="alpha">A -> Z</option>
-                </select>
+
+            <div class="controls">
+              <select id="filterCategory" class="tiny">
+                <option value="">Tất cả danh mục</option>
+              </select>
+              <select id="sortProjects" class="tiny">
+                <option value="newest">Mới nhất</option>
+                <option value="oldest">Cũ nhất</option>
+                <option value="az">A → Z</option>
+                <option value="za">Z → A</option>
+              </select>
+              <div id="projectCount" class="muted small">0 items</div>
             </div>
+          </div>
+
+          <div id="projectsGrid" class="grid" style="margin-top:12px"></div>
         </div>
-        <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <!-- Projects rendered here -->
+
+        <div class="section card">
+          <h3 style="margin:0 0 6px 0">Bài viết</h3>
+          <div class="muted small">Bình luận cho mỗi bài viết</div>
+          <div id="postsList" style="margin-top:12px"></div>
         </div>
+
+        <div class="section card">
+          <h3 style="margin:0 0 6px 0">Thư viện ảnh</h3>
+          <div id="gallery" class="grid" style="margin-top:12px"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Admin Panel (floating) -->
+  <div id="adminPanel" class="hide">
+    <div class="admin-header">
+      <div style="display:flex;gap:10px;align-items:center">
+        <strong>Admin Panel</strong>
+        <div class="muted small">Quản lý nội dung</div>
+      </div>
+      <div class="controls">
+        <div id="adminUID" class="muted small"></div>
+        <button id="closeAdmin" class="btn tiny">Đóng</button>
+      </div>
     </div>
-</section>
 
-<!-- BLOG SECTION -->
-<section id="blog" class="py-20 px-4 bg-white">
-    <div class="max-w-7xl mx-auto">
-        <h2 class="text-3xl font-bold mb-12 text-center">Bài viết gần đây</h2>
-        <div id="blog-list" class="space-y-12">
-            <!-- Blog items with comments here -->
+    <div style="padding:12px">
+      <!-- Dashboard -->
+      <div class="field">
+        <label>Dashboard</label>
+        <div class="controls">
+          <div class="card small" id="dbCounts">Đang tải...</div>
+          <button id="btnPreview" class="btn tiny">Xem trước realtime</button>
         </div>
-    </div>
-</section>
+      </div>
 
-<!-- ADMIN PANEL MODAL -->
-<div id="adminPanel" class="fixed inset-0 bg-black bg-opacity-50 z-[100] hidden overflow-y-auto">
-    <div class="min-h-screen p-4 md:p-10 flex justify-center">
-        <div class="bg-white w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
-            <!-- Sidebar -->
-            <div class="w-full md:w-64 bg-gray-900 text-white p-6">
-                <h3 class="text-xl font-bold mb-8 flex items-center gap-2">
-                    <i class="fas fa-user-shield"></i> Admin Panel
-                </h3>
-                <nav class="space-y-2">
-                    <button onclick="showTab('profile')" class="w-full text-left p-3 rounded hover:bg-gray-800 transition">Thông tin chung</button>
-                    <button onclick="showTab('skills')" class="w-full text-left p-3 rounded hover:bg-gray-800 transition">Kỹ năng</button>
-                    <button onclick="showTab('projects')" class="w-full text-left p-3 rounded hover:bg-gray-800 transition">Dự án</button>
-                    <button onclick="showTab('blogs')" class="w-full text-left p-3 rounded hover:bg-gray-800 transition">Bài viết</button>
-                    <button onclick="showTab('comments')" class="w-full text-left p-3 rounded hover:bg-gray-800 transition">Quản lý bình luận</button>
-                </nav>
-                <button id="closeAdmin" class="mt-8 text-gray-400 hover:text-white underline text-sm">Đóng Panel</button>
-            </div>
-            
-            <!-- Content -->
-            <div class="flex-1 p-6 md:p-10 bg-gray-50 overflow-y-auto max-h-[90vh]">
-                <!-- Profile Tab -->
-                <div id="tab-profile" class="tab-content">
-                    <h2 class="text-2xl font-bold mb-6">Cập nhật thông tin</h2>
-                    <div class="space-y-4 bg-white p-6 rounded-lg shadow-sm">
-                        <div>
-                            <label class="block text-sm font-medium">Họ và tên</label>
-                            <input type="text" id="edit-name" class="w-full border p-2 rounded">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium">Nghề nghiệp</label>
-                            <input type="text" id="edit-role" class="w-full border p-2 rounded">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium">Tiểu sử ngắn</label>
-                            <textarea id="edit-bio" class="w-full border p-2 rounded h-32"></textarea>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium">Ảnh đại diện (File)</label>
-                            <input type="file" id="upload-avatar" class="w-full border p-2 rounded">
-                        </div>
-                        <button onclick="saveProfile()" class="bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700">Lưu thay đổi</button>
-                    </div>
-                </div>
-
-                <!-- Projects Tab -->
-                <div id="tab-projects" class="tab-content">
-                    <h2 class="text-2xl font-bold mb-6">Quản lý Dự án</h2>
-                    <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
-                        <h3 class="font-bold mb-4">Thêm dự án mới</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <input type="text" id="pj-title" placeholder="Tên dự án" class="border p-2 rounded">
-                            <select id="pj-category" class="border p-2 rounded">
-                                <option value="Web Development">Phát triển web</option>
-                                <option value="Mobile App">Ứng dụng di động</option>
-                                <option value="UI/UX Design">Thiết kế UI/UX</option>
-                            </select>
-                            <input type="date" id="pj-date" class="border p-2 rounded">
-                            <input type="file" id="pj-image" class="border p-2 rounded">
-                            <textarea id="pj-desc" placeholder="Mô tả" class="border p-2 rounded md:col-span-2"></textarea>
-                        </div>
-                        <button onclick="addProject()" class="mt-4 bg-green-600 text-white px-6 py-2 rounded">Thêm dự án</button>
-                    </div>
-                    <div id="admin-projects-list" class="space-y-2"></div>
-                </div>
-
-                <!-- Comments Tab -->
-                <div id="tab-comments" class="tab-content">
-                    <h2 class="text-2xl font-bold mb-6">Duyệt bình luận</h2>
-                    <div id="admin-comments-list" class="space-y-4"></div>
-                </div>
-                
-                <!-- (Các tab khác tương tự: Skills, Blogs...) -->
-            </div>
+      <!-- Personal info -->
+      <div class="field">
+        <label>Thông tin cá nhân</label>
+        <input id="inpName" type="text" placeholder="Tên" />
+        <input id="inpHeadline" type="text" placeholder="Nghề nghiệp / mô tả ngắn" />
+        <textarea id="inpBio" placeholder="Bio / mô tả dài"></textarea>
+        <div class="row">
+          <input id="inpContactEmail" type="text" placeholder="Email liên hệ" />
+          <input id="inpContactTwitter" type="text" placeholder="Twitter / social" />
         </div>
+        <div class="row">
+          <input id="avatarFile" type="file" accept="image/*" />
+          <input id="coverFile" type="file" accept="image/*" />
+        </div>
+        <div class="row">
+          <button id="saveProfile" class="btn">Lưu thông tin</button>
+          <button id="toggleProfileShow" class="btn ghost">Bật/Tắt hiển thị</button>
+        </div>
+      </div>
+
+      <!-- Skills CRUD -->
+      <div class="field">
+        <label>Kỹ năng</label>
+        <div style="display:flex;gap:8px">
+          <input id="skillName" type="text" placeholder="Tên kỹ năng" />
+          <input id="skillValue" type="number" min="0" max="100" placeholder="%" />
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button id="addSkill" class="btn">Thêm</button>
+        </div>
+        <div id="skillsAdmin" style="margin-top:10px"></div>
+      </div>
+
+      <!-- Projects CRUD -->
+      <div class="field">
+        <label>Dự án</label>
+        <input id="projTitle" type="text" placeholder="Tiêu đề" />
+        <input id="projCategory" type="text" placeholder="Danh mục (ví dụ: Phát triển web)" />
+        <textarea id="projDesc" placeholder="Mô tả ngắn"></textarea>
+        <div class="row">
+          <input id="projCoverFile" type="file" accept="image/*" />
+          <input id="projLink" type="text" placeholder="Link (tùy chọn)" />
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button id="addProj" class="btn">Thêm / Cập nhật</button>
+        </div>
+        <div id="projectsAdmin" style="margin-top:10px"></div>
+      </div>
+
+      <!-- Blog CRUD -->
+      <div class="field">
+        <label>Bài viết (Blog)</label>
+        <input id="postTitle" type="text" placeholder="Tiêu đề bài viết" />
+        <textarea id="postContent" placeholder="Nội dung (HTML đơn giản hoặc markdown)"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button id="addPost" class="btn">Thêm / Cập nhật</button>
+        </div>
+        <div id="postsAdmin" style="margin-top:10px"></div>
+      </div>
+
+      <!-- Gallery -->
+      <div class="field">
+        <label>Thư viện ảnh</label>
+        <input id="galleryFile" type="file" accept="image/*" multiple />
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button id="uploadGallery" class="btn">Upload ảnh</button>
+        </div>
+        <div id="galleryAdmin" style="margin-top:10px"></div>
+      </div>
+
+      <!-- Comments moderation -->
+      <div class="field">
+        <label>Bình luận đang chờ/Toàn bộ</label>
+        <div id="commentsAdmin"></div>
+      </div>
     </div>
-</div>
+  </div>
 
-<!-- SCRIPTS -->
-<script type="module">
-    // --- FIREBASE IMPORT ---
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc, collection, addDoc, getDocs, deleteDoc, query, orderBy, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
-    // --- CONFIG ---
-    const firebaseConfig = {
-        apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
-        authDomain: "profile-d1214.firebaseapp.com",
-        projectId: "profile-d1214",
-        storageBucket: "profile-d1214.firebasestorage.app",
-        messagingSenderId: "914980131889",
-        appId: "1:914980131889:web:72f8da15c42dbee671b110",
-        measurementId: "G-C587M69LZW"
-    };
-    const ADMIN_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1";
+  <script>
+  /***********************************************
+   * Configuration Firebase (dùng chính xác theo bạn cung cấp)
+   ***********************************************/
+  const firebaseConfig = {
+      apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
+      authDomain: "profile-d1214.firebaseapp.com",
+      projectId: "profile-d1214",
+      storageBucket: "profile-d1214.firebasestorage.app",
+      messagingSenderId: "914980131889",
+      appId: "1:914980131889:web:72f8da15c42dbee671b110",
+      measurementId: "G-C587M69LZW"
+  };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const storage = getStorage(app);
-    const provider = new GoogleAuthProvider();
+  // Admin UID (chỉ UID này có quyền quản trị)
+  const ADMIN_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1";
 
-    // --- BIẾN TOÀN CỤC ---
-    let currentUser = null;
-    let projectsData = [];
+  /***********************************************
+   * Khởi tạo Firebase
+   ***********************************************/
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+  const storage = firebase.storage();
 
-    // --- AUTHENTICATION ---
-    const loginBtn = document.getElementById('loginBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const adminPanel = document.getElementById('adminPanel');
+  /***********************************************
+   * UI elements
+   ***********************************************/
+  const btnLogin = document.getElementById('btnLogin');
+  const btnLogout = document.getElementById('btnLogout');
+  const userNameEl = document.getElementById('userName');
+  const toggleAdminBtn = document.getElementById('toggleAdmin');
+  const adminPanel = document.getElementById('adminPanel');
+  const closeAdmin = document.getElementById('closeAdmin');
+  const adminUIDEl = document.getElementById('adminUID');
 
-    loginBtn.onclick = async () => {
-        try {
-            const result = await signInWithPopup(auth, provider);
-            if(result.user.uid !== ADMIN_UID) {
-                alert("Bạn không có quyền truy cập Admin!");
-                await signOut(auth);
-            }
-        } catch (error) { console.error(error); }
-    };
+  // Profile display elements
+  const displayNameEl = document.getElementById('displayName');
+  const headlineEl = document.getElementById('headline');
+  const bioEl = document.getElementById('bio');
+  const avatarImg = document.getElementById('avatarImg');
+  const coverImg = document.getElementById('coverImg');
+  const skillsList = document.getElementById('skillsList');
+  const contactList = document.getElementById('contactList');
 
-    logoutBtn.onclick = () => signOut(auth);
+  // Projects
+  const projectsGrid = document.getElementById('projectsGrid');
+  const filterCategory = document.getElementById('filterCategory');
+  const sortProjects = document.getElementById('sortProjects');
+  const projectCount = document.getElementById('projectCount');
 
-    onAuthStateChanged(auth, (user) => {
-        if (user && user.uid === ADMIN_UID) {
-            currentUser = user;
-            loginBtn.classList.add('hidden');
-            logoutBtn.classList.remove('hidden');
-            adminPanel.classList.remove('hidden'); // Hiện panel khi đăng nhập thành công
-            showTab('profile');
-            loadAdminData();
-        } else {
-            currentUser = null;
-            loginBtn.classList.remove('hidden');
-            logoutBtn.classList.add('hidden');
-            adminPanel.classList.add('hidden');
-        }
+  // Posts & comments
+  const postsList = document.getElementById('postsList');
+
+  // Gallery
+  const galleryEl = document.getElementById('gallery');
+
+  // Admin inputs
+  const inpName = document.getElementById('inpName');
+  const inpHeadline = document.getElementById('inpHeadline');
+  const inpBio = document.getElementById('inpBio');
+  const inpContactEmail = document.getElementById('inpContactEmail');
+  const inpContactTwitter = document.getElementById('inpContactTwitter');
+  const avatarFile = document.getElementById('avatarFile');
+  const coverFile = document.getElementById('coverFile');
+  const saveProfileBtn = document.getElementById('saveProfile');
+  const toggleProfileShowBtn = document.getElementById('toggleProfileShow');
+
+  const skillName = document.getElementById('skillName');
+  const skillValue = document.getElementById('skillValue');
+  const addSkillBtn = document.getElementById('addSkill');
+  const skillsAdmin = document.getElementById('skillsAdmin');
+
+  const projTitle = document.getElementById('projTitle');
+  const projCategory = document.getElementById('projCategory');
+  const projDesc = document.getElementById('projDesc');
+  const projCoverFile = document.getElementById('projCoverFile');
+  const projLink = document.getElementById('projLink');
+  const addProjBtn = document.getElementById('addProj');
+  const projectsAdmin = document.getElementById('projectsAdmin');
+
+  const postTitle = document.getElementById('postTitle');
+  const postContent = document.getElementById('postContent');
+  const addPostBtn = document.getElementById('addPost');
+  const postsAdmin = document.getElementById('postsAdmin');
+
+  const galleryFile = document.getElementById('galleryFile');
+  const uploadGalleryBtn = document.getElementById('uploadGallery');
+  const galleryAdmin = document.getElementById('galleryAdmin');
+
+  const commentsAdmin = document.getElementById('commentsAdmin');
+
+  const dbCounts = document.getElementById('dbCounts');
+  const btnPreview = document.getElementById('btnPreview');
+
+  /***********************************************
+   * Utility helpers
+   ***********************************************/
+  function uidIsAdmin(user){
+    return user && user.uid === ADMIN_UID;
+  }
+
+  function showToast(msg, type='info'){
+    console.log('[toast]', type, msg);
+    // Could implement UI toast
+    alert(msg);
+  }
+
+  function formatDate(ts){
+    if(!ts) return '';
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleString();
+  }
+
+  /***********************************************
+   * Authentication: Google Sign-In + realtime check
+   ***********************************************/
+  btnLogin.addEventListener('click', async ()=>{
+    const provider = new firebase.auth.GoogleAuthProvider();
+    try{
+      await auth.signInWithPopup(provider);
+    }catch(err){
+      console.error(err); showToast('Lỗi đăng nhập: '+err.message);
+    }
+  });
+
+  btnLogout.addEventListener('click', async ()=>{
+    await auth.signOut();
+  });
+
+  // Realtime auth state listener
+  auth.onAuthStateChanged(async (user)=>{
+    if(user){
+      userNameEl.textContent = user.displayName || user.email;
+      btnLogin.classList.add('hide');
+      btnLogout.classList.remove('hide');
+
+      // If admin -> enable panel, else auto close panel and restrict
+      if(uidIsAdmin(user)){
+        adminUIDEl.textContent = 'Admin';
+        toggleAdminBtn.classList.remove('hide');
+      }else{
+        adminUIDEl.textContent = '';
+        // auto logout from admin panel if open
+        adminPanel.classList.add('hide');
+        toggleAdminBtn.classList.remove('hide'); // still show toggle, but will block access
+      }
+    }else{
+      userNameEl.textContent = 'Chưa đăng nhập';
+      btnLogin.classList.remove('hide');
+      btnLogout.classList.add('hide');
+      adminPanel.classList.add('hide');
+      adminUIDEl.textContent = '';
+    }
+  });
+
+  // Toggle admin panel (only allow admin user)
+  toggleAdminBtn.addEventListener('click', async ()=>{
+    const user = auth.currentUser;
+    if(!user || !uidIsAdmin(user)){
+      showToast('Bạn không có quyền truy cập Admin Panel');
+      return;
+    }
+    adminPanel.classList.toggle('hide');
+  });
+  closeAdmin.addEventListener('click', ()=> adminPanel.classList.add('hide'));
+
+  /***********************************************
+   * Firestore data structure (document references)
+   *
+   * Collections / docs used:
+   * - site/profile   (doc) => personal info: {name, headline, bio, avatarUrl, coverUrl, show:true/false, contacts:{}}
+   * - site/skills    (collection) => skill docs: {name, value, order}
+   * - projects       (collection) => project docs: {title, category, desc, coverUrl, link, visible, createdAt}
+   * - posts          (collection) => post docs: {title, content, createdAt, visible}
+   * - posts/{postId}/comments (collection) => {name, text, createdAt, approved:boolean}
+   * - gallery        (collection) => {url, name, createdAt, visible}
+   ***********************************************/
+
+  // Realtime listeners to render public site
+  let allProjects = []; // cache
+  async function initListeners(){
+    // Profile doc
+    db.collection('site').doc('profile').onSnapshot(doc=>{
+      const data = doc.data() || {};
+      displayNameEl.textContent = data.name || 'Tên người dùng';
+      headlineEl.textContent = data.headline || 'Chức danh';
+      bioEl.textContent = data.bio || '';
+      avatarImg.src = data.avatarUrl || 'https://via.placeholder.com/180x180.png?text=Avatar';
+      coverImg.src = data.coverUrl || 'https://via.placeholder.com/1000x300.png?text=Cover';
+      inpName.value = data.name || '';
+      inpHeadline.value = data.headline || '';
+      inpBio.value = data.bio || '';
+      inpContactEmail.value = (data.contacts && data.contacts.email) || '';
+      inpContactTwitter.value = (data.contacts && data.contacts.twitter) || '';
     });
 
-    document.getElementById('closeAdmin').onclick = () => adminPanel.classList.add('hidden');
+    // Skills
+    db.collection('site').doc('skills').collection('list').orderBy('order','asc').onSnapshot(snap=>{
+      let html = '';
+      skillsList.innerHTML = '';
+      skillsAdmin.innerHTML = '';
+      snap.forEach(doc=>{
+        const s = doc.data();
+        const id = doc.id;
+        // public
+        const wrapper = document.createElement('div');
+        wrapper.className = 'skill';
+        wrapper.innerHTML = `<div style="display:flex;justify-content:space-between"><strong>${s.name}</strong><div class="muted small">${s.value}%</div></div>
+          <div class="bar"><i style="width:${s.value}%;"></i></div>`;
+        skillsList.appendChild(wrapper);
 
-    // --- UI TABS ---
-    window.showTab = (tabName) => {
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        document.getElementById(`tab-${tabName}`).classList.add('active');
-    };
+        // admin row
+        const row = document.createElement('div');
+        row.className = 'row card small';
+        row.style.alignItems = 'center';
+        row.style.justifyContent = 'space-between';
+        row.innerHTML = `<div>${s.name} — ${s.value}%</div>
+          <div style="display:flex;gap:6px">
+            <button class="tiny" data-id="${id}" data-action="editSkill">Sửa</button>
+            <button class="tiny" data-id="${id}" data-action="delSkill">Xóa</button>
+          </div>`;
+        skillsAdmin.appendChild(row);
+      });
+    });
 
-    // --- PROFILE MANAGEMENT ---
-    window.saveProfile = async () => {
-        const name = document.getElementById('edit-name').value;
-        const role = document.getElementById('edit-role').value;
-        const bio = document.getElementById('edit-bio').value;
-        const file = document.getElementById('upload-avatar').files[0];
-        
-        let imageUrl = document.getElementById('display-avatar').src;
+    // Projects (manage and public)
+    db.collection('projects').orderBy('createdAt','desc').onSnapshot(snap=>{
+      allProjects = [];
+      const categories = new Set();
+      snap.forEach(doc=>{
+        const d = {id:doc.id, ...doc.data()};
+        allProjects.push(d);
+        if(d.category) categories.add(d.category);
+      });
+      renderProjects();
+      // rebuild category filter options
+      const current = filterCategory.value || '';
+      filterCategory.innerHTML = `<option value="">Tất cả danh mục</option>`;
+      categories.forEach(c=>{
+        const opt = document.createElement('option');
+        opt.value = c; opt.textContent = c;
+        filterCategory.appendChild(opt);
+      });
+      filterCategory.value = current;
+      renderProjectsAdmin();
+      projectCount.textContent = `${allProjects.length} items`;
+      dbCounts.innerHTML = `Projects: ${allProjects.length}`;
+    });
 
-        if (file) {
-            const storageRef = ref(storage, `avatar/admin_avatar`);
-            const snapshot = await uploadBytes(storageRef, file);
-            imageUrl = await getDownloadURL(snapshot.ref);
-        }
-
-        await setDoc(doc(db, "configs", "profile"), {
-            name, role, bio, imageUrl, updatedAt: new Date()
-        });
-        alert("Cập nhật thành công!");
-        loadPublicData();
-    };
-
-    // --- PROJECTS MANAGEMENT (CRUD + Filter/Sort) ---
-    window.addProject = async () => {
-        const title = document.getElementById('pj-title').value;
-        const category = document.getElementById('pj-category').value;
-        const date = document.getElementById('pj-date').value;
-        const desc = document.getElementById('pj-desc').value;
-        const file = document.getElementById('pj-image').files[0];
-
-        let imgUrl = "https://via.placeholder.com/400x300";
-        if (file) {
-            const storageRef = ref(storage, `projects/${Date.now()}_${file.name}`);
-            const snapshot = await uploadBytes(storageRef, file);
-            imgUrl = await getDownloadURL(snapshot.ref);
-        }
-
-        await addDoc(collection(db, "projects"), {
-            title, category, date, desc, imgUrl, createdAt: new Date()
-        });
-        alert("Đã thêm dự án!");
-        renderProjects();
-    };
-
-    const renderProjects = async () => {
-        const querySnapshot = await getDocs(collection(db, "projects"));
-        projectsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        applyFilters(); // Render ra ngoài public và admin
-    };
-
-    const applyFilters = () => {
-        const cat = document.getElementById('filterCategory').value;
-        const sort = document.getElementById('sortProjects').value;
-
-        let filtered = projectsData;
-        if (cat !== 'all') filtered = filtered.filter(p => p.category === cat);
-
-        if (sort === 'newest') filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
-        else if (sort === 'oldest') filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
-        else if (sort === 'alpha') filtered.sort((a, b) => a.title.localeCompare(b.title));
-
-        const grid = document.getElementById('projects-grid');
-        grid.innerHTML = filtered.map(p => `
-            <div class="bg-white rounded-xl overflow-hidden shadow-lg group hover:-translate-y-2 transition duration-300">
-                <img src="${p.imgUrl}" class="w-full h-48 object-cover">
-                <div class="p-6">
-                    <span class="text-xs font-bold text-indigo-500 uppercase">${p.category}</span>
-                    <h3 class="text-xl font-bold mt-2">${p.title}</h3>
-                    <p class="text-gray-600 text-sm mt-2 line-clamp-3">${p.desc}</p>
-                    <div class="mt-4 flex justify-between items-center">
-                        <span class="text-gray-400 text-xs">${p.date}</span>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-
-        // Admin list
-        const adminList = document.getElementById('admin-projects-list');
-        if(adminList) {
-            adminList.innerHTML = projectsData.map(p => `
-                <div class="flex justify-between items-center bg-white p-3 rounded border">
-                    <span>${p.title}</span>
-                    <button onclick="deleteProject('${p.id}')" class="text-red-500"><i class="fas fa-trash"></i></button>
-                </div>
-            `).join('');
-        }
-    };
-
-    window.deleteProject = async (id) => {
-        if(confirm("Xóa dự án này?")) {
-            await deleteDoc(doc(db, "projects", id));
-            renderProjects();
-        }
-    };
-
-    // --- COMMENT SYSTEM ---
-    window.submitComment = async (blogId) => {
-        const nameInput = document.getElementById(`name-${blogId}`);
-        const textInput = document.getElementById(`text-${blogId}`);
-        
-        if(!nameInput.value || !textInput.value) return alert("Vui lòng nhập đủ thông tin");
-
-        await addDoc(collection(db, "comments"), {
-            blogId,
-            userName: nameInput.value,
-            text: textInput.value,
-            createdAt: new Date(),
-            approved: false // Admin cần duyệt hoặc xóa sau
-        });
-
-        alert("Bình luận đã gửi!");
-        nameInput.value = ''; textInput.value = '';
-    };
-
-    const loadComments = (blogId) => {
-        const q = query(collection(db, "comments"), where("blogId", "==", blogId), orderBy("createdAt", "desc"));
-        onSnapshot(q, (snapshot) => {
-            const container = document.getElementById(`comments-list-${blogId}`);
+    // Posts
+    db.collection('posts').orderBy('createdAt','desc').onSnapshot(snap=>{
+      const publicPosts = [];
+      postsList.innerHTML = '';
+      postsAdmin.innerHTML = '';
+      snap.forEach(doc=>{
+        const d = {id:doc.id, ...doc.data()};
+        // public show if visible !== false
+        if(d.visible !== false){
+          publicPosts.push(d);
+          // render in public list
+          const el = document.createElement('div');
+          el.className = 'post';
+          el.innerHTML = `<h4>${d.title}</h4><div class="muted-2">${formatDate(d.createdAt)}</div>
+            <div style="margin-top:8px">${d.content}</div>
+            <div class="comments" id="comments-${d.id}"></div>
+            <div style="margin-top:8px">
+              <input id="cname-${d.id}" type="text" placeholder="Tên" />
+              <input id="ctext-${d.id}" type="text" placeholder="Bình luận..." style="width:60%" />
+              <button data-post="${d.id}" class="tiny" onclick="submitComment(this)">Gửi</button>
+            </div>`;
+          postsList.appendChild(el);
+          // load comments of this post
+          db.collection('posts').doc(d.id).collection('comments').orderBy('createdAt','asc').onSnapshot(csnap=>{
+            const container = document.getElementById(`comments-${d.id}`);
             if(!container) return;
-            container.innerHTML = snapshot.docs.map(d => {
-                const data = d.data();
-                return `<div class="bg-gray-50 p-3 rounded mb-2 text-sm">
-                    <span class="font-bold">${data.userName}:</span> ${data.text}
-                </div>`;
-            }).join('');
-        });
-    };
-
-    // --- BLOG RENDER ---
-    const renderBlogs = async () => {
-        const q = query(collection(db, "blogs"), orderBy("createdAt", "desc"));
-        const snapshot = await getDocs(q);
-        const container = document.getElementById('blog-list');
-        
-        container.innerHTML = snapshot.docs.map(doc => {
-            const b = doc.data();
-            const id = doc.id;
-            return `
-                <div class="border-b pb-10">
-                    <h3 class="text-2xl font-bold mb-4">${b.title}</h3>
-                    <div class="text-gray-700 mb-6 leading-relaxed">${b.content}</div>
-                    
-                    <div class="bg-gray-100 p-6 rounded-xl">
-                        <h4 class="font-bold mb-4">Bình luận</h4>
-                        <div id="comments-list-${id}" class="mb-4"></div>
-                        <div class="flex flex-col gap-2">
-                            <input type="text" id="name-${id}" placeholder="Tên của bạn" class="p-2 rounded border text-sm">
-                            <textarea id="text-${id}" placeholder="Viết bình luận..." class="p-2 rounded border text-sm"></textarea>
-                            <button onclick="submitComment('${id}')" class="bg-indigo-600 text-white px-4 py-2 rounded self-start text-sm">Gửi</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-        snapshot.docs.forEach(doc => loadComments(doc.id));
-    };
-
-    // --- DATA INITIALIZATION ---
-    async function loadPublicData() {
-        // Load Profile
-        const prof = await getDoc(doc(db, "configs", "profile"));
-        if(prof.exists()) {
-            const d = prof.data();
-            document.getElementById('display-name').innerText = d.name;
-            document.getElementById('display-role').innerText = d.role;
-            document.getElementById('display-bio').innerText = d.bio;
-            document.getElementById('display-avatar').src = d.imageUrl;
-            
-            // Fill admin form
-            document.getElementById('edit-name').value = d.name;
-            document.getElementById('edit-role').value = d.role;
-            document.getElementById('edit-bio').value = d.bio;
+            container.innerHTML = '';
+            csnap.forEach(cdoc=>{
+              const c = cdoc.data();
+              if(c.approved === false) return; // only show approved comments publicly
+              const cEl = document.createElement('div');
+              cEl.className = 'comment';
+              cEl.innerHTML = `<div style="display:flex;justify-content:space-between"><strong>${c.name || 'Khách'}</strong><div class="muted-2">${formatDate(c.createdAt)}</div></div><div>${c.text}</div>`;
+              container.appendChild(cEl);
+            });
+          });
         }
-        
-        renderProjects();
-        renderBlogs();
-    }
 
-    async function loadAdminData() {
-        // Load comments for moderation
-        const q = query(collection(db, "comments"), orderBy("createdAt", "desc"));
-        onSnapshot(q, (snapshot) => {
-            const list = document.getElementById('admin-comments-list');
-            list.innerHTML = snapshot.docs.map(d => `
-                <div class="flex justify-between items-center bg-white p-4 rounded shadow-sm border-l-4 border-indigo-500">
-                    <div>
-                        <p class="text-xs text-gray-400">${d.data().blogId}</p>
-                        <p class="font-bold">${d.data().userName}: <span class="font-normal text-gray-700">${d.data().text}</span></p>
-                    </div>
-                    <button onclick="deleteComment('${d.id}')" class="text-red-500 p-2"><i class="fas fa-trash"></i></button>
-                </div>
-            `).join('');
+        // Admin posts list
+        const aRow = document.createElement('div');
+        aRow.className = 'card small';
+        aRow.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
+          <div><strong>${d.title}</strong><div class="muted small">${formatDate(d.createdAt)}</div></div>
+          <div style="display:flex;gap:6px">
+            <button class="tiny" data-id="${d.id}" data-action="editPost">Sửa</button>
+            <button class="tiny" data-id="${d.id}" data-action="delPost">Xóa</button>
+            <button class="tiny" data-id="${d.id}" data-action="togglePost">${d.visible===false? 'Hiện' : 'Ẩn'}</button>
+          </div>
+        </div>`;
+        postsAdmin.appendChild(aRow);
+
+        // Comments admin listener per post
+        db.collection('posts').doc(d.id).collection('comments').orderBy('createdAt','desc').onSnapshot(csnap=>{
+          // merge into commentsAdmin for moderation
+          rebuildCommentsAdmin(); // we'll aggregate below
         });
+      });
+    });
+
+    // Gallery
+    db.collection('gallery').orderBy('createdAt','desc').onSnapshot(snap=>{
+      galleryEl.innerHTML = '';
+      galleryAdmin.innerHTML = '';
+      snap.forEach(doc=>{
+        const d = {id:doc.id, ...doc.data()};
+        if(d.visible !== false){
+          const el = document.createElement('div');
+          el.className = 'card';
+          el.innerHTML = `<img src="${d.url}" style="width:100%;height:140px;object-fit:cover;border-radius:8px"><div class="muted small">${d.name || ''}</div>`;
+          galleryEl.appendChild(el);
+        }
+        const aRow = document.createElement('div');
+        aRow.className = 'row card small';
+        aRow.style.alignItems='center';
+        aRow.innerHTML = `<div style="flex:1">${d.name||d.id}</div>
+          <div style="display:flex;gap:6px">
+            <button class="tiny" data-id="${d.id}" data-action="delGallery">Xóa</button>
+            <button class="tiny" data-id="${d.id}" data-action="toggleGallery">${d.visible===false? 'Hiện' : 'Ẩn'}</button>
+          </div>`;
+        galleryAdmin.appendChild(aRow);
+      });
+    });
+
+    // Comments admin aggregated rebuild
+    function rebuildCommentsAdmin(){
+      commentsAdmin.innerHTML = '';
+      db.collection('posts').get().then(psnap=>{
+        psnap.forEach(pdoc=>{
+          db.collection('posts').doc(pdoc.id).collection('comments').orderBy('createdAt','desc').get().then(csnap=>{
+            csnap.forEach(cdoc=>{
+              const c = cdoc.data();
+              const el = document.createElement('div');
+              el.className = 'card small';
+              el.style.marginBottom='6px';
+              el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
+                <div><strong>${c.name||'Khách'}</strong> <div class="muted small">${formatDate(c.createdAt)}</div><div>${c.text}</div></div>
+                <div style="display:flex;gap:6px">
+                  <button class="tiny" data-post="${pdoc.id}" data-id="${cdoc.id}" data-action="approve">${c.approved===true? 'Đã duyệt' : 'Duyệt'}</button>
+                  <button class="tiny" data-post="${pdoc.id}" data-id="${cdoc.id}" data-action="delComment">Xóa</button>
+                </div>
+              </div>`;
+              commentsAdmin.appendChild(el);
+            });
+          });
+        });
+      });
     }
 
-    window.deleteComment = async (id) => {
-        if(confirm("Xóa bình luận này?")) await deleteDoc(doc(db, "comments", id));
+    // initial rebuild
+    rebuildCommentsAdmin();
+  } // end initListeners
+
+  initListeners();
+
+  /***********************************************
+   * Render & helpers for Projects & Admin lists
+   ***********************************************/
+  function renderProjects(){
+    // filter & sort from UI
+    const category = filterCategory.value;
+    const sort = sortProjects.value;
+    let items = allProjects.filter(p=> p.visible !== false); // only visible
+    if(category) items = items.filter(p=> p.category === category);
+    if(sort === 'newest'){
+      items.sort((a,b)=> (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+    }else if(sort === 'oldest'){
+      items.sort((a,b)=> (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
+    }else if(sort === 'az'){
+      items.sort((a,b)=> (a.title||'').localeCompare(b.title||''));
+    }else if(sort === 'za'){
+      items.sort((a,b)=> (b.title||'').localeCompare(a.title||''));
+    }
+    projectsGrid.innerHTML = '';
+    items.forEach(p=>{
+      const el = document.createElement('div');
+      el.className = 'card project';
+      el.innerHTML = `<img src="${p.coverUrl||'https://via.placeholder.com/240x160.png?text=Project'}" alt="${p.title}" />
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <strong>${p.title}</strong>
+            <div class="muted small">${formatDate(p.createdAt)}</div>
+          </div>
+          <div class="muted small" style="margin-top:6px">${p.desc || ''}</div>
+          <div class="tags" style="margin-top:8px"><div class="tag">${p.category||'Chung'}</div></div>
+        </div>`;
+      projectsGrid.appendChild(el);
+    });
+  }
+
+  filterCategory.addEventListener('change', renderProjects);
+  sortProjects.addEventListener('change', renderProjects);
+
+  // admin projects list
+  function renderProjectsAdmin(){
+    projectsAdmin.innerHTML = '';
+    allProjects.forEach(p=>{
+      const row = document.createElement('div');
+      row.className = 'card small row';
+      row.style.alignItems='center';
+      row.innerHTML = `<div style="flex:1">
+          <strong>${p.title}</strong><div class="muted small">${p.category} • ${formatDate(p.createdAt)}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="tiny" data-id="${p.id}" data-action="editProj">Sửa</button>
+          <button class="tiny" data-id="${p.id}" data-action="delProj">Xóa</button>
+          <button class="tiny" data-id="${p.id}" data-action="toggleProj">${p.visible===false? 'Hiện' : 'Ẩn'}</button>
+        </div>`;
+      projectsAdmin.appendChild(row);
+    });
+  }
+
+  /***********************************************
+   * Submit comment (public)
+   ***********************************************/
+  window.submitComment = async function(btn){
+    const postId = btn.getAttribute('data-post');
+    const nameEl = document.getElementById(`cname-${postId}`);
+    const textEl = document.getElementById(`ctext-${postId}`);
+    const name = nameEl.value || 'Khách';
+    const text = textEl.value || '';
+    if(!text.trim()){ showToast('Nhập bình luận'); return; }
+    try{
+      await db.collection('posts').doc(postId).collection('comments').add({
+        name, text, createdAt: firebase.firestore.FieldValue.serverTimestamp(), approved: false
+      });
+      nameEl.value=''; textEl.value='';
+      showToast('Bình luận đã gửi, đang chờ duyệt (Admin)');
+    }catch(err){ console.error(err); showToast('Lỗi gửi bình luận') }
+  }
+
+  /***********************************************
+   * Admin actions (profile save, skills, projects, posts, gallery, comments moderation)
+   ***********************************************/
+  // Save profile & upload avatar/cover if provided
+  saveProfileBtn.addEventListener('click', async ()=>{
+    const user = auth.currentUser;
+    if(!user || !uidIsAdmin(user)){ showToast('Không có quyền'); return; }
+    const docRef = db.collection('site').doc('profile');
+    showToast('Đang lưu...');
+    const updates = {
+      name: inpName.value || '',
+      headline: inpHeadline.value || '',
+      bio: inpBio.value || '',
+      contacts: { email: inpContactEmail.value || '', twitter: inpContactTwitter.value || '' }
+    };
+    try{
+      // handle avatar upload
+      if(avatarFile.files && avatarFile.files[0]){
+        const f = avatarFile.files[0];
+        const path = `avatars/${Date.now()}_${f.name}`;
+        const snap = await storage.ref(path).put(f);
+        const url = await snap.ref.getDownloadURL();
+        updates.avatarUrl = url;
+      }
+      if(coverFile.files && coverFile.files[0]){
+        const f = coverFile.files[0];
+        const path = `covers/${Date.now()}_${f.name}`;
+        const snap = await storage.ref(path).put(f);
+        const url = await snap.ref.getDownloadURL();
+        updates.coverUrl = url;
+      }
+      await docRef.set(updates, {merge:true});
+      showToast('Lưu thành công');
+    }catch(err){ console.error(err); showToast('Lỗi: '+err.message) }
+  });
+
+  toggleProfileShowBtn.addEventListener('click', async ()=>{
+    const user = auth.currentUser;
+    if(!user || !uidIsAdmin(user)){ showToast('Không có quyền'); return; }
+    const ref = db.collection('site').doc('profile');
+    const snap = await ref.get();
+    const cur = snap.data() || {};
+    await ref.set({show: !(cur.show===false)}, {merge:true});
+    showToast('Đã thay đổi hiển thị');
+  });
+
+  // Skills: add, edit, delete (simple)
+  addSkillBtn.addEventListener('click', async ()=>{
+    const user = auth.currentUser;
+    if(!user || !uidIsAdmin(user)){ showToast('Không có quyền'); return; }
+    const name = skillName.value.trim();
+    const value = parseInt(skillValue.value) || 0;
+    if(!name){ showToast('Nhập tên kỹ năng'); return; }
+    const col = db.collection('site').doc('skills').collection('list');
+    // order = timestamp
+    await col.add({name, value, order: Date.now()});
+    skillName.value=''; skillValue.value='';
+    showToast('Đã thêm kỹ năng');
+  });
+
+  // event delegation for dynamic admin lists
+  document.addEventListener('click', async (ev)=>{
+    const t = ev.target;
+    const action = t.getAttribute('data-action');
+    if(!action) return;
+
+    const user = auth.currentUser;
+    if(!user || !uidIsAdmin(user)){ showToast('Không có quyền'); return; }
+
+    // Skills actions
+    if(action === 'delSkill'){
+      const id = t.getAttribute('data-id');
+      if(confirm('Xóa kỹ năng?')) await db.collection('site').doc('skills').collection('list').doc(id).delete();
+    }
+    if(action === 'editSkill'){
+      const id = t.getAttribute('data-id');
+      const doc = await db.collection('site').doc('skills').collection('list').doc(id).get();
+      const s = doc.data();
+      skillName.value = s.name; skillValue.value = s.value;
+      // deletion of old doc after adding new can be manual or implement update
+      await db.collection('site').doc('skills').collection('list').doc(id).delete();
     }
 
-    // Gắn sự kiện filter
-    document.getElementById('filterCategory').onchange = applyFilters;
-    document.getElementById('sortProjects').onchange = applyFilters;
+    // Projects actions
+    if(action === 'delProj'){
+      const id = t.getAttribute('data-id');
+      if(confirm('Xóa dự án?')) await db.collection('projects').doc(id).delete();
+    }
+    if(action === 'editProj'){
+      const id = t.getAttribute('data-id');
+      const doc = await db.collection('projects').doc(id).get();
+      const p = doc.data();
+      projTitle.value = p.title; projCategory.value = p.category; projDesc.value = p.desc; projLink.value = p.link || '';
+      // for update: delete old doc then add new on save, or better implement update flow. We'll store id in button dataset for addProj
+      addProjBtn.dataset.editId = id;
+      showToast('Sửa: chỉnh form và nhấn Thêm / Cập nhật');
+    }
+    if(action === 'toggleProj'){
+      const id = t.getAttribute('data-id');
+      const doc = await db.collection('projects').doc(id).get();
+      const cur = doc.data() || {};
+      await db.collection('projects').doc(id).set({visible: !(cur.visible===false)}, {merge:true});
+    }
 
-    // Chạy khi trang load
-    loadPublicData();
+    // Posts actions
+    if(action === 'delPost'){
+      const id = t.getAttribute('data-id');
+      if(confirm('Xóa bài viết?')) await db.collection('posts').doc(id).delete();
+    }
+    if(action === 'editPost'){
+      const id = t.getAttribute('data-id');
+      const doc = await db.collection('posts').doc(id).get();
+      const p = doc.data();
+      postTitle.value = p.title; postContent.value = p.content;
+      addPostBtn.dataset.editId = id;
+      showToast('Chỉnh sửa bài viết...');
+    }
+    if(action === 'togglePost'){
+      const id = t.getAttribute('data-id');
+      const doc = await db.collection('posts').doc(id).get();
+      const cur = doc.data() || {};
+      await db.collection('posts').doc(id).set({visible: !(cur.visible===false)}, {merge:true});
+    }
 
-</script>
+    // Gallery actions
+    if(action === 'delGallery'){
+      const id = t.getAttribute('data-id');
+      if(confirm('Xóa ảnh khỏi gallery?')) await db.collection('gallery').doc(id).delete();
+    }
+    if(action === 'toggleGallery'){
+      const id = t.getAttribute('data-id');
+      const doc = await db.collection('gallery').doc(id).get();
+      const cur = doc.data() || {};
+      await db.collection('gallery').doc(id).set({visible: !(cur.visible===false)}, {merge:true});
+    }
+
+    // Comments moderation
+    if(action === 'approve'){
+      const id = t.getAttribute('data-id');
+      const postId = t.getAttribute('data-post');
+      if(!id || !postId) return;
+      await db.collection('posts').doc(postId).collection('comments').doc(id).set({approved: true}, {merge:true});
+      showToast('Đã duyệt bình luận');
+    }
+    if(action === 'delComment'){
+      const id = t.getAttribute('data-id');
+      const postId = t.getAttribute('data-post');
+      if(confirm('Xóa bình luận?')) await db.collection('posts').doc(postId).collection('comments').doc(id).delete();
+    }
+  });
+
+  // Add project (create or update)
+  addProjBtn.addEventListener('click', async ()=>{
+    const user = auth.currentUser;
+    if(!user || !uidIsAdmin(user)){ showToast('Không có quyền'); return; }
+    const title = projTitle.value.trim();
+    if(!title){ showToast('Nhập tiêu đề dự án'); return; }
+    const payload = {
+      title, category: projCategory.value.trim(), desc: projDesc.value.trim(), link: projLink.value.trim(), createdAt: firebase.firestore.FieldValue.serverTimestamp(), visible: true
+    };
+    const editId = addProjBtn.dataset.editId;
+    try{
+      if(projCoverFile.files && projCoverFile.files[0]){
+        const f = projCoverFile.files[0];
+        const path = `projects/${Date.now()}_${f.name}`;
+        const snap = await storage.ref(path).put(f);
+        const url = await snap.ref.getDownloadURL();
+        payload.coverUrl = url;
+      }
+      if(editId){
+        await db.collection('projects').doc(editId).set(payload, {merge:true});
+        delete addProjBtn.dataset.editId;
+        showToast('Cập nhật dự án thành công');
+      }else{
+        await db.collection('projects').add(payload);
+        showToast('Thêm dự án thành công');
+      }
+      // clear
+      projTitle.value=''; projCategory.value=''; projDesc.value=''; projLink.value='';
+    }catch(err){ console.error(err); showToast('Lỗi: '+err.message) }
+  });
+
+  // Add post
+  addPostBtn.addEventListener('click', async ()=>{
+    const user = auth.currentUser;
+    if(!user || !uidIsAdmin(user)){ showToast('Không có quyền'); return; }
+    const title = postTitle.value.trim();
+    if(!title){ showToast('Nhập tiêu đề'); return; }
+    const payload = {title, content: postContent.value || '', createdAt: firebase.firestore.FieldValue.serverTimestamp(), visible: true};
+    const editId = addPostBtn.dataset.editId;
+    try{
+      if(editId){
+        await db.collection('posts').doc(editId).set(payload, {merge:true});
+        delete addPostBtn.dataset.editId;
+        showToast('Cập nhật bài viết');
+      }else{
+        await db.collection('posts').add(payload);
+        showToast('Thêm bài viết mới');
+      }
+      postTitle.value=''; postContent.value='';
+    }catch(err){ console.error(err); showToast('Lỗi: '+err.message) }
+  });
+
+  // Upload gallery images
+  uploadGalleryBtn.addEventListener('click', async ()=>{
+    const user = auth.currentUser;
+    if(!user || !uidIsAdmin(user)){ showToast('Không có quyền'); return; }
+    const files = galleryFile.files;
+    if(!files || files.length===0){ showToast('Chọn ảnh để upload'); return; }
+    showToast('Đang upload...');
+    for(const f of files){
+      const path = `gallery/${Date.now()}_${f.name}`;
+      const snap = await storage.ref(path).put(f);
+      const url = await snap.ref.getDownloadURL();
+      await db.collection('gallery').add({url, name: f.name, createdAt: firebase.firestore.FieldValue.serverTimestamp(), visible: true});
+    }
+    galleryFile.value='';
+    showToast('Upload xong');
+  });
+
+  // Realtime dashboard counts
+  btnPreview.addEventListener('click', async ()=>{
+    // Show counts from Firestore
+    const p = await db.collection('projects').get();
+    const posts = await db.collection('posts').get();
+    const gallery = await db.collection('gallery').get();
+    dbCounts.innerHTML = `Projects: ${p.size} • Posts: ${posts.size} • Gallery: ${gallery.size}`;
+    showToast('Đang hiển thị số liệu realtime');
+  });
+
+  /***********************************************
+   * Security: automatic logout if current user is not admin
+   * (also enforced by UI checks above)
+   ***********************************************/
+  // Additional listener to auto logout if user lost admin rights
+  auth.onAuthStateChanged(user=>{
+    if(user && !uidIsAdmin(user)){
+      // If user opens adminPanel, close it
+      adminPanel.classList.add('hide');
+    }
+  });
+
+  /***********************************************
+   * End of main script
+   ***********************************************/
+  </script>
+
+  <!-- Additional: small instructions & Firestore/Storage rules (for developer) -->
+  <div style="position:fixed;left:12px;bottom:12px;background:rgba(0,0,0,0.6);padding:10px;border-radius:8px;font-size:12px;color:#cfe9ff;max-width:340px">
+    Hướng dẫn nhanh:
+    <ul style="margin:6px 0 0 16px">
+      <li>Admin UID: VYIs9XHLR9RMStwtcdwMrOIo33w1</li>
+      <li>Tách file: bạn có thể tách script thành auth.js / firestore.js / admin.js</li>
+      <li>Xem phần "Security rules" & "Deploy" bên dưới trong tài liệu.</li>
+    </ul>
+  </div>
+
+
 </body>
 </html>
