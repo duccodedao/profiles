@@ -14,6 +14,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font số thẻ ngân hàng -->
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
     <style>
         /* --- DESIGN TOKENS --- */
@@ -28,6 +30,7 @@
             --radius-xl: 32px;
             --radius-md: 16px;
             --radius-pill: 100px;
+            --vcb-green: #00563F; /* Màu xanh VCB chuẩn */
         }
 
         body {
@@ -39,7 +42,7 @@
             position: relative;
         }
 
-        /* --- BACKGROUND --- */
+        /* --- BACKGROUND MESH --- */
         .ambient-mesh {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
             background: radial-gradient(at 0% 0%, rgba(192, 132, 252, 0.1) 0px, transparent 50%),
@@ -47,7 +50,7 @@
             filter: blur(80px); opacity: 0.8;
         }
 
-        /* --- UI ELEMENTS --- */
+        /* --- LOADER --- */
         .loader-wrapper {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 9999;
             display: flex; justify-content: center; align-items: center; transition: 0.8s cubic-bezier(0.65, 0, 0.35, 1);
@@ -59,16 +62,22 @@
         }
         @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
+        /* --- SMART TOGGLE BUTTON (HIỆU ỨNG ẨN HIỆN) --- */
         .sidebar-toggle {
             position: fixed; top: 30px; left: 30px; width: 56px; height: 56px;
             background: rgba(255,255,255,0.05); border: 1px solid var(--stroke-color); border-radius: 18px;
             display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1001;
-            transition: 0.4s; backdrop-filter: blur(10px);
+            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.3s; /* Transition mượt */
+            backdrop-filter: blur(10px);
         }
-        .sidebar-toggle:hover { background: var(--primary-accent); transform: scale(1.05); border-color: var(--primary-accent); }
+        .sidebar-toggle.hidden {
+            transform: translateY(-150%); /* Ẩn lên trên */
+        }
+        .sidebar-toggle:hover { background: var(--primary-accent); border-color: var(--primary-accent); }
         .sidebar-toggle:hover i { color: #000; }
         .sidebar-toggle i { color: #fff; font-size: 1.2rem; transition: 0.3s; }
 
+        /* --- SIDEBAR PANEL --- */
         .sidebar-panel {
             position: fixed; top: 0; left: 0; width: 320px; height: 100%; background: #18181b;
             z-index: 1000; transform: translateX(-105%); transition: 0.6s cubic-bezier(0.16, 1, 0.3, 1);
@@ -88,7 +97,6 @@
 
         /* --- HERO SECTION --- */
         .hero-container { min-height: 85vh; display: flex; align-items: center; justify-content: center; padding: 20px; position: relative; }
-        .stitch-line { position: absolute; width: 1px; height: 100%; top: 0; left: 50%; border-left: 1px dashed var(--stroke-color); z-index: -1; }
         .profile-card {
             background: var(--surface-color); backdrop-filter: blur(20px);
             border: 1px solid var(--stroke-color); border-radius: var(--radius-xl);
@@ -132,20 +140,53 @@
         .info-item { display: flex; flex-direction: column; padding: 15px; border-bottom: 1px dashed var(--stroke-color); }
         .info-label { font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 5px; letter-spacing: 1px; }
         .info-value { font-size: 1.1rem; font-weight: 600; color: #fff; }
+
+        /* --- NEW BANK CARD (REALISTIC STYLE) --- */
         .bank-wrapper {
-            background: #002b1c; border: 1px solid var(--stroke-color); border-radius: var(--radius-xl);
-            padding: 30px; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; min-height: 250px; transition: 0.3s;
+            background: linear-gradient(125deg, #004d33 0%, #002b1c 100%); /* Gradient xanh VCB */
+            border-radius: 24px;
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+            display: flex; flex-direction: column; justify-content: space-between;
+            min-height: 260px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: 0.3s;
         }
-        .bank-wrapper::before { content: ''; position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; background: rgba(100, 200, 0, 0.15); border-radius: 50%; filter: blur(50px); pointer-events: none; }
-        .bank-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 30px; }
-        .bank-logo img { height: 40px; filter: brightness(0) invert(1); }
-        .chip-icon { font-size: 2.5rem; color: rgba(255,255,255,0.5); }
-        .bank-number-group { margin-top: auto; }
-        .bank-label { font-size: 0.8rem; color: rgba(255,255,255,0.6); margin-bottom: 5px; }
-        .bank-number { font-family: 'Courier New', monospace; font-size: 1.6rem; font-weight: 700; color: #fff; letter-spacing: 2px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.3s; }
-        .bank-number:hover { color: var(--primary-accent); text-shadow: 0 0 10px rgba(180, 249, 242, 0.5); }
-        .copy-hint { font-size: 0.75rem; color: var(--primary-accent); opacity: 0; transition: 0.3s; }
+        /* Họa tiết sóng nền */
+        .bank-wrapper::after {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 10px);
+            transform: rotate(20deg); pointer-events: none;
+        }
+        
+        .bank-header { display: flex; justify-content: space-between; align-items: center; z-index: 2; }
+        /* Logo VCB */
+        .vcb-logo { height: 45px; object-fit: contain; filter: brightness(0) invert(1); } /* Chuyển logo sang trắng */
+        
+        .bank-chip-row { display: flex; align-items: center; justify-content: space-between; margin-top: 30px; z-index: 2; }
+        .emv-chip { width: 50px; height: 35px; background: linear-gradient(135deg, #e6cfa3 0%, #d1b464 50%, #e6cfa3 100%); border-radius: 6px; position: relative; overflow: hidden; box-shadow: inset 0 0 5px rgba(0,0,0,0.3); }
+        /* Vẽ đường mạch chip */
+        .emv-chip::before { content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 1px; background: rgba(0,0,0,0.3); }
+        .emv-chip::after { content: ''; position: absolute; left: 50%; top: 0; height: 100%; width: 1px; background: rgba(0,0,0,0.3); }
+        .contactless-icon { font-size: 1.8rem; color: rgba(255,255,255,0.8); transform: rotate(90deg); }
+
+        .bank-number-group { z-index: 2; margin-top: auto; }
+        .bank-number {
+            font-family: 'Share Tech Mono', monospace; /* Font số thẻ chuyên nghiệp */
+            font-size: 1.8rem; letter-spacing: 3px; color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.3s;
+        }
+        .bank-number:hover { color: var(--primary-accent); }
+        .copy-hint { font-size: 0.7rem; background: var(--primary-accent); color: #000; padding: 2px 6px; border-radius: 4px; opacity: 0; transition: 0.3s; font-family: 'Plus Jakarta Sans'; font-weight: 700; letter-spacing: 0; }
         .bank-number:hover .copy-hint { opacity: 1; }
+        
+        .bank-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 15px; z-index: 2; color: rgba(255,255,255,0.8); font-size: 0.8rem; }
+        .holder-name { font-weight: 600; letter-spacing: 1px; text-transform: uppercase; font-size: 1rem; }
+        .valid-date { font-family: 'Share Tech Mono', monospace; }
+        .valid-label { font-size: 0.5rem; display: block; line-height: 1; margin-bottom: 2px; }
 
         /* --- GALLERY --- */
         .gallery-section { padding: 50px 0; position: relative; width: 100%; overflow: hidden; }
@@ -161,34 +202,14 @@
         .gallery-item:hover { filter: grayscale(0%); opacity: 1; transform: scale(1.05); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6); border-color: rgba(255,255,255,0.3); z-index: 10; }
         .gallery-item:hover img { transform: scale(1.1); }
 
-        /* --- PARTNERS SECTION (NEW) --- */
+        /* --- PARTNERS --- */
         .partners-section { padding: 60px 0 100px; position: relative; width: 100%; overflow: hidden; border-top: 1px dashed var(--stroke-color); margin-top: 50px; }
         .partner-item {
-            width: 180px; height: 100px;
-            background: rgba(255,255,255,0.02);
-            border: 1px solid var(--stroke-color);
-            border-radius: var(--radius-md);
-            display: flex; align-items: center; justify-content: center;
-            padding: 20px;
-            filter: grayscale(100%) opacity(0.5);
-            transition: all 0.4s ease;
+            width: 220px; height: 100px; background: rgba(255,255,255,0.02); border: 1px solid var(--stroke-color); border-radius: var(--radius-md);
+            display: flex; align-items: center; justify-content: center; padding: 15px 30px; filter: grayscale(100%) brightness(200%) opacity(0.5); transition: 0.4s;
         }
-        .partner-item img {
-            max-width: 100%; max-height: 100%; object-fit: contain;
-            /* Chuyển logo sang trắng nếu là logo màu tối */
-            filter: brightness(0) invert(1); 
-            transition: 0.4s;
-        }
-        .partner-item:hover {
-            filter: grayscale(0%) opacity(1);
-            background: rgba(255,255,255,0.05);
-            transform: translateY(-5px);
-            border-color: var(--stroke-color);
-        }
-        /* Fix riêng cho VSCode và Tonkeeper (có màu đặc trưng) khi hover */
-        .partner-item:hover img { filter: none; } 
-        /* Fix cho VCB và Bybit (Logo màu đen thì giữ trắng) */
-        .partner-item.white-logo:hover img { filter: brightness(0) invert(1); }
+        .partner-item img { max-width: 100%; max-height: 100%; object-fit: contain; transition: 0.4s; }
+        .partner-item:hover { filter: grayscale(0%) brightness(100%) opacity(1); background: rgba(255,255,255,0.05); transform: translateY(-5px); border-color: var(--stroke-color); }
 
         /* --- FOOTER --- */
         .footer-minimal { border-top: 1px solid var(--stroke-color); padding: 50px 0; text-align: center; background: #0f1115; }
@@ -208,12 +229,11 @@
     <!-- Loader -->
     <div class="loader-wrapper" id="loader"><div class="loader-text">NAM.DESIGN</div></div>
 
-    <!-- Background -->
+    <!-- Background (No Stitch Line) -->
     <div class="ambient-mesh"></div>
-    <div class="stitch-line"></div>
 
-    <!-- Sidebar -->
-    <div class="sidebar-toggle" onclick="toggleMenu()"><i class="fas fa-bars"></i></div>
+    <!-- Smart Sidebar Toggle -->
+    <div class="sidebar-toggle" id="sidebarToggle" onclick="toggleMenu()"><i class="fas fa-bars"></i></div>
     <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
     <nav class="sidebar-panel" id="sidebar">
         <h4 class="text-white mb-5" style="font-weight: 800; letter-spacing: -1px;">MENU.</h4>
@@ -244,7 +264,7 @@
         <div class="stat-card"><span class="stat-num" data-target="98">0</span><span class="stat-label">% Satisfaction</span></div>
     </div>
 
-    <!-- 3. ABOUT & BANKING -->
+    <!-- 3. ABOUT & BANKING (UPDATED) -->
     <section id="about" class="about-section" data-aos="fade-up">
         <div class="text-center mb-5">
             <span class="section-tag">PERSONAL DATA</span>
@@ -259,15 +279,34 @@
                 <div class="info-item"><span class="info-label">Nơi Ở</span><span class="info-value">Hà Nội, Việt Nam</span></div>
                 <div class="info-item"><span class="info-label">Website</span><span class="info-value" style="color: var(--primary-accent);">hoangnam.design</span></div>
             </div>
+            
+            <!-- NEW BANK CARD DESIGN -->
             <div class="bank-wrapper">
                 <div class="bank-header">
-                    <div class="bank-logo"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Vietcombank_Logo.png/1200px-Vietcombank_Logo.png?20160216091040" alt="Vietcombank"></div>
-                    <i class="fab fa-cc-visa chip-icon"></i>
+                    <!-- Logo VCB chuẩn -->
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Vietcombank_Logo.png/1200px-Vietcombank_Logo.png?20160216091040" alt="VCB Logo" class="vcb-logo">
+                    <span style="color:white; font-weight:700; opacity:0.8;">Priority</span>
                 </div>
+                
+                <div class="bank-chip-row">
+                    <div class="emv-chip"></div>
+                    <i class="fas fa-wifi contactless-icon"></i>
+                </div>
+
                 <div class="bank-number-group">
-                    <div class="bank-label">ACCOUNT NUMBER</div>
-                    <div class="bank-number" onclick="copyToClipboard('0123456789999')" title="Nhấn để sao chép">0123 4567 8999 9 <i class="far fa-copy ms-2" style="font-size: 1rem;"></i><span class="copy-hint">Copied!</span></div>
-                    <div class="bank-label mt-2">NGUYEN HOANG NAM</div>
+                    <!-- Số tài khoản font Monospace -->
+                    <div class="bank-number" onclick="copyToClipboard('0123456789999')" title="Sao chép">
+                        0123 4567 8999 9
+                        <span class="copy-hint">COPIED!</span>
+                    </div>
+                </div>
+
+                <div class="bank-footer">
+                    <div class="holder-name">NGUYEN HOANG NAM</div>
+                    <div class="valid-date">
+                        <span class="valid-label">VALID THRU</span>
+                        12/30
+                    </div>
                 </div>
             </div>
         </div>
@@ -289,7 +328,7 @@
         </div>
     </section>
 
-    <!-- 5. PARTNERS (NEW) -->
+    <!-- 5. PARTNERS -->
     <section id="partners" class="partners-section" data-aos="fade-up">
         <div class="gallery-header">
             <span class="section-tag">TRUSTED BY</span>
@@ -297,26 +336,11 @@
         </div>
         <div class="track-wrapper">
             <div class="track" id="partner-track">
-                <!-- OKX -->
-                <div class="partner-item white-logo">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/e/e4/OKX_Logo.png" alt="OKX">
-                </div>
-                <!-- Bybit -->
-                <div class="partner-item white-logo">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Bybit-logo.png/1200px-Bybit-logo.png" alt="Bybit">
-                </div>
-                <!-- Tonkeeper (Using TON logo as proxy if specific one not found, looks clean) -->
-                <div class="partner-item">
-                    <img src="https://tonkeeper.com/assets/tonkeeper-logo.png" alt="Tonkeeper">
-                </div>
-                <!-- Vietcombank -->
-                <div class="partner-item white-logo">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Vietcombank_Logo.png/1200px-Vietcombank_Logo.png?20160216091040" alt="Vietcombank">
-                </div>
-                <!-- VSCode -->
-                <div class="partner-item">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/9/9a/Visual_Studio_Code_1.35_icon.svg" alt="VSCode">
-                </div>
+                <div class="partner-item"><img src="https://upload.wikimedia.org/wikipedia/commons/e/e4/OKX_Logo.png" alt="OKX"></div>
+                <div class="partner-item"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Bybit-logo.png/1200px-Bybit-logo.png" alt="Bybit"></div>
+                <div class="partner-item"><img src="https://tonkeeper.com/assets/tonkeeper-logo.png" alt="Tonkeeper"></div>
+                <div class="partner-item"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Vietcombank_Logo.png/1200px-Vietcombank_Logo.png?20160216091040" alt="Vietcombank"></div>
+                <div class="partner-item"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Visual_Studio_Code_1.35_icon.svg/2048px-Visual_Studio_Code_1.35_icon.svg.png" alt="VSCode"></div>
             </div>
         </div>
     </section>
@@ -348,10 +372,30 @@
                 setTimeout(() => document.getElementById('loader').style.display = 'none', 800);
                 AOS.init({ once: true, offset: 50, duration: 800, easing: 'cubic-bezier(0.25, 1, 0.5, 1)' });
                 setupScrollTrack('gallery-track');
-                setupScrollTrack('partner-track'); // Chạy scroll cho partners
+                setupScrollTrack('partner-track'); 
                 runCounter();
             }, 1000);
         });
+
+        // Smart Sidebar Toggle Logic
+        let lastScrollTop = 0;
+        const sidebarToggle = document.getElementById('sidebarToggle');
+
+        window.addEventListener("scroll", function() {
+            let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            
+            // Nếu đang mở menu thì không ẩn nút
+            if(isMenuOpen) return;
+
+            if (scrollTop > lastScrollTop && scrollTop > 100) {
+                // Kéo xuống -> Ẩn
+                sidebarToggle.classList.add('hidden');
+            } else {
+                // Kéo lên -> Hiện
+                sidebarToggle.classList.remove('hidden');
+            }
+            lastScrollTop = scrollTop <= 0 ? 0 : scrollTop; // For Mobile or negative scrolling
+        }, false);
 
         function copyToClipboard(text) {
             navigator.clipboard.writeText(text).then(() => {
@@ -360,7 +404,6 @@
             });
         }
 
-        // Generic function to clone items for infinite scroll
         function setupScrollTrack(id) {
             const track = document.getElementById(id);
             if(track) Array.from(track.children).forEach(item => track.appendChild(item.cloneNode(true)));
@@ -378,8 +421,18 @@
         function toggleMenu() {
             const sb=document.getElementById('sidebar'), ov=document.getElementById('overlay'), ic=document.querySelector('.sidebar-toggle i');
             isMenuOpen = !isMenuOpen;
-            if(isMenuOpen){ sb.classList.add('active'); ov.classList.add('active'); ic.className='fas fa-times'; }
-            else { sb.classList.remove('active'); ov.classList.remove('active'); ic.className='fas fa-bars'; }
+            
+            if(isMenuOpen){ 
+                sb.classList.add('active'); 
+                ov.classList.add('active'); 
+                ic.className='fas fa-times';
+                sidebarToggle.classList.remove('hidden'); // Luôn hiện khi mở menu
+            }
+            else { 
+                sb.classList.remove('active'); 
+                ov.classList.remove('active'); 
+                ic.className='fas fa-bars'; 
+            }
         }
 
         new Typed('#typing-text', { strings: ['Building Digital Products.', 'Crafting User Experiences.'], typeSpeed: 40, backSpeed: 30, backDelay: 2000, loop: true, showCursor: false });
