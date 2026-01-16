@@ -1,2563 +1,742 @@
-
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bmass Profiles - Web3 Bio Link</title>
-
-    <!-- Meta SEO, Libraries, Fonts -->
-    <meta name="description" content="Tạo và chia sẻ trang cá nhân Web3 của bạn một cách dễ dàng.">
-    <link rel="icon" href="https://bmass.vercel.app/img/bmasslogo.png" type="image/png">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
-
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
-
-    <!-- Chart.js & QR Code & SortableJS Libraries -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-</head>
-<style>
-    :root {
-        --accent-primary: #915EFF;
-        --accent-secondary: #2BCBC4;
-        --text-primary: #212529;
-        --text-secondary: #6c757d;
-        --color-verified: #007bff;
-        --card-bg: rgba(255, 255, 255, 0.1);
-        --transition-smooth: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-        --shadow-light: 0 4px 15px rgba(0,0,0,0.07);
-        --shadow-strong: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
-    }
-
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes fadeInUp { from { opacity: 0; transform: translateY(25px); } to { opacity: 1; transform: translateY(0); } }
-
-    body {
-        font-family: 'Poppins', sans-serif;
-        color: var(--text-primary);
-        transition: background 0.5s ease;
-        overflow-x: hidden;
-        margin: 0;
-        background-color: #000000;
-        background-image: linear-gradient(45deg, #000000 0%, #1a0a24 100%);
-        background-attachment: fixed;
-        background-size: cover;
-    }
-
-    #particles-js {
-        position: fixed;
-        width: 100%;
-        height: 100%;
-        z-index: -1;
-        top: 0;
-        left: 0;
-        pointer-events: none;
-        transition: opacity 0.3s;
-    }
-
-    /* === Header & Sidebar (UPDATED FOR PROFESSIONAL LOOK) === */
-    .header-controls { position: fixed; top: 1.5rem; right: 1.5rem; z-index: 1050; }
-    .sidebar-toggle {
-        background: rgba(255, 255, 255, 0.9); border: none; border-radius: 50%; width: 50px; height: 50px;
-        font-size: 1.2rem; box-shadow: var(--shadow-light); transition: var(--transition-smooth);
-        display: flex; align-items: center; justify-content: center; color: var(--text-primary);
-    }
-    .sidebar-toggle:hover { transform: scale(1.1); box-shadow: var(--shadow-strong); }
-    .sidebar {
-        position: fixed; top: 0; left: 0; height: 100%; width: 280px;
-        /* Màu nền tối nhẹ, hiệu ứng blur */
-        background: rgba(26, 26, 46, 0.95); /* Màu tối của Telegram/Web3 */
-        backdrop-filter: blur(15px); 
-        z-index: 1051;
-        transform: translateX(-100%); 
-        transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-        box-shadow: 0 0 50px rgba(0,0,0,0.5); 
-        padding: 2rem 1.5rem; 
-        display: flex; 
-        flex-direction: column;
-        color: #fff; /* Chữ trắng cho nền tối */
-    }
-    .sidebar.open { transform: translateX(0); }
-    .sidebar-header { font-weight: 700; font-size: 1.6rem; margin-bottom: 2rem; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem;}
-    .sidebar-link {
-        display: block; padding: 1rem 1rem; border-radius: 12px; 
-        color: rgba(255, 255, 255, 0.8); /* Chữ xám trắng */
-        text-decoration: none; font-weight: 500; 
-        margin-bottom: 0.3rem; 
-        transition: background-color 0.3s, color 0.3s, transform 0.2s;
-    }
-    .sidebar-link:hover { 
-        background-color: rgba(145, 94, 255, 0.1); /* Hover nhẹ */
-        color: #fff; 
-        transform: translateX(3px);
-    }
-    .sidebar-link i { margin-right: 15px; width: 20px; text-align: center; color: var(--accent-secondary); }
-    .sidebar-link.logout { margin-top: auto; color: #ff6b6b; }
-    .sidebar-link.logout:hover { background-color: rgba(255, 107, 107, 0.1); color: #fff; }
-
-    .overlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4);
-        z-index: 1045; opacity: 0; visibility: hidden; transition: opacity 0.4s, visibility 0.4s;
-    }
-    .overlay.show { opacity: 1; visibility: visible; }
-
-    /* === Main Container & Views === */
-    .main-container { padding: 2rem 1rem; margin: auto; min-height: 100vh; overflow-y: auto; }
-    .view { display: none; animation: fadeIn 0.6s; }
-    .view-center-content {
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 2rem;
-        box-sizing: border-box;
-    }
-    #email-verification-banner { position: sticky; top: 0; z-index: 1040; }
-
-    /* === Profile View === */
-    .card-glass {
-        position: relative; background: var(--card-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 25px; padding: 2rem; box-shadow: var(--shadow-strong); color: #fff;
-    }
-    .profile-avatar { width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 5px solid white; box-shadow: 0 0 20px rgba(0,0,0,0.15); margin-top: -95px; }
-    .profile-name-wrapper { display: flex; align-items: center; justify-content: center; gap: 10px; }
-    .profile-name { font-size: 2rem; font-weight: 700; margin-bottom: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-    .verified-tick { color: var(--color-verified); font-size: 1.6rem; background: white; border-radius: 50%; padding: 2px; box-shadow: 0 2px 5px rgba(0,123,255,0.3); }
-    .social-links { display: flex; justify-content: center; flex-wrap: wrap; gap: 1rem; margin-top: 1.5rem; }
-    .social-link { font-size: 1.5rem; color: #fff; transition: var(--transition-smooth); width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background-color: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); text-decoration: none; }
-    .social-link:hover { transform: translateY(-5px); color: white; background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary)); box-shadow: 0 4px 15px rgba(145, 94, 255, 0.4); }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    #donate-modal-btn {
-        margin-top: 20px;
-        background: linear-gradient(45deg, #FFD700, #FDB931);
-        border: none;
-        color: #000;
-        font-weight: 700;
-        border-radius: 50px;
-        padding: 10px 30px;
-        box-shadow: 0 4px 15px rgba(253, 185, 49, 0.4);
-        transition: var(--transition-smooth);
-        display: inline-flex;
-        align-items: center;
-        gap: 1px;
-        font-size: 1rem;
-    }
-    #donate-modal-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(253, 185, 49, 0.6); filter: brightness(1.1); }
+    <!-- SEO & Meta Tags -->
+    <title>BmassHD | Crypto & Webside</title>
+    <meta name="description" content="Portfolio của BmassHD: chuyên gia Crypto, Webside và MMO (dịch vụ mạng xã hội).">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png-flaticon-com/512/2920/2920329.png">
 
-    /* PROJECT CARD COMPACT DESIGN */
-    .project-card {
-        display: flex;
-        align-items: flex-start;
-        text-decoration: none;
-        color: var(--text-primary);
-        background: rgba(255, 255, 255, 0.95);
-        padding: 0.8rem;
-        border-radius: 12px;
-        border: 1px solid #dee2e6;
-        transition: var(--transition-smooth);
-        box-shadow: var(--shadow-light);
-        cursor: pointer;
-        position: relative;
-        overflow: hidden;
-    }
-    .project-card:hover { transform: translateY(-3px) scale(1.01); box-shadow: 0 5px 15px rgba(145, 94, 255, 0.15); border-color: var(--accent-primary); }
-    .project-icon { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; margin-right: 0.8rem; flex-shrink: 0; }
-    
-    /* === NEW: PROFESSIONAL COUNTDOWN STYLES === */
-    .project-card.expired {
-        opacity: 0.8;
-        pointer-events: none; /* Vô hiệu hóa click */
-        border-color: #adb5bd;
-    }
-    
-    /* Overlay khi hết hạn */
-    .expired-overlay {
-        position: absolute;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.6);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 5;
-        border-radius: 12px;
-        backdrop-filter: blur(2px);
-    }
-    .expired-text {
-        color: white;
-        font-weight: 800;
-        font-size: 1.2rem;
-        text-transform: uppercase;
-        border: 2px solid white;
-        padding: 5px 15px;
-        border-radius: 8px;
-        transform: rotate(-10deg);
-        letter-spacing: 1px;
-    }
+    <!-- LIBRARIES -->
+    <!-- Sử dụng Bootstrap 5 cho Modal/Form/Utility classes -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font số thẻ ngân hàng -->
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
-    /* Vùng chứa Countdown */
-    .countdown-wrapper {
-        margin-top: 8px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-    .countdown-label {
-        font-size: 0.7rem;
-        color: #dc3545;
-        font-weight: 700;
-        text-transform: uppercase;
-        margin-right: 2px;
-        animation: pulse-text 2s infinite;
-    }
-    
-    /* Các ô số */
-    .time-unit {
-        background: linear-gradient(135deg, #212529, #343a40);
-        color: #fff;
-        border-radius: 4px;
-        padding: 3px 5px;
-        min-width: 24px;
-        text-align: center;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    }
-    .time-val {
-        font-family: 'Roboto Mono', monospace;
-        font-weight: 700;
-        font-size: 0.85rem;
-        line-height: 1;
-    }
-    .time-tag {
-        font-size: 0.5rem;
-        opacity: 0.7;
-        margin-top: 1px;
-        text-transform: uppercase;
-    }
-    .time-sep {
-        font-weight: bold;
-        color: #6c757d;
-        font-size: 0.8rem;
-        margin-top: -8px;
-    }
+    <style>
+        /* --- DESIGN TOKENS --- */
+        :root {
+            --bg-color: #0f1115;
+            --surface-color: rgba(255, 255, 255, 0.03);
+            --stroke-color: rgba(255, 255, 255, 0.08);
+            --primary-accent: #B4F9F2;
+            --secondary-accent: #C084FC;
+            --text-main: #FFFFFF;
+            --text-secondary: #9CA3AF;
+            --radius-xl: 32px;
+            --radius-md: 16px;
+            --radius-pill: 100px;
+            --vcb-green: #00563F;
+        }
 
-    /* Hiệu ứng nhấp nháy chữ "Đang diễn ra" */
-    @keyframes pulse-text {
-        0% { opacity: 1; }
-        50% { opacity: 0.5; }
-        100% { opacity: 1; }
-    }
-    /* ------------------------------------------- */
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
 
-    #edit-profile-btn { position: absolute; bottom: -25px; right: 2rem; width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary)); color: white; font-size: 1.5rem; display: none; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.2); cursor: pointer; transition: transform 0.3s; z-index: 10; }
-    #edit-profile-btn:hover { transform: scale(1.1); }
-
-    .project-card-content { display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; }
-    .project-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2px; }
-    .project-name-text { font-weight: 600; font-size: 1rem; margin-bottom: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 75%; }
-    .project-clicks { font-size: 0.75rem; color: var(--text-secondary); background: #f0f2f5; padding: 2px 6px; border-radius: 6px; white-space: nowrap; display: flex; align-items: center; }
-    .project-desc-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.3; margin-bottom: 0; }
-
-    /* === Category Tabs Styling === */
-    .category-tabs-container { padding: 1rem 0; margin-top: 1.5rem; position: relative; }
-    .category-tabs { display: flex; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.2); position: relative; flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; -ms-overflow-style: none; scrollbar-width: none; padding-bottom: 0; }
-    .category-tabs::-webkit-scrollbar { display: none; }
-    .category-tab { padding: 8px 16px; cursor: pointer; background: none; border: none; color: rgba(255, 255, 255, 0.7); font-weight: 500; font-size: 0.95rem; transition: color 0.3s ease; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-    .category-tab.active { color: #fff; font-weight: 600; }
-    .category-tab:hover { color: #fff; }
-    .rename-category-btn { background: none; border: none; color: rgba(255, 255, 255, 0.5); padding: 0; margin-left: 0; font-size: 0.8em; opacity: 0; transition: opacity 0.3s, color 0.3s; }
-    .category-tab:hover .rename-category-btn { opacity: 1; }
-    .rename-category-btn:hover { color: var(--accent-secondary); }
-    #add-category-btn { background-color: rgba(255,255,255,0.1); border-radius: 50%; width: 28px; height: 28px; margin-left: 10px; color: #fff; display: flex; align-items: center; justify-content: center; }
-    .tab-underline { position: absolute; bottom: -1px; left: 0; height: 3px; background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary)); border-radius: 3px; transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); }
-    .category-content-container { padding-top: 1rem; }
-    .category-content { display: none; animation: fadeInUp 0.5s; }
-    .category-content.active { display: block; }
-
-    /* === Auth Views: Flip Card & Forms === */
-    .flip-card { 
-        background-color: transparent; 
-        width: 100%; 
-        max-width: 420px; 
-        height: 720px; 
-        perspective: 1000px; 
-    }
-    .flip-card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.8s; transform-style: preserve-3d; }
-    .flip-card.is-flipped .flip-card-inner { transform: rotateY(180deg); }
-    
-    .flip-card-front, .flip-card-back { 
-        position: absolute; 
-        width: 100%; 
-        height: 100%; 
-        -webkit-backface-visibility: hidden; 
-        backface-visibility: hidden; 
-        border-radius: 20px; 
-        overflow: hidden; 
-        box-shadow: var(--shadow-strong); 
-        background: var(--card-bg); 
-        backdrop-filter: blur(12px); 
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        overflow-y: auto;
-        scrollbar-width: none; 
-    }
-    .flip-card-front::-webkit-scrollbar, .flip-card-back::-webkit-scrollbar {
-        display: none;
-    }
-
-    .flip-card-back { transform: rotateY(180deg); }
-    .auth-header { background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary)); color: white; padding: 2rem; }
-    .auth-header h2 { font-weight: 700; margin-bottom: 0.5rem;}
-    .auth-body { padding: 1.5rem 2rem; }
-    .form-control { border-radius: 10px; padding: 0.9rem 1rem; border: 1px solid rgba(255, 255, 255, 0.2); transition: border-color 0.3s, box-shadow 0.3s; background: rgba(255, 255, 255, 0.1); color: #fff; }
-    .form-control::placeholder { color: rgba(255, 255, 255, 0.7); }
-    .form-control:focus { border-color: var(--accent-primary); box-shadow: 0 0 0 0.25rem rgba(145, 94, 255, 0.25); background: rgba(255, 255, 255, 0.2); color: #fff; }
-    .btn-submit-grad { background-size: 200% auto; background-image: linear-gradient(to right, var(--accent-primary) 0%, var(--accent-secondary) 51%, var(--accent-primary) 100%); border: none; border-radius: 10px; padding: 0.9rem; font-weight: 600; color: white; width: 100%; transition: 0.5s; cursor: pointer; }
-    .btn-submit-grad:hover { background-position: right center; transform: translateY(-3px); box-shadow: 0 6px 20px rgba(145, 94, 255, 0.4); }
-    .btn-google { background: #fff; color: #757575; border: 1px solid #ddd; width: 100%; padding: 0.8rem; border-radius: 10px; transition: all 0.3s; }
-    .btn-google:hover { background: #f8f8f8; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-    
-    .auth-switch-link, .forgot-password-link { 
-        background: none; border: none; color: var(--accent-secondary); 
-        font-weight: 600; cursor: pointer; padding: 0;
-        text-decoration: underline !important; 
-    }
-    
-    #auth-status { min-height: 24px; margin-top: 1rem; color: #ffcdd2; }
-    .divider { display: flex; align-items: center; text-align: center; color: rgba(255,255,255,0.5); margin: 1.5rem 0;}
-    .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid rgba(255,255,255,0.2); }
-    .divider:not(:empty)::before { margin-right: .5em; }
-    .divider:not(:empty)::after { margin-left: .5em; }
-
-    /* === General & Footer === */
-    .footer-section { padding: 2rem 1rem; color: rgba(255, 255, 255, 0.7); font-size: 0.9rem; margin-top: 2rem; }
-    .spinner-border { color: var(--accent-primary); }
-
-    /* === MODAL STYLING === */
-    .modal .form-control, .modal .form-select { background-color: #f8f9fa; color: var(--text-primary); border: 1px solid #ced4da; }
-    .modal .form-control::placeholder { color: #6c757d; }
-    .modal .form-control:focus, .modal .form-select:focus { color: var(--text-primary); background-color: #fff; border-color: var(--accent-primary); box-shadow: 0 0 0 0.25rem rgba(145, 94, 255, 0.25); }
-    #edit-projects-accordion .accordion-button:not(.collapsed) { background-color: rgba(145, 94, 255, 0.1); color: var(--accent-primary); box-shadow: none; }
-    #edit-projects-accordion .accordion-body { background-color: #fdfcff; padding: 1rem; }
-    #edit-projects-accordion .project-form-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #dee2e6; }
-    .accordion-button strong { flex-shrink: 0; }
-    .accordion-button .text-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-    /* DRAG & DROP STYLES */
-    .drag-handle { cursor: grab; color: var(--text-secondary); padding: 10px 15px; font-size: 1.1rem; display: flex; align-items: center; background: #f8f9fa; border-right: 1px solid #dee2e6; border-top-left-radius: calc(var(--bs-accordion-border-radius) - 1px); border-bottom-left-radius: calc(var(--bs-accordion-border-radius) - 1px); }
-    .drag-handle:active { cursor: grabbing; color: var(--accent-primary); background: #e9ecef; }
-    .sortable-ghost { opacity: 0.5; background: #e9ecef; border: 2px dashed var(--accent-primary); }
-    .accordion-header-wrapper { display: flex; align-items: stretch; background: white; border-radius: var(--bs-accordion-border-radius); overflow: hidden; }
-    .accordion-header-wrapper .accordion-button { border-radius: 0; }
-
-    /* CRYPTO WALLET STYLES */
-    .wallet-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; transition: all 0.3s; }
-    .wallet-card:hover { border-color: var(--accent-secondary); background: rgba(255,255,255,0.1); }
-    .wallet-icon { font-size: 1.6rem; width: 45px; text-align: center; margin-right: 12px; color: #ffd700; }
-    .wallet-info { flex-grow: 1; overflow: hidden; }
-    .wallet-name { font-size: 0.8rem; color: #aaa; text-transform: uppercase; margin: 0; font-weight: 600; }
-    .wallet-address { font-size: 0.95rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: 'Courier New', monospace; margin: 0; }
-    .btn-copy-wallet { background: rgba(255,255,255,0.1); border: none; color: white; border-radius: 8px; cursor: pointer; padding: 6px 12px; transition: 0.2s; }
-    .btn-copy-wallet:hover { background: var(--accent-primary); }
-
-    /* EDIT MODAL TABS */
-    .edit-cat-pill { cursor: pointer; padding: 6px 12px; border-radius: 20px; background: #f0f2f5; color: #6c757d; font-size: 0.9rem; margin-right: 5px; border: 1px solid transparent; white-space: nowrap; transition: all 0.3s; }
-    .edit-cat-pill:hover { background: #e2e6ea; }
-    .edit-cat-pill.active { background: var(--accent-primary); color: #fff; font-weight: 500; box-shadow: 0 2px 5px rgba(145, 94, 255, 0.4); }
-    .last-no-border:last-child { border-bottom: none !important; margin-bottom: 0 !important; }
-
-    /* === Project Detail Modal Styling === */
-    #projectDetailModal .modal-content { border-radius: 1rem; border: none; box-shadow: var(--shadow-strong); }
-    #projectDetailModal .modal-header { border-bottom: none; padding: 1.5rem 1.5rem 0.5rem; }
-    #projectDetailModal .modal-body { padding: 0.5rem 1.5rem 1.5rem; }
-    .project-detail-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
-    #project-detail-icon { width: 80px; height: 80px; border-radius: 16px; object-fit: cover; box-shadow: var(--shadow-light); flex-shrink: 0; }
-    #project-detail-name { font-weight: 700; font-size: 1.75rem; margin-bottom: 0.25rem; }
-    #project-detail-category { font-size: 0.9rem; padding: 0.25rem 0.6rem; border-radius: 0.5rem; background-color: #e9ecef; color: var(--text-secondary); font-weight: 500; }
-    #project-detail-description { color: var(--text-primary); font-size: 1rem; margin-bottom: 1.5rem; }
-    #projectDetailModal .modal-content { border-radius: 1rem; border: none; box-shadow: var(--shadow-strong); }
-    #projectDetailModal .modal-header { border-bottom: none; padding: 1.5rem 1.5rem 0.5rem; }
-    #projectDetailModal .modal-body { padding: 0.5rem 1.5rem 1.5rem; }
-    .project-detail-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
-    #project-detail-icon { width: 80px; height: 80px; border-radius: 16px; object-fit: cover; box-shadow: var(--shadow-light); flex-shrink: 0; }
-    #project-detail-name { font-weight: 700; font-size: 1.75rem; margin-bottom: 0.25rem; }
-    #project-detail-category { font-size: 0.9rem; padding: 0.25rem 0.6rem; border-radius: 0.5rem; background-color: #e9ecef; color: var(--text-secondary); font-weight: 500; }
-    #project-detail-description { color: var(--text-primary); font-size: 1rem; margin-bottom: 1.5rem; }
-    #project-detail-stats { display: flex; justify-content: space-around; text-align: center; padding: 1rem; background-color: #f8f9fa; border-radius: 0.75rem; margin-bottom: 1.5rem; }
-    .stat-item h6 { margin-bottom: 0.25rem; font-weight: 700; font-size: 1.25rem; color: var(--accent-primary); }
-    .stat-item p { margin-bottom: 0; font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; }
-    #project-detail-link-btn { width: 100%; padding: 0.8rem; font-size: 1.1rem; font-weight: 600; background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary)); color: white; border: none; border-radius: 0.75rem; transition: var(--transition-smooth); }
-    #project-detail-link-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(145, 94, 255, 0.4); }
-    #project-detail-long-description { background-color: #f8f9fa; padding: 1rem; border-radius: 0.75rem; color: var(--text-primary); font-size: 0.95rem; line-height: 1.6; word-wrap: break-word; }
-    .embedded-link { color: var(--accent-primary); font-weight: 500; text-decoration: none; word-break: break-all; }
-    .embedded-link:hover { text-decoration: underline; }
-    #project-detail-share-btn { background: none; border: none; font-size: 1.2rem; color: var(--text-secondary); transition: color 0.3s; }
-    #project-detail-share-btn:hover { color: var(--accent-primary); }
-
-    .copy-ref-container .input-group-text { background-color: #e9ecef; border: 1px solid #ced4da; color: var(--text-secondary); }
-    .copy-ref-container .form-control[readonly] { background-color: #fff; cursor: text; }
-
-    /* Admin & Support Message Styles */
-    .support-msg-card { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 10px; margin-bottom: 1rem; padding: 1rem; }
-    .support-msg-header { display: flex; justify-content: space-between; font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-bottom: 0.5rem; }
-    .support-msg-body { font-size: 1rem; line-height: 1.5; margin-bottom: 0.5rem; }
-    
-    /* Support Chat History in User Modal */
-    .chat-bubble { padding: 10px 15px; border-radius: 15px; margin-bottom: 10px; max-width: 85%; font-size: 0.9rem; }
-    .chat-bubble.user { background-color: #f0f2f5; color: #333; margin-left: auto; border-bottom-right-radius: 2px; }
-    .chat-bubble.admin { background-color: rgba(145, 94, 255, 0.2); color: var(--text-primary); border: 1px solid rgba(145, 94, 255, 0.3); border-bottom-left-radius: 2px; }
-    .chat-bubble .meta { font-size: 0.7em; opacity: 0.7; margin-bottom: 3px; display: block;}
-
-    /* === MUSIC TOGGLE BUTTON STYLES === */
-    #music-toggle-btn { position: fixed; top: 1.5rem; right: 5.5rem; z-index: 1050; width: 50px; height: 50px; border-radius: 50%; border: none; background: rgba(255, 255, 255, 0.9); color: #333; box-shadow: 0 4px 15px rgba(0,0,0,0.1); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
-    #music-toggle-btn:hover { transform: scale(1.1); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15); }
-    #music-toggle-btn.playing { color: var(--accent-primary); background: white; box-shadow: 0 0 20px rgba(145, 94, 255, 0.6); }
-    #music-toggle-btn.playing i { animation: music-spin 3s linear infinite; }
-    @keyframes music-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    
-    /* --- Modal cho Settings Telegram (NEW) --- */
-    /* REMOVED: #telegramSettingsModal CSS */
-</style>
-<body>
-    <div id="particles-js"></div>
-    
-    <!-- Audio Element for MP3 -->
-    <audio id="bg-audio" loop>
-        <source src="nhac.mp3" type="audio/mpeg">
-    </audio>
-
-    <!-- Header Controls -->
-    <div class="header-controls" id="header-controls"></div>
-
-    <!-- Sidebar Navigation -->
-    <div class="sidebar" id="sidebar">
-        <h3 class="sidebar-header">Bmass Profiles <small class="fw-light d-block mt-1" style="font-size: 0.8rem; color: var(--accent-secondary);" id="sidebar-version-tag">Web3 Link</small></h3>
-        <div id="sidebar-links"></div>
-    </div>
-    <div class="overlay" id="overlay"></div>
-
-    <main class="main-container" id="app-container">
+        /* Thêm style cho Modal/Admin */
+        .modal-content {
+            background-color: var(--bg-color);
+            border: 1px solid var(--stroke-color);
+            border-radius: var(--radius-md);
+            color: var(--text-main);
+        }
+        .modal-header { border-bottom: 1px solid var(--stroke-color); }
+        .modal-footer { border-top: 1px solid var(--stroke-color); }
+        .form-control, .btn-secondary {
+            background-color: var(--surface-color) !important;
+            border: 1px solid var(--stroke-color) !important;
+            color: var(--text-main) !important;
+        }
+        .admin-section {
+            background: rgba(192, 132, 252, 0.05); /* Secondary accent for admin area */
+            border: 1px solid var(--secondary-accent);
+            padding: 20px;
+            margin-top: 50px;
+            border-radius: var(--radius-md);
+        }
+        .add-project-btn {
+            background: var(--secondary-accent) !important;
+            color: #000 !important;
+            font-weight: 600;
+        }
         
-        <input type="file" id="import-json-input" accept=".json" style="display: none;" />
+        /* --- BACKGROUND MESH (GRADIENT ĐÃ CẬP NHẬT) --- */
+        .ambient-mesh {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            /* Thay đổi để tạo hiệu ứng phân tán hơn */
+            background: radial-gradient(circle at 10% 90%, rgba(192, 132, 252, 0.15) 0px, transparent 45%),
+                        radial-gradient(circle at 90% 10%, rgba(180, 249, 242, 0.15) 0px, transparent 45%),
+                        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.01) 0px, transparent 70%);
+            filter: blur(80px); opacity: 0.8;
+        }
 
-        <!-- Email Verification Banner -->
-        <div id="email-verification-banner" class="alert alert-warning rounded-3 m-3" style="display: none;">
-            Email của bạn chưa được xác thực. Vui lòng kiểm tra hộp thư đến. 
-            <button id="resend-verification-btn" class="btn btn-sm btn-primary ms-2">Gửi lại email</button>
-        </div>
+        /* --- LOADER --- */
+        .loader-wrapper {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 9999;
+            display: flex; justify-content: center; align-items: center; transition: 0.8s cubic-bezier(0.65, 0, 0.35, 1);
+        }
+        .loader-text {
+            font-size: 1.5rem; letter-spacing: 2px; font-weight: 700;
+            background: linear-gradient(90deg, var(--text-main), var(--text-secondary));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
-        <!-- Loading View -->
-        <div class="view text-center" id="view-loading">
-            <div class="spinner-border" style="width: 3rem; height: 3rem; color: white;"></div>
-        </div>
+        /* --- SMART TOGGLE BUTTON (HIỆU ỨNG ẨN HIỆN) --- */
+        .sidebar-toggle {
+            position: fixed; top: 30px; left: 30px; width: 56px; height: 56px;
+            background: rgba(255,255,255,0.05); border: 1px solid var(--stroke-color); border-radius: 18px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1001;
+            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.3s; /* Transition mượt */
+            backdrop-filter: blur(10px);
+        }
+        .sidebar-toggle.hidden {
+            transform: translateY(-150%); /* Ẩn lên trên */
+        }
+        .sidebar-toggle:hover { background: var(--primary-accent); border-color: var(--primary-accent); }
+        .sidebar-toggle:hover i { color: #000; }
+        .sidebar-toggle i { color: #fff; font-size: 1.2rem; transition: 0.3s; }
 
-        <!-- Admin View (Support Messages) - Giữ nguyên -->
-        <div class="view" id="view-admin" style="display: none;">
-            <div class="container mt-4">
-                <div class="d-flex align-items-center mb-4">
-                    <button class="btn btn-outline-light me-3" onclick="window.location.reload()"><i class="fas fa-arrow-left"></i></button>
-                    <h2 class="text-white mb-0"><i class="fas fa-user-shield me-2"></i>Admin Dashboard</h2>
-                </div>
-                <div class="card-glass">
-                    <h4 class="mb-3">Yêu cầu hỗ trợ</h4>
-                    <div id="admin-support-list">
-                        <div class="text-center py-4">Đang tải tin nhắn...</div>
-                    </div>
-                </div>
+        /* --- SIDEBAR PANEL --- */
+        .sidebar-panel {
+            position: fixed; top: 0; left: 0; width: 320px; height: 100%; background: #18181b;
+            z-index: 1000; transform: translateX(-105%); transition: 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            padding: 100px 40px; border-right: 1px solid var(--stroke-color);
+        }
+        .sidebar-panel.active { transform: translateX(0); }
+        .nav-link {
+            color: var(--text-secondary); font-size: 1.1rem; padding: 18px 0; text-decoration: none;
+            display: flex; align-items: center; gap: 15px; transition: 0.3s; border-bottom: 1px dashed var(--stroke-color);
+        }
+        .nav-link:hover { color: var(--primary-accent); padding-left: 10px; }
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);
+            z-index: 999; opacity: 0; visibility: hidden; transition: 0.4s;
+        }
+        .overlay.active { opacity: 1; visibility: visible; }
+
+        /* --- HERO SECTION --- */
+        .hero-container { min-height: 85vh; display: flex; align-items: center; justify-content: center; padding: 20px; position: relative; }
+        .profile-card {
+            background: var(--surface-color); backdrop-filter: blur(20px);
+            border: 1px solid var(--stroke-color); border-radius: var(--radius-xl);
+            padding: 60px 40px; width: 500px; max-width: 100%; text-align: center;
+            box-shadow: 0 40px 80px -20px rgba(0,0,0,0.5);
+        }
+        .avatar-wrapper {
+            width: 140px; height: 140px; margin: 0 auto 30px; padding: 4px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--secondary-accent), var(--primary-accent));
+        }
+        /* CẬP NHẬT ẢNH AVATAR */
+        .avatar-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; border: 4px solid var(--bg-color); }
+        .name-title { font-size: 2.5rem; font-weight: 800; margin-bottom: 5px; color: #fff; letter-spacing: -1px; }
+        .role-badge {
+            display: inline-block; padding: 8px 16px; background: rgba(180, 249, 242, 0.1); color: var(--primary-accent);
+            border-radius: var(--radius-pill); font-size: 0.85rem; font-weight: 600; margin-bottom: 25px; border: 1px solid rgba(180, 249, 242, 0.2);
+        }
+        .bio-text { color: var(--text-secondary); line-height: 1.7; margin-bottom: 40px; font-weight: 300; }
+        .btn-primary-custom {
+            display: inline-flex; align-items: center; gap: 10px; padding: 16px 32px; border-radius: var(--radius-pill);
+            background: #fff; color: #000; text-decoration: none; font-weight: 700; transition: 0.3s;
+        }
+        .btn-primary-custom:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -10px rgba(255,255,255,0.3); background: var(--primary-accent); }
+
+        /* --- STATS --- */
+        .stats-container { display: flex; justify-content: center; gap: 20px; margin-bottom: 80px; flex-wrap: wrap; margin-top: 50px; }
+        .stat-card {
+            background: #1c1e24; border: 1px solid var(--stroke-color);
+            padding: 20px 40px; border-radius: 24px; text-align: center; min-width: 160px; transition: 0.3s;
+        }
+        .stat-card:hover { border-color: var(--secondary-accent); transform: translateY(-5px); }
+        .stat-num { font-size: 2rem; font-weight: 800; color: #fff; display: block; }
+        .stat-label { font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
+
+        /* --- GALLERY --- */
+        .gallery-section { padding: 50px 0; position: relative; width: 100%; overflow: hidden; }
+        .gallery-header { text-align: center; margin-bottom: 50px; }
+        .section-tag { font-size: 0.8rem; color: var(--primary-accent); text-transform: uppercase; letter-spacing: 2px; font-weight: 700; display: block; margin-bottom: 10px; }
+        .section-title { font-size: 2rem; font-weight: 700; color: #fff; }
+        /* TẠO CLASS CHO FILTER BUTTONS MỚI */
+        .filter-btn {
+            padding: 8px 16px;
+            border-radius: var(--radius-pill);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: 0.3s;
+            cursor: pointer;
+            border: 1px solid rgba(180, 249, 242, 0.2);
+            background: rgba(180, 249, 242, 0.1);
+            color: var(--primary-accent);
+            white-space: nowrap;
+        }
+        .filter-btn.active {
+            background: var(--primary-accent);
+            color: #000;
+            border-color: var(--primary-accent);
+        }
+
+        .track-wrapper { display: flex; width: 100%; mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%); -webkit-mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%); }
+        .track { display: flex; gap: 40px; width: max-content; } /* Xóa animation cuộn mặc định */
+        
+        .gallery-item { 
+            aspect-ratio: 16 / 9; 
+            min-width: 450px; /* Thêm min-width để duy trì kích thước trong track */
+            border-radius: 24px; 
+            position: relative; 
+            overflow: hidden; 
+            cursor: pointer; 
+            transition: 0.5s; 
+            filter: grayscale(100%); 
+            opacity: 0.7; 
+            border: 1px solid var(--stroke-color); 
+        }
+        .gallery-item.hidden { display: none; } /* Thêm class hidden cho filter */
+        .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.6s; }
+        .gallery-item:hover { filter: grayscale(0%); opacity: 1; transform: scale(1.05); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6); border-color: rgba(255,255,255,0.3); z-index: 10; }
+        .gallery-item:hover img { transform: scale(1.1); }
+        
+        /* --- GALLERY OVERLAY (NEW) --- */
+        .project-overlay {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            /* Hiệu ứng gradient mờ dần từ dưới lên để dễ đọc chữ */
+            background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 70%, transparent 100%);
+            padding: 30px;
+            color: white;
+            text-align: left;
+            opacity: 0; /* Mặc định ẩn */
+            transform: translateY(10px); /* Ban đầu hơi dịch xuống */
+            transition: opacity 0.4s, transform 0.4s;
+            z-index: 5;
+        }
+        .gallery-item:hover .project-overlay {
+            opacity: 1; /* Hiện trên hover */
+            transform: translateY(0);
+        }
+        .project-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+            letter-spacing: -0.5px;
+            line-height: 1.2;
+        }
+        .project-tag {
+            font-size: 0.9rem;
+            color: var(--primary-accent);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* --- FOOTER --- */
+        .footer-minimal { border-top: 1px solid var(--stroke-color); padding: 50px 0; text-align: center; background: #0f1115; }
+        .social-icons { display: flex; justify-content: center; gap: 20px; margin-bottom: 25px; }
+        .icon-btn {
+            width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.03); border: 1px solid var(--stroke-color);
+            display: flex; align-items: center; justify-content: center; color: #fff; text-decoration: none; transition: 0.3s; font-size: 1.2rem;
+        }
+        .icon-btn:hover { background: #fff; color: #000; transform: translateY(-5px); }
+        .copyright { color: #52525b; font-size: 0.85rem; }
+
+        @media (max-width: 992px) { .gallery-item { min-width: 300px; } }
+    </style>
+</head>
+<body>
+
+    <!-- Loader -->
+    <div class="loader-wrapper" id="loader"><div class="loader-text">BmassHD.io.vn</div></div>
+
+    <!-- Background (No Stitch Line) -->
+    <div class="ambient-mesh"></div>
+
+    <!-- Smart Sidebar Toggle -->
+    <div class="sidebar-toggle" id="sidebarToggle" onclick="toggleMenu()"><i class="fas fa-bars"></i></div>
+    <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+    <nav class="sidebar-panel" id="sidebar">
+        <h4 class="text-white mb-5" style="font-weight: 800; letter-spacing: -1px;">MENU.</h4>
+        <!-- Thêm onclick="toggleMenu()" vào tất cả các liên kết trong sidebar -->
+        <a href="#" class="nav-link" onclick="toggleMenu()"><i class="fas fa-arrow-right"></i> Home</a>
+        <a href="#projects" class="nav-link" onclick="toggleMenu()"><i class="fas fa-arrow-right"></i> Dự án</a>
+        
+        <!-- Nút Admin Panel (Chỉ hiện khi Admin đăng nhập) -->
+        <a href="#" class="nav-link" id="admin-link" onclick="toggleMenu(); toggleAdminPanel();" style="display:none; color: var(--secondary-accent);"><i class="fas fa-user-shield"></i> Admin Panel</a>
+    </nav>
+
+    <!-- 1. HERO PROFILE -->
+    <section class="hero-container">
+        <div class="profile-card" data-tilt data-tilt-max="5" data-tilt-speed="1000" data-tilt-glare data-tilt-max-glare="0.1" data-aos="fade-up" data-aos-duration="1000">
+            <div class="avatar-wrapper">
+                <!-- CẬP NHẬT ẢNH AVATAR MỚI -->
+                <img src="https://bmass.vercel.app/img/26cbd8427088fad6a399.jpg" alt="Avatar" class="avatar-img">
+            </div>
+            <h1 class="name-title">BmassHD</h1>
+            <div class="role-badge">CRYPTO | WEBSIDE | MMO</div>
+            <div style="min-height: 24px; margin-bottom: 20px; font-weight: 500; color: #fff;"><span id="typing-text"></span></div>
+            <p class="bio-text">Chuyên cung cấp các giải pháp tối ưu về Webside, Crypto và Dịch vụ Mạng Xã Hội (MMO).</p>
+            
+            <!-- Nút Login/Logout (Đã thêm vào Hero) -->
+            <div class="d-flex justify-content-center gap-3 mt-4">
+                <a href="#projects" class="btn-primary-custom">Xem Portfolio <i class="fas fa-arrow-right"></i></a>
+                <button id="auth-status" class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#login-modal">
+                    <i class="fab fa-google"></i> Đăng nhập
+                </button>
             </div>
         </div>
+    </section>
 
-        <!-- Auth View with Flip Card - Giữ nguyên -->
-        <div class="view view-center-content" id="view-auth">
-            <div class="flip-card" id="auth-flip-card">
-                <div class="flip-card-inner">
-                    <!-- Login Form -->
-                    <div class="flip-card-front">
-                        <div class="auth-header">
-                            <h2>Chào mừng trở lại!</h2>
-                            <p class="mb-0">Đăng nhập để tiếp tục hành trình</p>
-                        </div>
-                        <div class="auth-body">
-                            <form id="login-form">
-                                <div class="mb-3"><input type="email" class="form-control" id="login-email" placeholder="Email" required></div>
-                                <div class="mb-3"><input type="password" class="form-control" id="login-password" placeholder="Mật khẩu" required></div>
-                                <div class="d-flex justify-content-end mb-3">
-                                    <button type="button" class="forgot-password-link" id="forgot-password-btn">Quên mật khẩu?</button>
-                                </div>
-                                <div class="d-grid"><button type="submit" class="btn-submit-grad">Đăng nhập</button></div>
-                            </form>
-                            <div class="divider">HOẶC</div>
-                            <div class="d-grid">
-                                <button class="btn btn-light btn-google" id="google-login-btn">
-                                    <img src="https://www.google.com/favicon.ico" alt="Google icon" width="20" height="20" class="me-2"> Đăng nhập với Google
-                                </button>
-                            </div>
-                            
-                            <div class="text-center mt-3">
-                                <span class="text-white-50 small">Bạn muốn xem thử?</span><br>
-                                <button type="button" id="view-demo-btn" class="btn btn-sm btn-outline-info mt-1 rounded-pill px-3">
-                                    <i class="fas fa-eye me-1"></i> Xem Demo (Mẫu)
-                                </button>
-                            </div>
-
-                            <p class="mt-3 text-center text-white-50">
-                                Chưa có tài khoản? <button class="auth-switch-link" id="show-register-btn">Đăng ký ngay</button>
-                            </p>
-                        </div>
-                    </div>
-                    <!-- Register Form -->
-                    <div class="flip-card-back">
-                         <div class="auth-header">
-                            <h2>Tạo tài khoản mới</h2>
-                            <p class="mb-0">Bắt đầu hành trình của bạn cùng chúng tôi</p>
-                        </div>
-                        <div class="auth-body">
-                            <form id="register-form">
-                                <div class="mb-3"><input type="text" class="form-control" id="register-username" placeholder="Username (a-z, 0-9, _)" required pattern="[a-zA-Z0-9_]{3,20}"></div>
-                                <div class="mb-3"><input type="email" class="form-control" id="register-email" placeholder="Email" required></div>
-                                <div class="mb-3"><input type="tel" class="form-control" id="register-phone" placeholder="Số điện thoại (Không bắt buộc)"></div>
-                                <div class="mb-3"><input type="password" class="form-control" id="register-password" placeholder="Mật khẩu (tối thiểu 6 ký tự)" required minlength="6"></div>
-                                <div class="d-grid mt-4"><button type="submit" class="btn-submit-grad">Đăng ký</button></div>
-                            </form>
-                            <p class="mt-4 text-center text-white-50">
-                                Đã có tài khoản? <button class="auth-switch-link" id="show-login-btn">Đăng nhập</button>
-                            </p>
-                        </div>
-                    </div>
-                </div>
+    <!-- 2. STATS -->
+    <div id="stats" class="stats-container" data-aos="fade-up">
+        <div class="stat-card"><span class="stat-num" data-target="5">0</span><span class="stat-label">Years Exp</span></div>
+        <div class="stat-card"><span class="stat-num" data-target="120">0</span><span class="stat-label">Projects</span></div>
+        <div class="stat-card"><span class="stat-num" data-target="98">0</span><span class="stat-label">% Satisfaction</span></div>
+    </div>
+    
+    <!-- ADMIN PANEL (Hidden by default) -->
+    <div class="container" id="admin-panel" style="display:none;" data-aos="fade-up">
+        <div class="admin-section">
+            <h3 class="text-white mb-4" style="font-weight: 700;">ADMIN DASHBOARD</h3>
+            <p id="admin-status" class="text-secondary">Logged in as: N/A</p>
+            <div class="card p-3 mt-3" style="background:var(--surface-color); border: none;">
+                <h5 class="text-primary">Quản Lý Dự Án</h5>
+                <!-- Form/Input để thêm dự án mới -->
+                <form id="add-project-form" class="mt-3">
+                    <input type="number" class="form-control mb-2" id="proj-id" placeholder="ID Dự Án (Số duy nhất)" required>
+                    <input type="text" class="form-control mb-2" id="proj-title" placeholder="Tên Dự Án" required>
+                    <input type="text" class="form-control mb-2" id="proj-tag" placeholder="Tag (Ví dụ: Crypto UI/UX)" required>
+                    <select class="form-select mb-2" id="proj-category" required>
+                        <option value="">Chọn Thể Loại</option>
+                        <option value="crypto">Crypto</option>
+                        <option value="webside">Webside</option>
+                        <option value="mmo">MMO</option>
+                    </select>
+                    <input type="url" class="form-control mb-2" id="proj-image" placeholder="URL Ảnh" required>
+                    <button type="submit" class="btn btn-sm w-100 mt-2 add-project-btn">Thêm Dự Án</button>
+                </form>
             </div>
-            <div id="auth-status" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100"></div>
+            <p class="text-danger mt-3">Lưu ý: Thêm dự án mới cần Admin reload trang để cập nhật Portfolio.</p>
         </div>
+    </div>
+    <!-- END ADMIN PANEL -->
 
-        <!-- Forgot Password View - Giữ nguyên -->
-        <div class="view view-center-content" id="view-forgot-password">
-            <div class="card-glass" style="width: 100%; max-width: 420px;">
-                 <div class="auth-header" style="border-radius: 20px 20px 0 0; margin: -2rem -2rem 0 -2rem;">
-                    <h2>Đặt lại mật khẩu</h2>
-                    <p class="mb-0">Chọn phương thức để nhận liên kết</p>
-                </div>
-                <div class="auth-body">
-                    <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-4">
-                        <button type="button" id="reset-mode-email-btn" class="btn btn-primary">
-                            <i class="fas fa-envelope me-2"></i>Sử dụng Email
-                        </button>
-                        <button type="button" id="reset-mode-phone-btn" class="btn btn-outline-light">
-                             <i class="fas fa-phone me-2"></i>Sử dụng SĐT
-                        </button>
-                    </div>
 
-                    <form id="forgot-password-form">
-                        <div id="reset-email-group">
-                             <label class="form-label text-white-50">Email đã đăng ký</label>
-                            <input type="email" class="form-control" id="reset-email-input" placeholder="Email của bạn">
-                        </div>
-                        <div id="reset-phone-group" style="display: none;">
-                            <label class="form-label text-white-50">Số điện thoại đã đăng ký</label>
-                            <input type="tel" class="form-control" id="reset-phone-input" placeholder="Số điện thoại của bạn">
-                        </div>
-                        <div class="d-grid mt-4">
-                            <button type="submit" class="btn-submit-grad">Gửi liên kết</button>
-                        </div>
-                    </form>
-                    <p class="mt-4 text-center text-white-50">
-                        <button class="auth-switch-link" id="back-to-login-btn">Quay lại Đăng nhập</button>
-                    </p>
-                </div>
+    <!-- 4. PROJECTS GALLERY (CẬP NHẬT FILTER VÀ NỘI DUNG ĐỘNG) -->
+    <section id="projects" class="gallery-section" data-aos="fade-up">
+        <div class="gallery-header">
+            <span class="section-tag">SELECTED WORKS</span>
+            <h2 class="section-title">Dự Án Tiêu Biểu</h2>
+            
+            <!-- Filter Buttons (Tái cấu trúc) -->
+            <div class="d-flex justify-content-center gap-3 mt-4" id="category-filters">
+                <button class="filter-btn active" data-filter="all">TẤT CẢ</button>
+                <button class="filter-btn" data-filter="crypto">CRYPTO</button>
+                <button class="filter-btn" data-filter="webside">WEBSIDE</button>
+                <button class="filter-btn" data-filter="mmo">MMO</button>
             </div>
         </div>
-
-        <!-- Profile View - Giữ nguyên -->
-        <div class="view" id="view-profile">
-            <div class="row justify-content-center">
-                <div class="col-12 col-md-10 col-lg-8" id="profile-page-content"></div>
+        
+        <div class="track-wrapper">
+            <div class="track" id="gallery-track">
+                <!-- NỘI DUNG SẼ ĐƯỢC THAY THẾ BẰNG FIREBASE/JS -->
+                <div id="loading-indicator" class="text-center w-100 py-5" style="color: var(--primary-accent); min-width: 450px;">Đang tải dự án...</div>
+                <!-- VÌ TRANG TRỐNG NỘI DUNG NÊN SẼ CHỈ CÓ INDICATOR NÀY -->
             </div>
         </div>
+    </section>
 
-        <!-- Not Found View - Giữ nguyên -->
-        <div class="view text-center" id="view-not-found">
-            <div class="card-glass p-5">
-                <h2>Không tìm thấy trang</h2>
-                <p>Trang cá nhân bạn đang tìm kiếm không tồn tại.</p>
-                <a href="/" class="btn btn-primary">Về trang chủ</a>
+    <!-- FOOTER -->
+    <footer class="footer-minimal">
+        <div class="container">
+            <div class="social-icons">
+                <a href="#" class="icon-btn" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                <a href="https://hdd.io.vn" class="icon-btn" title="Website"><i class="fas fa-globe"></i></a>
+                <a href="#" class="icon-btn" title="Telegram"><i class="fab fa-telegram-plane"></i></a>
+                <a href="#" class="icon-btn" title="Github"><i class="fab fa-github"></i></a>
+                <a href="mailto:contact@email.com" class="icon-btn" title="Email"><i class="fas fa-envelope"></i></a>
             </div>
+            <p class="copyright">Designed by BmassHD. Inspired by Google Material 3.</p>
         </div>
-    </main>
-
-    <footer class="text-center footer-section">
-        <p class="mb-0">© <span id="footer-year"></span> Bmass Profiles. All Rights Reserved.</p>
     </footer>
 
-    <!-- Edit Modal - Giữ nguyên -->
-    <div class="modal fade" id="editModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header"><h5 class="modal-title">Chỉnh sửa trang cá nhân</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                <div class="modal-body" id="edit-modal-body"></div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="button" id="save-profile-btn" class="btn btn-primary">Lưu thay đổi</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Donate/Wallet Modal (NEW) - Giữ nguyên -->
-    <div class="modal fade" id="donateModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="background: #1a1a2e; color: #fff; border: 1px solid rgba(255,255,255,0.2);">
-                <div class="modal-header border-bottom-0">
-                    <h5 class="modal-title"><i class="fas fa-coins text-warning me-2"></i>Donate</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body" id="donate-modal-body">
-                    <!-- Wallet list will be rendered here -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Support Modal (User) - Giữ nguyên -->
-    <div class="modal fade" id="supportModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <!-- LOGIN MODAL -->
+    <div class="modal fade" id="login-modal" tabindex="-1" aria-labelledby="login-modal-label" aria-hidden="true">
+        <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Hỗ trợ khách hàng</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title" id="login-modal-label">Đăng Nhập Quản Trị</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    <!-- Send Form -->
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Gửi yêu cầu mới</label>
-                        <textarea id="support-message-input" class="form-control mb-2" rows="3" placeholder="Nhập nội dung cần hỗ trợ..."></textarea>
-                        <button type="button" class="btn btn-sm btn-primary w-100" id="send-support-btn">Gửi đi</button>
-                    </div>
-                    <hr>
-                    <!-- History List -->
-                    <label class="form-label small fw-bold text-muted">Lịch sử hỗ trợ</label>
-                    <div id="user-support-history" style="max-height: 300px; overflow-y: auto;">
-                        <p class="text-center small text-muted">Đang tải...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Project Detail Modal - Giữ nguyên -->
-    <div class="modal fade" id="projectDetailModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <button type="button" id="project-detail-share-btn" title="Chia sẻ dự án" data-project-name="" data-project-id="">
-                        <i class="fas fa-share-alt"></i>
+                <div class="modal-body text-center">
+                    <p class="text-secondary">Vui lòng sử dụng tài khoản Google được ủy quyền.</p>
+                    <button id="google-login-btn" class="btn w-75 mt-3 d-flex align-items-center justify-content-center mx-auto" style="background: #4285F4; color: #fff; gap: 10px;">
+                        <i class="fab fa-google"></i> Đăng nhập bằng Google
                     </button>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <p class="text-danger small mt-3" id="login-error-message" style="display:none;"></p>
                 </div>
-                <div class="modal-body">
-                    <div class="project-detail-header">
-                        <img src="" id="project-detail-icon" alt="Project Icon">
-                        <div>
-                            <h3 id="project-detail-name">Project Name</h3>
-                            <span id="project-detail-category">Category</span>
-                        </div>
-                    </div>
-                    
-                    <div class="d-grid mb-3">
-                         <button id="project-detail-link-btn" data-link="" data-project-index="" data-username="">
-                            <i class="fas fa-external-link-alt me-2"></i>Mở ngay
-                        </button>
-                    </div>
-
-                    <p id="project-detail-description">Project description goes here...</p>
-
-                    <div id="project-detail-ref-section" class="copy-ref-container mb-3" style="display: none;">
-                        <div class="input-group mb-2" id="ref-link-group">
-                            <span class="input-group-text"><i class="fas fa-link"></i></span>
-                            <input type="text" class="form-control" id="project-detail-ref-link" readonly>
-                            <button class="btn btn-outline-primary" type="button" onclick="handleCopyRef('link', this)">
-                                <i class="fas fa-copy"></i>
-                            </button>
-                        </div>
-                        <div class="input-group" id="ref-code-group">
-                            <span class="input-group-text"><i class="fas fa-tag"></i></span>
-                            <input type="text" class="form-control" id="project-detail-ref-code" readonly>
-                            <button class="btn btn-outline-primary" type="button" onclick="handleCopyRef('code', this)">
-                                <i class="fas fa-copy"></i>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div id="project-detail-long-description-container" style="display: none;">
-                         <hr>
-                         <h6 class="mb-2">Chi tiết</h6>
-                         <div id="project-detail-long-description"></div>
-                    </div>
-
-                    <div id="project-detail-stats" class="mt-4">
-                        <div class="stat-item">
-                            <h6 id="project-detail-clicks">0</h6>
-                            <p>Lượt xem</p>
-                        </div>
-                    </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- QR Code Modal - Giữ nguyên -->
-    <div class="modal fade" id="qrModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content text-center p-4">
-                <h5 class="mb-3">Mã QR của bạn</h5>
-                <div id="qrcode" class="d-flex justify-content-center mb-3"></div>
-                <p class="small text-muted">Quét để truy cập hồ sơ</p>
-            </div>
-        </div>
-    </div>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 
-    <!-- Analytics Modal - Giữ nguyên -->
-    <div class="modal fade" id="analyticsModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="fas fa-chart-bar me-2"></i>Thống kê lượt xem</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <!-- SCRIPTS & APPLICATION LOGIC -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/typed.js@2.0.16/dist/typed.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        // ------------------------------------
+        // 1. FIREBASE CONFIGURATION & INIT
+        // ------------------------------------
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
+            authDomain: "profile-d1214.firebaseapp.com",
+            projectId: "profile-d1214",
+            storageBucket: "profile-d1214.firebasestorage.app",
+            messagingSenderId: "914980131889",
+            appId: "1:914980131889:web:72f8da15c42dbee671b110",
+            measurementId: "G-C587M69LZW"
+        };
+
+        const ADMIN_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1"; // UID của Admin
+        
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = app.firestore();
+        const auth = app.auth();
+        let isAdmin = false;
+
+        // ------------------------------------
+        // 2. CORE PROJECT DATA & RENDERING
+        // ------------------------------------
+
+        // Hàm tạo HTML cho 1 dự án
+        function createProjectHtml(project) {
+            return `
+                <div class="gallery-item project-item" data-category="${project.category}">
+                    <img src="${project.imageUrl}" alt="${project.title}">
+                    <div class="project-overlay">
+                        <h3 class="project-title">${project.title}</h3>
+                        <span class="project-tag">${project.tag}</span>
+                    </div>
                 </div>
-                <div class="modal-body">
-                    <canvas id="clicksChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
-
-<script>
-// Expose handleCopyRef globally
-function handleCopyRef(type, btnElement) {
-    const inputId = type === 'link' ? 'project-detail-ref-link' : 'project-detail-ref-code';
-    const inputElement = document.getElementById(inputId);
-    const originalHTML = btnElement.innerHTML;
-
-    if (inputElement && inputElement.value) {
-        navigator.clipboard.writeText(inputElement.value).then(() => {
-            btnElement.innerHTML = `<span style="font-size: 0.8rem; font-weight: bold;">Đã Copy</span>`;
-            btnElement.classList.replace('btn-outline-primary', 'btn-success');
-            setTimeout(() => {
-                btnElement.innerHTML = originalHTML;
-                btnElement.classList.replace('btn-success', 'btn-outline-primary');
-            }, 2000);
-        }).catch(err => { console.error('Failed to copy: ', err); });
-    }
-}
-
-// Global helper for clipboard
-window.copyToClipboard = function(text, btn) {
-    navigator.clipboard.writeText(text).then(() => {
-        const original = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-check text-success"></i>';
-        setTimeout(() => { btn.innerHTML = original; }, 2000);
-    });
-}
-
-// Global functions for Edit Modal interactions
-function handleEditSearch(input) {
-    const term = input.value.toLowerCase();
-    document.querySelectorAll('#edit-projects-accordion .accordion-item').forEach(item => {
-        const name = item.querySelector('.project-name').value.toLowerCase();
-        const isActiveTab = item.closest('.edit-category-group').style.display !== 'none';
-        if (isActiveTab) {
-            item.style.display = name.includes(term) ? 'block' : 'none';
+            `;
         }
-    });
-}
 
-function handleEditTabClick(categoryKey) {
-    document.querySelectorAll('.edit-cat-pill').forEach(pill => {
-        pill.classList.toggle('active', pill.dataset.cat === categoryKey);
-    });
-    document.querySelectorAll('.edit-category-group').forEach(group => {
-        if (categoryKey === 'all') {
-            group.style.display = 'block';
-        } else {
-            group.style.display = group.dataset.cat === categoryKey ? 'block' : 'none';
-        }
-    });
-    const searchInput = document.getElementById('edit-project-search');
-    if(searchInput) handleEditSearch(searchInput);
-}
-
-// Notification Permissions
-function requestNotificationPermission() {
-    if (!("Notification" in window)) {
-        alert("Trình duyệt này không hỗ trợ thông báo.");
-        return;
-    }
-    Notification.requestPermission().then(permission => {
-        if (permission === "granted") {
-            showToast("Đã bật thông báo!", "success");
-            const btn = document.getElementById('enable-notif-btn');
-            if(btn) btn.style.display = 'none';
-        }
-    });
-}
-
-function sendBrowserNotification(title, body) {
-    if (Notification.permission === "granted") {
-        new Notification(title, {
-            body: body,
-            icon: "https://bmass.vercel.app/img/bmasslogo.png"
-        });
-    }
-}
-
-// Admin Reply Handler
-async function handleAdminReply(docId) {
-    const replyInput = document.getElementById(`reply-input-${docId}`);
-    const btn = document.getElementById(`reply-btn-${docId}`);
-    const replyText = replyInput.value.trim();
-
-    if (!replyText) return;
-
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-
-    try {
-        await firebase.firestore().collection('support_messages').doc(docId).update({
-            reply: replyText,
-            replyTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
-            status: 'replied'
-        });
-        
-        const card = document.getElementById(`msg-card-${docId}`);
-        card.querySelector('.reply-section').innerHTML = `
-            <div class="alert alert-success mt-2 mb-0">
-                <strong><i class="fas fa-check-circle me-1"></i>Đã phản hồi:</strong> ${replyText}
-            </div>`;
-    } catch (error) {
-        console.error("Reply error:", error);
-        alert("Lỗi khi gửi phản hồi.");
-        btn.disabled = false;
-        btn.innerHTML = 'Gửi trả lời';
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-
-    const ADMIN_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1"; 
-    const ADMIN_USERNAME = "bmassk3";
-    
-    // --- NEW: Base URL for pre-uploaded images (e.g., from GitHub) ---
-    const IMAGE_BASE_URL = 'https://bmass.vercel.app/img/';
-    // -----------------------------------------------------------------
-
-    particlesJS("particles-js", {
-        "particles": { "number": { "value": 80, "density": { "enable": true, "value_area": 800 } }, "color": { "value": "#ffffff" }, "shape": { "type": "circle", }, "opacity": { "value": 0.5, "random": false, }, "size": { "value": 3, "random": true, }, "line_linked": { "enable": true, "distance": 150, "color": "#ffffff", "opacity": 0.4, "width": 1 }, "move": { "enable": true, "speed": 6, "direction": "none", "out_mode": "out", } },
-        "interactivity": { "detect_on": "canvas", "events": { "onhover": { "enable": true, "mode": "repulse" }, "onclick": { "enable": true, "mode": "push" }, "resize": true }, "modes": { "repulse": { "distance": 200, "duration": 0.4 }, "push": { "particles_nb": 4 }, } },
-        "retina_detect": true
-    });
-
-    const firebaseConfig = {
-        apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
-        authDomain: "profile-d1214.firebaseapp.com",
-        projectId: "profile-d1214",
-        storageBucket: "profile-d1214.firebasestorage.app",
-        messagingSenderId: "914980131889",
-        appId: "1:914980131889:web:72f8da15c42dbee671b110",
-        measurementId: "G-C587M69LZW"
-    };
-
-    let auth, db, storage;
-    let currentUser = null;
-    let passwordResetMode = 'email'; 
-
-    const views = { 
-        loading: document.getElementById('view-loading'), 
-        auth: document.getElementById('view-auth'), 
-        profile: document.getElementById('view-profile'), 
-        notFound: document.getElementById('view-not-found'),
-        forgotPassword: document.getElementById('view-forgot-password'),
-        admin: document.getElementById('view-admin')
-    };
-    const headerControls = document.getElementById('header-controls');
-    const profilePageContent = document.getElementById('profile-page-content');
-    const editModal = new bootstrap.Modal(document.getElementById('editModal'));
-    const projectDetailModal = new bootstrap.Modal(document.getElementById('projectDetailModal'));
-    const qrModal = new bootstrap.Modal(document.getElementById('qrModal'));
-    const analyticsModal = new bootstrap.Modal(document.getElementById('analyticsModal'));
-    const supportModal = new bootstrap.Modal(document.getElementById('supportModal'));
-    const donateModal = new bootstrap.Modal(document.getElementById('donateModal'));
-    const importJsonInput = document.getElementById('import-json-input'); 
-
-    const socialIcons = { 
-        github: 'fa-brands fa-github', x: 'fa-brands fa-xing', ig: 'fa-brands fa-instagram', 
-        tele: 'fa-brands fa-telegram', tiktok: 'fa-brands fa-tiktok', youtube: 'fa-brands fa-youtube',
-        discord: 'fa-brands fa-discord', zalo: 'fa-solid fa-comment-dots', gmail: 'fa-solid fa-envelope',
-        channel: 'fa-solid fa-satellite-dish', website: 'fa-solid fa-globe' 
-    };
-
-    const defaultCategories = {}; // Đã loại bỏ "Dự án chính"
-
-    const randomProjectImages = [
-        'https://images.unsplash.com/photo-1519389950473-47ba0277781c?&auto=format&fit=crop&w=128&q=80',
-        'https://images.unsplash.com/photo-1556761175-b413da4b248d?&auto=format&fit=crop&w=128&q=80',
-        'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?&auto=format&fit=crop&w=128&q=80',
-        'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?&auto=format&fit=crop&w=128&q=80',
-        'https://images.unsplash.com/photo-1552664730-d307ca884978?&auto=format&fit=crop&w=128&q=80',
-        'https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?&auto=format&fit=crop&w=128&q=80',
-        'https://images.unsplash.com/photo-1551434678-e076c223a692?&auto=format&fit=crop&w=128&q=80',
-        'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?&auto=format&fit=crop&w=128&q=80'
-    ];
-
-    let chartInstance = null;
-
-    function getRandomProjectImage() {
-        const randomIndex = Math.floor(Math.random() * randomProjectImages.length);
-        return randomProjectImages[randomIndex];
-    }
-    
-    const sidebar = document.getElementById('sidebar');
-    const sidebarLinks = document.getElementById('sidebar-links');
-    const overlay = document.getElementById('overlay');
-
-    const authFlipCard = document.getElementById('auth-flip-card');
-    const showRegisterBtn = document.getElementById('show-register-btn');
-    const showLoginBtn = document.getElementById('show-login-btn');
-    const statusEl = document.getElementById('auth-status');
-    const verificationBanner = document.getElementById('email-verification-banner');
-
-    function initializeFirebase() {
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        auth = firebase.auth();
-        db = firebase.firestore();
-        storage = firebase.storage();
-    }
-
-    function switchView(viewName) {
-        Object.values(views).forEach(view => view.style.display = 'none');
-        if (views[viewName]) {
-            views[viewName].style.display = (views[viewName].classList.contains('view-center-content')) ? 'flex' : 'block';
-        }
-    }
-
-    function showToast(message, type = 'danger') {
-        const toastId = 'toast-' + Date.now();
-        const toastHTML = `<div id="${toastId}" class="toast align-items-center text-white bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true"><div class="d-flex"><div class="toast-body">${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div></div>`;
-        statusEl.insertAdjacentHTML('beforeend', toastHTML);
-        const toast = new bootstrap.Toast(document.getElementById(toastId));
-        toast.show();
-    }
-
-    function applyTheme(themeData) {
-        const root = document.documentElement;
-        let bg = 'linear-gradient(45deg, #000000 0%, #1a0a24 100%)'; 
-        let accent = '#915EFF';
-        
-        if (themeData) {
-            if (themeData.accentColor) {
-                accent = themeData.accentColor;
-                root.style.setProperty('--accent-primary', accent);
-                root.style.setProperty('--accent-secondary', accent); 
-            }
+        // Tải và hiển thị dự án
+        async function loadProjects() {
+            const trackElement = document.getElementById('gallery-track');
+            const loadingIndicator = document.getElementById('loading-indicator');
             
-            if (themeData.bgType === 'image' && themeData.bgValue) {
-                bg = `url('${themeData.bgValue}') center/cover no-repeat fixed`;
-                document.getElementById('particles-js').style.opacity = '0.2'; 
-            } else if (themeData.bgType === 'gradient' && themeData.bgValue) {
-                bg = themeData.bgValue;
-                document.getElementById('particles-js').style.opacity = '1';
-            }
-        }
-        
-        document.body.style.background = bg;
-    }
+            // Hiện loading
+            trackElement.innerHTML = ''; 
+            trackElement.appendChild(loadingIndicator); 
+            loadingIndicator.style.display = 'block';
 
-    function showQRCode() {
-        closeSidebar();
-        const container = document.getElementById('qrcode');
-        container.innerHTML = ''; 
-        const url = `${window.location.origin}${window.location.pathname}?user=${currentUser.username}`;
-        
-        new QRCode(container, {
-            text: url,
-            width: 200,
-            height: 200,
-            colorDark : "#000000",
-            colorLight : "#ffffff",
-            correctLevel : QRCode.CorrectLevel.H
-        });
-        qrModal.show();
-    }
-    
-    // NEW: Show Donate Modal
-    window.showDonateModal = async function(username) {
-        const docSnap = await db.collection('profiles').doc(username).get();
-        if (!docSnap.exists) return;
-        
-        const data = docSnap.data();
-        const wallets = data.wallets || {};
-        const modalBody = document.getElementById('donate-modal-body');
-        let html = '';
-
-        const walletNames = { evm: 'EVM (ETH/BSC/Base)', sol: 'Solana', ton: 'TON (Telegram)', trc20: 'USDT (TRC20)', btc: 'Bitcoin' };
-        const walletIcons = { evm: 'fa-brands fa-ethereum', sol: 'fa-solid fa-sun', ton: 'fa-brands fa-telegram', trc20: 'fa-solid fa-t', btc: 'fa-brands fa-bitcoin' };
-
-        for (const [key, addr] of Object.entries(wallets)) {
-            if (addr && addr.trim() !== '') {
-                html += `
-                    <div class="wallet-card">
-                        <div class="wallet-icon"><i class="${walletIcons[key] || 'fas fa-wallet'}"></i></div>
-                        <div class="wallet-info">
-                            <p class="wallet-name">${walletNames[key] || key}</p>
-                            <p class="wallet-address" id="wallet-val-${key}">${addr}</p>
-                        </div>
-                        <button class="btn-copy-wallet" onclick="copyToClipboard('${addr}', this)">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                    </div>
-                `;
-            }
-        }
-        
-        if (html === '') html = '<p class="text-center text-muted">Chưa cập nhật địa chỉ ví.</p>';
-        
-        modalBody.innerHTML = html;
-        donateModal.show();
-    }
-
-    async function showAnalytics() {
-        closeSidebar();
-        const docSnap = await db.collection('profiles').doc(currentUser.username).get();
-        if (!docSnap.exists) return;
-        
-        const data = docSnap.data();
-        const projects = data.projects || [];
-        
-        const activeProjects = projects.filter(p => p.clicks > 0).sort((a,b) => b.clicks - a.clicks);
-        
-        const ctx = document.getElementById('clicksChart').getContext('2d');
-        
-        if (chartInstance) chartInstance.destroy();
-
-        if (activeProjects.length === 0) {
-             showToast("Chưa có dữ liệu thống kê (chưa có lượt click nào).", "warning");
-             return;
-        }
-
-        chartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: activeProjects.map(p => p.name.length > 15 ? p.name.substring(0, 15) + '...' : p.name),
-                datasets: [{
-                    label: 'Lượt Click',
-                    data: activeProjects.map(p => p.clicks),
-                    backgroundColor: 'rgba(145, 94, 255, 0.6)',
-                    borderColor: 'rgba(145, 94, 255, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
-                }
-            }
-        });
-        
-        analyticsModal.show();
-    }
-
-    // --- SUPPORT LOGIC ---
-    function showSupportModal() {
-        closeSidebar();
-        document.getElementById('support-message-input').value = '';
-        supportModal.show();
-        loadUserSupportHistory();
-    }
-
-    async function loadUserSupportHistory() {
-        const historyContainer = document.getElementById('user-support-history');
-        historyContainer.innerHTML = '<p class="text-center small text-muted">Đang tải...</p>';
-
-        try {
-            const snapshot = await db.collection('support_messages')
-                .where('senderUid', '==', currentUser.uid)
-                .get(); 
-
-            if (snapshot.empty) {
-                historyContainer.innerHTML = '<p class="text-center small text-muted">Chưa có tin nhắn nào.</p>';
-                return;
-            }
-
-            const messages = [];
-            snapshot.forEach(doc => messages.push(doc.data()));
-            // Sort ASC (Oldest top, Newest bottom)
-            messages.sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
-
-            let html = '';
-            messages.forEach(msg => {
-                const time = msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleString('vi-VN') : '';
-                
-                // User Message
-                html += `
-                    <div class="chat-bubble user">
-                        <span class="meta">Bạn - ${time}</span>
-                        ${msg.message}
-                    </div>
-                `;
-
-                // Admin Reply (if any)
-                if (msg.reply) {
-                    const replyTime = msg.replyTimestamp ? new Date(msg.replyTimestamp.seconds * 1000).toLocaleString('vi-VN') : '';
-                    html += `
-                        <div class="chat-bubble admin">
-                            <span class="meta fw-bold text-primary">Admin - ${replyTime}</span>
-                            ${msg.reply}
-                        </div>
-                    `;
-                }
-            });
-            historyContainer.innerHTML = html;
-            // Scroll to bottom
-            setTimeout(() => {
-                historyContainer.scrollTop = historyContainer.scrollHeight;
-            }, 100);
-
-        } catch (error) {
-            console.error("Load history error:", error);
-            historyContainer.innerHTML = '<p class="text-center text-danger small">Lỗi tải lịch sử.</p>';
-        }
-    }
-
-    async function handleSendSupport() {
-        const message = document.getElementById('support-message-input').value.trim();
-        const btn = document.getElementById('send-support-btn');
-        if (!message) return;
-
-        btn.disabled = true;
-        btn.textContent = 'Đang gửi...';
-
-        try {
-            await db.collection('support_messages').add({
-                senderUid: currentUser.uid,
-                senderUsername: currentUser.username,
-                senderEmail: currentUser.email || 'N/A', 
-                message: message,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                status: 'unread'
-            });
-            showToast("Đã gửi yêu cầu hỗ trợ thành công!", "success");
-            document.getElementById('support-message-input').value = '';
-            loadUserSupportHistory(); // Reload history
-        } catch (error) {
-            console.error(error);
-            showToast("Gửi thất bại. Vui lòng thử lại.");
-        } finally {
-            btn.disabled = false;
-            btn.textContent = 'Gửi đi';
-        }
-    }
-
-    async function showAdminDashboard() {
-        closeSidebar();
-        switchView('admin');
-        const listContainer = document.getElementById('admin-support-list');
-        listContainer.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-white"></div></div>';
-
-        try {
-            const snapshot = await db.collection('support_messages').orderBy('timestamp', 'desc').get();
-            if (snapshot.empty) {
-                listContainer.innerHTML = '<p class="text-white-50 text-center">Chưa có tin nhắn hỗ trợ nào.</p>';
-                return;
-            }
-
-            let html = '';
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                const docId = doc.id;
-                const date = data.timestamp ? data.timestamp.toDate().toLocaleString('vi-VN') : 'Vừa xong';
-                const isReplied = data.status === 'replied';
-                
-                // Reply Section Logic
-                let replySectionHTML = '';
-                if (isReplied) {
-                    replySectionHTML = `
-                        <div class="reply-section">
-                            <div class="alert alert-success mt-2 mb-0 p-2 small">
-                                <strong><i class="fas fa-check-circle me-1"></i>Đã phản hồi:</strong> ${data.reply}
-                            </div>
-                        </div>`;
-                } else {
-                    replySectionHTML = `
-                        <div class="reply-section mt-2">
-                            <div class="input-group">
-                                <input type="text" class="form-control form-control-sm" id="reply-input-${docId}" placeholder="Nhập câu trả lời...">
-                                <button class="btn btn-sm btn-primary" id="reply-btn-${docId}" onclick="handleAdminReply('${docId}')">Gửi trả lời</button>
-                            </div>
-                        </div>`;
-                }
-
-                html += `
-                    <div class="support-msg-card" id="msg-card-${docId}">
-                        <div class="support-msg-header">
-                            <span class="text-warning fw-bold">
-                                <i class="fas fa-user-circle me-1"></i>
-                                ${data.senderEmail || data.senderUsername}
-                            </span>
-                            <span>${date}</span>
-                        </div>
-                        <div class="support-msg-body">
-                            ${data.message}
-                        </div>
-                        ${replySectionHTML}
-                    </div>
-                `;
-            });
-            listContainer.innerHTML = html;
-
-        } catch (error) {
-            console.error(error);
-            listContainer.innerHTML = '<p class="text-danger text-center">Lỗi tải dữ liệu.</p>';
-        }
-    }
-
-    // --- FIX: Expose Category Functions Globally ---
-    window.handleRenameCategory = async function(oldKey) {
-        const docSnap = await db.collection('profiles').doc(currentUser.username).get();
-        const data = docSnap.data();
-        const customCategories = data.customCategories || {};
-        const oldName = customCategories[oldKey] || oldKey;
-
-        const newName = prompt(`Nhập tên mới cho danh mục "${oldName}":`, oldName);
-        
-        if (!newName || newName.trim() === '' || newName.trim() === oldName) return;
-
-        const newKey = generateCategoryKey(newName);
-        
-        if (newKey !== oldKey && (defaultCategories.hasOwnProperty(newKey) || customCategories.hasOwnProperty(newKey))) {
-            showToast("Tên danh mục này đã tồn tại.", "warning");
-            return;
-        }
-
-        try {
-            const projects = data.projects || [];
-            const updatedProjects = projects.map(p => {
-                if (p.category === oldKey) {
-                    return { ...p, category: newKey };
-                }
-                return p;
-            });
-
-            delete customCategories[oldKey];
-            customCategories[newKey] = newName.trim();
-
-            await db.collection('profiles').doc(currentUser.username).update({
-                customCategories: customCategories,
-                projects: updatedProjects
-            });
-
-            showToast("Đổi tên thành công!", "success");
-            await openEditModal();
-
-        } catch (error) {
-            console.error(error);
-            showToast("Lỗi khi đổi tên danh mục.", "danger");
-        }
-    }
-
-    window.handleDeleteCategory = async function(keyToDelete) {
-        if (!confirm("Bạn chắc chắn muốn xóa danh mục này? Các dự án bên trong sẽ được chuyển về danh mục mặc định.")) return;
-
-        try {
-            const docRef = db.collection('profiles').doc(currentUser.username);
-            const docSnap = await docRef.get();
-            const data = docSnap.data();
+            let projectsToRender = [];
             
-            const customCategories = data.customCategories || {};
-            const projects = data.projects || [];
-
-            delete customCategories[keyToDelete];
-
-            const updatedProjects = projects.map(p => {
-                if (p.category === keyToDelete) {
-                    return { ...p, category: 'project' };
-                }
-                return p;
-            });
-
-            await docRef.update({
-                customCategories: customCategories,
-                projects: updatedProjects
-            });
-
-            showToast("Đã xóa danh mục.", "success");
-            await openEditModal();
-
-        } catch (error) {
-            console.error(error);
-            showToast("Lỗi khi xóa danh mục.", "danger");
-        }
-    }
-
-    // --- SETUP REALTIME NOTIFICATION LISTENERS ---
-    function setupNotificationListeners() {
-        if (!currentUser) return; 
-
-        // 1. Listen for Admin Replies
-        db.collection('support_messages')
-            .where('senderUid', '==', currentUser.uid)
-            .where('status', '==', 'replied')
-            .onSnapshot(snapshot => {
-                snapshot.docChanges().forEach(change => {
-                    if (change.type === 'modified') {
-                        sendBrowserNotification("Phản hồi mới", "Admin đã trả lời tin nhắn của bạn.");
-                    }
-                });
-            });
-
-        // 2. Listen for New Projects from Admin
-        if (currentUser.username !== ADMIN_USERNAME) {
-            let initialLoad = true;
-            let lastProjectCount = 0;
-
-            db.collection('profiles').doc(ADMIN_USERNAME).onSnapshot(doc => {
-                if (!doc.exists) return;
-                const projects = doc.data().projects || [];
-                
-                if (!initialLoad && projects.length > lastProjectCount) {
-                    sendBrowserNotification("Dự án mới!", "Admin vừa cập nhật một dự án mới.");
-                }
-                
-                lastProjectCount = projects.length;
-                initialLoad = false;
-            });
-        }
-    }
-
-    function setupSidebar() {
-        headerControls.innerHTML = `<button class="sidebar-toggle" id="sidebar-toggle-btn"><i class="fas fa-bars"></i></button>`;
-        document.getElementById('sidebar-toggle-btn').addEventListener('click', toggleSidebar);
-
-        if (currentUser) {
-            let adminLink = '';
-            if (currentUser.uid === ADMIN_UID) { 
-                adminLink = `<a class="sidebar-link" href="#" id="admin-dashboard-btn" style="color: #ff9800;"><i class="fas fa-user-shield"></i> Admin Panel</a>`;
-            }
-
-            // Notification Button Logic
-            let notifBtnHTML = '';
-            if ("Notification" in window && Notification.permission !== "granted") { 
-                notifBtnHTML = `<a class="sidebar-link" href="#" id="enable-notif-btn" style="color: #0dcaf0;"><i class="fas fa-bell"></i> Bật thông báo</a>`;
-            }
-
-            // Setting Link Logic
-            let settingsLink = `<a class="sidebar-link" href="#" id="change-password-btn"><i class="fas fa-key"></i> Đổi mật khẩu</a>`;
-
-            sidebarLinks.innerHTML = `
-                <a class="sidebar-link" href="?user=${currentUser.username}"><i class="fas fa-user-circle"></i> Trang của tôi</a>
-                <a class="sidebar-link" href="#" id="analytics-btn"><i class="fas fa-chart-line"></i> Thống kê</a>
-                <a class="sidebar-link" href="#" id="qr-code-btn"><i class="fas fa-qrcode"></i> Mã QR</a>
-                ${notifBtnHTML}
-                ${adminLink}
-                <a class="sidebar-link" href="#" id="support-btn"><i class="fas fa-headset"></i> Hỗ trợ</a>
-                <a class="sidebar-link" href="#" id="copy-profile-link-btn"><i class="fas fa-copy"></i> Sao chép Link</a>
-                ${settingsLink}
-                <hr>
-                <a class="sidebar-link" href="#" id="export-json-btn"><i class="fas fa-file-export"></i> Xuất JSON</a>
-                <a class="sidebar-link" href="#" id="import-json-btn"><i class="fas fa-file-import"></i> Nhập JSON</a>
-                <hr>
-                <a class="sidebar-link logout" href="#" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>`;
-            
-            // Event Listeners
-            document.getElementById('logout-btn').addEventListener('click', handleLogout);
-
-            document.getElementById('copy-profile-link-btn').addEventListener('click', handleCopyLink);
-            document.getElementById('change-password-btn').addEventListener('click', openChangePasswordModal);
-            
-            document.getElementById('export-json-btn').addEventListener('click', handleExportJson);
-            document.getElementById('import-json-btn').addEventListener('click', () => importJsonInput.click()); 
-            document.getElementById('qr-code-btn').addEventListener('click', showQRCode);
-            document.getElementById('analytics-btn').addEventListener('click', showAnalytics);
-            document.getElementById('support-btn').addEventListener('click', showSupportModal);
-            
-            if (document.getElementById('enable-notif-btn')) {
-                document.getElementById('enable-notif-btn').addEventListener('click', requestNotificationPermission);
-            }
-            
-            if(document.getElementById('admin-dashboard-btn')) {
-                document.getElementById('admin-dashboard-btn').addEventListener('click', showAdminDashboard);
-            }
-
-        } else {
-            // Unauthenticated sidebar
-            sidebarLinks.innerHTML = `
-                <a class="sidebar-link" href="#" id="sidebar-login-btn"><i class="fas fa-sign-in-alt"></i> Đăng nhập</a>
-                <a class="sidebar-link" href="#" id="sidebar-register-btn"><i class="fas fa-user-plus"></i> Đăng ký</a>`;
-            document.getElementById('sidebar-login-btn').addEventListener('click', (e) => { e.preventDefault(); closeSidebar(); history.pushState(null, '', '/'); switchView('auth'); authFlipCard.classList.remove('is-flipped'); });
-            document.getElementById('sidebar-register-btn').addEventListener('click', (e) => { e.preventDefault(); closeSidebar(); history.pushState(null, '', '/'); switchView('auth'); authFlipCard.classList.add('is-flipped'); });
-        }
-        overlay.addEventListener('click', closeSidebar);
-        document.getElementById('send-support-btn').addEventListener('click', handleSendSupport);
-    }
-    
-    function handleCopyLink(e) { e.preventDefault(); const profileUrl = `${window.location.origin}${window.location.pathname}?user=${currentUser.username}`; navigator.clipboard.writeText(profileUrl).then(() => { showToast("Link đã được sao chép!", "success"); closeSidebar(); }); }
-    function toggleSidebar() { sidebar.classList.toggle('open'); overlay.classList.toggle('show'); }
-    function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('show'); }
-    
-    async function handleExportJson(e) { e.preventDefault(); if (!currentUser) return; try { const docSnap = await db.collection('profiles').doc(currentUser.username).get(); if (!docSnap.exists) { showToast("Không tìm thấy dữ liệu hồ sơ."); return; } const data = docSnap.data(); const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2)); const downloadAnchorNode = document.createElement('a'); downloadAnchorNode.setAttribute("href", dataStr); downloadAnchorNode.setAttribute("download", `bmass_profile_${currentUser.username}.json`); document.body.appendChild(downloadAnchorNode); downloadAnchorNode.click(); downloadAnchorNode.remove(); showToast("Đã xuất dữ liệu thành công!", "success"); closeSidebar(); } catch (error) { console.error("Lỗi khi xuất JSON:", error); showToast("Đã có lỗi xảy ra khi xuất dữ liệu."); } }
-    async function handleImportJson(e) { const file = e.target.files[0]; if (!file) return; if (!confirm("Bạn có chắc chắn muốn nhập dữ liệu từ tệp này không? Mọi dữ liệu hồ sơ hiện tại (ngoại trừ username, email) sẽ bị ghi đè.")) return; const reader = new FileReader(); reader.onload = async (event) => { try { const importedData = JSON.parse(event.target.result); if (typeof importedData !== 'object' || importedData === null || !importedData.name) throw new Error("Tệp JSON không hợp lệ."); delete importedData.ownerUid; delete importedData.username; delete importedData.email; await db.collection('profiles').doc(currentUser.username).update(importedData); showToast("Nhập dữ liệu thành công! Trang sẽ được làm mới.", "success"); setTimeout(() => location.reload(), 1500); } catch (error) { console.error("Lỗi khi nhập JSON:", error); showToast("Lỗi: " + error.message); } finally { e.target.value = null; } }; reader.readAsText(file); closeSidebar(); }
-
-    async function handleRouteChange() {
-        const params = new URLSearchParams(window.location.search);
-        const username = params.get('user');
-        const projectIdToShow = params.get('project');
-
-        if (username) {
-            const profileData = await fetchAndRenderProfile(username);
-            if (projectIdToShow && profileData) {
-                await showProjectModalById(profileData, projectIdToShow, username);
-            }
-
-        } else {
-            if (currentUser) {
-                if (currentUser.uid === ADMIN_UID || currentUser.username === ADMIN_USERNAME) {
-                     history.pushState(null, '', `?user=${ADMIN_USERNAME}`);
-                     await fetchAndRenderProfile(ADMIN_USERNAME);
-                } else {
-                    history.pushState(null, '', `?user=${currentUser.username}`);
-                    await fetchAndRenderProfile(currentUser.username);
-                }
-            } else { 
-                switchView('auth');
-            }
-        }
-    }
-
-    function getCategoryDisplayName(key, customCategories = {}) {
-        if (key === 'leaderboard') return 'BXH';
-        if (customCategories[key]) return customCategories[key];
-        if (defaultCategories[key]) return defaultCategories[key];
-        return key.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    }
-
-    function generateCategoryKey(name) { return name.trim().toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-'); }
-    
-    function normalizeUrl(url) {
-        if (!url || url.trim() === '') return '';
-        let trimmedUrl = url.trim();
-        if (!/^(https?:\/\/)/i.test(trimmedUrl)) {
-            trimmedUrl = 'https://' + trimmedUrl;
-        }
-        return trimmedUrl;
-    }
-    
-    function linkify(text) {
-        if (!text) return '';
-        const urlRegex = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])|(\bwww\.[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
-        
-        let processedText = text.replace(urlRegex, function(url) {
-            let href = url;
-            if (!href.startsWith('http')) {
-                href = 'https://' + href;
-            }
-            return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="embedded-link">${url}</a>`;
-        });
-        
-        return processedText.replace(/\n/g, '<br>');
-    }
-
-    async function fetchAndRenderProfile(username) {
-        switchView('loading');
-        try {
-            const docSnap = await db.collection('profiles').doc(username).get();
-            if (!docSnap.exists) {
-                switchView('notFound');
-                return null;
-            }
-            
-            const data = docSnap.data();
-            applyTheme(data.theme); 
-            
-            const isOwner = currentUser && (
-                currentUser.uid === data.ownerUid || 
-                currentUser.uid === ADMIN_UID || 
-                currentUser.username === ADMIN_USERNAME
-            );
-            
-            let socialLinksHTML = '';
-            for (const [key, url] of Object.entries(data.socials || {})) { if (url && socialIcons[key]) { const href = key === 'gmail' ? `mailto:${url}` : normalizeUrl(url); socialLinksHTML += `<a href="${href}" ${key !== 'gmail' ? 'target="_blank" rel="noopener noreferrer"' : ''} class="social-link" title="${key}"><i class="${socialIcons[key]}"></i></a>`; } }
-            
-            // Render Donate Button if Wallets Exist
-            const wallets = data.wallets || {};
-            const hasWallets = Object.values(wallets).some(w => w && w.trim() !== '');
-            let donateBtnHTML = '';
-            if (hasWallets) {
-                donateBtnHTML = `<div class="mt-3"><button id="donate-modal-btn" onclick="showDonateModal('${username}')"><i class="fas fa-hand-holding-usd me-2"></i>Donate</button></div>`;
-            }
-
-            const profileInfoHTML = `<div class="card-glass text-center" style="padding-top: 80px;"><img src="${data.avatarUrl || 'https://via.placeholder.com/150'}" class="profile-avatar"><div class="profile-name-wrapper mt-3"><h1 class="profile-name">${data.name}</h1>${data.isVerified ? '<i class="fas fa-check-circle verified-tick" title="Đã xác thực"></i>' : ''}</div><p class="text-secondary col-md-10 mx-auto mt-2" style="color: rgba(255, 255, 255, 0.7) !important;">${data.bio}</p><div class="social-links">${socialLinksHTML}</div>${donateBtnHTML}${isOwner ? '<button id="edit-profile-btn" title="Chỉnh sửa"><i class="fas fa-pencil-alt"></i></button>' : ''}</div>`;
-            
-            const customCategories = data.customCategories || {}; 
-            const allProjects = data.projects || [];
-            
-            let tabsHTML = '';
-            let contentHTML = '';
-
-            // GENERATE PROJECT HTML (Reusable Function for Loop)
-            const generateProjectHTML = (p, index) => {
-                // Countdown Logic Preparation
-                let countdownHTML = '';
-                let extraClass = '';
-                
-                if (p.expiryDate) {
-                    const now = new Date();
-                    const expiry = new Date(p.expiryDate);
-                    
-                    if (expiry < now) {
-                        extraClass = 'expired';
-                        countdownHTML = `
-                            <div class="expired-overlay">
-                                <div class="expired-text">ĐÃ KẾT THÚC</div>
-                            </div>`;
-                    } else {
-                        countdownHTML = `
-                            <div class="countdown-wrapper" data-expiry="${p.expiryDate}">
-                                <div class="countdown-label">Đang diễn ra:</div>
-                                <div class="time-unit">
-                                    <span class="time-val day-val">00</span>
-                                    <span class="time-tag">Ngày</span>
-                                </div>
-                                <div class="time-sep">:</div>
-                                <div class="time-unit">
-                                    <span class="time-val hour-val">00</span>
-                                    <span class="time-tag">Giờ</span>
-                                </div>
-                                <div class="time-sep">:</div>
-                                <div class="time-unit">
-                                    <span class="time-val min-val">00</span>
-                                    <span class="time-tag">Phút</span>
-                                </div>
-                                <div class="time-sep">:</div>
-                                <div class="time-unit">
-                                    <span class="time-val sec-val">00</span>
-                                    <span class="time-tag">Giây</span>
-                                </div>
-                            </div>
-                        `;
-                    }
-                }
-
-                return `<div class="col-12 col-md-6 mb-2">
-                    <div data-project-index="${index}" class="project-card h-100 ${extraClass}">
-                        <img src="${p.imageUrl || getRandomProjectImage()}" class="project-icon" alt="${p.name}">
-                        <div class="project-card-content w-100">
-                            <div class="project-card-header">
-                                <h5 class="project-name-text">${p.name}</h5>
-                                <div class="project-clicks">
-                                    <i class="fas fa-eye me-1"></i>${p.clicks || 0}
-                                </div>
-                            </div>
-                            <p class="project-desc-text">${p.description || ''}</p>
-                            ${countdownHTML}
-                        </div>
-                    </div>
-                </div>`;
-            };
-
-            const leaderboardProjects = [...allProjects]
-                .filter(p => p.clicks > 0)
-                .sort((a, b) => (b.clicks || 0) - (a.clicks || 0))
-                .slice(0, 10);
-
-            if (leaderboardProjects.length > 0) {
-                tabsHTML += `<button class="category-tab" data-category="leaderboard"><i class="fas fa-trophy" style="color: #FFD700;"></i><span>BXH</span></button>`;
-                const leaderboardItemsHTML = leaderboardProjects.map(p => {
-                    const projectIndex = allProjects.indexOf(p);
-                    return generateProjectHTML(p, projectIndex);
-                }).join('');
-                contentHTML += `<div class="category-content" data-category="leaderboard"><div class="row g-2">${leaderboardItemsHTML}</div></div>`;
-            }
-
-            const allCategoryKeys = [...new Set([...Object.keys(defaultCategories), ...Object.keys(customCategories)])];
-
-            allCategoryKeys.forEach(key => {
-                const displayName = getCategoryDisplayName(key, customCategories);
-                const renameButton = isOwner && key !== 'leaderboard' ? `<button class="rename-category-btn" data-category-key="${key}" title="Đổi tên danh mục"><i class="fas fa-pencil-alt"></i></button>` : '';
-                tabsHTML += `<button class="category-tab" data-category="${key}"><span>${displayName}</span>${renameButton}</button>`;
-                
-                const projectsInCategory = allProjects.filter(p => (p.category || 'project') === key);
-                let itemsHTML = '<p class="text-white-50">Chưa có mục nào trong danh mục này.</p>';
-                if(projectsInCategory.length > 0) {
-                    itemsHTML = projectsInCategory.map(p => {
-                        const projectIndex = allProjects.indexOf(p);
-                        return generateProjectHTML(p, projectIndex);
-                    }).join('');
-                }
-                contentHTML += `<div class="category-content" data-category="${key}"><div class="row g-2">${itemsHTML}</div></div>`;
-            });
-            
-            const projectsContainerHTML = allProjects.length > 0 || isOwner ? `<div class="category-tabs-container"><div class="category-tabs" id="category-tabs">${tabsHTML}${isOwner ? '<button class="category-tab" id="add-category-btn" title="Thêm danh mục mới"><i class="fas fa-plus"></i></button>' : ''}<div class="tab-underline" id="tab-underline"></div></div><div class="category-content-container" id="category-content-container">${contentHTML}</div></div>` : '';
-
-            profilePageContent.innerHTML = profileInfoHTML + projectsContainerHTML;
-            switchView('profile');
-
-            if (document.getElementById('category-tabs')) {
-                setupCategoryTabs();
-            }
-             if (isOwner) {
-                const editBtn = document.getElementById('edit-profile-btn');
-                if (editBtn) {
-                    editBtn.style.display = 'flex';
-                    editBtn.addEventListener('click', openEditModal);
-                }
-                const addCategoryBtn = document.getElementById('add-category-btn');
-                if (addCategoryBtn) addCategoryBtn.addEventListener('click', () => handleAddCategory());
-            }
-
-            document.querySelectorAll('.project-card').forEach(card => {
-                card.addEventListener('click', () => handleProjectClick(card));
-            });
-            
-            // Start Timer Logic
-            updateCountdowns();
-            setInterval(updateCountdowns, 1000);
-            
-            return data;
-        } catch (error) {
-            console.error("Error loading profile:", error);
-            switchView('notFound');
-            return null;
-        }
-    }
-
-    // --- NEW: COUNTDOWN UPDATE LOGIC ---
-    function updateCountdowns() {
-        const wrappers = document.querySelectorAll('.countdown-wrapper');
-        wrappers.forEach(wrapper => {
-            const expiryStr = wrapper.dataset.expiry;
-            if(!expiryStr) return;
-
-            const now = new Date().getTime();
-            const expiryDate = new Date(expiryStr).getTime();
-            const distance = expiryDate - now;
-
-            if (distance < 0) {
-                // If expired while watching, reload to show overlay
-                const card = wrapper.closest('.project-card');
-                if(card && !card.classList.contains('expired')) {
-                    // Simple hack to force refresh UI logic or just apply styles manually
-                    card.classList.add('expired');
-                    wrapper.innerHTML = ''; // Clear countdown
-                    // Inject overlay manually
-                    const overlay = document.createElement('div');
-                    overlay.className = 'expired-overlay';
-                    overlay.innerHTML = '<div class="expired-text">ĐÃ KẾT THÚC</div>';
-                    card.querySelector('.project-card-content').appendChild(overlay);
-                }
-            } else {
-                // Calculate time
-                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-                wrapper.querySelector('.day-val').innerText = days < 10 ? '0' + days : days;
-                wrapper.querySelector('.hour-val').innerText = hours < 10 ? '0' + hours : hours;
-                wrapper.querySelector('.min-val').innerText = minutes < 10 ? '0' + minutes : minutes;
-                wrapper.querySelector('.sec-val').innerText = seconds < 10 ? '0' + seconds : seconds;
-            }
-        });
-    }
-
-    function setupCategoryTabs() {
-        const tabsContainer = document.getElementById('category-tabs');
-        const underline = document.getElementById('tab-underline');
-        const contentContainer = document.getElementById('category-content-container');
-        const tabs = tabsContainer.querySelectorAll('.category-tab:not(#add-category-btn)');
-        const contents = contentContainer.querySelectorAll('.category-content');
-
-        if (tabs.length === 0) return;
-
-        function updateUnderline(activeTab) { if (!activeTab) return; requestAnimationFrame(() => { const offsetLeft = activeTab.offsetLeft; const offsetWidth = activeTab.offsetWidth; underline.style.transform = `translateX(${offsetLeft}px)`; underline.style.width = `${offsetWidth}px`; }); }
-        
-        function switchTab(targetTab) {
-            const category = targetTab.dataset.category;
-            tabs.forEach(t => t.classList.remove('active'));
-            contents.forEach(c => c.classList.remove('active'));
-            targetTab.classList.add('active');
-            const activeContent = contentContainer.querySelector(`.category-content[data-category="${category}"]`);
-            if (activeContent) activeContent.classList.add('active');
-            updateUnderline(targetTab);
-        }
-
-        tabsContainer.addEventListener('click', (e) => {
-            const targetTab = e.target.closest('.category-tab:not(#add-category-btn)');
-            const renameBtn = e.target.closest('.rename-category-btn');
-            if (renameBtn) {
-                e.stopPropagation(); 
-                handleRenameCategory(renameBtn.dataset.categoryKey);
-            } else if (targetTab) {
-                switchTab(targetTab);
-            }
-        });
-        
-        if (tabs[0]) switchTab(tabs[0]); 
-    }
-
-    async function handleProjectClick(cardElement) {
-        // --- NEW: Check if expired ---
-        if (cardElement.classList.contains('expired')) {
-            showToast("Dự án này đã kết thúc.", "warning");
-            return;
-        }
-
-        const projectIndex = parseInt(cardElement.dataset.projectIndex, 10);
-        const username = new URLSearchParams(window.location.search).get('user');
-
-        if (isNaN(projectIndex) || !username) return;
-
-        try {
-            const docSnap = await db.collection('profiles').doc(username).get();
-            if (!docSnap.exists) return;
-
-            const data = docSnap.data();
-            const project = (data.projects || [])[projectIndex];
-            const customCategories = data.customCategories || {};
-
-            if (project) {
-                document.getElementById('project-detail-icon').src = project.imageUrl || getRandomProjectImage();
-                document.getElementById('project-detail-name').textContent = project.name;
-                document.getElementById('project-detail-description').textContent = project.description || 'Không có mô tả.';
-                document.getElementById('project-detail-category').textContent = getCategoryDisplayName(project.category || 'project', customCategories);
-                document.getElementById('project-detail-clicks').textContent = project.clicks || 0;
-
-                const longDescContainer = document.getElementById('project-detail-long-description-container');
-                const longDescElement = document.getElementById('project-detail-long-description');
-                if (project.longDescription && project.longDescription.trim() !== '') {
-                    longDescElement.innerHTML = linkify(project.longDescription);
-                    longDescContainer.style.display = 'block';
-                } else {
-                    longDescContainer.style.display = 'none';
-                    longDescElement.innerHTML = '';
-                }
-
-                // Populate Ref Link and Ref Code
-                const refSection = document.getElementById('project-detail-ref-section');
-                const refLinkGroup = document.getElementById('ref-link-group');
-                const refCodeGroup = document.getElementById('ref-code-group');
-                const refLinkInput = document.getElementById('project-detail-ref-link');
-                const refCodeInput = document.getElementById('project-detail-ref-code');
-
-                let showRefSection = false;
-
-                if (project.referralLink && project.referralLink.trim() !== '') {
-                    refLinkInput.value = project.referralLink;
-                    refLinkGroup.style.display = 'flex';
-                    showRefSection = true;
-                } else {
-                    refLinkGroup.style.display = 'none';
-                }
-
-                if (project.referralCode && project.referralCode.trim() !== '') {
-                    refCodeInput.value = project.referralCode;
-                    refCodeGroup.style.display = 'flex';
-                    showRefSection = true;
-                } else {
-                    refCodeGroup.style.display = 'none';
-                }
-
-                refSection.style.display = showRefSection ? 'block' : 'none';
-
-                const linkBtn = document.getElementById('project-detail-link-btn');
-                linkBtn.dataset.link = project.link;
-                linkBtn.dataset.projectIndex = projectIndex;
-                linkBtn.dataset.username = username;
-
-                const shareBtn = document.getElementById('project-detail-share-btn');
-                shareBtn.dataset.projectName = project.name;
-                shareBtn.dataset.projectId = project.id; 
-
-                projectDetailModal.show();
-            }
-        } catch (error) {
-            console.error("Error fetching project details:", error);
-            showToast("Không thể tải thông tin dự án.");
-        }
-    }
-    
-    async function handleShareProject(buttonElement) {
-        const name = buttonElement.dataset.projectName;
-        const projectId = buttonElement.dataset.projectId;
-        const username = new URLSearchParams(window.location.search).get('user');
-        
-        if (!name || !projectId || !username) return;
-
-        const shareUrl = `${window.location.origin}${window.location.pathname}?user=${username}&project=${projectId}`;
-
-        if (navigator.share) {
             try {
-                await navigator.share({
-                    title: `Check out: ${name}`,
-                    text: `Xem dự án "${name}" trên trang của ${username}!`,
-                    url: shareUrl,
-                });
+                // Lấy dữ liệu từ Firestore (Giả sử collection là 'projects')
+                const snapshot = await db.collection('projects').orderBy('id', 'asc').get();
+                
+                if (!snapshot.empty) {
+                    snapshot.forEach(doc => projectsToRender.push(doc.data()));
+                } else {
+                    // Nếu Firebase trống, hiển thị thông báo "No projects"
+                    trackElement.innerHTML = '<p class="text-center w-100 py-5" style="color: var(--text-secondary); min-width: 450px;">Chưa có dự án nào được thêm vào. (Admin có thể thêm qua Dashboard)</p>';
+                    loadingIndicator.style.display = 'none';
+                    return;
+                }
+
             } catch (error) {
-                console.error('Error sharing:', error);
-            }
-        } else {
-            navigator.clipboard.writeText(shareUrl).then(() => {
-                showToast("Link dự án đã được sao chép!", "success");
-            }).catch(err => {
-                console.error('Failed to copy: ', err);
-                showToast("Không thể sao chép link.");
-            });
-        }
-    }
-    
-    async function showProjectModalById(profileData, projectId, username) {
-        const allProjects = profileData.projects || [];
-        const projectToShow = allProjects.find(p => p.id == projectId); 
-
-        if (projectToShow) {
-            const projectIndex = allProjects.indexOf(projectToShow);
-            const cardElement = { dataset: { projectIndex: projectIndex }, classList: { contains: () => false } }; 
-            await handleProjectClick(cardElement);
-
-            const cleanUrl = `${window.location.pathname}?user=${username}`;
-            history.replaceState(null, '', cleanUrl);
-        } else {
-            showToast("Không tìm thấy dự án với ID này.");
-        }
-    }
-
-
-    async function handleProjectLinkActivation(buttonElement) {
-        const link = buttonElement.dataset.link;
-        const projectIndex = parseInt(buttonElement.dataset.projectIndex, 10);
-        const username = buttonElement.dataset.username;
-
-        if (!link || isNaN(projectIndex) || !username) return;
-
-        window.open(link, '_blank', 'noopener,noreferrer');
-
-        try {
-            const docRef = db.collection('profiles').doc(username);
-            const docSnap = await docRef.get();
-            if (!docSnap.exists) return;
-
-            const data = docSnap.data();
-            let projects = data.projects || [];
-
-            if (projects[projectIndex]) {
-                const currentClicks = projects[projectIndex].clicks || 0;
-                projects[projectIndex].clicks = currentClicks + 1;
-                
-                await docRef.update({ projects: projects });
-
-                const clicksElementOnCard = document.querySelector(`.project-card[data-project-index="${projectIndex}"] .project-clicks-count`);
-                const clicksElementInModal = document.getElementById('project-detail-clicks');
-                
-                if (clicksElementOnCard) {
-                    clicksElementOnCard.textContent = projects[projectIndex].clicks;
-                }
-                if (clicksElementInModal) {
-                    clicksElementInModal.textContent = projects[projectIndex].clicks;
-                }
-            }
-        } catch (error) {
-            console.error("Failed to update click count:", error);
-        }
-    }
-
-    async function handleAddCategory(fromModal = false) {
-        const categoryNameInput = document.getElementById('new-category-name-input');
-        const btn = document.getElementById('add-category-modal-btn');
-        let categoryName = "";
-
-        if (fromModal && categoryNameInput) {
-            categoryName = categoryNameInput.value.trim();
-        } else {
-            categoryName = prompt("Nhập tên danh mục mới:");
-        }
-        
-        if (!categoryName || categoryName.trim() === '') {
-            if(fromModal) showToast("Vui lòng nhập tên danh mục.", "warning");
-            return;
-        }
-
-        const categoryKey = generateCategoryKey(categoryName);
-        if (!categoryKey) {
-            showToast("Tên danh mục không hợp lệ.");
-            return;
-        }
-
-        if(btn) {
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-        }
-
-        try {
-            const docRef = db.collection('profiles').doc(currentUser.username);
-            const docSnap = await docRef.get();
-            const data = docSnap.data();
-            const customCategories = data.customCategories || {};
-
-            if (defaultCategories.hasOwnProperty(categoryKey) || customCategories.hasOwnProperty(categoryKey)) {
-                showToast("Danh mục này đã tồn tại.");
-                if(btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-plus me-1"></i>Thêm'; }
+                console.error("Error fetching projects from Firebase.", error);
+                trackElement.innerHTML = '<p class="text-center w-100 py-5" style="color: red; min-width: 450px;">Lỗi kết nối Firebase. Vui lòng kiểm tra console.</p>';
+                loadingIndicator.style.display = 'none';
                 return;
             }
-            
-            const updateData = {};
-            updateData[`customCategories.${categoryKey}`] = categoryName.trim();
 
-            await docRef.update(updateData);
-            showToast("Đã thêm danh mục mới!", "success");
+            // Render
+            let projectsHtml = '';
+            projectsToRender.forEach(project => projectsHtml += createProjectHtml(project));
             
-            if (fromModal) {
-                // Re-render modal content
-                await openEditModal();
-            } else {
-               fetchAndRenderProfile(currentUser.username);
+            trackElement.innerHTML = projectsHtml; // Thay thế nội dung bằng các dự án
+            loadingIndicator.style.display = 'none'; // Ẩn loading
+
+            // Sau khi render xong
+            setupScrollTrack('gallery-track'); // Khởi tạo lại cuộn
+            setupProjectFilter(); // Khởi tạo bộ lọc
+        }
+
+        // Thêm dự án mới vào Firestore (Chỉ Admin)
+        async function addProject(project) {
+            if (!isAdmin) {
+                Swal.fire('ACCESS DENIED', 'Chỉ Admin mới được thêm dự án.', 'error');
+                return;
             }
-        } catch (error) {
-            console.error("Lỗi khi thêm danh mục:", error);
-            showToast("Không thể thêm danh mục.");
-            if(btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-plus me-1"></i>Thêm'; }
-        }
-    }
-    
-    // --- AUTH ---
-    async function handleRegister(e) { e.preventDefault(); const username = document.getElementById('register-username').value.trim().toLowerCase(); const email = document.getElementById('register-email').value.trim(); const password = document.getElementById('register-password').value; const phone = document.getElementById('register-phone').value.trim(); const btn = e.target.querySelector('button[type="submit"]'); btn.disabled = true; btn.innerHTML = `<div class="spinner-border spinner-border-sm"></div>`; if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) { showToast("Username không hợp lệ."); btn.disabled = false; btn.textContent = 'Đăng ký'; return; } if (phone && phone.length < 9) { showToast("Số điện thoại không hợp lệ."); btn.disabled = false; btn.textContent = 'Đăng ký'; return; } try { const userDoc = await db.collection('profiles').doc(username).get(); if (userDoc.exists) { showToast("Username này đã được sử dụng."); btn.disabled = false; btn.textContent = 'Đăng ký'; return; } const userCredential = await auth.createUserWithEmailAndPassword(email, password); const user = userCredential.user; await user.sendEmailVerification(); await db.collection('profiles').doc(username).set({ ownerUid: user.uid, username, name: username, avatarUrl: "", isVerified: false, email, phoneNumber: phone, bio: "Chào mừng đến trang của tôi!", socials: {}, projects: [], customCategories: {} }); showToast("Đăng ký thành công! Vui lòng xác thực email.", 'success'); currentUser = { uid: user.uid, email: user.email, username, providerId: 'password' }; setupSidebar(); history.pushState(null, '', `?user=${username}`); verificationBanner.style.display = 'block'; await fetchAndRenderProfile(username); } catch (error) { showToast(error.code === 'auth/email-already-in-use' ? "Email này đã được sử dụng." : "Đã có lỗi xảy ra."); } finally { btn.disabled = false; btn.textContent = 'Đăng ký'; } }
-    async function handleLogin(e) { e.preventDefault(); const email = document.getElementById('login-email').value.trim(); const password = document.getElementById('login-password').value; const btn = e.target.querySelector('button[type="submit"]'); btn.disabled = true; btn.innerHTML = `<div class="spinner-border spinner-border-sm"></div>`; try { await auth.signInWithEmailAndPassword(email, password); } catch (error) { showToast("Email hoặc mật khẩu không chính xác."); btn.disabled = false; btn.textContent = 'Đăng nhập'; } }
-    async function handleLogout(e) { e.preventDefault(); await auth.signOut(); window.location.href = '/'; }
-    async function handleGoogleLogin() { const provider = new firebase.auth.GoogleAuthProvider(); try { const result = await auth.signInWithPopup(provider); const user = result.user; const profileQuery = await db.collection('profiles').where('ownerUid', '==', user.uid).limit(1).get(); if (profileQuery.empty) { let username = user.email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, ''); let userDoc = await db.collection('profiles').doc(username).get(); while(userDoc.exists) { username = username + Math.floor(Math.random() * 100); userDoc = await db.collection('profiles').doc(username).get(); } await db.collection('profiles').doc(username).set({ ownerUid: user.uid, username, name: user.displayName || username, avatarUrl: user.photoURL || "", isVerified: true, email: user.email, phoneNumber: "", bio: "Chào mừng đến trang của tôi!", socials: {}, projects: [], customCategories: {} }); currentUser = { uid: user.uid, email: user.email, username, providerId: 'google.com' }; setupSidebar(); history.pushState(null, '', `?user=${username}`); await fetchAndRenderProfile(username); showToast("Tài khoản đã được tạo thành công!", 'success'); } else { showToast("Chào mừng bạn trở lại!", 'success'); } } catch (error) { if (error.code !== 'auth/popup-closed-by-user') showToast("Không thể đăng nhập với Google."); } }
-    async function handleForgotPassword(e) { e.preventDefault(); const btn = e.target.querySelector('button[type="submit"]'); btn.disabled = true; btn.innerHTML = `<div class="spinner-border spinner-border-sm"></div> Đang gửi...`; try { if (passwordResetMode === 'email') { const email = document.getElementById('reset-email-input').value.trim(); if (!email) { showToast("Vui lòng nhập email."); return; } await auth.sendPasswordResetEmail(email); showToast(`Đã gửi email khôi phục đến ${email}.`, 'success'); switchView('auth'); } else { const phone = document.getElementById('reset-phone-input').value.trim(); if (!phone) { showToast("Vui lòng nhập số điện thoại."); return; } const querySnapshot = await db.collection('profiles').where('phoneNumber', '==', phone).limit(1).get(); if (querySnapshot.empty) showToast("Không tìm thấy tài khoản với số điện thoại này."); else { const userEmail = querySnapshot.docs[0].data().email; if (userEmail) { await auth.sendPasswordResetEmail(userEmail); showToast(`Đã gửi liên kết khôi phục.`, 'success'); switchView('auth'); } else showToast("Tài khoản này không có email để gửi liên kết."); } } } catch (error) { showToast("Đã xảy ra lỗi."); } finally { btn.disabled = false; btn.textContent = 'Gửi liên kết'; } }
-    async function reauthenticateUser() { const user = auth.currentUser; const providerId = user.providerData[0].providerId; if (providerId === 'password') { const password = prompt("Để xác nhận, vui lòng nhập mật khẩu của bạn:"); if (!password) throw new Error('Password required.'); return user.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(user.email, password)); } else if (providerId === 'google.com') { return user.reauthenticateWithPopup(new firebase.auth.GoogleAuthProvider()); } else { throw new Error('Unsupported provider.'); } }
-    async function handleChangeEmail(e) { const newEmail = document.getElementById('edit-email').value.trim(); if (newEmail === auth.currentUser.email) return; const btn = e.target; btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'; try { await reauthenticateUser(); await auth.currentUser.verifyBeforeUpdateEmail(newEmail); await db.collection('profiles').doc(currentUser.username).update({ email: newEmail }); showToast(`Email xác thực đã được gửi đến ${newEmail}.`, 'success'); editModal.hide(); } catch (error) { if (error.code === 'auth/wrong-password') showToast("Mật khẩu không chính xác."); else if (error.code === 'auth/email-already-in-use') showToast("Email này đã được sử dụng."); else if (error.code !== 'auth/popup-closed-by-user' && error.message !== 'Password required.') showToast("Xác thực thất bại."); } finally { btn.disabled = false; btn.textContent = 'Đổi'; } }
-    
-    async function handleChangeUsername(e) { 
-        const newUsername = document.getElementById('edit-username').value.trim().toLowerCase(); 
-        
-        if (!newUsername) {
-            showToast("Vui lòng nhập username mới.");
-            return;
-        }
-        if (newUsername === currentUser.username) {
-            showToast("Username mới giống username hiện tại.");
-            return;
-        }
-        if (!/^[a-zA-Z0-9_]{3,20}$/.test(newUsername)) {
-            showToast("Username không hợp lệ (3-20 ký tự, a-z, 0-9, _).", "warning");
-            return;
-        }
 
-        const btn = e.target; 
-        btn.disabled = true; 
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'; 
-
-        try { 
-            const newDoc = await db.collection('profiles').doc(newUsername).get(); 
-            if (newDoc.exists) { 
-                showToast("Username này đã tồn tại.", "warning"); 
-                return; 
-            } 
-            
-            await reauthenticateUser(); 
-            
-            const oldDoc = await db.collection('profiles').doc(currentUser.username).get(); 
-            if (oldDoc.exists) { 
-                const profileData = oldDoc.data(); 
-                profileData.username = newUsername; 
-                
-                // Copy to new doc
-                await db.collection('profiles').doc(newUsername).set(profileData); 
-                // Delete old doc
-                await db.collection('profiles').doc(currentUser.username).delete(); 
-                
-                currentUser.username = newUsername; 
-                history.pushState(null, '', `?user=${newUsername}`); 
-                setupSidebar(); 
-                editModal.hide(); 
-                showToast(`Đổi username thành công!`, "success"); 
-                fetchAndRenderProfile(newUsername);
-            } 
-        } catch (error) { 
-            console.error(error);
-            if (error.code === 'auth/wrong-password') showToast("Mật khẩu không chính xác."); 
-            else if (error.code !== 'auth/popup-closed-by-user' && error.message !== 'Password required.') showToast("Xác thực thất bại hoặc lỗi hệ thống."); 
-        } finally { 
-            btn.disabled = false; 
-            btn.textContent = 'Đổi'; 
-        } 
-    }
-    
-    function copyProjectLink(username, projectId) {
-        if (!username || !projectId) {
-            showToast("Không thể tạo link cho mục chưa được lưu.");
-            return;
-        }
-        const projectUrl = `${window.location.origin}${window.location.pathname}?user=${username}&project=${projectId}`;
-        navigator.clipboard.writeText(projectUrl).then(() => {
-            showToast("Link của mục đã được sao chép!", "success");
-        }).catch(err => {
-            showToast("Sao chép thất bại.");
-            console.error('Failed to copy project link: ', err);
-        });
-    }
-
-    async function openEditModal() {
-        const modalBody = document.getElementById('edit-modal-body');
-        const docSnap = await db.collection('profiles').doc(currentUser.username).get();
-        const data = docSnap.data();
-        
-        const customCategories = data.customCategories || {};
-        const allCategoryKeys = [...new Set([...Object.keys(defaultCategories), ...Object.keys(customCategories)])];
-        const socialFieldsHTML = Object.keys(socialIcons).map(key => `<div class="col-md-6 mb-3"><label class="form-label small">${key === 'gmail' ? 'Địa chỉ Gmail' : `${key.charAt(0).toUpperCase() + key.slice(1)} URL`}</label><input type="${key === 'gmail' ? 'email' : 'url'}" class="form-control" id="edit-${key}" value="${(data.socials || {})[key] || ''}"></div>`).join('');
-        
-        const walletFieldsHTML = `
-            <hr><h6 class="mb-3">Địa chỉ ví Crypto (Donate) - Ưu tiên Web3</h6>
-            <div class="row g-2">
-                <div class="col-md-6"><label class="form-label small">EVM (ETH/BSC/Base)</label><input type="text" class="form-control" id="edit-wallet-evm" placeholder="0x..." value="${(data.wallets || {}).evm || ''}"></div>
-                <div class="col-md-6"><label class="form-label small">Solana</label><input type="text" class="form-control" id="edit-wallet-sol" placeholder="..." value="${(data.wallets || {}).sol || ''}"></div>
-                <div class="col-md-6"><label class="form-label small">TON (Telegram)</label><input type="text" class="form-control" id="edit-wallet-ton" placeholder="..." value="${(data.wallets || {}).ton || ''}"></div>
-                <div class="col-md-6"><label class="form-label small">TRC20 (USDT)</label><input type="text" class="form-control" id="edit-wallet-trc20" placeholder="T..." value="${(data.wallets || {}).trc20 || ''}"></div>
-                <div class="col-md-6"><label class="form-label small">Bitcoin (BTC)</label><input type="text" class="form-control" id="edit-wallet-btc" placeholder="bc1..." value="${(data.wallets || {}).btc || ''}"></div>
-            </div>
-        `;
-
-        // 1. Build Tabs
-        let tabsHTML = `<span class="edit-cat-pill active" onclick="handleEditTabClick('all')" data-cat="all">Tất cả</span>`;
-        allCategoryKeys.forEach(key => {
-            const name = getCategoryDisplayName(key, customCategories);
-            tabsHTML += `<span class="edit-cat-pill" onclick="handleEditTabClick('${key}')" data-cat="${key}">${name}</span>`;
-        });
-
-        // 2. Build Category Manager HTML
-        let categoryManagerHTML = '';
-        if (Object.keys(customCategories).length > 0) {
-            categoryManagerHTML = `<div class="card card-body bg-light mb-3 p-2">`;
-            for (const [key, name] of Object.entries(customCategories)) {
-                categoryManagerHTML += `
-                    <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom last-no-border">
-                        <span class="fw-bold text-dark">${name}</span>
-                        <div>
-                            <button type="button" class="btn btn-sm btn-outline-primary me-1" onclick="handleRenameCategory('${key}')" title="Đổi tên"><i class="fas fa-pencil-alt"></i></button>
-                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="handleDeleteCategory('${key}')" title="Xóa"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </div>
-                `;
+            try {
+                // Sử dụng ID làm doc ID
+                await db.collection('projects').doc(project.id.toString()).set(project);
+                Swal.fire('Thành công!', 'Dự án đã được thêm vào Firebase. Vui lòng tải lại trang.', 'success');
+                document.getElementById('add-project-form').reset();
+            } catch (error) {
+                console.error("Error adding project:", error);
+                Swal.fire('Lỗi!', 'Không thể thêm dự án: ' + error.message, 'error');
             }
-            categoryManagerHTML += `</div>`;
-        } else {
-            categoryManagerHTML = `<p class="small text-muted fst-italic">Chưa có danh mục tùy chỉnh.</p>`;
         }
 
-        // 3. Build Projects HTML
-        let allProjectsHTML = '';
-        const existingProjects = data.projects || [];
-        existingProjects.forEach((p, i) => {
-            const cat = p.category || 'project';
-            const html = createProjectFieldHTML(p, i, allCategoryKeys, customCategories, currentUser.username);
-            allProjectsHTML += `<div class="edit-category-group" data-cat="${cat}">${html}</div>`;
-        });
+
+        // ------------------------------------
+        // 3. AUTH & ADMIN LOGIC (Google Login)
+        // ------------------------------------
         
-        const emailFieldHTML = `<input type="email" class="form-control" id="edit-email" value="${auth.currentUser.email}" required><button class="btn btn-outline-primary" type="button" id="change-email-btn">Đổi</button>`;
-        
-        const usernameFieldDisabled = ''; 
-
-        modalBody.innerHTML = `<form id="edit-form">
-            <div class="mb-3">
-                <label class="form-label">Ảnh đại diện</label>
-                <div class="d-flex align-items-center">
-                    <img id="avatar-preview" src="${data.avatarUrl || 'https://via.placeholder.com/150'}" class="rounded-circle me-3" width="80" height="80" style="object-fit: cover; border: 2px solid #ddd;">
-                    <div class="flex-grow-1">
-                        <label class="form-label small">Tải ảnh mới</label>
-                        <input type="file" class="form-control" id="edit-avatar-file" accept="image/*">
-                        <input type="hidden" id="edit-avatar-url-current" value="${data.avatarUrl || ''}">
-                        
-                        <label class="form-label small mt-2">Hoặc dán link ảnh</label>
-                        <input type="url" class="form-control" id="edit-avatar-url-new" placeholder="https://example.com/image.png">
-                    </div>
-                </div>
-            </div>
-            <div class="mb-3"><label class="form-label">Tên hiển thị</label><input type="text" class="form-control" id="edit-name" value="${data.name || ''}" required></div>
-            <div class="mb-3"><label class="form-label">Tiểu sử ngắn</label><textarea class="form-control" id="edit-bio" rows="3">${data.bio || ''}</textarea></div>
-
-            <hr><h6 class="mb-3">Quản lý Danh mục</h6>
-            <div class="input-group mb-2">
-                <input type="text" class="form-control" id="new-category-name-input" placeholder="Tên danh mục mới...">
-                <button class="btn btn-outline-success" type="button" id="add-category-modal-btn">
-                    <i class="fas fa-plus me-1"></i>Thêm
-                </button>
-            </div>
-            ${categoryManagerHTML}
-
-            <hr><h6 class="mb-3">Danh sách Dự án (Kéo thả để sắp xếp)</h6>
-            
-            <div class="mb-3">
-                <input type="text" id="edit-project-search" class="form-control" placeholder="🔍 Tìm dự án..." onkeyup="handleEditSearch(this)">
-            </div>
-
-            <div class="d-flex flex-nowrap overflow-auto mb-3 pb-2" style="scrollbar-width: thin;">
-                ${tabsHTML}
-            </div>
-
-            <div class="accordion" id="edit-projects-accordion">${allProjectsHTML}</div>
-            
-            <button type="button" id="edit-add-project-btn" class="btn btn-outline-secondary mt-3 w-100"><i class="fas fa-plus me-2"></i>Thêm Mục Mới</button>
-
-            ${walletFieldsHTML}
-
-            <hr><h6 class="mb-3">Tùy chỉnh Giao diện</h6>
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label small">Màu chủ đạo</label>
-                    <input type="color" class="form-control form-control-color w-100" id="edit-theme-color" value="${(data.theme && data.theme.accentColor) || '#915EFF'}">
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label small">Loại nền</label>
-                    <select class="form-select" id="edit-bg-type">
-                        <option value="gradient" ${(data.theme && data.theme.bgType === 'gradient') ? 'selected' : ''}>Màu Gradient</option>
-                        <option value="image" ${(data.theme && data.theme.bgType === 'image') ? 'selected' : ''}>Hình ảnh</option>
-                    </select>
-                </div>
-                <div class="col-12">
-                    <label class="form-label small">Giá trị nền (Mã màu CSS hoặc Link ảnh)</label>
-                    <input type="text" class="form-control" id="edit-bg-value" 
-                        placeholder="VD: linear-gradient(...) hoặc https://link-anh.com/..." 
-                        value="${(data.theme && data.theme.bgValue) || ''}">
-                </div>
-            </div>
-
-            <hr><h6 class="mb-3">Tài khoản & Liên hệ</h6>
-            <div class="mb-3"><label class="form-label">Username</label><div class="input-group"><span class="input-group-text d-none d-sm-flex">.../?user=</span><input type="text" class="form-control" id="edit-username" value="${currentUser.username}" ${usernameFieldDisabled}><button class="btn btn-outline-danger" type="button" id="change-username-btn">Đổi</button></div></div>
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Email</label>
-                    <div class="input-group">
-                        ${emailFieldHTML}
-                    </div>
-                </div>
-                <div class="col-md-6 mb-3"><label class="form-label">Số điện thoại</label><input type="tel" class="form-control" id="edit-phone" value="${data.phoneNumber || ''}"></div>
-            </div>
-            <hr><h6 class="mb-3">Liên kết Mạng xã hội</h6><div class="row g-2">${socialFieldsHTML}</div>
-            
-        </form>`;
-    
-    // NEW LOGIC: When Avatar file is selected, generate URL and populate the link input
-    modalBody.querySelector('#edit-avatar-file').addEventListener('change', e => { 
-        if (e.target.files[0]) { 
-            const filename = e.target.files[0].name;
-            const newUrl = IMAGE_BASE_URL + filename;
-            
-            // 1. Clear file input
-            e.target.value = null; 
-            
-            // 2. Set the generated URL to the link input
-            const urlInput = document.getElementById('edit-avatar-url-new');
-            urlInput.value = newUrl; 
-
-            // 3. Trigger the preview update (which is handled by the 'input' listener on urlInput)
-            urlInput.dispatchEvent(new Event('input', { bubbles: true }));
-            
-            showToast(`Avatar: Đã tạo link từ tệp: ${filename}`, "info");
-        } 
-    });
-    
-    modalBody.querySelector('#edit-avatar-url-new').addEventListener('input', e => {
-        const url = e.target.value.trim();
-        if (url) {
-            document.getElementById('edit-avatar-file').value = ''; 
-            document.getElementById('avatar-preview').src = url;
+        // Đăng nhập bằng Google
+        function loginWithGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    // Đăng nhập thành công, modal sẽ đóng
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('login-modal'));
+                    if (modal) modal.hide();
+                    // Status listener sẽ tự động xử lý UI
+                })
+                .catch((error) => {
+                    const errorElement = document.getElementById('login-error-message');
+                    errorElement.textContent = 'Lỗi Đăng nhập Google: ' + error.message;
+                    errorElement.style.display = 'block';
+                    console.error("Google Login Error:", error);
+                });
         }
-    });
 
-    document.getElementById('edit-add-project-btn').addEventListener('click', () => { 
-        const container = document.getElementById('edit-projects-accordion');
-        const newIndex = container.querySelectorAll('.accordion-item').length;
-        const newItemHTML = createProjectFieldHTML({}, newIndex, allCategoryKeys, customCategories, currentUser.username);
-        const wrapper = document.createElement('div');
-        wrapper.className = 'edit-category-group';
-        wrapper.dataset.cat = 'project'; 
-        wrapper.innerHTML = newItemHTML;
-        container.appendChild(wrapper);
-        const collapseElement = wrapper.querySelector('.accordion-collapse');
-        new bootstrap.Collapse(collapseElement, { toggle: true });
-    });
-
-    if (modalBody.querySelector('#change-email-btn')) {
-        modalBody.querySelector('#change-email-btn').addEventListener('click', handleChangeEmail);
-    }
-    modalBody.querySelector('#change-username-btn').addEventListener('click', handleChangeUsername);
-    modalBody.querySelector('#add-category-modal-btn').addEventListener('click', () => handleAddCategory(true));
-
-    // --- ENABLE DRAG AND DROP ---
-    const accordionContainer = document.getElementById('edit-projects-accordion');
-    new Sortable(accordionContainer, {
-        animation: 150,
-        handle: '.drag-handle', // Must click handle to drag
-        ghostClass: 'sortable-ghost',
-        onEnd: function() {
-            // Update numbers visually
-            document.querySelectorAll('#edit-projects-accordion .accordion-button strong').forEach((el, idx) => {
-                el.textContent = `#${idx + 1}`;
+        // Đăng xuất
+        function logout() {
+            auth.signOut().then(() => {
+                Swal.fire('Tạm biệt!', 'Đã đăng xuất.', 'info');
+                // Status listener sẽ tự động cập nhật UI
+            }).catch((error) => {
+                console.error("Logout Error:", error);
+                Swal.fire('Lỗi!', 'Không thể đăng xuất: ' + error.message, 'error');
             });
         }
-    });
-    
-    // --- NEW: Project File-to-Link Listener ---
-    modalBody.querySelectorAll('.project-image-file').forEach(fileInput => {
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const urlInput = fileInput.closest('.accordion-body').querySelector('.project-image');
-                const filename = file.name;
-                const newUrl = IMAGE_BASE_URL + filename;
-                
-                // Set URL, clear file input
-                urlInput.value = newUrl;
-                fileInput.value = ''; 
-                
-                showToast(`Dự án: Đã tạo link từ tệp: ${filename}`, "info");
-            }
-        });
-    });
-    // ------------------------------------------
-    
-    editModal.show();
-}
-
-function createProjectFieldHTML(project = {}, index, categories, customCategories = {}, username) {
-    let categoryOptions = categories.map(key => {
-        const displayName = getCategoryDisplayName(key, customCategories);
-        const isSelected = (project.category || 'project') === key;
-        return `<option value="${key}" ${isSelected ? 'selected' : ''}>${displayName}</option>`;
-    }).join('');
-
-    if (categories.length === 0) {
-         categoryOptions = `<option value="general" selected>Chung</option>`;
-    }
-
-    const collapseId = `project-collapse-${Date.now()}-${index}`; 
-    const headerId = `project-header-${Date.now()}-${index}`;
-    const displayName = project.name ? project.name : 'Mục mới';
-    const copyLinkBtn = project.id ? `<button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyProjectLink('${username}', ${project.id})"><i class="fas fa-copy me-1"></i>Copy Link</button>` : '';
-
-    const expiryValue = project.expiryDate ? project.expiryDate : '';
-
-    return `
-    <div class="accordion-item" data-id="${project.id || 'new'}">
-        <h2 class="accordion-header" id="${headerId}">
-            <div class="accordion-header-wrapper">
-                <div class="drag-handle" title="Kéo để sắp xếp"><i class="fas fa-grip-vertical"></i></div>
-                <button class="accordion-button collapsed ps-2" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}" aria-expanded="false" aria-controls="${collapseId}">
-                    <strong>#${index + 1}</strong><span class="ms-2 text-truncate">${displayName}</span>
-                </button>
-            </div>
-        </h2>
-        <div id="${collapseId}" class="accordion-collapse collapse" aria-labelledby="${headerId}" data-bs-parent="#edit-projects-accordion">
-            <div class="accordion-body project-field">
-                <div class="project-form-header">
-                    <span class="text-muted small"><strong>ID:</strong> ${project.id || 'Chưa lưu'}</span>
-                    <div>
-                        ${copyLinkBtn}
-                        <button type="button" class="btn-close ms-2" onclick="if(confirm('Bạn chắc chắn muốn xóa mục này?')) { this.closest('.edit-category-group').remove() }"></button>
-                    </div>
-                </div>
-                <input type="hidden" class="project-id-hidden" value="${project.id || ''}">
-                <input type="hidden" class="project-clicks-hidden" value="${project.clicks || 0}">
-                <div class="row g-2">
-                    <div class="col-md-6"><label class="form-label small">Tên</label><input type="text" class="form-control mb-2 project-name" placeholder="Tên dự án/sàn" value="${project.name || ''}"></div>
-                    <div class="col-md-6"><label class="form-label small">Danh mục</label><select class="form-select project-category">${categoryOptions}</select></div>
-                </div>
-                
-                <div class="mb-2">
-                    <label class="form-label small text-danger fw-bold"><i class="fas fa-stopwatch me-1"></i>Thời gian đếm ngược (Để trống nếu không dùng)</label>
-                    <div class="input-group">
-                        <input type="datetime-local" class="form-control project-expiry" value="${expiryValue}">
-                        <button type="button" class="btn btn-outline-secondary" onclick="this.previousElementSibling.value = ''" title="Xóa thời gian"><i class="fas fa-trash-alt"></i></button>
-                    </div>
-                    <div class="form-text small">Nếu quá thời gian này, dự án sẽ bị vô hiệu hóa.</div>
-                </div>
-
-                <label class="form-label small">Mô tả ngắn</label><input type="text" class="form-control mb-2 project-desc" placeholder="Mô tả ngắn gọn" value="${project.description || ''}">
-                
-                <div class="row g-2 mb-2">
-                    <div class="col-md-6">
-                        <label class="form-label small">Link Ref</label>
-                        <input type="url" class="form-control project-ref-link" placeholder="https://..." value="${project.referralLink || ''}">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label small">Code Ref</label>
-                        <input type="text" class="form-control project-ref-code" placeholder="Mã giới thiệu" value="${project.referralCode || ''}">
-                    </div>
-                </div>
-
-                <label class="form-label small">Link Dự Án (Nút Mở Ngay)</label><input type="url" class="form-control mb-2 project-link" placeholder="Đường dẫn (URL)" value="${project.link || ''}">
-                
-                <label class="form-label small">Link Hình ảnh (URL)</label>
-                <input type="url" class="form-control project-image" placeholder="Link ảnh logo" value="${project.imageUrl || ''}">
-                <div class="mb-2">
-                    <label class="form-label small">Hoặc Tải tệp lên để tạo Link <small class="text-muted">(.../img/filename)</small></label>
-                    <input type="file" class="form-control project-image-file" accept="image/*">
-                </div>
-
-                <label class="form-label small mt-2">Mô tả dài (Hướng dẫn, chi tiết...)</label>
-                <textarea class="form-control project-long-desc" rows="4" placeholder="Nội dung chi tiết sẽ hiển thị trong popup...">${project.longDescription || ''}</textarea>
-            </div>
-        </div>
-    </div>`;
-}
-
-function getNewProjectId(projectsArray) {
-    if (!projectsArray || projectsArray.length === 0) {
-        return 1;
-    }
-    const maxId = Math.max(...projectsArray.map(p => p.id || 0));
-    return maxId + 1;
-}
-
-
-async function handleSaveProfile() { 
-    // Show loading UI on button
-    const saveBtn = document.getElementById('save-profile-btn'); 
-    saveBtn.disabled = true; 
-    saveBtn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Đang lưu...`; 
-    
-    try { 
-        let avatarUrlToSave = document.getElementById('edit-avatar-url-current').value; 
-        const avatarUrlFromInput = document.getElementById('edit-avatar-url-new').value.trim();
-        // const file = document.getElementById('edit-avatar-file').files[0]; // REMOVED: File upload logic
-
-        // NEW LOGIC: Use the URL from the input (which is populated by direct paste or file-to-url logic)
-        if (avatarUrlFromInput) {
-            avatarUrlToSave = avatarUrlFromInput;
-        }
-
-        const socialsData = {}; 
-        Object.keys(socialIcons).forEach(key => { 
-            const el = document.getElementById(`edit-${key}`); 
-            if (el) socialsData[key] = el.value.trim(); 
-        }); 
         
-        const walletsData = {
-            evm: document.getElementById('edit-wallet-evm').value.trim(),
-            sol: document.getElementById('edit-wallet-sol').value.trim(),
-            ton: document.getElementById('edit-wallet-ton').value.trim(),
-            trc20: document.getElementById('edit-wallet-trc20').value.trim(),
-            btc: document.getElementById('edit-wallet-btc').value.trim()
-        };
-
-        const projectsData = []; 
-        const existingProjects = (await db.collection('profiles').doc(currentUser.username).get()).data().projects || [];
-
-        // document.querySelectorAll processes elements in the current DOM order (sorted order)
-        document.querySelectorAll('#edit-projects-accordion .accordion-item').forEach(item => { 
-            const field = item.querySelector('.project-field');
-            if (!field) return;
-
-            const name = field.querySelector('.project-name').value.trim(); 
-            const link = field.querySelector('.project-link').value.trim(); 
-            if (name) { 
-                let projectId = parseInt(field.querySelector('.project-id-hidden').value, 10);
-                if (!projectId || isNaN(projectId)) {
-                    projectId = getNewProjectId([...existingProjects, ...projectsData]);
+        // Cập nhật trạng thái Auth và vai trò Admin
+        function setupAuthStatusListener() {
+            auth.onAuthStateChanged((user) => {
+                const authButton = document.getElementById('auth-status');
+                const adminLink = document.getElementById('admin-link');
+                const adminPanel = document.getElementById('admin-panel');
+                
+                if (user) {
+                    // Đã đăng nhập
+                    isAdmin = (user.uid === ADMIN_UID);
+                    
+                    authButton.innerHTML = `<i class="fas fa-sign-out-alt"></i> ${isAdmin ? 'Admin' : 'User'} (${user.displayName || user.email.split('@')[0]})`;
+                    authButton.onclick = logout;
+                    authButton.removeAttribute('data-bs-toggle');
+                    authButton.removeAttribute('data-bs-target');
+                    
+                    if (isAdmin) {
+                        adminLink.style.display = 'flex';
+                        document.getElementById('admin-status').textContent = `Logged in as: ${user.email}`;
+                    } else {
+                        adminLink.style.display = 'none';
+                        adminPanel.style.display = 'none'; // Ẩn nếu không phải admin
+                    }
+                } else {
+                    // Chưa đăng nhập
+                    isAdmin = false;
+                    adminLink.style.display = 'none';
+                    adminPanel.style.display = 'none';
+                    
+                    authButton.innerHTML = `<i class="fab fa-google"></i> Đăng nhập`;
+                    authButton.onclick = null;
+                    authButton.setAttribute('data-bs-toggle', 'modal');
+                    authButton.setAttribute('data-bs-target', '#login-modal');
                 }
-
-                projectsData.push({ 
-                    id: projectId,
-                    name, 
-                    description: field.querySelector('.project-desc').value.trim(), 
-                    link: normalizeUrl(link),
-                    imageUrl: field.querySelector('.project-image').value.trim(), // Stays the same (reads from URL input)
-                    category: field.querySelector('.project-category').value,
-                    clicks: parseInt(field.querySelector('.project-clicks-hidden').value, 10) || 0,
-                    longDescription: field.querySelector('.project-long-desc').value.trim(),
-                    referralLink: field.querySelector('.project-ref-link').value.trim(), 
-                    referralCode: field.querySelector('.project-ref-code').value.trim(),
-                    // Save Expiry Date
-                    expiryDate: field.querySelector('.project-expiry').value || null 
-                }); 
-            } 
-        }); 
-        
-        const themeData = {
-            accentColor: document.getElementById('edit-theme-color').value,
-            bgType: document.getElementById('edit-bg-type').value,
-            bgValue: document.getElementById('edit-bg-value').value.trim()
-        };
-
-        const updatedProfileData = { 
-            name: document.getElementById('edit-name').value.trim(), 
-            avatarUrl: avatarUrlToSave, 
-            bio: document.getElementById('edit-bio').value.trim(), 
-            phoneNumber: document.getElementById('edit-phone').value.trim(), 
-            socials: socialsData, 
-            wallets: walletsData, 
-            theme: themeData,
-            projects: projectsData, 
-            lastUpdated: firebase.firestore.FieldValue.serverTimestamp() 
-        }; 
-        
-        await db.collection('profiles').doc(currentUser.username).update(updatedProfileData); 
-        
-        editModal.hide(); 
-
-        await fetchAndRenderProfile(currentUser.username); 
-        showToast("Cập nhật thành công!", "success"); 
-    } catch (error) { 
-        console.error("Lỗi khi lưu profile:", error); 
-        showToast("Lỗi khi lưu. Vui lòng thử lại."); 
-    } finally { 
-        saveBtn.disabled = false; 
-        saveBtn.textContent = 'Lưu thay đổi'; 
-    } 
-}
-
-// SIMPLIFIED openChangePasswordModal to send reset link directly
-async function openChangePasswordModal() {
-    closeSidebar();
-    if (!auth.currentUser || !auth.currentUser.email) {
-        showToast("Không tìm thấy email liên kết với tài khoản này. Vui lòng liên hệ hỗ trợ.", "danger");
-        return;
-    }
-    
-    if (!confirm(`Một liên kết để đặt lại mật khẩu sẽ được gửi đến email đã đăng ký của bạn: ${auth.currentUser.email}. Bạn có muốn tiếp tục?`)) return;
-    
-    try {
-        await auth.sendPasswordResetEmail(auth.currentUser.email);
-        showToast("Email đặt lại mật khẩu đã được gửi. Vui lòng kiểm tra hộp thư đến.", "success");
-    } catch (error) {
-        console.error("Lỗi gửi email đặt lại mật khẩu:", error);
-        showToast("Gửi email thất bại. Vui lòng thử lại.");
-    }
-}
-
-function setupAuthForm() { 
-    showRegisterBtn.addEventListener('click', () => authFlipCard.classList.add('is-flipped')); 
-    showLoginBtn.addEventListener('click', () => authFlipCard.classList.remove('is-flipped')); 
-    document.getElementById('forgot-password-btn').addEventListener('click', () => switchView('forgotPassword')); 
-    document.getElementById('back-to-login-btn').addEventListener('click', () => { switchView('auth'); authFlipCard.classList.remove('is-flipped'); }); 
-    const resetEmailBtn = document.getElementById('reset-mode-email-btn'), resetPhoneBtn = document.getElementById('reset-mode-phone-btn'); 
-    const resetEmailGroup = document.getElementById('reset-email-group'), resetPhoneGroup = document.getElementById('reset-phone-group'); 
-    resetEmailBtn.addEventListener('click', () => { passwordResetMode = 'email'; resetEmailGroup.style.display = 'block'; resetPhoneGroup.style.display = 'none'; resetEmailBtn.classList.replace('btn-outline-light', 'btn-primary'); resetPhoneBtn.classList.replace('btn-primary', 'btn-outline-light'); }); 
-    resetPhoneBtn.addEventListener('click', () => { passwordResetMode = 'phone'; resetEmailGroup.style.display = 'none'; resetPhoneGroup.style.display = 'block'; resetPhoneBtn.classList.replace('btn-outline-light', 'btn-primary'); resetEmailBtn.classList.replace('btn-primary', 'btn-outline-light'); });
-    
-    document.getElementById('view-demo-btn').addEventListener('click', () => {
-        const demoUser = "bmassk3"; 
-        history.pushState(null, '', `?user=${demoUser}`);
-        fetchAndRenderProfile(demoUser);
-    });
-}
-
-// --- TÍNH NĂNG NHẠC NỀN ---
-function setupMusicPlayer() {
-    const audio = document.getElementById('bg-audio');
-    
-    const musicBtn = document.createElement('button');
-    musicBtn.id = 'music-toggle-btn';
-    musicBtn.innerHTML = '<i class="fas fa-music"></i>';
-    musicBtn.title = "Bật/Tắt nhạc";
-    
-    document.body.appendChild(musicBtn);
-
-    let isPlaying = false;
-
-    function toggleMusic() {
-        if (isPlaying) {
-            audio.pause();
-            musicBtn.classList.remove('playing');
-            musicBtn.innerHTML = '<i class="fas fa-music"></i>'; 
-        } else {
-            audio.play().then(() => {
-                musicBtn.classList.add('playing');
-                musicBtn.innerHTML = '<i class="fas fa-compact-disc"></i>'; 
-            }).catch(err => console.log("Không thể phát nhạc: ", err));
+            });
         }
-        isPlaying = !isPlaying;
-    }
-
-    musicBtn.addEventListener('click', (e) => {
-        e.stopPropagation(); 
-        toggleMusic();
-    });
-
-    audio.volume = 0.5; 
-    const playPromise = audio.play();
-
-    if (playPromise !== undefined) {
-        playPromise.then(_ => {
-            isPlaying = true;
-            musicBtn.classList.add('playing');
-            musicBtn.innerHTML = '<i class="fas fa-compact-disc"></i>';
-        })
-        .catch(error => {
-            // Autoplay blocked. Try to unlock on first interaction.
-            const unlockAudio = () => {
-                audio.play();
-                isPlaying = true;
-                musicBtn.classList.add('playing');
-                musicBtn.innerHTML = '<i class="fas fa-compact-disc"></i>';
-                document.removeEventListener('click', unlockAudio);
-            };
-            document.addEventListener('click', unlockAudio);
-        });
-    }
-}
-
-function main() {
-    initializeFirebase();
-    
-    auth.onAuthStateChanged(async (user) => {
-        if (user) {
-            // Existing Firebase Login Flow
-            await user.reload(); const refreshedUser = auth.currentUser;
-            if (!refreshedUser.emailVerified && refreshedUser.providerData.some(p => p.providerId === 'password')) verificationBanner.style.display = 'block'; else verificationBanner.style.display = 'none';
-            const profileQuery = await db.collection('profiles').where('ownerUid', '==', refreshedUser.uid).limit(1).get();
-            if (!profileQuery.empty) {
-                const profileData = profileQuery.docs[0].data();
-                currentUser = { uid: refreshedUser.uid, email: refreshedUser.email, username: profileData.username, providerId: refreshedUser.providerData[0].providerId };
-                setupNotificationListeners(); 
-            } else { console.warn("User in Auth but not Firestore. Logging out."); await auth.signOut(); currentUser = null; }
-        } else currentUser = null;
         
-        setupSidebar(); 
-        await handleRouteChange(); 
-    });
-    
-    // Auth listeners
-    document.getElementById('login-form').addEventListener('submit', handleLogin);
-    document.getElementById('register-form').addEventListener('submit', handleRegister);
-    document.getElementById('google-login-btn').addEventListener('click', handleGoogleLogin);
-    document.getElementById('save-profile-btn').addEventListener('click', handleSaveProfile);
-    document.getElementById('resend-verification-btn').addEventListener('click', async () => { try { await auth.currentUser.sendEmailVerification(); showToast("Email đã được gửi lại.", 'success'); } catch (e) { showToast("Gửi email thất bại."); }});
-    document.getElementById('forgot-password-form').addEventListener('submit', handleForgotPassword);
-    
-    // Global listeners
-    importJsonInput.addEventListener('change', handleImportJson); 
-    document.getElementById('footer-year').textContent = new Date().getFullYear();
-    setupAuthForm();
+        // Ẩn/Hiện Admin Panel
+        function toggleAdminPanel() {
+            const adminPanel = document.getElementById('admin-panel');
+            if (adminPanel.style.display === 'none' && isAdmin) {
+                adminPanel.style.display = 'block';
+            } else {
+                adminPanel.style.display = 'none';
+            }
+        }
 
-    document.getElementById('project-detail-link-btn').addEventListener('click', (e) => handleProjectLinkActivation(e.currentTarget));
-    document.getElementById('project-detail-share-btn').addEventListener('click', (e) => handleShareProject(e.currentTarget));
 
-    setupMusicPlayer();
-}
+        // ------------------------------------
+        // 4. UI LOGIC (Filter, Sidebar, Counter, Track)
+        // ------------------------------------
 
-main();
+        function setupProjectFilter() {
+            const filters = document.querySelectorAll('.filter-btn');
+            const projects = document.querySelectorAll('.gallery-item');
 
-});
-</script>
+            filters.forEach(button => {
+                button.addEventListener('click', () => {
+                    const filter = button.getAttribute('data-filter');
+                    
+                    // Cập nhật trạng thái active của button
+                    filters.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
 
+                    // Lọc dự án
+                    projects.forEach(project => {
+                        const category = project.getAttribute('data-category');
+                        if (filter === 'all' || category === filter) {
+                            project.style.display = 'block';
+                            project.classList.remove('hidden');
+                        } else {
+                            project.style.display = 'none';
+                            project.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+            
+            // Kích hoạt bộ lọc 'all' mặc định
+            document.querySelector('.filter-btn[data-filter="all"]').click();
+        }
+        
+        // Hàm cuộn track (từ mã gốc)
+        function setupScrollTrack(id) {
+             const track = document.getElementById(id);
+            
+            // Xóa nội dung cuộn cũ
+            let firstHalf = Array.from(track.children).filter(item => !item.classList.contains('hidden'));
+            track.innerHTML = '';
+            
+            if (firstHalf.length > 0) {
+                // Thêm lại nội dung gốc và clone nó 1 lần để tạo hiệu ứng cuộn vô hạn
+                firstHalf.forEach(item => track.appendChild(item.cloneNode(true)));
+                firstHalf.forEach(item => track.appendChild(item.cloneNode(true)));
+                
+                // Kích hoạt animation cuộn vô hạn bằng cách thêm lại CSS Animation (chúng ta đã xóa nó trước đó)
+                track.style.animation = 'scroll-left 45s linear infinite';
+            } else {
+                track.style.animation = 'none';
+            }
+        }
+
+        // Hàm chạy counter (từ mã gốc)
+        function runCounter() {
+            document.querySelectorAll('.stat-num').forEach(c => {
+                const t = +c.getAttribute('data-target'); let n=0, i=t/50;
+                const u = () => { n+=i; if(n<t){ c.innerText=Math.ceil(n); requestAnimationFrame(u); }else{ c.innerText=t+"+"; } };
+                u();
+            });
+        }
+
+        // Hàm toggleMenu (từ mã gốc)
+        let isMenuOpen = false;
+        function toggleMenu() {
+            const sb=document.getElementById('sidebar'), ov=document.getElementById('overlay'), ic=document.querySelector('.sidebar-toggle i');
+            isMenuOpen = !isMenuOpen;
+            
+            if(isMenuOpen){ 
+                sb.classList.add('active'); 
+                ov.classList.add('active'); 
+                ic.className='fas fa-times';
+                sidebarToggle.classList.remove('hidden'); // Luôn hiện khi mở menu
+            }
+            else { 
+                sb.classList.remove('active'); 
+                ov.classList.remove('active'); 
+                ic.className='fas fa-bars'; 
+            }
+        }
+
+
+        // ------------------------------------
+        // 5. MAIN INIT & EVENT LISTENERS
+        // ------------------------------------
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                // Loader logic
+                document.getElementById('loader').style.opacity = '0';
+                setTimeout(() => document.getElementById('loader').style.display = 'none', 800);
+                
+                // AOS init
+                AOS.init({ once: true, offset: 50, duration: 800, easing: 'cubic-bezier(0.25, 1, 0.5, 1)' });
+                
+                // Setup Auth Listener và Load dynamic content
+                setupAuthStatusListener();
+                loadProjects(); 
+                
+                // Run counter
+                runCounter();
+
+            }, 1000);
+        });
+
+        // Smart Sidebar Toggle Logic (từ mã gốc)
+        let lastScrollTop = 0;
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        window.addEventListener("scroll", function() {
+            let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            if(isMenuOpen) return;
+            if (scrollTop > lastScrollTop && scrollTop > 100) {
+                sidebarToggle.classList.add('hidden');
+            } else {
+                sidebarToggle.classList.remove('hidden');
+            }
+            lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+        }, false);
+        
+        // Typed.js (từ mã gốc)
+        new Typed('#typing-text', { 
+            strings: ['Mastering Crypto & Webside.', 'Specializing in MMO Services.', 'hdd.io.vn'], 
+            typeSpeed: 40, 
+            backSpeed: 30, 
+            backDelay: 2000, 
+            loop: true, 
+            showCursor: false 
+        });
+
+        // Event Listeners cho Google Login
+        document.getElementById('google-login-btn').addEventListener('click', loginWithGoogle);
+
+        // Event Listeners cho Form Admin
+        document.getElementById('add-project-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const newProject = {
+                id: parseInt(document.getElementById('proj-id').value), // Lấy ID
+                title: document.getElementById('proj-title').value,
+                tag: document.getElementById('proj-tag').value,
+                category: document.getElementById('proj-category').value,
+                imageUrl: document.getElementById('proj-image').value,
+            };
+            addProject(newProject);
+        });
+
+        // Hàm copyToClipboard (từ mã gốc) - Giữ lại
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                Swal.mixin({ toast: true, position: 'top', showConfirmButton: false, timer: 2000, background: '#004d33', color: '#fff', iconColor: '#B4F9F2' })
+                    .fire({ icon: 'success', title: 'Đã sao chép!' });
+            });
+        }
+    </script>
 </body>
 </html>
