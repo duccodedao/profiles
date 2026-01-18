@@ -367,7 +367,7 @@
         let bulkDeleteMode = false; 
         let selectedAppsForDelete = new Set(); 
         let currentAnnouncement = {}; 
-        let adminRequests = []; // NEW: Store admin requests
+        let adminRequests = []; 
 
         // --- AUTH & INITIAL ---
         onAuthStateChanged(auth, async (user) => {
@@ -392,10 +392,8 @@
                     if (currentFilter === 'favorites') renderApps();
                 });
                 
-                // NEW: Hide Request section if admin
                 requestSection.classList.toggle('hidden', isAdmin);
 
-                // NEW: Check for existing request
                 if (!isAdmin) {
                     const reqSnap = await getDoc(doc(db, "adminRequests", user.uid));
                     if (reqSnap.exists()) {
@@ -416,10 +414,10 @@
                 userFavorites = [];
                 document.getElementById('auth-section').innerHTML = `<button onclick="window.login()" class="bg-primary text-white px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-widest">Login</button>`;
                 if (currentFilter === 'favorites') window.setFilter('all'); 
-                requestSection.classList.add('hidden'); // Hide request section for logged out users
+                requestSection.classList.add('hidden'); 
             }
             document.getElementById('role-status').innerText = isSuper ? 'SUPER' : (isAdmin ? 'DEPUTY' : 'GUEST');
-            document.getElementById('admin-sidebar-toggle').classList.toggle('hidden', !isAdmin); // NEW: Sidebar toggle
+            document.getElementById('admin-sidebar-toggle').classList.toggle('hidden', !isAdmin); 
             
             renderApps();
             renderDeputyList();
@@ -446,7 +444,7 @@
                 showToast("Đã gửi yêu cầu thành công!");
             } catch (e) {
                 console.error("Error submitting request:", e);
-                showToast("Lỗi khi gửi yêu cầu!");
+                showToast("Lỗi khi gửi yêu cầu!", true); // <-- FIXED
             }
         };
 
@@ -492,7 +490,7 @@
             renderAdminRequests();
         });
 
-        // --- ANNOUNCEMENT LOGIC (Unchanged) ---
+        // --- ANNOUNCEMENT LOGIC ---
         function renderAnnouncementBar() {
             const bar = document.getElementById('announcement-bar');
             const textDiv = document.getElementById('announcement-text');
@@ -535,7 +533,7 @@
                 await setDoc(doc(db, "settings", "announcement"), { content: content }, { merge: true });
                 showToast("Đã lưu nội dung thông báo!");
             } catch (e) {
-                showToast("Lỗi khi lưu nội dung thông báo!");
+                showToast("Lỗi khi lưu nội dung thông báo!", true); // <-- FIXED
             }
         };
         
@@ -550,7 +548,7 @@
                 await setDoc(doc(db, "settings", "announcement"), { active: newState }, { merge: true });
                 showToast(newState ? "Đã BẬT thông báo!" : "Đã TẮT thông báo!");
             } catch (e) {
-                showToast("Lỗi khi thay đổi trạng thái thông báo!");
+                showToast("Lỗi khi thay đổi trạng thái thông báo!", true); // <-- FIXED
             }
         };
         
@@ -575,22 +573,21 @@
                     </div>
                 </div>
             `).join('');
+            lucide.createIcons();
         }
 
         window.approveAdminRequest = async (uid, email) => {
             if (!isSuper || !confirm(`Duyệt yêu cầu của ${email} và cấp quyền Phó Admin?`)) return;
             
             try {
-                // 1. Add email to deputy list
                 await setDoc(doc(db, "settings", "admins"), { deputy_emails: arrayUnion(email) }, { merge: true });
-                // 2. Delete request
                 await deleteDoc(doc(db, "adminRequests", uid));
                 
                 showToast(`Đã duyệt yêu cầu và cấp quyền cho ${email}! Đang tải lại...`);
                 setTimeout(() => location.reload(), 500);
             } catch (e) {
                  console.error("Error approving request:", e);
-                 showToast("Lỗi khi duyệt yêu cầu!");
+                 showToast("Lỗi khi duyệt yêu cầu!", true); // <-- FIXED
             }
         };
 
@@ -598,16 +595,15 @@
             if (!isSuper || !confirm("Bạn có chắc chắn muốn từ chối yêu cầu này?")) return;
             
             try {
-                // 1. Delete request
                 await deleteDoc(doc(db, "adminRequests", uid));
                 showToast("Đã từ chối yêu cầu!");
             } catch (e) {
                  console.error("Error rejecting request:", e);
-                 showToast("Lỗi khi từ chối yêu cầu!");
+                 showToast("Lỗi khi từ chối yêu cầu!", true); // <-- FIXED
             }
         };
 
-        // --- FAVORITES LOGIC (Unchanged) ---
+        // --- FAVORITES LOGIC ---
         window.toggleFavorite = (appId, event) => {
             event.stopPropagation();
             if (!currentUser) {
@@ -624,24 +620,23 @@
                 showToast(isFavorite ? "Đã gỡ khỏi mục yêu thích" : "Đã thêm vào mục yêu thích!");
             }).catch(error => {
                 console.error("Error toggling favorite: ", error);
-                showToast("Lỗi khi cập nhật mục yêu thích!");
+                showToast("Lỗi khi cập nhật mục yêu thích!", true); // <-- FIXED
             });
         };
 
-        // --- BULK DELETE LOGIC (Updated toggle trigger) ---
+        // --- BULK DELETE LOGIC ---
         window.toggleBulkDelete = () => {
             if (!isAdmin) return;
             bulkDeleteMode = !bulkDeleteMode;
             selectedAppsForDelete.clear();
             
-            // Toggle for sidebar button (NEW)
             document.getElementById('bulk-delete-sidebar-toggle').classList.toggle('text-red-500', !bulkDeleteMode);
             document.getElementById('bulk-delete-sidebar-toggle').classList.toggle('bg-red-500', bulkDeleteMode);
             document.getElementById('bulk-delete-sidebar-toggle').classList.toggle('text-white', bulkDeleteMode);
             
             document.getElementById('bulk-delete-dock').classList.toggle('hidden', !bulkDeleteMode);
             
-            window.toggleAdminSidebar(); // Close sidebar when entering bulk delete mode
+            window.toggleAdminSidebar(); 
 
             document.querySelectorAll('.app-item').forEach(el => el.classList.remove('selected-for-delete'));
             updateBulkDeleteCount();
@@ -685,7 +680,7 @@
                 window.toggleBulkDelete(); 
             } catch (error) {
                 console.error("Error batch deleting apps: ", error);
-                showToast("Lỗi: Không thể xóa hàng loạt.");
+                showToast("Lỗi: Không thể xóa hàng loạt.", true); // <-- FIXED
             }
         };
 
@@ -888,7 +883,7 @@
             if(isAdmin) new Sortable(container, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(container.children).forEach((el, i) => { if(el.dataset.id) updateDoc(doc(db, "apps", el.dataset.id), { order: i }); }); }});
         }
 
-        // --- IMPORT / EXPORT LOGIC (Unchanged) ---
+        // --- IMPORT / EXPORT LOGIC ---
         window.handleExport = (type) => {
             const data = {
                 apps: apps.map(({id, ...rest}) => rest),
@@ -964,21 +959,22 @@
                 } catch (error) {
                     console.error(error);
                     alert("Lỗi phân tích file. Vui lòng kiểm tra lại định dạng.");
+                    showToast("Lỗi phân tích file. Vui lòng kiểm tra lại định dạng.", true); // <-- FIXED
                 }
             };
             if (file.name.endsWith('.json')) reader.readAsText(file); else reader.readAsArrayBuffer(file);
         };
 
-        // --- ADMIN UTILS (Refactored for Sidebar) ---
+        // --- ADMIN UTILS ---
         window.updateCatField = (id, field, val) => updateDoc(doc(db, "categories", id), { [field]: val })
             .then(() => showToast("Đã cập nhật danh mục!"))
-            .catch(e => showToast("Lỗi khi cập nhật danh mục!"));
+            .catch(e => showToast("Lỗi khi cập nhật danh mục!", true)); // <-- FIXED
             
         window.deleteCat = (id) => {
             if (confirm("Xóa danh mục này?")) {
                 deleteDoc(doc(db, "categories", id))
                     .then(() => showToast("Đã xóa danh mục!"))
-                    .catch(e => showToast("Lỗi khi xóa danh mục!"));
+                    .catch(e => showToast("Lỗi khi xóa danh mục!", true)); // <-- FIXED
             }
         };
         
@@ -992,14 +988,13 @@
                     document.getElementById('new-cat-icon').value = '';
                     showToast("Đã thêm danh mục mới!");
                 })
-                .catch(e => showToast("Lỗi khi thêm danh mục."));
+                .catch(e => showToast("Lỗi khi thêm danh mục.", true)); // <-- FIXED
         };
 
         window.renderDeputyList = () => {
             const list = document.getElementById('deputy-list');
             list.innerHTML = deputies.map(email => `<div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-xl border dark:border-white/5"><span class="text-sm font-bold">${email}</span>${isSuper ? `<button onclick="window.removeDeputy('${email}')" class="text-red-500 p-2"><i data-lucide="user-minus" class="w-4 h-4"></i></button>` : ''}</div>`).join('');
             
-            // Fix: Show/Hide Super Admin Guard
             document.getElementById('deputy-guard').classList.toggle('hidden', isSuper);
             document.getElementById('deputy-ui').classList.toggle('hidden', !isSuper);
             
@@ -1015,7 +1010,7 @@
                 document.getElementById('new-deputy-email').value = '';
                 showToast(`Đã cấp quyền cho ${email}. Đang tải lại...`);
                 setTimeout(() => location.reload(), 500);
-            } catch (e) { showToast("Lỗi khi cấp quyền Phó Admin."); }
+            } catch (e) { showToast("Lỗi khi cấp quyền Phó Admin.", true); } // <-- FIXED
         };
 
         window.removeDeputy = async (email) => {
@@ -1024,7 +1019,7 @@
                 await setDoc(doc(db, "settings", "admins"), { deputy_emails: arrayRemove(email) }, { merge: true });
                 showToast(`Đã xóa quyền của ${email}. Đang tải lại...`);
                 setTimeout(() => location.reload(), 500);
-            } catch (e) { showToast("Lỗi khi xóa quyền Phó Admin."); }
+            } catch (e) { showToast("Lỗi khi xóa quyền Phó Admin.", true); } // <-- FIXED
         };
 
         window.toggleFormFields = () => {
@@ -1060,7 +1055,7 @@
                 showToast(id ? "Đã cập nhật ứng dụng!" : "Đã thêm ứng dụng mới!");
             } catch (e) {
                 console.error("Error saving app:", e);
-                showToast("Lỗi khi lưu ứng dụng!");
+                showToast("Lỗi khi lưu ứng dụng!", true); // <-- FIXED
             }
         };
 
@@ -1068,7 +1063,7 @@
             if (confirm("Xóa mục này?")) {
                 deleteDoc(doc(db, "apps", id))
                     .then(() => showToast("Đã xóa ứng dụng!"))
-                    .catch(e => showToast("Lỗi khi xóa ứng dụng!"));
+                    .catch(e => showToast("Lỗi khi xóa ứng dụng!", true)); // <-- FIXED
             }
         };
 
@@ -1078,7 +1073,7 @@
             if (!app) return;
             updateDoc(doc(db, "apps", id), { visible: !app.visible })
                 .then(() => showToast(`Đã ${!app.visible ? 'BẬT' : 'TẮT'} hiển thị.`))
-                .catch(e => showToast("Lỗi cập nhật hiển thị!"));
+                .catch(e => showToast("Lỗi cập nhật hiển thị!", true)); // <-- FIXED
         };
 
         window.renderCategories = renderCategories; 
@@ -1119,7 +1114,6 @@
         window.openModal = (id) => document.getElementById(id).classList.remove('hidden');
         window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
         window.switchTab = (tabId) => {
-            // NEW: Added tab-request and updated buttons array
             const tabs = ['tab-cat', 'tab-announcement', 'tab-deputy', 'tab-request', 'tab-data']; 
             const buttons = ['btn-tab-cat', 'btn-tab-announcement', 'btn-tab-deputy', 'btn-tab-request', 'btn-tab-data']; 
 
@@ -1134,7 +1128,6 @@
                  renderAnnouncementControls();
             }
             
-            // Fix: Re-render Deputy list to update Super Admin guard
             if (tabId === 'tab-deputy' && isAdmin) {
                  renderDeputyList();
             }
@@ -1147,12 +1140,17 @@
         window.toggleTheme = () => { document.documentElement.classList.toggle('dark'); localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light'; };
         document.getElementById('search-input').oninput = (e) => { searchQuery = e.target.value; renderApps(); };
         window.setView = (mode) => { viewMode = mode; renderApps(); };
-        function showToast(msg) {
+        
+        // CẬP NHẬT: Thêm tham số isError để phân biệt rõ ràng trạng thái thông báo
+        function showToast(msg, isError = false) {
             const t = document.getElementById('toast');
             document.getElementById('toast-msg').innerText = msg;
             t.classList.remove('opacity-0', 'translate-y-20');
+            
+            const isErrorMessage = msg.toLowerCase().includes('lỗi') || isError; 
             const icon = t.querySelector('i');
-            if (msg.toLowerCase().includes('lỗi')) {
+            
+            if (isErrorMessage) {
                  icon.setAttribute('data-lucide', 'alert-triangle');
                  icon.classList.remove('text-green-500');
                  icon.classList.add('text-red-500');
