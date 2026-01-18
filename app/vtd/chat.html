@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="vi" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Cộng Đồng - Vĩnh Trạch Đông</title>
+    <link rel="icon" href="https://bmass.vercel.app/img/bmasslogo.png" type="image/png">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { colors: { primary: '#4f46e5', secondary: '#f43f5e', dark: '#020617' } } }
+        }
+    </script>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; transition: background 0.3s; }
+        .dark body { background-color: #020617; color: #e2e8f0; }
+        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .dark .glass { background: rgba(15, 23, 42, 0.8); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        
+        /* Custom scrollbar for chat panel */
+        #messages-container::-webkit-scrollbar { width: 4px; }
+        #messages-container::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+        .dark #messages-container::-webkit-scrollbar-thumb { background: #475569; }
+        .chat-bubble { max-width: 85%; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header (Simple) -->
+    <header class="sticky top-0 z-[100] glass px-6 py-3 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <a href="index.html" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition text-primary">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </a>
+            <h1 class="text-lg font-black tracking-tight leading-none text-primary dark:text-white">Chat Cộng Đồng</h1>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button onclick="toggleTheme()" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                <i data-lucide="sun" class="w-5 h-5 hidden dark:block text-amber-400"></i>
+                <i data-lucide="moon" class="w-5 h-5 dark:hidden text-slate-600"></i>
+            </button>
+            <div id="auth-section"></div>
+        </div>
+    </header>
+
+    <!-- Main Chat Content -->
+    <main class="flex-1 max-w-4xl mx-auto w-full p-4 flex flex-col h-[calc(100vh-100px)]">
+        <div class="bg-white dark:bg-slate-900 rounded-3xl flex-1 flex flex-col shadow-2xl border dark:border-white/10 overflow-hidden">
+            <!-- Messages Container -->
+            <div id="messages-container" class="flex-1 p-4 space-y-3 overflow-y-auto">
+                <!-- Messages will be injected here -->
+                <div id="chat-status" class="text-center text-sm font-medium text-slate-400 p-2">Đang tải tin nhắn...</div>
+            </div>
+            <!-- Message Input -->
+            <form id="chat-form" class="p-4 border-t dark:border-white/5 flex gap-2">
+                <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." class="flex-1 px-3 py-2 bg-slate-50 dark:bg-white/5 rounded-xl outline-none text-sm disabled:opacity-50" required>
+                <button type="submit" id="send-btn" class="bg-primary text-white px-4 rounded-xl font-bold text-xs uppercase disabled:opacity-50">Gửi</button>
+            </form>
+        </div>
+    </main>
+
+    <!-- Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        // ADDED serverTimestamp for chat time
+        import { getFirestore, collection, addDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
+            authDomain: "profile-d1214.firebaseapp.com",
+            projectId: "profile-d1214",
+            storageBucket: "profile-d1214.firebasestorage.app",
+            messagingSenderId: "914980131889",
+            appId: "1:914980131889:web:72f8da15c42dbee671b110",
+            measurementId: "G-C587M69LZW"
+        };
+
+        const fbApp = initializeApp(firebaseConfig);
+        const auth = getAuth(fbApp);
+        const db = getFirestore(fbApp);
+        const provider = new GoogleAuthProvider();
+
+        let currentUser = null; 
+
+        // --- AUTH & INITIAL ---
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            renderAuthUI();
+            setupChatInterface(!!user);
+        });
+
+        window.login = () => signInWithPopup(auth, provider);
+        window.logout = () => signOut(auth).then(() => location.reload());
+
+        function renderAuthUI() {
+            const authSection = document.getElementById('auth-section');
+            if (currentUser) {
+                authSection.innerHTML = `<div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 pr-3 rounded-lg border dark:border-white/10"><img src="${currentUser.photoURL}" class="w-7 h-7 rounded-md"><button onclick="window.logout()" class="text-[9px] font-black uppercase text-red-500">Exit</button></div>`;
+            } else {
+                authSection.innerHTML = `<button onclick="window.login()" class="bg-primary text-white px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-widest">Login</button>`;
+            }
+            lucide.createIcons();
+        }
+
+        // --- CHAT LOGIC ---
+        // Data Realtime for Chat Messages
+        onSnapshot(query(collection(db, "chats"), orderBy("timestamp", "asc")), (snap) => {
+            const messages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderMessages(messages);
+        });
+        
+        function setupChatInterface(isLoggedIn) {
+            const input = document.getElementById('chat-input');
+            const button = document.getElementById('send-btn');
+            const status = document.getElementById('chat-status');
+            const chatForm = document.getElementById('chat-form');
+
+            if (isLoggedIn) {
+                input.disabled = false;
+                button.disabled = false;
+                status.classList.add('hidden');
+                status.innerText = ''; // Clear status once logged in
+                
+                chatForm.onsubmit = (e) => {
+                    e.preventDefault();
+                    sendMessage();
+                };
+            } else {
+                input.disabled = true;
+                button.disabled = true;
+                status.classList.remove('hidden');
+                status.innerText = 'Vui lòng đăng nhập để chat.';
+                chatForm.onsubmit = (e) => e.preventDefault();
+            }
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+
+            if (!message || !currentUser) return;
+
+            addDoc(collection(db, "chats"), {
+                uid: currentUser.uid,
+                email: currentUser.email,
+                name: currentUser.displayName,
+                photoURL: currentUser.photoURL,
+                message: message,
+                timestamp: serverTimestamp()
+            }).then(() => {
+                input.value = '';
+            }).catch(error => {
+                console.error("Error sending message: ", error);
+                alert("Lỗi gửi tin nhắn!");
+            });
+        }
+
+        function renderMessages(messages) {
+            const container = document.getElementById('messages-container');
+            if (!container) return;
+            
+            // Check if user is near the bottom before rendering
+            const isAtBottom = container.scrollHeight - container.clientHeight <= container.scrollTop + 1;
+            
+            let html = '';
+            if (!currentUser) {
+                html += `<div id="chat-status" class="text-center text-sm font-medium text-slate-400 p-2">Vui lòng đăng nhập để chat.</div>`;
+            } else if (messages.length === 0) {
+                 html += `<div id="chat-status" class="text-center text-sm font-medium text-slate-400 p-2">Hãy là người đầu tiên gửi tin nhắn!</div>`;
+            } else {
+                html = messages.map(m => {
+                    const isOwnMessage = currentUser && m.uid === currentUser.uid;
+                    const time = m.timestamp ? new Date(m.timestamp.seconds * 1000).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '...';
+                    
+                    if (isOwnMessage) {
+                        // User's own message (right align)
+                        return `
+                            <div class="flex justify-end">
+                                <div class="chat-bubble bg-primary text-white p-3 rounded-2xl rounded-tr-none text-sm shadow-md">
+                                    <p>${m.message}</p>
+                                    <p class="text-[9px] text-white/70 mt-1 text-right">${time}</p>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        // Other user's message (left align)
+                        return `
+                            <div class="flex items-start gap-2">
+                                <img src="${m.photoURL}" class="w-7 h-7 rounded-full shadow-sm flex-shrink-0">
+                                <div class="flex flex-col">
+                                    <span class="text-[10px] font-bold text-slate-500 dark:text-slate-300">${m.email || m.name}</span>
+                                    <div class="chat-bubble bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white p-3 rounded-2xl rounded-tl-none text-sm mt-0.5 shadow-md">
+                                        <p>${m.message}</p>
+                                        <p class="text-[9px] text-slate-500 dark:text-slate-400 mt-1 text-right">${time}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }).join('');
+            }
+
+            container.innerHTML = html;
+            
+            // Scroll to bottom after rendering new messages if user was already at the bottom
+            if (isAtBottom) {
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+        
+        // --- UTILS ---
+        window.toggleTheme = () => { document.documentElement.classList.toggle('dark'); localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light'; };
+        if(localStorage.theme === 'dark') document.documentElement.classList.add('dark');
+        lucide.createIcons();
+    </script>
+</body>
+</html>
