@@ -46,7 +46,7 @@
             margin-bottom: 50px;
         }
         .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
-        .dash-container { max-width: 1200px; margin: 0 auto; padding: 20px 20px 60px 20px; } /* ADDED: Dashboard container style */
+        .dash-container { max-width: 1200px; margin: 0 auto; padding: 20px 20px 60px 20px; } /* Dashboard container style */
 
         /* MODIFIED: Horizontal Scrolling Services */
         .services-grid {
@@ -232,7 +232,7 @@
         #menuToggle { display: none; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--accent); } /* Mobile Only */
 
 
-        /* --- HERO & DASHBOARD (ADDED HERO BASE STYLES) --- */
+        /* --- HERO & DASHBOARD --- */
         .hero {
             text-align: center;
             padding: 100px 20px;
@@ -273,7 +273,7 @@
             background: var(--bg-secondary);
         }
 
-        /* --- TABLE (ADDED BASE STYLES) --- */
+        /* --- TABLE --- */
         .table-wrap {
             overflow-x: auto;
             width: 100%;
@@ -315,7 +315,7 @@
              outline: none;
         }
 
-        /* --- FOOTER (ADDED BASE STYLES) --- */
+        /* --- FOOTER --- */
         footer {
             padding: 30px 20px;
             text-align: center;
@@ -324,7 +324,7 @@
             font-size: 0.9rem;
         }
 
-        /* --- MODAL (ADDED BASE STYLES) --- */
+        /* --- MODAL --- */
         .modal {
             position: fixed;
             z-index: 2000;
@@ -358,7 +358,7 @@
             cursor: pointer;
         }
 
-        /* --- LOADER (ADDED BASE STYLES) --- */
+        /* --- LOADER --- */
         #loader {
             position: fixed;
             z-index: 3000;
@@ -381,7 +381,7 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* --- TOAST (ADDED BASE STYLES) --- */
+        /* --- TOAST --- */
         #toast {
             visibility: hidden;
             min-width: 250px;
@@ -618,7 +618,6 @@
     <!-- FOOTER -->
     <footer>
         <p>&copy; 2024 Lux Photography Studio. All rights reserved.</p>
-        <!-- REMOVED: Admin Setup Button -->
     </footer>
 
     <!-- MODAL: Booking (ADDED TIME) -->
@@ -726,7 +725,7 @@
             measurementId: "G-C587M69LZW"
         };
         
-        // ADMIN UID CONFIG - THAY THẾ SAU KHI DÙNG NÚT "ADMIN SETUP"
+        // CẦN THAY THẾ: UID Của tài khoản Google dùng làm Admin
         const ADMIN_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1"; 
 
         const app = initializeApp(firebaseConfig);
@@ -936,7 +935,8 @@
                 snaps.forEach(d => {
                     const data = d.data();
                     const isDone = data.status === "Hoàn thành";
-                    const dateOrder = data.createdAt.toDate().toLocaleDateString('vi-VN');
+                    // Kiểm tra và chuyển đổi timestamp nếu có
+                    const dateOrder = data.createdAt?.toDate().toLocaleDateString('vi-VN') || 'N/A';
                     const statusClass = data.status.includes('Chờ') ? 'badge-pending' : (data.status.includes('Hoàn thành') ? 'badge-completed' : (data.status.includes('Đã hủy') ? 'badge-cancelled' : 'badge-deposit'));
 
                     tbody.innerHTML += `
@@ -1036,7 +1036,8 @@
             const completed = orders.filter(o => o.status === 'Hoàn thành').length;
             const cancelled = orders.filter(o => o.status === 'Đã hủy').length;
 
-            const rate = (total - cancelled) > 0 ? ((completed / (total - cancelled)) * 100).toFixed(1) : 0; 
+            const totalActive = total - cancelled;
+            const rate = totalActive > 0 ? ((completed / totalActive) * 100).toFixed(1) : 0; 
 
             document.getElementById('statTotal').innerText = total;
             document.getElementById('statDeposit').innerText = deposit;
@@ -1080,10 +1081,11 @@
                 await updateDoc(doc(db, "orders", id), {status: newStatus});
                 showToast("Đã cập nhật trạng thái đơn hàng");
             } else {
-                 // Revert select box to previous status if the user cancels the confirmation
                  showToast("Hủy duyệt do trùng lịch");
             }
-            showLoader(false);
+            // Always refresh the table to ensure the select box state matches the DB state,
+            // especially after a cancellation in the confirmation dialog.
+            showLoader(false); 
             loadAdminOrders();
             renderAdminSchedule(); // Update schedule if active tab
         };
@@ -1114,7 +1116,7 @@
             showLoader(false);
         }
 
-        // 6b. Services CRUD (UPDATED renderAdminServices layout)
+        // 6b. Services CRUD 
         window.renderAdminServices = () => {
              const div = document.getElementById('adminServicesList');
              if (!div) return;
@@ -1134,7 +1136,7 @@
              `).join('');
         };
         
-        // --- Service CRUD Helper Functions (Copied for completeness) ---
+        // --- Service CRUD Helper Functions ---
         window.openServiceModal = () => {
              document.getElementById('svcModalTitle').innerText = 'Tạo gói mới';
              document.getElementById('editSvcId').value = '';
@@ -1227,6 +1229,7 @@
             }
             
             showLoader(true);
+            // Lấy các đơn hàng đã được cọc hoặc hoàn thành trong ngày đã chọn, sắp xếp theo giờ chụp.
             const q = query(
                 collection(db, "orders"), 
                 where("date", "==", date),
@@ -1270,10 +1273,13 @@
             document.getElementById('dashboardSection').style.display = 'block';
             
             if(currentUser.uid === ADMIN_UID) {
+                // Admin default: Quản lý Đơn
                 switchTab('admin-orders', document.getElementById('tabBtn-admin-orders'));
+                // Set default date for schedule tab
                 const today = new Date().toISOString().split('T')[0];
-                document.getElementById('scheduleDateFilter').value = today; // Set default date for schedule
+                document.getElementById('scheduleDateFilter').value = today;
             } else {
+                // Client default: Đơn của tôi
                 switchTab('my-orders', document.getElementById('tabBtn-my-orders'));
             }
         };
