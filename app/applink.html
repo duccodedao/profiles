@@ -1,4 +1,4 @@
---- START OF FILE Paste January 19, 2026 - 1:40AM ---
+
 
 <!DOCTYPE html>
 <html lang="vi" class="light">
@@ -130,7 +130,7 @@
 
             <!-- Nút Mua App (NEW) -->
             <div id="buy-app-section" class="max-w-4xl mx-auto p-4 flex justify-center">
-                <button onclick="window.openModal('modal-subdomain-request')" class="flex items-center gap-2 px-8 py-4 bg-secondary text-white rounded-2xl font-bold text-sm uppercase shadow-xl hover:bg-secondary/90 transition">
+                <button onclick="window.openRequestModal()" class="flex items-center gap-2 px-8 py-4 bg-secondary text-white rounded-2xl font-bold text-sm uppercase shadow-xl hover:bg-secondary/90 transition">
                     <i data-lucide="rocket" class="w-5 h-5"></i> MUA BẢN SAO APP CỦA TÔI (100K VNĐ)
                 </button>
             </div>
@@ -382,7 +382,7 @@
                 </div>
 
                 <div class="flex gap-4">
-                    <button type="button" id="next-to-payment-btn" class="flex-1 py-4 bg-primary text-white rounded-xl font-bold shadow-lg uppercase text-xs">TIẾP TỤC & XEM QR</button>
+                    <button type="button" id="next-to-payment-btn" onclick="window.nextToPayment()" class="flex-1 py-4 bg-primary text-white rounded-xl font-bold shadow-lg uppercase text-xs">TIẾP TỤC & XEM QR</button>
                     <button type="submit" id="submit-request-btn" class="flex-1 py-4 bg-green-500 text-white rounded-xl font-bold shadow-lg uppercase text-xs hidden">ĐÃ CHUYỂN KHOẢN & GỬI YÊU CẦU</button>
                 </div>
             </form>
@@ -464,7 +464,6 @@
             isMotherSite = false;
         }
         
-        // Ẩn nút mua app trên site con
         if (!isMotherSite) {
             document.getElementById('buy-app-section').classList.add('hidden');
         }
@@ -484,12 +483,12 @@
                     currentDb = childDb; currentAuth = childAuth;
                 }
                 
-                // Bắt đầu lắng nghe trạng thái đăng nhập
                 onAuthStateChanged(currentAuth, handleAuthStateChange);
 
             } catch (error) {
                  console.error("Firebase initialization failed:", error);
                  if (!isMotherSite) {
+                     document.getElementById('app-loading').classList.add('hidden');
                      document.getElementById('app-container').innerHTML = `<div class="p-16 text-center text-red-500 font-bold">LỖI: Ứng dụng con (${currentSubdomain}) chưa được kích hoạt hoặc cấu hình Firebase không hợp lệ. Vui lòng liên hệ Admin.</div>`;
                  }
             }
@@ -497,16 +496,14 @@
         
         async function fetchChildConfigAndInitialize() {
             try {
-                // 1. Kết nối tạm thời với Mother DB
+                // Kết nối tạm thời với Mother DB để lấy config
                 const motherApp = initializeApp(MOTHER_FIREBASE_CONFIG, "motherApp");
                 const motherDb = getFirestore(motherApp);
                 
-                // 2. Lấy config của site con từ Mother DB
                 const configDoc = await getDoc(doc(motherDb, "tenants_config", currentSubdomain));
                 
                 if (configDoc.exists()) {
                     childFirebaseConfig = configDoc.data().config;
-                    // 3. Khởi tạo Firebase con và tiếp tục
                     await initializeAppWithConfig(childFirebaseConfig, "childApp");
                 } else {
                     throw new Error("Config not found");
@@ -518,7 +515,6 @@
             }
         }
 
-        // Bắt đầu quy trình
         if (isMotherSite) {
             initializeAppWithConfig(MOTHER_FIREBASE_CONFIG);
         } else {
@@ -527,7 +523,7 @@
         
         // --- AUTH & INITIAL ---
         async function handleAuthStateChange(user) {
-            if (!currentDb) return; // Đợi DB khởi tạo
+            if (!currentDb) return;
 
             currentUser = user;
             const requestSection = document.getElementById('request-admin-section');
@@ -535,7 +531,7 @@
             const requestForm = document.getElementById('request-admin-form');
             
             if (user) {
-                isSuper = user.uid === SUPER_UID && isMotherSite; // Chỉ SUPER ADMIN của Site Mẹ mới có quyền Super
+                isSuper = user.uid === SUPER_UID && isMotherSite;
                 
                 const adminSnap = await getDoc(doc(currentDb, "settings", "admins"));
                 deputies = adminSnap.exists() ? adminSnap.data().deputy_emails || [] : [];
@@ -547,13 +543,11 @@
                 
                 renderAuthUI();
                 
-                // Lắng nghe favorites trên DB hiện tại
                 onSnapshot(doc(currentDb, "users", user.uid), (snap) => {
                     userFavorites = snap.data()?.favorites || [];
                     if (currentFilter === 'favorites') renderApps();
                 });
                 
-                // Chỉ hiển thị Request Admin trên Site Mẹ
                 requestSection.classList.toggle('hidden', isAdmin || !isMotherSite);
 
                 if (!isAdmin && isMotherSite) {
@@ -579,34 +573,18 @@
             
             setupDataListeners();
             renderApps();
-            if (isAdmin) {
-                renderDeputyList();
-                renderAnnouncementControls();
-            }
+            if (isMotherSite) trackVisit();
         }
         
-        // NEW: Handle Admin Request Submission (Chỉ Site Mẹ)
-        document.getElementById('request-admin-form').onsubmit = async (e) => {
-            e.preventDefault();
-            if (!currentUser || !isMotherSite) return;
-            const reason = document.getElementById('request-admin-reason').value.trim();
-            if (reason.length < 5) { showToast("Lý do phải dài hơn 5 ký tự!"); return; }
-            
-            try {
-                await setDoc(doc(db, "adminRequests", currentUser.uid), { // Dùng DB MẸ
-                    uid: currentUser.uid,
-                    email: currentUser.email,
-                    name: currentUser.displayName,
-                    reason: reason,
-                    timestamp: new Date().toISOString()
-                });
-                document.getElementById('request-admin-status').innerText = "Yêu cầu của bạn đang chờ Admin chính duyệt.";
-                document.getElementById('request-admin-form').classList.add('hidden');
-                showToast("Đã gửi yêu cầu thành công!");
-            } catch (e) {
-                console.error("Error submitting request:", e);
-                showToast("Lỗi khi gửi yêu cầu!", true);
-            }
+        window.openRequestModal = () => {
+             if (!currentUser) { showToast("Vui lòng đăng nhập để gửi yêu cầu mua app!", true); return; }
+             // Reset UI
+             document.getElementById('subdomain-input').readOnly = false;
+             document.getElementById('subdomain-input').value = '';
+             document.getElementById('next-to-payment-btn').classList.remove('hidden');
+             document.getElementById('submit-request-btn').classList.add('hidden');
+             document.getElementById('payment-step').classList.add('hidden');
+             window.openModal('modal-subdomain-request');
         };
 
         window.login = () => signInWithPopup(currentAuth, provider);
@@ -635,13 +613,11 @@
                 renderApps();
             });
             
-            // Stats chỉ dùng trên Site Mẹ
             if (isMotherSite) {
                 onSnapshot(doc(currentDb, "settings", "visits_stats"), (snap) => {
                     visitStats = snap.data() || {};
                     renderStats();
                 });
-                 // Listeners cho Admin Requests (chỉ trên Site Mẹ)
                 if (isAdmin) {
                      onSnapshot(collection(currentDb, "adminRequests"), (snap) => {
                         adminRequests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -662,8 +638,36 @@
         }
         
         // --- ANNOUNCEMENT LOGIC (Sử dụng currentDb) ---
-        function renderAnnouncementBar() { /* ... (Không đổi) ... */ }
-        function renderAnnouncementControls() { /* ... (Không đổi) ... */ }
+        function renderAnnouncementBar() {
+            const bar = document.getElementById('announcement-bar');
+            const textDiv = document.getElementById('announcement-text');
+            
+            if (currentAnnouncement.active && currentAnnouncement.content && currentAnnouncement.content.trim() !== '') {
+                textDiv.innerText = currentAnnouncement.content.trim().toUpperCase() + " • "; 
+                bar.classList.remove('hidden');
+                const contentLen = currentAnnouncement.content.length;
+                const speed = Math.max(10, Math.min(30, contentLen * 0.2)); 
+                bar.querySelector('.marquee > div').style.animationDuration = `${speed}s`;
+
+            } else {
+                bar.classList.add('hidden');
+            }
+        }
+        
+        function renderAnnouncementControls() {
+            if (!isAdmin) return;
+            const btn = document.getElementById('toggle-announcement-btn');
+            
+            if (currentAnnouncement.active) {
+                btn.innerText = 'TẮT THÔNG BÁO';
+                btn.classList.remove('bg-slate-500');
+                btn.classList.add('bg-red-500');
+            } else {
+                btn.innerText = 'BẬT THÔNG BÁO';
+                btn.classList.remove('bg-red-500');
+                btn.classList.add('bg-slate-500');
+            }
+        }
         
         window.saveAnnouncementContent = async () => {
             if (!isAdmin || !currentDb) return;
@@ -686,9 +690,79 @@
         };
 
         // --- ADMIN REQUEST LOGIC (Sử dụng db/currentDb) ---
-        function renderAdminRequests() { /* ... (Chỉ chạy trên Site Mẹ) ... */ }
-        window.approveAdminRequest = async (uid, email) => { /* ... (Chỉ chạy trên Site Mẹ, dùng db) ... */ };
-        window.rejectAdminRequest = async (uid) => { /* ... (Chỉ chạy trên Site Mẹ, dùng db) ... */ };
+        function renderAdminRequests() {
+            if (!isSuper || !isMotherSite) return; 
+            const list = document.getElementById('requests-list');
+            document.getElementById('request-count').innerText = `(${adminRequests.length})`;
+            
+            if (adminRequests.length === 0) {
+                 list.innerHTML = `<div class="p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center text-slate-400">Không có yêu cầu mới.</div>`;
+                 return;
+            }
+
+            list.innerHTML = adminRequests.map(req => `
+                <div class="p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border dark:border-white/5 space-y-2">
+                    <p class="text-sm font-bold">${req.name} <span class="text-xs text-slate-500">(${req.email})</span></p>
+                    <p class="text-xs italic text-slate-600 dark:text-slate-400">Lý do: ${req.reason}</p>
+                    <div class="flex gap-2 pt-2 border-t dark:border-white/5 mt-2">
+                        <button onclick="window.approveAdminRequest('${req.uid}', '${req.email}')" class="flex-1 bg-green-500 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase">DUYỆT</button>
+                        <button onclick="window.rejectAdminRequest('${req.uid}')" class="flex-1 bg-red-500 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase">TỪ CHỐI</button>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        window.approveAdminRequest = async (uid, email) => {
+            if (!isSuper || !isMotherSite || !confirm(`Duyệt yêu cầu của ${email} và cấp quyền Phó Admin?`)) return;
+            
+            try {
+                await setDoc(doc(db, "settings", "admins"), { deputy_emails: arrayUnion(email) }, { merge: true });
+                await deleteDoc(doc(db, "adminRequests", uid));
+                
+                showToast(`Đã duyệt yêu cầu và cấp quyền cho ${email}! Đang tải lại...`);
+                setTimeout(() => location.reload(), 500);
+            } catch (e) {
+                 console.error("Error approving request:", e);
+                 showToast("Lỗi khi duyệt yêu cầu!", true);
+            }
+        };
+
+        window.rejectAdminRequest = async (uid) => {
+            if (!isSuper || !isMotherSite || !confirm("Bạn có chắc chắn muốn từ chối yêu cầu này?")) return;
+            
+            try {
+                await deleteDoc(doc(db, "adminRequests", uid));
+                showToast("Đã từ chối yêu cầu!");
+            } catch (e) {
+                 console.error("Error rejecting request:", e);
+                 showToast("Lỗi khi từ chối yêu cầu!", true);
+            }
+        };
+
+        // NEW: Handle Admin Request Submission (Chỉ Site Mẹ)
+        document.getElementById('request-admin-form').onsubmit = async (e) => {
+            e.preventDefault();
+            if (!currentUser || !isMotherSite) return;
+            const reason = document.getElementById('request-admin-reason').value.trim();
+            if (reason.length < 5) { showToast("Lý do phải dài hơn 5 ký tự!"); return; }
+            
+            try {
+                await setDoc(doc(db, "adminRequests", currentUser.uid), {
+                    uid: currentUser.uid,
+                    email: currentUser.email,
+                    name: currentUser.displayName,
+                    reason: reason,
+                    timestamp: new Date().toISOString()
+                });
+                document.getElementById('request-admin-status').innerText = "Yêu cầu của bạn đang chờ Admin chính duyệt.";
+                document.getElementById('request-admin-form').classList.add('hidden');
+                showToast("Đã gửi yêu cầu thành công!");
+            } catch (e) {
+                console.error("Error submitting request:", e);
+                showToast("Lỗi khi gửi yêu cầu!", true);
+            }
+        };
 
         // --- SUBDOMAIN REQUEST LOGIC (CHỈ SITE MẸ) ---
         function generateVietQRLink(paymentContent) {
@@ -704,7 +778,7 @@
             return `${baseURL}?${params}`;
         }
         
-        document.getElementById('next-to-payment-btn').onclick = () => {
+        window.nextToPayment = () => {
              const subdomainInput = document.getElementById('subdomain-input');
              const subdomain = subdomainInput.value.trim().toLowerCase();
              
@@ -734,7 +808,7 @@
             const paymentContent = `MUAAPP-${subdomain.toUpperCase()}`;
 
             try {
-                await setDoc(doc(db, "subdomainRequests", currentUser.uid), { // Dùng DB MẸ
+                await setDoc(doc(db, "subdomainRequests", currentUser.uid), {
                     uid: currentUser.uid,
                     email: currentUser.email,
                     name: currentUser.displayName,
@@ -781,13 +855,13 @@
             if (!isSuper) { showToast("Chỉ Super Admin mới có quyền này!", true); return; }
             document.getElementById('target-subdomain-uid').value = uid;
             document.getElementById('config-subdomain-name').innerText = `Cấu hình cho: ${subdomain}`;
-            document.getElementById('firebase-config-json').value = ''; // Reset
+            document.getElementById('firebase-config-json').value = ''; 
             window.openModal('modal-approve-config');
         };
 
         document.getElementById('approve-config-form').onsubmit = async (e) => {
             e.preventDefault();
-            if (!isSuper) return;
+            if (!isSuper || !isMotherSite) return;
             
             const uid = document.getElementById('target-subdomain-uid').value;
             const configJson = document.getElementById('firebase-config-json').value.trim();
@@ -797,8 +871,7 @@
             try {
                 const config = JSON.parse(configJson);
                 
-                // 1. Lưu config vào Mother DB
-                await setDoc(doc(db, "tenants_config", req.subdomain), { // Dùng DB MẸ
+                await setDoc(doc(db, "tenants_config", req.subdomain), {
                     subdomain: req.subdomain,
                     uid: uid,
                     email: req.email,
@@ -806,12 +879,11 @@
                     timestamp: new Date().toISOString()
                 });
                 
-                // 2. Xóa yêu cầu
-                await deleteDoc(doc(db, "subdomainRequests", uid)); // Dùng DB MẸ
+                await deleteDoc(doc(db, "subdomainRequests", uid));
                 
                 showToast(`Đã cấp app con cho ${req.subdomain}! Yêu cầu Admin: Cấu hình DNS trỏ ${req.subdomain}.${MOTHER_DOMAIN} về site này.`);
                 window.closeModal('modal-approve-config');
-                location.reload(); // Tải lại để cập nhật list
+                location.reload(); 
 
             } catch (e) {
                  console.error("Error saving tenant config:", e);
@@ -823,7 +895,7 @@
             if (!isAdmin || !isMotherSite || !confirm("Bạn có chắc chắn muốn từ chối yêu cầu mua app này?")) return;
             
             try {
-                await deleteDoc(doc(db, "subdomainRequests", uid)); // Dùng DB MẸ
+                await deleteDoc(doc(db, "subdomainRequests", uid));
                 showToast("Đã từ chối yêu cầu mua app!");
             } catch (e) {
                  console.error("Error rejecting subdomain request:", e);
@@ -851,7 +923,9 @@
         };
 
         // --- BULK DELETE LOGIC (Sử dụng currentDb) ---
-        // ... (Không đổi, chỉ cần đảm bảo dùng currentDb trong executeBulkDelete)
+        window.toggleBulkDelete = () => { /* ... (Không đổi) ... */ };
+        window.toggleAppSelection = (appId, event) => { /* ... (Không đổi) ... */ };
+        function updateBulkDeleteCount() { /* ... (Không đổi) ... */ };
         window.executeBulkDelete = async () => {
             if (!isAdmin || selectedAppsForDelete.size === 0 || !currentDb) return;
             
@@ -871,10 +945,14 @@
                 showToast("Lỗi: Không thể xóa hàng loạt.", true);
             }
         };
-        // ... (Các hàm bulk delete khác không đổi) ...
 
         // --- VISIT STATS LOGIC (Chỉ Site Mẹ) ---
-        // ... (Không đổi, chỉ cần đảm bảo dùng db trong trackVisit) ...
+        function getDateString(date = new Date()) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return { day: `${y}-${m}-${d}`, month: `${y}-${m}`, year: `${y}` };
+        }
         async function trackVisit() {
             if (!isMotherSite || !db) return; // Chỉ track trên Site Mẹ
             const now = getDateString();
@@ -884,25 +962,82 @@
                     const statsDocRef = doc(db, "settings", "visits_stats");
                     const statsSnap = await transaction.get(statsDocRef);
                     const statsData = statsSnap.data() || {};
-                    // ... (logic cũ) ...
+
+                    let updates = {
+                        totalVisits: increment(1)
+                    };
+                    
+                    if (statsData.lastDailyUpdate !== now.day) {
+                        updates.dailyVisits = 1;
+                        updates.lastDailyUpdate = now.day;
+                    } else {
+                        updates.dailyVisits = (statsData.dailyVisits || 0) + 1;
+                    }
+
+                    if (statsData.lastMonthlyUpdate !== now.month) {
+                        updates.monthlyVisits = 1;
+                        updates.lastMonthlyUpdate = now.month;
+                    } else {
+                        updates.monthlyVisits = (statsData.monthlyVisits || 0) + 1;
+                    }
+
+                    if (statsData.lastYearlyUpdate !== now.year) {
+                        updates.yearlyVisits = 1;
+                        updates.lastYearlyUpdate = now.year;
+                    } else {
+                        updates.yearlyVisits = (statsData.yearlyVisits || 0) + 1;
+                    }
+
                     transaction.set(statsDocRef, updates, { merge: true });
                 });
+
             } catch (e) {
                 console.error("Transaction failed while tracking visit: ", e);
             }
         }
-        function renderStats() { /* ... (Không đổi) ... */ }
+        function renderStats() {
+            const container = document.getElementById('visit-stats-container');
+            if (!container) return; 
+            
+            const { dailyVisits = 0, monthlyVisits = 0, yearlyVisits = 0, totalVisits = 0 } = visitStats;
+            
+            container.innerHTML = `
+                <div class="flex items-center gap-3 text-xs font-black tracking-widest text-primary dark:text-white mb-4">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                    <span>THỐNG KÊ LƯỢT TRUY CẬP</span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-center border dark:border-white/5">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Hôm nay</p>
+                        <span class="text-lg font-black text-primary">${dailyVisits.toLocaleString('vi-VN')}</span>
+                    </div>
+                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-center border dark:border-white/5">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Tháng này</p>
+                        <span class="text-lg font-black text-primary">${monthlyVisits.toLocaleString('vi-VN')}</span>
+                    </div>
+                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-center border dark:border-white/5">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Năm nay</p>
+                        <span class="text-lg font-black text-primary">${yearlyVisits.toLocaleString('vi-VN')}</span>
+                    </div>
+                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-center border dark:border-white/5">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Tổng cộng</p>
+                        <span class="text-lg font-black text-primary">${totalVisits.toLocaleString('vi-VN')}</span>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+        }
 
         // --- RENDERING APP (Không đổi) ---
-        window.renderApps = () => { /* ... (Không đổi) ... */ };
+        window.renderApps = () => { /* ... (Không đổi, đã dùng apps, categories global) ... */ };
 
         // --- IMPORT / EXPORT LOGIC (Sử dụng currentDb) ---
         window.handleExport = (type) => { /* ... (Không đổi) ... */ };
         window.handleImport = async (event) => {
             if (!currentDb) return;
-            // ... (logic cũ) ...
+            // ... (Logic cũ) ...
             try {
-                // ... (logic phân tích file) ...
+                // ... (Logic phân tích file) ...
                 
                 // Cần đảm bảo các addDoc dùng currentDb
                 for (const cat of importedData.categories) {
@@ -920,7 +1055,7 @@
                     const finalAppData = { ...rest, categoryId: categoryIdMap[categoryName] || '' };
                     await addDoc(collection(currentDb, "apps"), finalAppData);
                 }
-                // ... (logic cuối) ...
+                // ... (Logic cuối) ...
             } catch (error) { /* ... */ }
         };
 
@@ -950,11 +1085,19 @@
                 .catch(e => showToast("Lỗi khi thêm danh mục.", true));
         };
 
-        window.renderDeputyList = () => { /* ... (Chỉ cần đảm bảo dùng currentDb trong add/remove Deputy) ... */ };
+        window.renderDeputyList = () => {
+            const list = document.getElementById('deputy-list');
+            list.innerHTML = deputies.map(email => `<div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-xl border dark:border-white/5"><span class="text-sm font-bold">${email}</span>${isSuper ? `<button onclick="window.removeDeputy('${email}')" class="text-red-500 p-2"><i data-lucide="user-minus" class="w-4 h-4"></i></button>` : ''}</div>`).join('');
+            
+            document.getElementById('deputy-guard').classList.toggle('hidden', isSuper);
+            document.getElementById('deputy-ui').classList.toggle('hidden', !isSuper);
+            
+            lucide.createIcons();
+        };
 
         window.addDeputy = async () => {
             const email = document.getElementById('new-deputy-email').value.trim().toLowerCase();
-            if(!email || !isSuper) return; // Chỉ Super Admin mới thêm
+            if(!email || !isSuper) return;
             if (!email.includes('@')) { showToast("Vui lòng nhập email hợp lệ!"); return; }
             try {
                 await setDoc(doc(currentDb, "settings", "admins"), { deputy_emails: arrayUnion(email) }, { merge: true });
@@ -965,7 +1108,7 @@
         };
 
         window.removeDeputy = async (email) => {
-            if(!confirm(`Xóa quyền Phó Admin cho ${email}?`) || !isSuper) return; // Chỉ Super Admin mới xóa
+            if(!confirm(`Xóa quyền Phó Admin cho ${email}?`) || !isSuper) return;
             try {
                 await setDoc(doc(currentDb, "settings", "admins"), { deputy_emails: arrayRemove(email) }, { merge: true });
                 showToast(`Đã xóa quyền của ${email}. Đang tải lại...`);
@@ -973,7 +1116,21 @@
             } catch (e) { showToast("Lỗi khi xóa quyền Phó Admin.", true); }
         };
 
-        // ... (Các hàm Modal App, Edit App không đổi) ...
+        window.toggleFormFields = () => { /* ... (Không đổi) ... */ };
+        window.openAppModal = () => { document.getElementById('app-form').reset(); document.getElementById('edit-id').value = ''; window.toggleFormFields(); window.openModal('modal-app'); };
+        window.editApp = (id) => {
+            const a = apps.find(x => x.id === id);
+            document.getElementById('edit-id').value = a.id;
+            document.getElementById('app-name').value = a.name;
+            document.getElementById('app-position').value = a.position || '';
+            document.getElementById('app-link').value = a.url;
+            document.getElementById('app-icon').value = a.iconUrl || '';
+            document.getElementById('app-category').value = a.categoryId || '';
+            document.getElementById('app-visible').checked = a.visible;
+            window.toggleFormFields();
+            window.openModal('modal-app');
+        };
+
         document.getElementById('app-form').onsubmit = async (e) => {
             e.preventDefault();
             const id = document.getElementById('edit-id').value;
@@ -1005,15 +1162,44 @@
                 .then(() => showToast(`Đã ${!app.visible ? 'BẬT' : 'TẮT'} hiển thị.`))
                 .catch(e => showToast("Lỗi cập nhật hiển thị!", true));
         };
-        
+
         window.renderCategories = renderCategories; 
         function renderCategories() {
-            // ... (Logic render Categories không đổi) ...
-            // Lưu ý: Sortable dùng updateDoc(doc(currentDb, ...), ...)
+            const bar = document.getElementById('category-bar');
+            let html = `<button onclick="window.setFilter('all')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all ${currentFilter === 'all' ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">TẤT CẢ</button>`;
+            
+            if (currentUser) {
+                html += `<button onclick="window.setFilter('favorites')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center gap-2 ${currentFilter === 'favorites' ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">
+                    <i data-lucide="star" class="w-3 h-3 ${currentFilter === 'favorites' ? 'fill-white' : ''}"></i> ƯA THÍCH
+                </button>`;
+            }
+            
+            categories.forEach(c => {
+                html += `<button onclick="window.setFilter('${c.id}')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center gap-2 ${currentFilter === c.id ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">
+                    ${c.icon ? `<img src="${c.icon}" class="w-3 h-3 object-contain">` : ''} ${c.name.toUpperCase()}
+                </button>`;
+            });
+            bar.innerHTML = html;
+
+            const list = document.getElementById('cat-list-admin');
+            list.innerHTML = categories.map(c => `<li class="flex flex-col gap-2 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border dark:border-white/5" data-id="${c.id}"><div class="flex items-center gap-3"><i data-lucide="grip-vertical" class="text-slate-300 cursor-move"></i><input type="text" value="${c.name}" onblur="window.updateCatField('${c.id}', 'name', this.value)" class="flex-1 bg-transparent border-none font-bold text-sm outline-none"><button onclick="window.deleteCat('${c.id}')" class="text-red-500 p-2"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div><input type="text" value="${c.icon || ''}" onblur="window.updateCatField('${c.id}', 'icon', this.value)" placeholder="Icon URL" class="text-[10px] bg-white dark:bg-black/20 px-4 py-2 rounded-lg outline-none w-full border-none shadow-inner"></li>`).join('');
+            lucide.createIcons();
             if(isAdmin && currentDb) new Sortable(list, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(list.children).forEach((el, i) => updateDoc(doc(currentDb, "categories", el.dataset.id), { order: i })); }});
+            document.getElementById('app-category').innerHTML = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
         }
-        
-        // ... (Các hàm switchTab, setView, toggleTheme, showToast không đổi) ...
+
+        window.setFilter = (id) => { 
+            if (id === 'favorites' && !currentUser) {
+                 showToast("Vui lòng đăng nhập để xem mục yêu thích!");
+                 return;
+            }
+            currentFilter = id; 
+            renderCategories(); 
+            renderApps(); 
+        };
+
+        window.openModal = (id) => document.getElementById(id).classList.remove('hidden');
+        window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
         window.switchTab = (tabId) => {
             const tabs = ['tab-cat', 'tab-announcement', 'tab-deputy', 'tab-request', 'tab-data', 'tab-subdomain-request']; 
             const buttons = ['btn-tab-cat', 'btn-tab-announcement', 'btn-tab-deputy', 'btn-tab-request', 'btn-tab-data', 'btn-tab-subdomain-request']; 
@@ -1040,12 +1226,35 @@
                  renderSubdomainRequests();
             }
         };
+        
+        window.toggleTheme = () => { document.documentElement.classList.toggle('dark'); localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light'; };
+        document.getElementById('search-input').oninput = (e) => { searchQuery = e.target.value; renderApps(); };
+        window.setView = (mode) => { viewMode = mode; renderApps(); };
+        
+        function showToast(msg, isError = false) {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            t.classList.remove('opacity-0', 'translate-y-20');
+            
+            const isErrorMessage = msg.toLowerCase().includes('lỗi') || isError; 
+            const icon = t.querySelector('i');
+            
+            if (isErrorMessage) {
+                 icon.setAttribute('data-lucide', 'alert-triangle');
+                 icon.classList.remove('text-green-500');
+                 icon.classList.add('text-red-500');
+            } else {
+                 icon.setAttribute('data-lucide', 'check-circle');
+                 icon.classList.remove('text-red-500');
+                 icon.classList.add('text-green-500');
+            }
+            lucide.createIcons();
+            setTimeout(() => t.classList.add('opacity-0', 'translate-y-20'), 3000);
+        }
 
         if(localStorage.theme === 'dark') document.documentElement.classList.add('dark');
         lucide.createIcons();
         window.setView('grid');
-        
-        // Chạy trackVisit sau khi khởi tạo Firebase Mẹ (đã nằm trong logic khởi tạo)
     </script>
 </body>
 </html>
