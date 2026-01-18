@@ -853,7 +853,7 @@
             `).join('');
         }
         
-        // BỎ HÀM calcPrice vì không cho phép tùy chọn thêm/bớt
+        // HÀM calcPrice ĐÃ BỊ XÓA vì không cho phép tùy chọn thêm/bớt
 
         // 4. BOOKING 
         window.openBooking = (id) => {
@@ -926,6 +926,7 @@
             showLoader(true);
             
             try {
+                // LƯU Ý: Query này BẮT BUỘC cần Composite Index: uid (Asc), createdAt (Desc)
                 const q = query(collection(db, "orders"), where("uid", "==", currentUser.uid), orderBy("createdAt", "desc"));
                 const snaps = await getDocs(q);
                 const tbody = document.querySelector('#myOrdersTable tbody');
@@ -956,9 +957,10 @@
                     });
                 }
             } catch (e) {
-                showToast("Lỗi khi tải đơn hàng của bạn!");
-                console.error("Lỗi khi tải đơn hàng của Client:", e);
-                document.querySelector('#tab-my-orders tbody').innerHTML = '<tr><td colspan="7" style="text-align:center; color: var(--danger);">Lỗi tải đơn hàng. Vui lòng thử lại.</td></tr>';
+                // Hiển thị thông báo lỗi Index yêu cầu người dùng kiểm tra Console
+                showToast("LỖI TẢI ĐƠN HÀNG CÁ NHÂN! Vui lòng kiểm tra Console (F12) để tạo Index.");
+                console.error("Lỗi khi tải đơn hàng của Client (INDEX ERROR):", e);
+                document.querySelector('#tab-my-orders tbody').innerHTML = '<tr><td colspan="7" style="text-align:center; color: var(--danger);">LỖI TẢI ĐƠN HÀNG. Vui lòng kiểm tra Console (F12) để lấy link tạo Index.</td></tr>';
             }
             showLoader(false);
         }
@@ -1038,13 +1040,12 @@
                 const filterStatus = document.getElementById('orderFilterStatus').value;
 
                 // Fetch ALL orders for client-side filtering and stats calculation
-                // Query này KHÔNG cần Composite Index (chỉ 1 orderBy)
                 const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
                 const snap = await getDocs(q); 
                 allAdminOrders = [];
                 snap.forEach(d => allAdminOrders.push({id: d.id, ...d.data()}));
                 
-                // Apply filtering (client-side filtering, no Index required here unless using server-side query)
+                // Apply filtering (client-side filtering)
                 const filteredOrders = allAdminOrders.filter(d => {
                     const searchMatch = !searchVal || 
                         (d.email && d.email.toLowerCase().includes(searchVal)) || 
