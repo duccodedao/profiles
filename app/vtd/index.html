@@ -7,9 +7,9 @@
     <link rel="icon" href="https://bmass.vercel.app/img/bmasslogo.png" type="image/png">
     
     <!-- ============================================= -->
-    <!-- NEW: SEO & PWA Meta Tags for Home Screen Icon -->
+    <!-- SEO & PWA Meta Tags for Home Screen Icon -->
     <!-- ============================================= -->
-    <meta name="description" content="[MÔ TẢ NGẮN GỌN VỀ TRANG WEB CỦA BẠN]">
+    <meta name="description" content="Hub Portal tổng hợp các ứng dụng và danh bạ liên hệ của Vĩnh Trạch Đông.">
     
     <!-- Default favicon -->
     <link rel="icon" href="https://bmass.vercel.app/img/bmasslogo.png" type="image/png">
@@ -21,20 +21,15 @@
     <meta name="apple-mobile-web-app-title" content="Hub Vĩnh Trạch Đông">
     
     <!-- Android (PWA Manifest) -->
-    <!-- Lưu ý: Cần tạo file manifest.json riêng -->
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="/js/applinkicon.json">
     <meta name="theme-color" content="#4f46e5">
 
-    <!-- Social Media Meta (Optional but Recommended) -->
+    <!-- Social Media Meta -->
     <meta property="og:title" content="Hub Portal - Vĩnh Trạch Đông">
-    <meta property="og:description" content="[MÔ TẢ NGẮN GỌN VỀ TRANG WEB CỦA BẠN]">
+    <meta property="og:description" content="Hub Portal tổng hợp các ứng dụng và danh bạ liên hệ của Vĩnh Trạch Đông.">
     <meta property="og:image" content="https://bmass.vercel.app/img/bmasslogo.png">
     <meta property="og:type" content="website">
     
-    <!-- ============================================= -->
-    <!-- END: SEO & PWA Meta Tags                      -->
-    <!-- ============================================= -->
-
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Fonts -->
@@ -53,7 +48,7 @@
         }
     </script>
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; transition: background 0.3s; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; transition: background 0.3s; padding-bottom: 100px; } 
         .dark body { background-color: #020617; color: #e2e8f0; }
         .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); }
         .dark .glass { background: rgba(15, 23, 42, 0.8); border-bottom: 1px solid rgba(255,255,255,0.05); }
@@ -61,8 +56,8 @@
         .drag-ghost { opacity: 0.3; background: #4f46e5 !important; border-radius: 1rem; }
         .tab-active { color: #4f46e5; border-bottom: 2px solid #4f46e5; }
         .dark .tab-active { color: #818cf8; border-bottom: 2px solid #818cf8; }
-        /* Thêm padding dưới cho body để không che footer */
-        body { padding-bottom: 100px; } 
+        .is-favorite .star-icon { fill: #facc15; }
+        .app-item.selected-for-delete { box-shadow: 0 0 0 3px #f43f5e; border-radius: 1rem; }
     </style>
 </head>
 <body class="min-h-screen pb-24">
@@ -80,6 +75,9 @@
         </div>
 
         <div class="flex items-center gap-3">
+            <!-- New: Bulk Delete Button -->
+            <button onclick="window.toggleBulkDelete()" id="bulk-delete-toggle" class="p-2 rounded-xl text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition hidden"><i data-lucide="scissors" class="w-5 h-5"></i></button>
+
             <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
                 <button onclick="setView('grid')" id="view-grid-btn" class="p-1.5 rounded-md transition-all shadow-sm bg-white dark:bg-slate-700"><i data-lucide="layout-grid" class="w-4 h-4"></i></button>
                 <button onclick="setView('list')" id="view-list-btn" class="p-1.5 rounded-md transition-all"><i data-lucide="list" class="w-4 h-4"></i></button>
@@ -108,12 +106,28 @@
 
         <!-- Categories -->
         <div id="category-bar" class="flex flex-wrap gap-2"></div>
+        
+        <!-- App Container Loading State -->
+        <div id="app-loading" class="text-center p-16 text-slate-400 text-sm font-medium hidden">
+            <i data-lucide="loader" class="w-6 h-6 animate-spin mx-auto mb-2"></i>
+            Đang tải ứng dụng...
+        </div>
 
         <!-- Main Content -->
         <div id="app-container"></div>
+        
+        <!-- New: Bulk Delete Floating Dock -->
+        <div id="bulk-delete-dock" class="hidden fixed bottom-28 left-1/2 -translate-x-1/2 z-[110]">
+            <div class="bg-red-600 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-4">
+                <span id="selected-count">0</span> mục đã chọn
+                <button onclick="window.executeBulkDelete()" class="flex items-center gap-2 px-5 py-2.5 bg-white/20 hover:bg-white/30 text-white rounded-xl text-xs font-bold shadow-lg uppercase">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i> XÓA
+                </button>
+            </div>
+        </div>
     </main>
     
-    <!-- NEW: Footer liên hệ và nút Trợ giúp -->
+    <!-- Footer liên hệ và nút Trợ giúp -->
     <footer class="fixed bottom-0 w-full z-50 bg-white dark:bg-slate-900 border-t dark:border-white/10 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
         <div class="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center text-sm">
             <div class="text-slate-500 dark:text-slate-400">
@@ -122,7 +136,7 @@
             <div class="flex items-center gap-4">
                 <a href="#" class="text-xs font-bold text-slate-500 hover:text-primary transition">Privacy Policy</a>
                 <!-- Nút Help dẫn đến trang chat.html -->
-                <a href="chat.html" class="flex items-center gap-2 px-4 py-2 bg-secondary text-white rounded-lg font-bold text-xs uppercase shadow-lg hover:opacity-90 transition">
+                <a href="chat.html" target="_blank" class="flex items-center gap-2 px-4 py-2 bg-secondary text-white rounded-lg font-bold text-xs uppercase shadow-lg hover:opacity-90 transition">
                     <i data-lucide="life-buoy" class="w-4 h-4"></i> TRỢ GIÚP
                 </a>
             </div>
@@ -264,10 +278,8 @@
     <!-- Firebase -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        // REMOVED serverTimestamp
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        // ADDED increment, runTransaction
-        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc, arrayUnion, arrayRemove, writeBatch, increment, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc, arrayUnion, arrayRemove, writeBatch, increment, runTransaction, FieldValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
@@ -286,6 +298,10 @@
         const provider = new GoogleAuthProvider();
 
         let currentUser = null, isAdmin = false, isSuper = false, apps = [], categories = [], deputies = [], currentFilter = 'all', searchQuery = '', viewMode = 'grid', visitStats = {};
+        let userFavorites = []; // New: Array to store favorite app IDs
+        let appsLoaded = false; // New: Loading state
+        let bulkDeleteMode = false; // New: State for bulk delete
+        let selectedAppsForDelete = new Set(); // New: Set to track selected app IDs
 
         // --- AUTH & INITIAL ---
         onAuthStateChanged(auth, async (user) => {
@@ -295,15 +311,29 @@
                 const snap = await getDoc(doc(db, "settings", "admins"));
                 deputies = snap.exists() ? snap.data().deputy_emails || [] : [];
                 isAdmin = isSuper || deputies.includes(user.email);
+                
+                // New: Get user's favorites
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                userFavorites = userDoc.exists() ? userDoc.data().favorites || [] : [];
+                
                 renderAuthUI();
+                
+                // New: Listen to user favorites in real time
+                onSnapshot(doc(db, "users", user.uid), (snap) => {
+                    userFavorites = snap.data()?.favorites || [];
+                    if (currentFilter === 'favorites') renderApps();
+                });
+
             } else {
                 isAdmin = isSuper = false;
+                userFavorites = [];
                 document.getElementById('auth-section').innerHTML = `<button onclick="window.login()" class="bg-primary text-white px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-widest">Login</button>`;
+                if (currentFilter === 'favorites') setFilter('all'); // Force change filter if logged out
             }
             document.getElementById('role-status').innerText = isSuper ? 'SUPER' : (isAdmin ? 'DEPUTY' : 'GUEST');
             document.getElementById('admin-controls').classList.toggle('hidden', !isAdmin);
-            document.getElementById('deputy-guard').classList.toggle('hidden', isSuper);
-            document.getElementById('deputy-ui').classList.toggle('hidden', !isSuper);
+            document.getElementById('bulk-delete-toggle').classList.toggle('hidden', !isAdmin);
+            
             renderApps();
             renderDeputyList();
         });
@@ -323,6 +353,7 @@
 
         onSnapshot(query(collection(db, "apps"), orderBy("order", "asc")), (snap) => {
             apps = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            appsLoaded = true; // Mark as loaded
             renderApps();
         });
         
@@ -331,9 +362,86 @@
             visitStats = snap.data() || {};
             renderStats();
         });
-        
-        // REMOVED Data Realtime for Chat Messages
 
+        // --- FAVORITES LOGIC (NEW) ---
+        window.toggleFavorite = (appId, event) => {
+            event.stopPropagation();
+            if (!currentUser) {
+                showToast("Vui lòng đăng nhập để lưu mục yêu thích!");
+                return;
+            }
+
+            const isFavorite = userFavorites.includes(appId);
+            const userDocRef = doc(db, "users", currentUser.uid);
+            
+            updateDoc(userDocRef, {
+                favorites: isFavorite ? arrayRemove(appId) : arrayUnion(appId)
+            }).then(() => {
+                showToast(isFavorite ? "Đã gỡ khỏi mục yêu thích" : "Đã thêm vào mục yêu thích!");
+            }).catch(error => {
+                console.error("Error toggling favorite: ", error);
+                showToast("Lỗi khi cập nhật mục yêu thích!");
+            });
+        };
+
+        // --- BULK DELETE LOGIC (NEW) ---
+        window.toggleBulkDelete = () => {
+            if (!isAdmin) return;
+            bulkDeleteMode = !bulkDeleteMode;
+            selectedAppsForDelete.clear();
+            
+            document.getElementById('bulk-delete-toggle').classList.toggle('text-red-500', !bulkDeleteMode);
+            document.getElementById('bulk-delete-toggle').classList.toggle('bg-red-500', bulkDeleteMode);
+            document.getElementById('bulk-delete-toggle').classList.toggle('text-white', bulkDeleteMode);
+            document.getElementById('bulk-delete-dock').classList.toggle('hidden', !bulkDeleteMode);
+            
+            document.getElementById('admin-controls').classList.toggle('hidden', bulkDeleteMode);
+            
+            document.querySelectorAll('.app-item').forEach(el => el.classList.remove('selected-for-delete'));
+            updateBulkDeleteCount();
+            renderApps(); // Rerender to show checkboxes
+        };
+
+        window.toggleAppSelection = (appId, event) => {
+            event.stopPropagation();
+            if (!bulkDeleteMode) return;
+
+            const appElement = document.querySelector(`.app-item[data-id="${appId}"]`);
+            if (selectedAppsForDelete.has(appId)) {
+                selectedAppsForDelete.delete(appId);
+                appElement.classList.remove('selected-for-delete');
+            } else {
+                selectedAppsForDelete.add(appId);
+                appElement.classList.add('selected-for-delete');
+            }
+            updateBulkDeleteCount();
+        };
+
+        function updateBulkDeleteCount() {
+            const count = selectedAppsForDelete.size;
+            document.getElementById('selected-count').innerText = count;
+            document.getElementById('bulk-delete-dock').classList.toggle('hidden', !bulkDeleteMode || count === 0);
+        }
+
+        window.executeBulkDelete = async () => {
+            if (!isAdmin || selectedAppsForDelete.size === 0) return;
+            
+            if (!confirm(`Bạn có chắc chắn muốn xóa ${selectedAppsForDelete.size} mục đã chọn? Hành động này không thể hoàn tác.`)) return;
+
+            const batch = writeBatch(db);
+            selectedAppsForDelete.forEach(appId => {
+                batch.delete(doc(db, "apps", appId));
+            });
+
+            try {
+                await batch.commit();
+                showToast(`Đã xóa thành công ${selectedAppsForDelete.size} mục!`);
+                toggleBulkDelete(); // Exit mode
+            } catch (error) {
+                console.error("Error batch deleting apps: ", error);
+                showToast("Lỗi: Không thể xóa hàng loạt.");
+            }
+        };
 
         // --- VISIT STATS LOGIC (Kept) ---
         function getDateString(date = new Date()) {
@@ -421,16 +529,42 @@
             lucide.createIcons();
         }
 
-        // --- RENDERING APP & ADMIN LOGIC (Kept) ---
+        // --- RENDERING APP ---
         window.renderApps = () => {
             const container = document.getElementById('app-container');
+            const loading = document.getElementById('app-loading');
+            
+            // Show loading state if data not yet received
+            if (!appsLoaded) {
+                loading.classList.remove('hidden');
+                container.innerHTML = '';
+                return;
+            }
+            loading.classList.add('hidden');
+
             const filtered = apps.filter(a => {
-                const cat = categories.find(c => c.id === a.categoryId);
-                if (currentFilter === 'all') { if (cat?.name === "Số điện thoại") return false; } 
-                else { if (a.categoryId !== currentFilter) return false; }
+                // Apply Favorite filter first (New)
+                if (currentFilter === 'favorites') {
+                    if (!userFavorites.includes(a.id)) return false;
+                } else {
+                    const cat = categories.find(c => c.id === a.categoryId);
+                    if (currentFilter === 'all') { if (cat?.name === "Số điện thoại") return false; } 
+                    else { if (a.categoryId !== currentFilter) return false; }
+                }
+
+                // Apply Search
                 const matchSearch = a.name.toLowerCase().includes(searchQuery.toLowerCase()) || (a.position && a.position.toLowerCase().includes(searchQuery.toLowerCase()));
+                
+                // Apply Visibility & Admin filter
                 return matchSearch && (isAdmin || a.visible);
             });
+
+            if (filtered.length === 0) {
+                 container.className = "flex justify-center items-center h-40 text-slate-400";
+                 container.innerHTML = `<i data-lucide="folder-search" class="w-6 h-6 mr-2"></i>Không tìm thấy ứng dụng nào.`;
+                 lucide.createIcons();
+                 return;
+            }
 
             if (viewMode === 'grid') {
                 container.className = "grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-x-4 gap-y-8";
@@ -438,14 +572,47 @@
                     const isAppPhone = categories.find(c => c.id === a.categoryId)?.name === "Số điện thoại";
                     const domain = a.url.startsWith('http') ? new URL(a.url).hostname : '';
                     const icon = a.iconUrl || (isAppPhone ? 'https://cdn-icons-png.flaticon.com/512/3059/3059502.png' : `https://unavatar.io/${domain}?fallback=https://www.google.com/s2/favicons?domain=${domain}&sz=128`);
+                    const isFav = userFavorites.includes(a.id) ? 'is-favorite' : '';
+                    const isSelected = selectedAppsForDelete.has(a.id) ? 'selected-for-delete' : '';
+                    const opacity = a.visible ? '' : 'opacity-40';
+                    
+                    if (bulkDeleteMode) {
+                        return `
+                        <div class="app-item group flex flex-col items-center relative cursor-pointer ${isSelected}" data-id="${a.id}" onclick="window.toggleAppSelection('${a.id}', event)">
+                            <div class="w-full aspect-square bg-white dark:bg-slate-800 rounded-2xl shadow-sm border dark:border-white/5 flex items-center justify-center p-3 mb-2 transition-all">
+                                <img src="${icon}" class="w-full h-full object-contain rounded-lg ${opacity}">
+                            </div>
+                            <span class="text-[10px] font-bold text-slate-500 text-center truncate w-full uppercase tracking-tighter ${opacity}">${a.name}</span>
+                            ${a.position ? `<span class="text-[8px] text-slate-400 font-bold truncate w-full text-center uppercase ${opacity}">${a.position}</span>` : ''}
+                            <input type="checkbox" class="absolute top-1 right-1 w-5 h-5 accent-red-500 pointer-events-none" ${isSelected ? 'checked' : ''}>
+                        </div>`;
+                    }
+
                     return `
-                    <div class="app-item group flex flex-col items-center relative" data-id="${a.id}">
+                    <div class="app-item group flex flex-col items-center relative ${isFav}" data-id="${a.id}">
                         <a href="${isAppPhone ? 'tel:' + a.url : a.url}" target="_blank" class="w-full aspect-square bg-white dark:bg-slate-800 rounded-2xl shadow-sm border dark:border-white/5 flex items-center justify-center p-3 mb-2 hover:shadow-xl hover:-translate-y-1 transition-all">
-                            <img src="${icon}" class="w-full h-full object-contain rounded-lg">
+                            <img src="${icon}" class="w-full h-full object-contain rounded-lg ${opacity}">
                         </a>
-                        <span class="text-[10px] font-bold text-slate-500 text-center truncate w-full uppercase tracking-tighter">${a.name}</span>
-                        ${a.position ? `<span class="text-[8px] text-slate-400 font-bold truncate w-full text-center uppercase">${a.position}</span>` : ''}
-                        ${isAdmin ? `<div class="absolute -top-1 -right-1 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-all scale-75 z-10"><button onclick="window.editApp('${a.id}')" class="bg-indigo-500 text-white p-2 rounded-full shadow-lg"><i data-lucide="edit-2" class="w-3 h-3"></i></button><button onclick="window.deleteApp('${a.id}')" class="bg-red-500 text-white p-2 rounded-full shadow-lg"><i data-lucide="trash" class="w-3 h-3"></i></button></div>` : ''}
+                        <span class="text-[10px] font-bold text-slate-500 text-center truncate w-full uppercase tracking-tighter ${opacity}">${a.name}</span>
+                        ${a.position ? `<span class="text-[8px] text-slate-400 font-bold truncate w-full text-center uppercase ${opacity}">${a.position}</span>` : ''}
+                        
+                        <!-- Favorites & Admin Controls -->
+                        <div class="absolute -top-1 -right-1 flex flex-col gap-1 transition-all scale-90 z-10 ${isAdmin ? 'opacity-0 group-hover:opacity-100' : (currentUser ? '' : 'hidden') }">
+                            <button onclick="window.toggleFavorite('${a.id}', event)" class="bg-yellow-400 text-white p-2 rounded-full shadow-lg">
+                                <i data-lucide="star" class="w-3 h-3 star-icon ${isFav ? 'fill-current' : ''}"></i>
+                            </button>
+                            ${isAdmin ? `
+                                <button onclick="window.toggleAppVisibility('${a.id}')" class="${a.visible ? 'bg-green-500' : 'bg-slate-500'} text-white p-2 rounded-full shadow-lg">
+                                    <i data-lucide="${a.visible ? 'eye' : 'eye-off'}" class="w-3 h-3"></i>
+                                </button>
+                                <button onclick="window.editApp('${a.id}')" class="bg-indigo-500 text-white p-2 rounded-full shadow-lg">
+                                    <i data-lucide="edit-2" class="w-3 h-3"></i>
+                                </button>
+                                <button onclick="window.deleteApp('${a.id}')" class="bg-red-500 text-white p-2 rounded-full shadow-lg">
+                                    <i data-lucide="trash" class="w-3 h-3"></i>
+                                </button>
+                            ` : ''}
+                        </div>
                     </div>`;
                 }).join('');
             } else {
@@ -454,86 +621,77 @@
                     const isAppPhone = categories.find(c => c.id === a.categoryId)?.name === "Số điện thoại";
                     const domain = a.url.startsWith('http') ? new URL(a.url).hostname : '';
                     const icon = a.iconUrl || (isAppPhone ? 'https://cdn-icons-png.flaticon.com/512/3059/3059502.png' : `https://unavatar.io/${domain}?fallback=https://www.google.com/s2/favicons?domain=${domain}&sz=128`);
-                    return `<div class="flex items-center gap-4 bg-white dark:bg-slate-900 p-3 rounded-xl border dark:border-white/5 group shadow-sm" data-id="${a.id}">
+                    const isFav = userFavorites.includes(a.id) ? 'is-favorite' : '';
+                    const isSelected = selectedAppsForDelete.has(a.id) ? 'selected-for-delete' : '';
+                    const opacity = a.visible ? '' : 'opacity-40';
+
+                    const bulkSelectControl = bulkDeleteMode ? 
+                        `<input type="checkbox" class="w-5 h-5 accent-red-500 pointer-events-none" ${isSelected ? 'checked' : ''}>` : '';
+
+                    return `<div class="flex items-center gap-4 bg-white dark:bg-slate-900 p-3 rounded-xl border dark:border-white/5 group shadow-sm ${isSelected} ${opacity}" data-id="${a.id}" onclick="${bulkDeleteMode ? `window.toggleAppSelection('${a.id}', event)` : ''}">
+                        ${bulkSelectControl}
                         <span class="text-[9px] font-black text-slate-300 w-4">${idx+1}</span>
                         <img src="${icon}" class="w-8 h-8 rounded-lg object-contain">
                         <div class="flex-1 min-w-0"><h4 class="text-xs font-bold truncate">${a.name}</h4><p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${a.position || (isAppPhone ? a.url : 'Web App')}</p></div>
-                        <div class="flex items-center gap-2"><a href="${isAppPhone ? 'tel:' + a.url : a.url}" target="_blank" class="p-2 text-primary hover:bg-primary hover:text-white rounded-lg transition"><i data-lucide="${isAppPhone ? 'phone' : 'external-link'}" class="w-4 h-4"></i></a>
-                        ${isAdmin ? `<button onclick="window.editApp('${a.id}')" class="p-2 hover:bg-slate-100 rounded-lg"><i data-lucide="edit-3" class="w-4 h-4"></i></button><i data-lucide="grip-vertical" class="w-4 h-4 text-slate-300 cursor-move"></i>` : ''}</div></div>`;
+                        <div class="flex items-center gap-2">
+                            <!-- Favorite Button -->
+                            ${currentUser ? `
+                                <button onclick="window.toggleFavorite('${a.id}', event)" class="p-2 text-yellow-500 hover:bg-slate-100 rounded-lg transition">
+                                    <i data-lucide="star" class="w-4 h-4 star-icon ${isFav ? 'fill-current' : ''}"></i>
+                                </button>` : ''}
+
+                            <!-- Link Button -->
+                            <a href="${isAppPhone ? 'tel:' + a.url : a.url}" target="_blank" class="p-2 text-primary hover:bg-primary hover:text-white rounded-lg transition"><i data-lucide="${isAppPhone ? 'phone' : 'external-link'}" class="w-4 h-4"></i></a>
+                            
+                            <!-- Admin Buttons -->
+                            ${isAdmin ? `
+                                <button onclick="window.toggleAppVisibility('${a.id}')" class="p-2 ${a.visible ? 'text-green-500 hover:bg-green-100' : 'text-slate-500 hover:bg-slate-100'} rounded-lg"><i data-lucide="${a.visible ? 'eye' : 'eye-off'}" class="w-4 h-4"></i></button>
+                                <button onclick="window.editApp('${a.id}')" class="p-2 hover:bg-slate-100 rounded-lg"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                                <i data-lucide="grip-vertical" class="w-4 h-4 text-slate-300 cursor-move"></i>
+                            ` : ''}
+                        </div></div>`;
                 }).join('');
             }
             lucide.createIcons();
             if(isAdmin) new Sortable(container, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(container.children).forEach((el, i) => { if(el.dataset.id) updateDoc(doc(db, "apps", el.dataset.id), { order: i }); }); }});
         }
 
-        // --- OTHER UTILS (Kept) ---
-        window.updateCatField = (id, field, val) => updateDoc(doc(db, "categories", id), { [field]: val });
-        window.deleteCat = (id) => confirm("Xóa danh mục này?") && deleteDoc(doc(db, "categories", id));
-        window.addCategory = async () => {
-            const name = document.getElementById('new-cat-name').value;
-            const icon = document.getElementById('new-cat-icon').value;
-            if(!name) return;
-            await addDoc(collection(db, "categories"), { name, icon, order: categories.length });
-            document.getElementById('new-cat-name').value = '';
-            document.getElementById('new-cat-icon').value = '';
+        // --- ADMIN HELPERS (UPDATED) ---
+        
+        window.toggleAppVisibility = (id) => {
+            if (!isAdmin) return;
+            const app = apps.find(a => a.id === id);
+            if (!app) return;
+            
+            updateDoc(doc(db, "apps", id), { visible: !app.visible })
+                .then(() => showToast(`Đã ${!app.visible ? 'BẬT' : 'TẮT'} hiển thị ứng dụng: ${app.name}`))
+                .catch(e => { console.error(e); showToast("Lỗi cập nhật hiển thị!"); });
         };
+        
+        // --- OTHER UTILS (UPDATED) ---
 
-        window.renderDeputyList = () => {
-            const list = document.getElementById('deputy-list');
-            list.innerHTML = deputies.map(email => `<div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-xl border dark:border-white/5"><span class="text-sm font-bold">${email}</span>${isSuper ? `<button onclick="window.removeDeputy('${email}')" class="text-red-500 p-2"><i data-lucide="user-minus" class="w-4 h-4"></i></button>` : ''}</div>`).join('');
-            lucide.createIcons();
+        // Added 'favorites' filter
+        window.setFilter = (id) => { 
+            if (id === 'favorites' && !currentUser) {
+                 showToast("Vui lòng đăng nhập để xem mục yêu thích!");
+                 return;
+            }
+            currentFilter = id; 
+            renderCategories(); 
+            renderApps(); 
         };
-
-        window.addDeputy = async () => {
-            const email = document.getElementById('new-deputy-email').value;
-            if(!email || !isSuper) return;
-            await setDoc(doc(db, "settings", "admins"), { deputy_emails: arrayUnion(email) }, { merge: true });
-            document.getElementById('new-deputy-email').value = '';
-            location.reload();
-        };
-
-        window.removeDeputy = async (email) => {
-            if(!confirm("Xóa quyền phó admin?") || !isSuper) return;
-            await setDoc(doc(db, "settings", "admins"), { deputy_emails: arrayRemove(email) }, { merge: true });
-            location.reload();
-        };
-
-        window.toggleFormFields = () => {
-            const catName = categories.find(c => c.id === document.getElementById('app-category').value)?.name;
-            const isPhone = catName === "Số điện thoại";
-            document.getElementById('field-position').classList.toggle('hidden', !isPhone);
-            document.getElementById('label-name').innerText = isPhone ? "Tên liên hệ" : "Tên hiển thị";
-            document.getElementById('label-link').innerText = isPhone ? "Số điện thoại" : "Link URL";
-        };
-
-        window.openAppModal = () => { document.getElementById('app-form').reset(); document.getElementById('edit-id').value = ''; toggleFormFields(); openModal('modal-app'); };
-        window.editApp = (id) => {
-            const a = apps.find(x => x.id === id);
-            document.getElementById('edit-id').value = a.id;
-            document.getElementById('app-name').value = a.name;
-            document.getElementById('app-position').value = a.position || '';
-            document.getElementById('app-link').value = a.url;
-            document.getElementById('app-icon').value = a.iconUrl || '';
-            document.getElementById('app-category').value = a.categoryId || '';
-            document.getElementById('app-visible').checked = a.visible;
-            toggleFormFields();
-            openModal('modal-app');
-        };
-
-        document.getElementById('app-form').onsubmit = async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('edit-id').value;
-            const data = { name: document.getElementById('app-name').value, position: document.getElementById('app-position').value, url: document.getElementById('app-link').value, iconUrl: document.getElementById('app-icon').value, categoryId: document.getElementById('app-category').value, visible: document.getElementById('app-visible').checked, order: id ? apps.find(x => x.id === id).order : apps.length };
-            id ? await updateDoc(doc(db, "apps", id), data) : await addDoc(collection(db, "apps"), data);
-            closeModal('modal-app');
-        };
-
-        window.deleteApp = (id) => confirm("Xóa mục này?") && deleteDoc(doc(db, "apps", id));
-
+        
         window.renderCategories = renderCategories; // Assign to global
         function renderCategories() {
             const bar = document.getElementById('category-bar');
             let html = `<button onclick="window.setFilter('all')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all ${currentFilter === 'all' ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">TẤT CẢ</button>`;
+            
+            if (currentUser) {
+                html += `<button onclick="window.setFilter('favorites')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center gap-2 ${currentFilter === 'favorites' ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">
+                    <i data-lucide="star" class="w-3 h-3 ${currentFilter === 'favorites' ? 'fill-white' : ''}"></i> ƯA THÍCH
+                </button>`;
+            }
+            
             categories.forEach(c => {
                 html += `<button onclick="window.setFilter('${c.id}')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center gap-2 ${currentFilter === c.id ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">
                     ${c.icon ? `<img src="${c.icon}" class="w-3 h-3 object-contain">` : ''} ${c.name.toUpperCase()}
@@ -547,7 +705,9 @@
             if(isAdmin) new Sortable(list, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(list.children).forEach((el, i) => updateDoc(doc(db, "categories", el.dataset.id), { order: i })); }});
             document.getElementById('app-category').innerHTML = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
         }
-
+        
+        // ... (Keep other utility functions: openModal, closeModal, switchTab, toggleTheme, showToast, etc.) ...
+        
         window.openModal = (id) => document.getElementById(id).classList.remove('hidden');
         window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
         window.switchTab = (tabId) => {
@@ -558,7 +718,6 @@
         };
         window.toggleTheme = () => { document.documentElement.classList.toggle('dark'); localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light'; };
         document.getElementById('search-input').oninput = (e) => { searchQuery = e.target.value; renderApps(); };
-        window.setFilter = (id) => { currentFilter = id; renderCategories(); renderApps(); };
         window.setView = (mode) => { viewMode = mode; renderApps(); };
         function showToast(msg) {
             const t = document.getElementById('toast');
@@ -573,7 +732,7 @@
         window.setView('grid');
         
         // Track visit when the app loads
-        trackVisit(); 
+        trackVisit();
     </script>
 </body>
 </html>
