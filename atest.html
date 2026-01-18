@@ -1,4 +1,4 @@
---- START OF FILE text/plain ---
+
 
 <!DOCTYPE html>
 <html lang="vi">
@@ -818,6 +818,7 @@
                 if(currentUser && currentUser.uid === ADMIN_UID) renderAdminServices();
             } catch (e) {
                  showToast("Lỗi tải dịch vụ: " + e.message);
+                 console.error("Lỗi tải dịch vụ:", e);
             }
         }
         
@@ -924,7 +925,10 @@
                 });
                 showToast("Đã gửi yêu cầu đặt lịch!");
                 loadMyOrders(); 
-            } catch(e) { alert("Lỗi khi gửi đơn hàng: " + e.message); }
+            } catch(e) { 
+                alert("Lỗi khi gửi đơn hàng: " + e.message); 
+                console.error("Lỗi khi gửi đơn hàng:", e);
+            }
             showLoader(false);
         };
 
@@ -937,6 +941,7 @@
             showLoader(true);
             
             try {
+                // Đây là query cơ bản, chỉ cần Single Index trên 'uid' và 'createdAt' (tự động có)
                 const q = query(collection(db, "orders"), where("uid", "==", currentUser.uid), orderBy("createdAt", "desc"));
                 const snaps = await getDocs(q);
                 const tbody = document.querySelector('#myOrdersTable tbody');
@@ -967,7 +972,8 @@
                     });
                 }
             } catch (e) {
-                showToast("Lỗi khi tải đơn hàng của bạn: " + e.message);
+                showToast("Lỗi khi tải đơn hàng của bạn!");
+                console.error("Lỗi khi tải đơn hàng của Client:", e);
                 document.querySelector('#tab-my-orders tbody').innerHTML = '<tr><td colspan="7" style="text-align:center; color: var(--danger);">Lỗi tải đơn hàng. Vui lòng thử lại.</td></tr>';
             }
             showLoader(false);
@@ -1002,7 +1008,7 @@
                             <td data-label="Gói">${d.svcName}</td>
                             <td data-label="Tổng">${fmt(d.total)}</td>
                             <td data-label="Trạng thái">
-                                <select onchange="updateStatus('${d.id}', this.value)" style="padding:5px; border-radius:var(--radius); border-color:var(--border);">
+                                <select onchange="updateStatus('${d.id}', this.value)" style="padding:5px; border-radius:var(--radius); border-color:var(--border);" data-original-status="${d.status}">
                                     <option value="Chờ xác nhận" ${d.status=='Chờ xác nhận'?'selected':''}>Chờ xác nhận</option>
                                     <option value="Đã cọc" ${d.status=='Đã cọc'?'selected':''}>Đã cọc</option>
                                     <option value="Hoàn thành" ${d.status=='Hoàn thành'?'selected':''}>Hoàn thành</option>
@@ -1053,7 +1059,7 @@
                 allAdminOrders = [];
                 snap.forEach(d => allAdminOrders.push({id: d.id, ...d.data()}));
                 
-                // Apply filtering
+                // Apply filtering (client-side filtering, no Index required here unless using server-side query)
                 const filteredOrders = allAdminOrders.filter(d => {
                     const searchMatch = !searchVal || 
                         (d.email && d.email.toLowerCase().includes(searchVal)) || 
@@ -1071,9 +1077,10 @@
                 // RENDER ONLY THE LIMITED SET (Tối ưu hóa hiệu suất)
                 renderAdminTableBody(filteredOrders, ORDER_RENDER_LIMIT);
             } catch (e) {
-                // Thêm thông báo lỗi chi tiết cho Admin
-                showToast("LỖI TẢI DỮ LIỆU ĐƠN HÀNG! Vui lòng kiểm tra Console/Index Firestore: " + e.message);
-                document.querySelector('#adminOrdersTable tbody').innerHTML = '<tr><td colspan="8" style="text-align:center; color: var(--danger);">LỖI TẢI DỮ LIỆU ĐƠN HÀNG. Vui lòng kiểm tra Console (F12) để xem thông báo lỗi Index.</td></tr>';
+                // Lỗi ở đây thường do query quá lớn hoặc lỗi mạng, KHÔNG PHẢI Index (do chỉ có 1 orderBy)
+                showToast("LỖI TẢI DỮ LIỆU ĐƠN HÀNG! Vui lòng kiểm tra Console (F12) để xem lỗi: " + e.message);
+                console.error("LỖI TẢI DỮ LIỆU ĐƠN HÀNG:", e);
+                document.querySelector('#adminOrdersTable tbody').innerHTML = '<tr><td colspan="8" style="text-align:center; color: var(--danger);">LỖI TẢI DỮ LIỆU ĐƠN HÀNG. Vui lòng kiểm tra Console (F12) để xem lỗi chi tiết.</td></tr>';
             }
             
             showLoader(false); // CRITICAL: Đảm bảo loader ẩn sau khi hàm chạy xong/gặp lỗi
@@ -1113,14 +1120,14 @@
                     const orderSnap = await getDoc(doc(db, "orders", id));
                     const order = orderSnap.data();
 
-                    // Query phức tạp CÓ THỂ GÂY LỖI INDEX
+                    // CRITICAL: Query này cần một Composite Index: date(asc), location(asc), time(asc), status(asc)
                     const conflictQuery = query(
                         collection(db, "orders"), 
                         where("date", "==", order.date),
                         where("location", "==", order.location),
                         where("time", "==", order.time), 
                         where("status", "in", ["Đã cọc", "Hoàn thành"]),
-                        where(documentId(), "!=", id) 
+                        where(documentId(), "!=", id) // Dùng where(documentId(), "!=") là OK trong query này
                     );
                     
                     const conflictSnaps = await getDocs(conflictQuery);
@@ -1129,7 +1136,6 @@
                         const msg = `CẢNH BÁO: Lịch ngày ${order.date} lúc ${order.time} tại ${order.location} đã TRÙNG với ${conflictSnaps.size} đơn hàng đã duyệt/hoàn thành. Bạn có muốn duyệt không?`;
                         if (!confirm(msg)) {
                             showToast("Hủy duyệt do trùng lịch");
-                            // Revert select box manually if user cancels
                             if (selectEl) selectEl.value = currentStatus;
                             proceed = false;
                         }
@@ -1146,9 +1152,9 @@
                 renderAdminSchedule(); 
 
             } catch(e) { 
-                alert("Lỗi khi cập nhật trạng thái hoặc check conflict: " + e.message + ". Vui lòng kiểm tra Index Firestore!"); 
+                alert("LỖI KHI CẬP NHẬT HOẶC CHECK TRÙNG LỊCH. Vui lòng kiểm tra Console (F12) để lấy link tạo Index."); 
+                console.error("LỖI CẬP NHẬT TRẠNG THÁI/CHECK CONFLICT:", e);
                 showToast("Lỗi: Không thể cập nhật trạng thái.");
-                // Revert select box to original value if update failed
                 if (selectEl) selectEl.value = currentStatus;
             }
             showLoader(false);
@@ -1180,6 +1186,7 @@
                 loadAdminOrders();
             } catch(e) {
                  alert("Lỗi khi trả ảnh: " + e.message);
+                 console.error("Lỗi khi trả ảnh:", e);
             }
             showLoader(false);
         }
@@ -1271,7 +1278,10 @@
                 showToast("Đã lưu gói dịch vụ!");
                 closeModal('svcModal');
                 await loadServices();
-            } catch(e) { alert("Lỗi khi lưu gói dịch vụ: " + e.message); }
+            } catch(e) { 
+                alert("Lỗi khi lưu gói dịch vụ: " + e.message); 
+                console.error("Lỗi khi lưu gói dịch vụ:", e);
+            }
             showLoader(false);
         }
 
@@ -1282,7 +1292,10 @@
                 await deleteDoc(doc(db, "services", id));
                 showToast("Đã xóa gói dịch vụ!");
                 await loadServices();
-            } catch(e) { alert("Lỗi khi xóa gói dịch vụ: " + e.message); }
+            } catch(e) { 
+                alert("Lỗi khi xóa gói dịch vụ: " + e.message); 
+                console.error("Lỗi khi xóa gói dịch vụ:", e);
+            }
             showLoader(false);
         }
 
@@ -1299,9 +1312,7 @@
             showLoader(true);
 
             try {
-                // Lấy các đơn hàng đã được cọc hoặc hoàn thành trong ngày đã chọn, sắp xếp theo giờ chụp.
-                // CHÚ Ý: Query này CÓ THỂ GÂY LỖI INDEX vì kết hợp where("date", "==") và where("status", "in") với orderBy("time").
-                // Cần tạo Composite Index trên Firestore cho: date (asc), status (asc), time (asc)
+                // LƯU Ý: Query này BẮT BUỘC cần Composite Index: date (Asc), status (Asc), time (Asc)
                 const q = query(
                     collection(db, "orders"), 
                     where("date", "==", date),
@@ -1329,7 +1340,8 @@
                     }).join('');
                 }
             } catch(e) {
-                 showToast("LỖI TẢI LỊCH CHỤP! Vui lòng kiểm tra Console/Index Firestore: " + e.message);
+                 showToast("LỖI TẢI LỊCH CHỤP! Vui lòng kiểm tra Console (F12) để lấy link tạo Index.");
+                 console.error("LỖI TẢI LỊCH CHỤP (INDEX ERROR):", e);
                  list.innerHTML = `<p style="color:var(--danger);">LỖI TẢI LỊCH CHỤP. Vui lòng kiểm tra Console (F12) để xem thông báo lỗi Index.</p>`;
             }
             showLoader(false); // CRITICAL: Đảm bảo loader ẩn sau khi hàm chạy xong/gặp lỗi
@@ -1371,6 +1383,7 @@
             // Logic to load data based on tab
             if(tabId === 'admin-orders') loadAdminOrders();
             if(tabId === 'my-orders') loadMyOrders();
+            // renderAdminServices không cần load data, chỉ cần render từ biến services đã có
             if(tabId === 'admin-services') renderAdminServices();
             if(tabId === 'admin-schedule') renderAdminSchedule();
         };
