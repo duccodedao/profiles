@@ -1,3 +1,5 @@
+--- START OF FILE text/plain ---
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -320,7 +322,7 @@
             <div id="tab-my-orders" class="tab-content">
                 <div class="table-wrap" style="overflow-x:auto">
                     <table id="myOrdersTable">
-                        <thead><tr><th>Ngày</th><th>Gói</th><th>Option</th><th>Tổng tiền</th><th>Trạng thái</th><th>Kết quả</th></tr></thead>
+                        <thead><tr><th>Ngày đặt</th><th>Ngày chụp</th><th>Gói</th><th>Địa điểm</th><th>Tổng tiền</th><th>Trạng thái</th><th>Kết quả</th></tr></thead>
                         <tbody></tbody>
                     </table>
                 </div>
@@ -330,7 +332,7 @@
             <div id="tab-admin-orders" class="tab-content" style="display:none">
                 <div class="table-wrap" style="overflow-x:auto">
                     <table id="adminOrdersTable">
-                        <thead><tr><th>Khách</th><th>SĐT</th><th>Gói</th><th>Tổng</th><th>Trạng thái</th><th>Hành động</th></tr></thead>
+                        <thead><tr><th>Khách</th><th>SĐT</th><th>Ngày chụp</th><th>Địa điểm</th><th>Gói</th><th>Tổng</th><th>Trạng thái</th><th>Hành động</th></tr></thead>
                         <tbody></tbody>
                     </table>
                 </div>
@@ -355,10 +357,20 @@
         <div class="modal-content">
             <h3>Xác nhận đặt lịch</h3>
             <div id="bookingSummary" style="background:#f9f9f9; padding:15px; margin-bottom:20px;"></div>
+            
+            <div class="form-group">
+                <label>Ngày chụp (*)</label>
+                <input type="date" id="shootDate" required>
+            </div>
+            <div class="form-group">
+                <label>Địa điểm chụp (*)</label>
+                <input type="text" id="shootLocation" placeholder="Studio X / Công viên Y / Địa chỉ cụ thể" required>
+            </div>
             <div class="form-group">
                 <label>Số điện thoại liên hệ (*)</label>
-                <input type="tel" id="userPhone" placeholder="09xxxxxxx">
+                <input type="tel" id="userPhone" placeholder="09xxxxxxx" required>
             </div>
+            
             <div style="text-align:right; gap:10px; display:flex; justify-content:flex-end">
                 <button class="btn" onclick="closeModal('bookingModal')">Hủy</button>
                 <button class="btn btn-fill" onclick="submitBooking()">Đặt ngay</button>
@@ -423,7 +435,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, orderBy, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, orderBy, setDoc, getDoc, documentId } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
         // CONFIG FIREBASE
         const firebaseConfig = {
@@ -445,7 +457,7 @@
         
         let currentUser = null;
         let services = [];
-        let bookingData = {};
+        let bookingData = {}; // Temp storage for service/option selection
 
         // 1. AUTH & SETUP
         window.login = () => {
@@ -473,6 +485,7 @@
                 
                 if(user.uid === ADMIN_UID) {
                     document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'block');
+                    loadAdminOrders();
                 }
                 loadMyOrders();
             } else {
@@ -567,12 +580,20 @@
                 <p><strong>Options:</strong> ${opts.map(o=>o.name).join(', ') || 'Không'}</p>
                 <p style="font-size:1.2rem; margin-top:10px; color:var(--accent)"><strong>Tổng cộng: ${fmt(total)}</strong></p>
             `;
+            // Reset fields
+            document.getElementById('shootDate').value = '';
+            document.getElementById('shootLocation').value = '';
+            document.getElementById('userPhone').value = '';
+            
             document.getElementById('bookingModal').style.display = 'flex';
         };
 
         window.submitBooking = async () => {
             const phone = document.getElementById('userPhone').value;
-            if(!phone) return alert("Vui lòng nhập số điện thoại");
+            const date = document.getElementById('shootDate').value;
+            const location = document.getElementById('shootLocation').value;
+            
+            if(!phone || !date || !location) return alert("Vui lòng nhập đầy đủ Số điện thoại, Ngày chụp và Địa điểm");
             
             document.getElementById('bookingModal').style.display = 'none';
             showLoader(true);
@@ -582,6 +603,8 @@
                     uid: currentUser.uid,
                     email: currentUser.email,
                     phone: phone,
+                    date: date,
+                    location: location,
                     ...bookingData,
                     status: "Chờ xác nhận",
                     createdAt: new Date(),
@@ -606,11 +629,14 @@
             snaps.forEach(d => {
                 const data = d.data();
                 const isDone = data.status === "Hoàn thành";
+                const dateOrder = data.createdAt.toDate().toLocaleDateString('vi-VN');
+
                 tbody.innerHTML += `
                     <tr>
-                        <td>${data.createdAt.toDate().toLocaleDateString()}</td>
+                        <td>${dateOrder}</td>
+                        <td>${data.date}</td>
                         <td>${data.svcName}</td>
-                        <td>${data.opts.map(o=>o.name).join(', ')}</td>
+                        <td>${data.location}</td>
                         <td>${fmt(data.total)}</td>
                         <td><span class="badge ${isDone ? 'badge-completed' : 'badge-pending'}">${data.status}</span></td>
                         <td>
@@ -630,6 +656,7 @@
         // 6. ADMIN MANAGEMENT
         // 6a. Orders & Delivery
         window.loadAdminOrders = async () => {
+            if(currentUser.uid !== ADMIN_UID) return;
             const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
             const snaps = await getDocs(q);
             const tbody = document.querySelector('#adminOrdersTable tbody');
@@ -641,6 +668,8 @@
                     <tr>
                         <td>${d.email}</td>
                         <td>${d.phone}</td>
+                        <td>${d.date}</td>
+                        <td>${d.location}</td>
                         <td>${d.svcName}</td>
                         <td>${fmt(d.total)}</td>
                         <td>
@@ -658,7 +687,42 @@
             });
         };
 
-        window.updateStatus = (id, st) => updateDoc(doc(db, "orders", id), {status: st}).then(()=>showToast("Đã cập nhật"));
+        window.updateStatus = async (id, newStatus) => {
+            const isApproved = ['Đã cọc', 'Hoàn thành'].includes(newStatus);
+            let proceed = true;
+
+            if (isApproved) {
+                showLoader(true);
+                const orderSnap = await getDoc(doc(db, "orders", id));
+                const order = orderSnap.data();
+
+                // 1. Check for conflict only for 'Đã cọc' or 'Hoàn thành'
+                const conflictQuery = query(
+                    collection(db, "orders"), 
+                    where("date", "==", order.date),
+                    where("location", "==", order.location),
+                    where("status", "in", ["Đã cọc", "Hoàn thành"]),
+                    where(documentId(), "!=", id) // Exclude current order
+                );
+                
+                const conflictSnaps = await getDocs(conflictQuery);
+                showLoader(false);
+
+                if (conflictSnaps.size > 0) {
+                    const msg = `CẢNH BÁO: Lịch ngày ${order.date} tại ${order.location} đã trùng với ${conflictSnaps.size} đơn hàng đã duyệt khác. Bạn có muốn duyệt không?`;
+                    proceed = confirm(msg);
+                }
+            }
+
+            if (proceed) {
+                await updateDoc(doc(db, "orders", id), {status: newStatus});
+                showToast("Đã cập nhật trạng thái đơn hàng");
+            } else {
+                 // Re-render to revert the select box change visually if admin cancels the override
+                loadAdminOrders();
+                showToast("Hủy duyệt do trùng lịch");
+            }
+        };
 
         window.openDeliver = (oid) => {
             document.getElementById('deliverOrderId').value = oid;
@@ -728,7 +792,7 @@
             div.innerHTML = `
                 <input type="text" placeholder="Tên option" class="opt-name" value="${name}">
                 <input type="number" placeholder="Giá thêm" class="opt-price price" value="${price}">
-                <button type="button" onclick="this.parentElement.remove()" style="border:none; bg:transparent; color:red; cursor:pointer">&times;</button>
+                <button type="button" onclick="this.parentElement.remove()" style="border:none; background:transparent; color:red; cursor:pointer">&times;</button>
             `;
             document.getElementById('optContainer').appendChild(div);
         };
@@ -784,6 +848,7 @@
             document.getElementById('tab-' + tabId).style.display = 'block';
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             btn.classList.add('active');
+            if(tabId === 'admin-orders') loadAdminOrders();
         };
 
         window.closeModal = (id) => document.getElementById(id).style.display = 'none';
