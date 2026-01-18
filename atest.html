@@ -240,8 +240,11 @@
         footer { background: #f0f0f0; padding: 20px; text-align: center; font-size: 0.8rem; color: #888; margin-top: auto; }
 
         @media (max-width: 768px) {
+            /* FIX: KHÔNG ẨN NAV NỮA */
+            /* nav { display: none; } */
+            header { padding: 15px 20px; }
+            nav ul { gap: 20px; }
             .hero h1 { font-size: 2.5rem; }
-            nav { display: none; }
             .service-card { padding: 20px; }
             .opt-input-row { flex-direction: column; }
             .opt-input-row .price { width: 100%; }
@@ -312,14 +315,14 @@
         <div class="dash-container">
             <h2 class="section-title" style="text-align:left; font-size: 2rem;">Khu vực quản lý</h2>
             
-            <div class="tabs">
-                <div class="tab active" onclick="switchTab('my-orders', this)">Đơn của tôi</div>
-                <div class="tab admin-only" style="display:none" onclick="switchTab('admin-orders', this)">Quản lý Đơn (Admin)</div>
-                <div class="tab admin-only" style="display:none" onclick="switchTab('admin-services', this)">Quản lý Gói (Admin)</div>
+            <div id="dashTabs" class="tabs">
+                <div class="tab" id="tabBtn-my-orders" onclick="switchTab('my-orders', this)">Đơn của tôi</div>
+                <div class="tab admin-only" id="tabBtn-admin-orders" style="display:none" onclick="switchTab('admin-orders', this)">Quản lý Đơn (Admin)</div>
+                <div class="tab admin-only" id="tabBtn-admin-services" style="display:none" onclick="switchTab('admin-services', this)">Quản lý Gói (Admin)</div>
             </div>
 
             <!-- Client: My Orders -->
-            <div id="tab-my-orders" class="tab-content">
+            <div id="tab-my-orders" class="tab-content" style="display:none">
                 <div class="table-wrap" style="overflow-x:auto">
                     <table id="myOrdersTable">
                         <thead><tr><th>Ngày đặt</th><th>Ngày chụp</th><th>Gói</th><th>Địa điểm</th><th>Tổng tiền</th><th>Trạng thái</th><th>Kết quả</th></tr></thead>
@@ -485,9 +488,15 @@
                 
                 if(user.uid === ADMIN_UID) {
                     document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'block');
+                    // FIX: Nếu là admin, tự động chuyển sang tab quản lý đơn admin
+                    switchTab('admin-orders', document.getElementById('tabBtn-admin-orders'));
                     loadAdminOrders();
+                } else {
+                    // Mặc định cho client là đơn của tôi
+                    switchTab('my-orders', document.getElementById('tabBtn-my-orders'));
+                    loadMyOrders();
                 }
-                loadMyOrders();
+
             } else {
                 goHome();
                 document.getElementById('loginBtn').style.display = 'block';
@@ -581,7 +590,9 @@
                 <p style="font-size:1.2rem; margin-top:10px; color:var(--accent)"><strong>Tổng cộng: ${fmt(total)}</strong></p>
             `;
             // Reset fields
-            document.getElementById('shootDate').value = '';
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('shootDate').value = today; // Set default to today
+            document.getElementById('shootDate').min = today; // Can't book in the past
             document.getElementById('shootLocation').value = '';
             document.getElementById('userPhone').value = '';
             
@@ -613,7 +624,6 @@
                 });
                 showToast("Đã gửi yêu cầu đặt lịch!");
                 loadMyOrders();
-                if(currentUser.uid === ADMIN_UID) loadAdminOrders();
             } catch(e) { alert(e.message); }
             showLoader(false);
         };
@@ -621,6 +631,7 @@
         // 5. CLIENT ORDER MANAGEMENT
         async function loadMyOrders() {
             if(!currentUser) return;
+            // FIX: Load orders only for the current user
             const q = query(collection(db, "orders"), where("uid", "==", currentUser.uid), orderBy("createdAt", "desc"));
             const snaps = await getDocs(q);
             const tbody = document.querySelector('#myOrdersTable tbody');
@@ -638,13 +649,15 @@
                         <td>${data.svcName}</td>
                         <td>${data.location}</td>
                         <td>${fmt(data.total)}</td>
-                        <td><span class="badge ${isDone ? 'badge-completed' : 'badge-pending'}">${data.status}</span></td>
+                        <td><span class="badge ${data.status.includes('Chờ') ? 'badge-pending' : (data.status.includes('Hoàn thành') ? 'badge-completed' : 'badge-deposit')}">${data.status}</span></td>
                         <td>
-                            ${isDone ? `<button class="btn btn-sm btn-fill" onclick="viewResult('${data.deliveryLink}', '${data.deliveryPass}')">NHẬN ẢNH</button>` : '---'}
+                            ${isDone && data.deliveryLink ? `<button class="btn btn-sm btn-fill" onclick="viewResult('${data.deliveryLink}', '${data.deliveryPass}')">NHẬN ẢNH</button>` : '---'}
                         </td>
                     </tr>
                 `;
             });
+            // FIX: Hiện tab của client sau khi load (cần thiết khi chuyển từ admin tab sang)
+            switchTab('my-orders', document.getElementById('tabBtn-my-orders'));
         }
         
         window.viewResult = (link, pass) => {
@@ -688,6 +701,8 @@
         };
 
         window.updateStatus = async (id, newStatus) => {
+            if(currentUser.uid !== ADMIN_UID) return showToast("Bạn không có quyền admin");
+
             const isApproved = ['Đã cọc', 'Hoàn thành'].includes(newStatus);
             let proceed = true;
 
@@ -706,22 +721,26 @@
                 );
                 
                 const conflictSnaps = await getDocs(conflictQuery);
-                showLoader(false);
 
                 if (conflictSnaps.size > 0) {
-                    const msg = `CẢNH BÁO: Lịch ngày ${order.date} tại ${order.location} đã trùng với ${conflictSnaps.size} đơn hàng đã duyệt khác. Bạn có muốn duyệt không?`;
+                    const msg = `CẢNH BÁO: Lịch ngày ${order.date} tại ${order.location} đã trùng với ${conflictSnaps.size} đơn hàng đã duyệt/hoàn thành. Bạn có muốn duyệt không?`;
+                    showLoader(false); // Hide loader before prompt
                     proceed = confirm(msg);
+                } else {
+                    showLoader(false); // Hide loader if no conflict
                 }
             }
 
             if (proceed) {
+                showLoader(true);
                 await updateDoc(doc(db, "orders", id), {status: newStatus});
                 showToast("Đã cập nhật trạng thái đơn hàng");
             } else {
                  // Re-render to revert the select box change visually if admin cancels the override
-                loadAdminOrders();
                 showToast("Hủy duyệt do trùng lịch");
             }
+            showLoader(false);
+            loadAdminOrders();
         };
 
         window.openDeliver = (oid) => {
@@ -836,19 +855,32 @@
             document.getElementById('mainPage').style.display = 'block';
             document.getElementById('dashboardSection').style.display = 'none';
         };
+        
         window.goDash = () => {
             document.getElementById('mainPage').style.display = 'none';
             document.getElementById('dashboardSection').style.display = 'block';
-            if(currentUser.uid === ADMIN_UID) loadAdminOrders();
-            else loadMyOrders();
+            
+            if(currentUser.uid === ADMIN_UID) {
+                // FIX: Admin đi thẳng vào Quản lý Đơn
+                switchTab('admin-orders', document.getElementById('tabBtn-admin-orders'));
+                loadAdminOrders();
+            } else {
+                // Client đi thẳng vào Đơn của tôi
+                switchTab('my-orders', document.getElementById('tabBtn-my-orders'));
+                loadMyOrders();
+            }
         };
 
         window.switchTab = (tabId, btn) => {
             document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
             document.getElementById('tab-' + tabId).style.display = 'block';
+            
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            btn.classList.add('active');
+            if(btn) btn.classList.add('active'); // Kiểm tra btn null trước khi thêm class
+            
+            // FIX: Đảm bảo load dữ liệu khi chuyển tab
             if(tabId === 'admin-orders') loadAdminOrders();
+            if(tabId === 'my-orders' && currentUser && currentUser.uid !== ADMIN_UID) loadMyOrders();
         };
 
         window.closeModal = (id) => document.getElementById(id).style.display = 'none';
@@ -871,6 +903,11 @@
 
         // INIT
         loadServices();
+        
+        // Đặt tab mặc định sau khi tải lần đầu
+        document.getElementById('tab-my-orders').style.display = 'block';
+        document.getElementById('tabBtn-my-orders').classList.add('active');
+
     </script>
 </body>
 </html>
