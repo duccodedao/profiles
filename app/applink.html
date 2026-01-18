@@ -67,6 +67,12 @@
             <input type="text" id="search-input" placeholder="Tìm ứng dụng hoặc danh bạ..." 
                 class="w-full pl-14 pr-6 py-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-4 ring-primary/10 outline-none shadow-sm">
         </div>
+        
+        <!-- Visit Stats Container (New Section) -->
+        <div id="visit-stats-container" class="max-w-4xl mx-auto p-4 rounded-3xl bg-slate-100 dark:bg-slate-900/50">
+            <!-- Stats will be rendered here by renderStats() -->
+            <div class="flex items-center justify-center h-20 text-slate-400">Đang tải thống kê...</div>
+        </div>
 
         <!-- Categories -->
         <div id="category-bar" class="flex flex-wrap gap-2"></div>
@@ -210,7 +216,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc, arrayUnion, arrayRemove, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc, arrayUnion, arrayRemove, writeBatch, increment, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
@@ -228,7 +234,7 @@
         const db = getFirestore(fbApp);
         const provider = new GoogleAuthProvider();
 
-        let currentUser = null, isAdmin = false, isSuper = false, apps = [], categories = [], deputies = [], currentFilter = 'all', searchQuery = '', viewMode = 'grid';
+        let currentUser = null, isAdmin = false, isSuper = false, apps = [], categories = [], deputies = [], currentFilter = 'all', searchQuery = '', viewMode = 'grid', visitStats = {};
 
         // --- AUTH & INITIAL ---
         onAuthStateChanged(auth, async (user) => {
@@ -268,6 +274,99 @@
             apps = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             renderApps();
         });
+        
+        // New: Data Realtime for Visit Stats
+        onSnapshot(doc(db, "settings", "visits_stats"), (snap) => {
+            visitStats = snap.data() || {};
+            renderStats();
+        });
+
+
+        // --- VISIT STATS LOGIC ---
+        function getDateString(date = new Date()) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return { day: `${y}-${m}-${d}`, month: `${y}-${m}`, year: `${y}` };
+        }
+
+        async function trackVisit() {
+            const now = getDateString();
+            
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const statsDocRef = doc(db, "settings", "visits_stats");
+                    const statsSnap = await transaction.get(statsDocRef);
+                    const statsData = statsSnap.data() || {};
+
+                    let updates = {
+                        totalVisits: increment(1) // Atomic increment for total
+                    };
+                    
+                    // Daily reset/increment logic
+                    if (statsData.lastDailyUpdate !== now.day) {
+                        updates.dailyVisits = 1;
+                        updates.lastDailyUpdate = now.day;
+                    } else {
+                        updates.dailyVisits = (statsData.dailyVisits || 0) + 1;
+                    }
+
+                    // Monthly reset/increment logic
+                    if (statsData.lastMonthlyUpdate !== now.month) {
+                        updates.monthlyVisits = 1;
+                        updates.lastMonthlyUpdate = now.month;
+                    } else {
+                        updates.monthlyVisits = (statsData.monthlyVisits || 0) + 1;
+                    }
+
+                    // Yearly reset/increment logic
+                    if (statsData.lastYearlyUpdate !== now.year) {
+                        updates.yearlyVisits = 1;
+                        updates.lastYearlyUpdate = now.year;
+                    } else {
+                        updates.yearlyVisits = (statsData.yearlyVisits || 0) + 1;
+                    }
+
+                    transaction.set(statsDocRef, updates, { merge: true });
+                });
+
+            } catch (e) {
+                console.error("Transaction failed while tracking visit: ", e);
+            }
+        }
+
+        function renderStats() {
+            const container = document.getElementById('visit-stats-container');
+            if (!container) return; 
+            
+            const { dailyVisits = 0, monthlyVisits = 0, yearlyVisits = 0, totalVisits = 0 } = visitStats;
+            
+            container.innerHTML = `
+                <div class="flex items-center gap-3 text-xs font-black tracking-widest text-primary dark:text-white mb-4">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                    <span>THỐNG KÊ LƯỢT TRUY CẬP</span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-center border dark:border-white/5">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Hôm nay</p>
+                        <span class="text-lg font-black text-primary">${dailyVisits.toLocaleString('vi-VN')}</span>
+                    </div>
+                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-center border dark:border-white/5">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Tháng này</p>
+                        <span class="text-lg font-black text-primary">${monthlyVisits.toLocaleString('vi-VN')}</span>
+                    </div>
+                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-center border dark:border-white/5">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Năm nay</p>
+                        <span class="text-lg font-black text-primary">${yearlyVisits.toLocaleString('vi-VN')}</span>
+                    </div>
+                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-center border dark:border-white/5">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Tổng cộng</p>
+                        <span class="text-lg font-black text-primary">${totalVisits.toLocaleString('vi-VN')}</span>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+        }
 
         // --- RENDERING APP ---
         window.renderApps = () => {
@@ -547,6 +646,9 @@
         if(localStorage.theme === 'dark') document.documentElement.classList.add('dark');
         lucide.createIcons();
         window.setView('grid');
+        
+        // New: Track visit when the app loads
+        trackVisit(); 
     </script>
 </body>
 </html>
