@@ -13,7 +13,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="apple-mobile-web-app-title" content="Hub Vĩnh Trạch Đông">
-    <link rel="manifest" href="/js/applinkicon.json">
+    <link rel="manifest" href="/js/applinkicon.jsonn">
     <meta name="theme-color" content="#4f46e5">
 
     <!-- Social Media Meta -->
@@ -50,12 +50,25 @@
         .dark .tab-active { color: #818cf8; border-bottom: 2px solid #818cf8; }
         .is-favorite .star-icon { fill: #facc15; }
         .app-item.selected-for-delete { box-shadow: 0 0 0 3px #f43f5e; border-radius: 1rem; }
+        /* Thêm padding top khi có thông báo để không che header */
+        #announcement-bar:not(.hidden) ~ header { top: 32px; }
+        /* Custom Marquee */
+        .marquee { overflow: hidden; white-space: nowrap; box-sizing: border-box; }
+        .marquee > div { display: inline-block; padding-left: 100%; animation: marquee 15s linear infinite; }
+        @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
     </style>
 </head>
 <body class="min-h-screen pb-24">
 
+    <!-- NEW: Announcement Bar -->
+    <div id="announcement-bar" class="fixed top-0 left-0 w-full z-[101] bg-secondary text-white text-xs font-bold py-2 shadow-md hidden">
+        <div class="marquee">
+            <div id="announcement-text"></div>
+        </div>
+    </div>
+    
     <!-- Header -->
-    <header class="sticky top-0 z-[100] glass px-6 py-3 flex justify-between items-center">
+    <header class="sticky top-0 z-[100] glass px-6 py-3 flex justify-between items-center transition-all duration-300">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg">
                 <i data-lucide="database" class="w-6 h-6"></i>
@@ -153,6 +166,7 @@
             <div class="p-6 border-b dark:border-white/5 flex justify-between items-center">
                 <div class="flex gap-6 text-[10px] font-black tracking-widest text-slate-400">
                     <button onclick="window.switchTab('tab-cat')" id="btn-tab-cat" class="text-primary border-b-2 border-primary pb-1">DANH MỤC</button>
+                    <button onclick="window.switchTab('tab-announcement')" id="btn-tab-announcement" class="pb-1 uppercase">THÔNG BÁO</button> <!-- NEW TAB -->
                     <button onclick="window.switchTab('tab-deputy')" id="btn-tab-deputy" class="pb-1 uppercase">Phó Admin</button>
                     <button onclick="window.switchTab('tab-data')" id="btn-tab-data" class="pb-1 uppercase">Dữ liệu</button>
                 </div>
@@ -169,6 +183,20 @@
                     </div>
                     <ul id="cat-list-admin" class="space-y-2"></ul>
                 </div>
+                
+                <!-- NEW Tab Announcement -->
+                <div id="tab-announcement" class="hidden space-y-6">
+                    <h4 class="text-lg font-bold">Cấu hình Thông báo Chạy chữ (Marquee)</h4>
+                    <textarea id="announcement-content" placeholder="Nội dung thông báo (ngắn gọn, lặp lại)" rows="3" class="w-full p-5 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-secondary text-sm font-medium"></textarea>
+                    
+                    <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-xl border dark:border-white/5">
+                        <label class="text-sm font-bold opacity-60">Kích hoạt Thông báo Chạy chữ</label>
+                        <button id="toggle-announcement-btn" onclick="window.toggleAnnouncementStatus()" class="px-5 py-2 rounded-xl font-bold text-xs uppercase transition-all">Tắt / Bật</button>
+                    </div>
+                    
+                    <button onclick="window.saveAnnouncementContent()" class="w-full py-4 bg-primary text-white rounded-xl font-bold shadow-lg uppercase text-xs">LƯU NỘI DUNG</button>
+                </div>
+                <!-- END NEW Tab Announcement -->
 
                 <!-- Tab Deputy -->
                 <div id="tab-deputy" class="hidden space-y-6">
@@ -290,6 +318,7 @@
         let appsLoaded = false; 
         let bulkDeleteMode = false; 
         let selectedAppsForDelete = new Set(); 
+        let currentAnnouncement = {}; // NEW: Store announcement data
 
         // --- AUTH & INITIAL ---
         onAuthStateChanged(auth, async (user) => {
@@ -309,6 +338,11 @@
                     userFavorites = snap.data()?.favorites || [];
                     if (currentFilter === 'favorites') renderApps();
                 });
+                
+                // NEW: Load announcement content for Admin only
+                if (isAdmin) {
+                    document.getElementById('announcement-content').value = currentAnnouncement.content || '';
+                }
 
             } else {
                 isAdmin = isSuper = false;
@@ -322,6 +356,7 @@
             
             renderApps();
             renderDeputyList();
+            renderAnnouncementControls(); // NEW: Update button status
         });
 
         window.login = () => signInWithPopup(auth, provider);
@@ -347,6 +382,76 @@
             visitStats = snap.data() || {};
             renderStats();
         });
+        
+        // NEW: Realtime listener for Announcement
+        onSnapshot(doc(db, "settings", "announcement"), (snap) => {
+            currentAnnouncement = snap.data() || { content: '', active: false };
+            renderAnnouncementBar();
+            renderAnnouncementControls();
+        });
+
+        // --- ANNOUNCEMENT LOGIC (NEW) ---
+        function renderAnnouncementBar() {
+            const bar = document.getElementById('announcement-bar');
+            const textDiv = document.getElementById('announcement-text');
+            
+            if (currentAnnouncement.active && currentAnnouncement.content && currentAnnouncement.content.trim() !== '') {
+                textDiv.innerText = currentAnnouncement.content.trim().toUpperCase() + " • "; // Add separator for looping
+                bar.classList.remove('hidden');
+                // Adjust animation speed based on content length
+                const contentLen = currentAnnouncement.content.length;
+                const speed = Math.max(10, Math.min(30, contentLen * 0.2)); // Min 10s, Max 30s
+                bar.querySelector('.marquee > div').style.animationDuration = `${speed}s`;
+
+            } else {
+                bar.classList.add('hidden');
+            }
+        }
+        
+        function renderAnnouncementControls() {
+            if (!isAdmin) return;
+            const btn = document.getElementById('toggle-announcement-btn');
+            
+            if (currentAnnouncement.active) {
+                btn.innerText = 'TẮT THÔNG BÁO';
+                btn.classList.remove('bg-slate-500');
+                btn.classList.add('bg-red-500');
+            } else {
+                btn.innerText = 'BẬT THÔNG BÁO';
+                btn.classList.remove('bg-red-500');
+                btn.classList.add('bg-slate-500');
+            }
+        }
+        
+        window.saveAnnouncementContent = async () => {
+            if (!isAdmin) return;
+            const content = document.getElementById('announcement-content').value.trim();
+            if (content.length < 5) {
+                showToast("Nội dung thông báo phải dài hơn 5 ký tự!");
+                return;
+            }
+            try {
+                await setDoc(doc(db, "settings", "announcement"), { content: content }, { merge: true });
+                showToast("Đã lưu nội dung thông báo!");
+            } catch (e) {
+                showToast("Lỗi khi lưu nội dung thông báo!");
+            }
+        };
+        
+        window.toggleAnnouncementStatus = async () => {
+            if (!isAdmin) return;
+            const newState = !currentAnnouncement.active;
+            if (newState && (!currentAnnouncement.content || currentAnnouncement.content.trim() === '')) {
+                showToast("Vui lòng nhập nội dung trước khi bật!");
+                return;
+            }
+            try {
+                await setDoc(doc(db, "settings", "announcement"), { active: newState }, { merge: true });
+                showToast(newState ? "Đã BẬT thông báo!" : "Đã TẮT thông báo!");
+            } catch (e) {
+                showToast("Lỗi khi thay đổi trạng thái thông báo!");
+            }
+        };
 
         // --- FAVORITES LOGIC ---
         window.toggleFavorite = (appId, event) => {
@@ -628,7 +733,6 @@
         }
 
         // --- IMPORT / EXPORT LOGIC ---
-        // (Giữ nguyên logic Export/Import)
         window.handleExport = (type) => {
             const data = {
                 apps: apps.map(({id, ...rest}) => rest),
@@ -709,9 +813,18 @@
             if (file.name.endsWith('.json')) reader.readAsText(file); else reader.readAsArrayBuffer(file);
         };
 
-        // --- ADMIN UTILS ---
-        window.updateCatField = (id, field, val) => updateDoc(doc(db, "categories", id), { [field]: val });
-        window.deleteCat = (id) => confirm("Xóa danh mục này?") && deleteDoc(doc(db, "categories", id));
+        // --- ADMIN UTILS (FIXED TOASTS & RELOAD) ---
+        window.updateCatField = (id, field, val) => updateDoc(doc(db, "categories", id), { [field]: val })
+            .then(() => showToast("Đã cập nhật danh mục!"))
+            .catch(e => showToast("Lỗi khi cập nhật danh mục!"));
+            
+        window.deleteCat = (id) => {
+            if (confirm("Xóa danh mục này?")) {
+                deleteDoc(doc(db, "categories", id))
+                    .then(() => showToast("Đã xóa danh mục!"))
+                    .catch(e => showToast("Lỗi khi xóa danh mục!"));
+            }
+        };
         
         window.addCategory = async () => {
             const name = document.getElementById('new-cat-name').value.trim();
@@ -779,12 +892,24 @@
             e.preventDefault();
             const id = document.getElementById('edit-id').value;
             const data = { name: document.getElementById('app-name').value, position: document.getElementById('app-position').value, url: document.getElementById('app-link').value, iconUrl: document.getElementById('app-icon').value, categoryId: document.getElementById('app-category').value, visible: document.getElementById('app-visible').checked, order: id ? apps.find(x => x.id === id).order : apps.length };
-            id ? await updateDoc(doc(db, "apps", id), data) : await addDoc(collection(db, "apps"), data);
-            window.closeModal('modal-app');
-            showToast(id ? "Đã cập nhật ứng dụng!" : "Đã thêm ứng dụng mới!");
+            
+            try {
+                id ? await updateDoc(doc(db, "apps", id), data) : await addDoc(collection(db, "apps"), data);
+                window.closeModal('modal-app');
+                showToast(id ? "Đã cập nhật ứng dụng!" : "Đã thêm ứng dụng mới!");
+            } catch (e) {
+                console.error("Error saving app:", e);
+                showToast("Lỗi khi lưu ứng dụng!");
+            }
         };
 
-        window.deleteApp = (id) => confirm("Xóa mục này?") && deleteDoc(doc(db, "apps", id));
+        window.deleteApp = (id) => {
+            if (confirm("Xóa mục này?")) {
+                deleteDoc(doc(db, "apps", id))
+                    .then(() => showToast("Đã xóa ứng dụng!"))
+                    .catch(e => showToast("Lỗi khi xóa ứng dụng!"));
+            }
+        };
 
         window.toggleAppVisibility = (id) => {
             if (!isAdmin) return;
@@ -833,11 +958,21 @@
         window.openModal = (id) => document.getElementById(id).classList.remove('hidden');
         window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
         window.switchTab = (tabId) => {
-            ['tab-cat', 'tab-deputy', 'tab-data'].forEach(id => document.getElementById(id).classList.add('hidden'));
-            ['btn-tab-cat', 'btn-tab-deputy', 'btn-tab-data'].forEach(id => document.getElementById(id).classList.remove('text-primary', 'border-b-2', 'border-primary'));
+            const tabs = ['tab-cat', 'tab-announcement', 'tab-deputy', 'tab-data']; // ADDED new tab
+            const buttons = ['btn-tab-cat', 'btn-tab-announcement', 'btn-tab-deputy', 'btn-tab-data']; // ADDED new button
+
+            tabs.forEach(id => document.getElementById(id).classList.add('hidden'));
+            buttons.forEach(id => document.getElementById(id).classList.remove('text-primary', 'border-b-2', 'border-primary'));
+            
             document.getElementById(tabId).classList.remove('hidden');
             document.getElementById('btn-' + tabId).classList.add('text-primary', 'border-b-2', 'border-primary');
+            
+            if (tabId === 'tab-announcement' && isAdmin) {
+                 document.getElementById('announcement-content').value = currentAnnouncement.content || '';
+                 renderAnnouncementControls();
+            }
         };
+        
         window.toggleTheme = () => { document.documentElement.classList.toggle('dark'); localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light'; };
         document.getElementById('search-input').oninput = (e) => { searchQuery = e.target.value; renderApps(); };
         window.setView = (mode) => { viewMode = mode; renderApps(); };
@@ -845,8 +980,19 @@
             const t = document.getElementById('toast');
             document.getElementById('toast-msg').innerText = msg;
             t.classList.remove('opacity-0', 'translate-y-20');
+            // Check if icon is for error (optional improvement)
+            const icon = t.querySelector('i');
+            if (msg.toLowerCase().includes('lỗi')) {
+                 icon.setAttribute('data-lucide', 'alert-triangle');
+                 icon.classList.remove('text-green-500');
+                 icon.classList.add('text-red-500');
+            } else {
+                 icon.setAttribute('data-lucide', 'check-circle');
+                 icon.classList.remove('text-red-500');
+                 icon.classList.add('text-green-500');
+            }
+            lucide.createIcons(); // Re-render icon
             setTimeout(() => t.classList.add('opacity-0', 'translate-y-20'), 3000);
-            lucide.createIcons();
         }
 
         if(localStorage.theme === 'dark') document.documentElement.classList.add('dark');
