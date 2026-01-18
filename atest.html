@@ -727,6 +727,9 @@
         
         // CẦN THAY THẾ: UID Của tài khoản Google dùng làm Admin
         const ADMIN_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1"; 
+        
+        // TỐI ƯU HIỆU SUẤT: Giới hạn số đơn hàng hiển thị mặc định trong bảng Admin
+        const ORDER_RENDER_LIMIT = 50; 
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -963,6 +966,60 @@
             document.getElementById('resultModal').style.display = 'flex';
         }
 
+        // TỐI ƯU HIỆU SUẤT: CHỈ RENDER SỐ LƯỢNG GIỚI HẠN MẶC ĐỊNH
+        function renderAdminTableBody(orders, count) {
+            const tbody = document.querySelector('#adminOrdersTable tbody');
+            tbody.innerHTML = '';
+            
+            // Limit rendering to the specified count
+            const ordersToRender = orders.slice(0, count);
+
+            if(ordersToRender.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Không tìm thấy đơn hàng nào.</td></tr>';
+            } else {
+                ordersToRender.forEach(d => {
+                    const statusClass = d.status.includes('Chờ') ? 'badge-pending' : (d.status.includes('Hoàn thành') ? 'badge-completed' : (d.status.includes('Đã hủy') ? 'badge-cancelled' : 'badge-deposit'));
+                    
+                    tbody.innerHTML += `
+                        <tr>
+                            <td data-label="Khách">${d.email}</td>
+                            <td data-label="SĐT">${d.phone}</td>
+                            <td data-label="Ngày/Giờ chụp">${d.date} ${d.time || ''}</td>
+                            <td data-label="Địa điểm">${d.location}</td>
+                            <td data-label="Gói">${d.svcName}</td>
+                            <td data-label="Tổng">${fmt(d.total)}</td>
+                            <td data-label="Trạng thái">
+                                <select onchange="updateStatus('${d.id}', this.value)" style="padding:5px; border-radius:var(--radius); border-color:var(--border);">
+                                    <option value="Chờ xác nhận" ${d.status=='Chờ xác nhận'?'selected':''}>Chờ xác nhận</option>
+                                    <option value="Đã cọc" ${d.status=='Đã cọc'?'selected':''}>Đã cọc</option>
+                                    <option value="Hoàn thành" ${d.status=='Hoàn thành'?'selected':''}>Hoàn thành</option>
+                                    <option value="Đã hủy" ${d.status=='Đã hủy'?'selected':''}>Đã hủy</option>
+                                </select>
+                            </td>
+                            <td data-label="Hành động">
+                                 <button class="btn btn-sm" onclick="openDeliver('${d.id}')">Trả Ảnh</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+            
+            // Add Load All button logic
+            const adminOrdersContainer = document.getElementById('tab-admin-orders');
+            let loadAllBtn = document.getElementById('loadAllOrdersBtn');
+            if (loadAllBtn) loadAllBtn.remove(); // Remove previous button
+
+            if (orders.length > count) {
+                loadAllBtn = document.createElement('button');
+                loadAllBtn.id = 'loadAllOrdersBtn';
+                loadAllBtn.className = 'btn btn-sm';
+                loadAllBtn.style = 'margin-top: 20px;';
+                loadAllBtn.innerText = `Hiển thị tất cả ${orders.length} đơn hàng...`;
+                loadAllBtn.onclick = () => renderAdminTableBody(orders, orders.length);
+                adminOrdersContainer.appendChild(loadAllBtn);
+            }
+        }
+
         // 6. ADMIN MANAGEMENT
         // 6a. Orders & Delivery (UPDATED with Search, Filter, Stats, Time)
         window.loadAdminOrders = async () => {
@@ -975,7 +1032,7 @@
 
             // Fetch ALL orders for client-side filtering and stats calculation
             const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
-            const snap = await getDocs(q);
+            const snap = await getDocs(q); // <-- Đây vẫn là điểm có thể chậm nếu DB quá lớn
             allAdminOrders = [];
             snap.forEach(d => allAdminOrders.push({id: d.id, ...d.data()}));
             
@@ -994,38 +1051,9 @@
             // Update Stats based on ALL orders
             updateAdminStats(allAdminOrders);
 
-            const tbody = document.querySelector('#adminOrdersTable tbody');
-            tbody.innerHTML = '';
-            
-            if(filteredOrders.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Không tìm thấy đơn hàng nào.</td></tr>';
-            } else {
-                 filteredOrders.forEach(d => {
-                    const statusClass = d.status.includes('Chờ') ? 'badge-pending' : (d.status.includes('Hoàn thành') ? 'badge-completed' : (d.status.includes('Đã hủy') ? 'badge-cancelled' : 'badge-deposit'));
-                    
-                    tbody.innerHTML += `
-                        <tr>
-                            <td data-label="Khách">${d.email}</td>
-                            <td data-label="SĐT">${d.phone}</td>
-                            <td data-label="Ngày/Giờ chụp">${d.date} ${d.time || ''}</td> <!-- UPDATED: Display Time -->
-                            <td data-label="Địa điểm">${d.location}</td>
-                            <td data-label="Gói">${d.svcName}</td>
-                            <td data-label="Tổng">${fmt(d.total)}</td>
-                            <td data-label="Trạng thái">
-                                <select onchange="updateStatus('${d.id}', this.value)" style="padding:5px; border-radius:var(--radius); border-color:var(--border);">
-                                    <option value="Chờ xác nhận" ${d.status=='Chờ xác nhận'?'selected':''}>Chờ xác nhận</option>
-                                    <option value="Đã cọc" ${d.status=='Đã cọc'?'selected':''}>Đã cọc</option>
-                                    <option value="Hoàn thành" ${d.status=='Hoàn thành'?'selected':''}>Hoàn thành</option>
-                                    <option value="Đã hủy" ${d.status=='Đã hủy'?'selected':''}>Đã hủy</option> <!-- ADDED STATUS -->
-                                </select>
-                            </td>
-                            <td data-label="Hành động">
-                                 <button class="btn btn-sm" onclick="openDeliver('${d.id}')">Trả Ảnh</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            }
+            // RENDER ONLY THE LIMITED SET (Tối ưu hóa hiệu suất)
+            renderAdminTableBody(filteredOrders, ORDER_RENDER_LIMIT);
+
             showLoader(false);
         };
 
@@ -1083,9 +1111,7 @@
             } else {
                  showToast("Hủy duyệt do trùng lịch");
             }
-            // Always refresh the table to ensure the select box state matches the DB state,
-            // especially after a cancellation in the confirmation dialog.
-            showLoader(false); 
+            showLoader(false);
             loadAdminOrders();
             renderAdminSchedule(); // Update schedule if active tab
         };
