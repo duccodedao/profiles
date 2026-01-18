@@ -1,4 +1,4 @@
-
+--- START OF FILE Paste January 19, 2026 - 2:10AM ---
 
 <!DOCTYPE html>
 <html lang="vi" class="light">
@@ -388,7 +388,6 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        // CẬP NHẬT: Không cần arrayUnion/arrayRemove cho deputy_emails nữa
         import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc, arrayUnion, arrayRemove, writeBatch, increment, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -400,15 +399,14 @@
             appId: "1:914980131889:web:72f8da15c42dbee671b110",
             measurementId: "G-C587M69LZW"
         };
-        // UID của tài khoản Super Admin (người có quyền cao nhất)
-        const SUPER_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1";
+        // CẬP NHẬT: Loại bỏ SUPER_UID hardcode, thay bằng biến sẽ được load từ DB
+        let SUPER_UID = null;
 
         const fbApp = initializeApp(firebaseConfig);
         const auth = getAuth(fbApp);
         const db = getFirestore(fbApp);
         const provider = new GoogleAuthProvider();
 
-        // CẬP NHẬT: Loại bỏ deputies (dùng user.role thay thế)
         let currentUser = null, isAdmin = false, isSuper = false, apps = [], categories = [], currentFilter = 'all', searchQuery = '', viewMode = 'grid', visitStats = {};
         let userFavorites = []; 
         let appsLoaded = false; 
@@ -427,6 +425,10 @@
             
             // NEW: Listener cho All Users (chỉ cần khi có người dùng đăng nhập)
             if (user) {
+                 // Fetch Super Admin UID từ DB trước
+                const superAdminSnap = await getDoc(doc(db, "settings", "super_admin"));
+                SUPER_UID = superAdminSnap.exists() ? superAdminSnap.data().uid : null;
+                
                  onSnapshot(collection(db, "users"), (snap) => {
                     allUsers = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
                     // Khi có sự kiện thay đổi trên collection users (ví dụ: cấp quyền), render lại list
@@ -438,6 +440,7 @@
 
 
             if (user) {
+                // Đã fetch SUPER_UID ở trên
                 isSuper = user.uid === SUPER_UID;
                 // CẬP NHẬT: Lấy role trực tiếp từ user document
                 const userDoc = await getDoc(doc(db, "users", user.uid));
@@ -474,6 +477,7 @@
 
             } else {
                 isAdmin = isSuper = false;
+                SUPER_UID = null; // Reset Super UID
                 userFavorites = [];
                 document.getElementById('auth-section').innerHTML = `<button onclick="window.login()" class="bg-primary text-white px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-widest">Login</button>`;
                 if (currentFilter === 'favorites') window.setFilter('all'); 
@@ -485,8 +489,6 @@
             document.getElementById('admin-sidebar-toggle').classList.toggle('hidden', !isAdmin); 
             
             renderApps();
-            // CẬP NHẬT: Chỉ render khi có sự kiện từ snapshot All Users
-            // renderDeputyList(); // <-- Loại bỏ
             renderAnnouncementControls(); 
         });
         
@@ -1029,15 +1031,9 @@
                                 <i data-lucide="star" class="w-3 h-3 star-icon ${isFav ? 'fill-current' : ''}"></i>
                             </button>
                             ${isAdmin ? `
-                                <button onclick="window.toggleAppVisibility('${a.id}')" class="${a.visible ? 'bg-green-500' : 'bg-slate-500'} text-white p-2 rounded-full shadow-lg">
-                                    <i data-lucide="${a.visible ? 'eye' : 'eye-off'}" class="w-3 h-3"></i>
-                                </button>
-                                <button onclick="window.editApp('${a.id}')" class="bg-indigo-500 text-white p-2 rounded-full shadow-lg">
-                                    <i data-lucide="edit-2" class="w-3 h-3"></i>
-                                </button>
-                                <button onclick="window.deleteApp('${a.id}')" class="bg-red-500 text-white p-2 rounded-full shadow-lg">
-                                    <i data-lucide="trash" class="w-3 h-3"></i>
-                                </button>
+                                <button onclick="window.toggleAppVisibility('${a.id}')" class="p-2 ${a.visible ? 'text-green-500 hover:bg-green-100' : 'text-slate-500 hover:bg-slate-100'} rounded-lg"><i data-lucide="${a.visible ? 'eye' : 'eye-off'}" class="w-4 h-4"></i></button>
+                                <button onclick="window.editApp('${a.id}')" class="p-2 hover:bg-slate-100 rounded-lg"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                                <i data-lucide="grip-vertical" class="w-4 h-4 text-slate-300 cursor-move"></i>
                             ` : ''}
                         </div>
                     </div>`;
@@ -1186,7 +1182,7 @@
                 .catch(e => showToast("Lỗi khi thêm danh mục.", true)); 
         };
 
-        // CẬP NHẬT: Loại bỏ renderDeputyList, addDeputy, removeDeputy
+        // CẬP NHẬT: Loại bỏ renderDeputyList, addDeputy, removeDeputy (đã được thay thế)
         window.renderDeputyList = () => { /* Logic này đã được thay thế bằng renderUserRoleManagement */ }; 
         window.addDeputy = async () => { /* Logic này đã được thay thế bằng assignRole */ };
         window.removeDeputy = async (email) => { /* Logic này đã được thay thế bằng assignRole */ };
