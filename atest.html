@@ -1,3 +1,5 @@
+--- START OF FILE text/plain ---
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -806,13 +808,17 @@
 
         // 3. SERVICE DISPLAY & LOGIC
         async function loadServices() {
-            const q = query(collection(db, "services"));
-            const snap = await getDocs(q);
-            services = [];
-            snap.forEach(d => services.push({id: d.id, ...d.data()}));
-            
-            renderServices();
-            if(currentUser && currentUser.uid === ADMIN_UID) renderAdminServices();
+            try {
+                const q = query(collection(db, "services"));
+                const snap = await getDocs(q);
+                services = [];
+                snap.forEach(d => services.push({id: d.id, ...d.data()}));
+                
+                renderServices();
+                if(currentUser && currentUser.uid === ADMIN_UID) renderAdminServices();
+            } catch (e) {
+                 showToast("Lỗi tải dịch vụ: " + e.message);
+            }
         }
         
         function renderServices() {
@@ -918,7 +924,7 @@
                 });
                 showToast("Đã gửi yêu cầu đặt lịch!");
                 loadMyOrders(); 
-            } catch(e) { alert(e.message); }
+            } catch(e) { alert("Lỗi khi gửi đơn hàng: " + e.message); }
             showLoader(false);
         };
 
@@ -930,34 +936,39 @@
             }
             showLoader(true);
             
-            const q = query(collection(db, "orders"), where("uid", "==", currentUser.uid), orderBy("createdAt", "desc"));
-            const snaps = await getDocs(q);
-            const tbody = document.querySelector('#myOrdersTable tbody');
-            tbody.innerHTML = '';
-            
-            if(snaps.empty) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Bạn chưa có đơn hàng nào.</td></tr>';
-            } else {
-                snaps.forEach(d => {
-                    const data = d.data();
-                    const isDone = data.status === "Hoàn thành";
-                    const dateOrder = data.createdAt?.toDate().toLocaleDateString('vi-VN') || 'N/A';
-                    const statusClass = data.status.includes('Chờ') ? 'badge-pending' : (data.status.includes('Hoàn thành') ? 'badge-completed' : (data.status.includes('Đã hủy') ? 'badge-cancelled' : 'badge-deposit'));
+            try {
+                const q = query(collection(db, "orders"), where("uid", "==", currentUser.uid), orderBy("createdAt", "desc"));
+                const snaps = await getDocs(q);
+                const tbody = document.querySelector('#myOrdersTable tbody');
+                tbody.innerHTML = '';
+                
+                if(snaps.empty) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Bạn chưa có đơn hàng nào.</td></tr>';
+                } else {
+                    snaps.forEach(d => {
+                        const data = d.data();
+                        const isDone = data.status === "Hoàn thành";
+                        const dateOrder = data.createdAt?.toDate().toLocaleDateString('vi-VN') || 'N/A';
+                        const statusClass = data.status.includes('Chờ') ? 'badge-pending' : (data.status.includes('Hoàn thành') ? 'badge-completed' : (data.status.includes('Đã hủy') ? 'badge-cancelled' : 'badge-deposit'));
 
-                    tbody.innerHTML += `
-                        <tr>
-                            <td data-label="Ngày đặt">${dateOrder}</td>
-                            <td data-label="Ngày/Giờ chụp">${data.date} ${data.time || ''}</td>
-                            <td data-label="Gói">${data.svcName}</td>
-                            <td data-label="Địa điểm">${data.location}</td>
-                            <td data-label="Tổng tiền">${fmt(data.total)}</td>
-                            <td data-label="Trạng thái"><span class="badge ${statusClass}">${data.status}</span></td>
-                            <td data-label="Kết quả">
-                                ${isDone && data.deliveryLink ? `<button class="btn btn-sm btn-fill" onclick="viewResult('${data.deliveryLink}', '${data.deliveryPass}')">NHẬN ẢNH</button>` : '---'}
-                            </td>
-                        </tr>
-                    `;
-                });
+                        tbody.innerHTML += `
+                            <tr>
+                                <td data-label="Ngày đặt">${dateOrder}</td>
+                                <td data-label="Ngày/Giờ chụp">${data.date} ${data.time || ''}</td>
+                                <td data-label="Gói">${data.svcName}</td>
+                                <td data-label="Địa điểm">${data.location}</td>
+                                <td data-label="Tổng tiền">${fmt(data.total)}</td>
+                                <td data-label="Trạng thái"><span class="badge ${statusClass}">${data.status}</span></td>
+                                <td data-label="Kết quả">
+                                    ${isDone && data.deliveryLink ? `<button class="btn btn-sm btn-fill" onclick="viewResult('${data.deliveryLink}', '${data.deliveryPass}')">NHẬN ẢNH</button>` : '---'}
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+            } catch (e) {
+                showToast("Lỗi khi tải đơn hàng của bạn: " + e.message);
+                document.querySelector('#tab-my-orders tbody').innerHTML = '<tr><td colspan="7" style="text-align:center; color: var(--danger);">Lỗi tải đơn hàng. Vui lòng thử lại.</td></tr>';
             }
             showLoader(false);
         }
@@ -1031,35 +1042,41 @@
             if(currentUser.uid !== ADMIN_UID) return;
             showLoader(true);
 
-            // Get filter values
-            const searchVal = document.getElementById('orderSearch').value.toLowerCase();
-            const filterStatus = document.getElementById('orderFilterStatus').value;
+            try {
+                // Get filter values
+                const searchVal = document.getElementById('orderSearch').value.toLowerCase();
+                const filterStatus = document.getElementById('orderFilterStatus').value;
 
-            // Fetch ALL orders for client-side filtering and stats calculation
-            const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
-            const snap = await getDocs(q); 
-            allAdminOrders = [];
-            snap.forEach(d => allAdminOrders.push({id: d.id, ...d.data()}));
+                // Fetch ALL orders for client-side filtering and stats calculation
+                const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+                const snap = await getDocs(q); 
+                allAdminOrders = [];
+                snap.forEach(d => allAdminOrders.push({id: d.id, ...d.data()}));
+                
+                // Apply filtering
+                const filteredOrders = allAdminOrders.filter(d => {
+                    const searchMatch = !searchVal || 
+                        (d.email && d.email.toLowerCase().includes(searchVal)) || 
+                        (d.phone && d.phone.includes(searchVal)) || 
+                        (d.location && d.location.toLowerCase().includes(searchVal));
+                    
+                    const statusMatch = !filterStatus || d.status === filterStatus;
+                    
+                    return searchMatch && statusMatch;
+                });
+
+                // Update Stats based on ALL orders
+                updateAdminStats(allAdminOrders);
+
+                // RENDER ONLY THE LIMITED SET (Tối ưu hóa hiệu suất)
+                renderAdminTableBody(filteredOrders, ORDER_RENDER_LIMIT);
+            } catch (e) {
+                // Thêm thông báo lỗi chi tiết cho Admin
+                showToast("LỖI TẢI DỮ LIỆU ĐƠN HÀNG! Vui lòng kiểm tra Console/Index Firestore: " + e.message);
+                document.querySelector('#adminOrdersTable tbody').innerHTML = '<tr><td colspan="8" style="text-align:center; color: var(--danger);">LỖI TẢI DỮ LIỆU ĐƠN HÀNG. Vui lòng kiểm tra Console (F12) để xem thông báo lỗi Index.</td></tr>';
+            }
             
-            // Apply filtering
-            const filteredOrders = allAdminOrders.filter(d => {
-                const searchMatch = !searchVal || 
-                    (d.email && d.email.toLowerCase().includes(searchVal)) || 
-                    (d.phone && d.phone.includes(searchVal)) || 
-                    (d.location && d.location.toLowerCase().includes(searchVal));
-                
-                const statusMatch = !filterStatus || d.status === filterStatus;
-                
-                return searchMatch && statusMatch;
-            });
-
-            // Update Stats based on ALL orders
-            updateAdminStats(allAdminOrders);
-
-            // RENDER ONLY THE LIMITED SET (Tối ưu hóa hiệu suất)
-            renderAdminTableBody(filteredOrders, ORDER_RENDER_LIMIT);
-
-            showLoader(false);
+            showLoader(false); // CRITICAL: Đảm bảo loader ẩn sau khi hàm chạy xong/gặp lỗi
         };
 
         function updateAdminStats(orders) {
@@ -1081,49 +1098,60 @@
 
         window.updateStatus = async (id, newStatus) => {
             if(currentUser.uid !== ADMIN_UID) return showToast("Bạn không có quyền admin");
-
-            const isApproved = ['Đã cọc', 'Hoàn thành'].includes(newStatus);
-            let proceed = true;
+            
             let currentStatus = '';
+            const selectEl = document.querySelector(`#adminOrdersTable tbody tr td select[onchange*="${id}"]`);
+            if (selectEl) currentStatus = selectEl.dataset.originalStatus || selectEl.value; // Lấy trạng thái gốc
 
-            if (isApproved) {
-                showLoader(true);
-                const orderSnap = await getDoc(doc(db, "orders", id));
-                const order = orderSnap.data();
-                currentStatus = order.status;
+            showLoader(true);
+            let proceed = true;
 
-                // Check for conflict: Same Date AND Same Location AND Same Time
-                const conflictQuery = query(
-                    collection(db, "orders"), 
-                    where("date", "==", order.date),
-                    where("location", "==", order.location),
-                    where("time", "==", order.time), 
-                    where("status", "in", ["Đã cọc", "Hoàn thành"]),
-                    where(documentId(), "!=", id) 
-                );
-                
-                const conflictSnaps = await getDocs(conflictQuery);
-                showLoader(false); 
+            try {
+                const isApproved = ['Đã cọc', 'Hoàn thành'].includes(newStatus);
 
-                if (conflictSnaps.size > 0) {
-                    const msg = `CẢNH BÁO: Lịch ngày ${order.date} lúc ${order.time} tại ${order.location} đã TRÙNG với ${conflictSnaps.size} đơn hàng đã duyệt/hoàn thành. Bạn có muốn duyệt không?`;
-                    proceed = confirm(msg);
+                if (isApproved) {
+                    const orderSnap = await getDoc(doc(db, "orders", id));
+                    const order = orderSnap.data();
+
+                    // Query phức tạp CÓ THỂ GÂY LỖI INDEX
+                    const conflictQuery = query(
+                        collection(db, "orders"), 
+                        where("date", "==", order.date),
+                        where("location", "==", order.location),
+                        where("time", "==", order.time), 
+                        where("status", "in", ["Đã cọc", "Hoàn thành"]),
+                        where(documentId(), "!=", id) 
+                    );
+                    
+                    const conflictSnaps = await getDocs(conflictQuery);
+
+                    if (conflictSnaps.size > 0) {
+                        const msg = `CẢNH BÁO: Lịch ngày ${order.date} lúc ${order.time} tại ${order.location} đã TRÙNG với ${conflictSnaps.size} đơn hàng đã duyệt/hoàn thành. Bạn có muốn duyệt không?`;
+                        if (!confirm(msg)) {
+                            showToast("Hủy duyệt do trùng lịch");
+                            // Revert select box manually if user cancels
+                            if (selectEl) selectEl.value = currentStatus;
+                            proceed = false;
+                        }
+                    }
                 }
-            }
 
-            if (proceed) {
-                showLoader(true);
-                await updateDoc(doc(db, "orders", id), {status: newStatus});
-                showToast("Đã cập nhật trạng thái đơn hàng");
-            } else {
-                 showToast("Hủy duyệt do trùng lịch");
-                 // Revert the select box state manually if the user cancels
-                 const selectEl = document.querySelector(`#adminOrdersTable tbody tr td select[onchange*="${id}"]`);
-                 if (selectEl) selectEl.value = currentStatus;
+                if (proceed) {
+                    await updateDoc(doc(db, "orders", id), {status: newStatus});
+                    showToast("Đã cập nhật trạng thái đơn hàng");
+                }
+                
+                // Cần load lại bảng ngay cả khi bị lỗi Index trong lúc check conflict để cập nhật trạng thái
+                loadAdminOrders();
+                renderAdminSchedule(); 
+
+            } catch(e) { 
+                alert("Lỗi khi cập nhật trạng thái hoặc check conflict: " + e.message + ". Vui lòng kiểm tra Index Firestore!"); 
+                showToast("Lỗi: Không thể cập nhật trạng thái.");
+                // Revert select box to original value if update failed
+                if (selectEl) selectEl.value = currentStatus;
             }
             showLoader(false);
-            loadAdminOrders();
-            renderAdminSchedule(); 
         };
 
         window.openDeliver = (id) => {
@@ -1141,14 +1169,18 @@
             if(!link) return alert("Vui lòng nhập link trả ảnh");
 
             showLoader(true);
-            await updateDoc(doc(db, "orders", id), {
-                deliveryLink: link,
-                deliveryPass: pass,
-                status: "Hoàn thành"
-            });
-            showToast("Đã trả ảnh và chuyển trạng thái sang Hoàn thành");
-            closeModal('deliverModal');
-            loadAdminOrders();
+            try {
+                await updateDoc(doc(db, "orders", id), {
+                    deliveryLink: link,
+                    deliveryPass: pass,
+                    status: "Hoàn thành"
+                });
+                showToast("Đã trả ảnh và chuyển trạng thái sang Hoàn thành");
+                closeModal('deliverModal');
+                loadAdminOrders();
+            } catch(e) {
+                 alert("Lỗi khi trả ảnh: " + e.message);
+            }
             showLoader(false);
         }
 
@@ -1239,7 +1271,7 @@
                 showToast("Đã lưu gói dịch vụ!");
                 closeModal('svcModal');
                 await loadServices();
-            } catch(e) { alert(e.message); }
+            } catch(e) { alert("Lỗi khi lưu gói dịch vụ: " + e.message); }
             showLoader(false);
         }
 
@@ -1250,7 +1282,7 @@
                 await deleteDoc(doc(db, "services", id));
                 showToast("Đã xóa gói dịch vụ!");
                 await loadServices();
-            } catch(e) { alert(e.message); }
+            } catch(e) { alert("Lỗi khi xóa gói dịch vụ: " + e.message); }
             showLoader(false);
         }
 
@@ -1265,34 +1297,42 @@
             }
             
             showLoader(true);
-            // Lấy các đơn hàng đã được cọc hoặc hoàn thành trong ngày đã chọn, sắp xếp theo giờ chụp.
-            const q = query(
-                collection(db, "orders"), 
-                where("date", "==", date),
-                where("status", "in", ["Đã cọc", "Hoàn thành"]),
-                orderBy("time", "asc")
-            );
-            
-            const snaps = await getDocs(q);
-            showLoader(false);
-            
-            if(snaps.empty) {
-                list.innerHTML = `<p style="color:var(--success)">Tuyệt vời! Ngày ${date} không có lịch chụp đã được duyệt nào.</p>`;
-            } else {
-                list.innerHTML = snaps.docs.map(doc => {
-                    const d = doc.data();
-                    return `
-                        <div style="padding:15px; border:1px solid var(--border); border-radius:var(--radius); background:var(--bg-secondary); display:flex; justify-content:space-between; align-items:center;">
-                            <div>
-                                <h4 style="margin-bottom:5px; color:var(--accent)">${d.time} - ${d.svcName}</h4>
-                                <p style="font-size:0.9rem; color:var(--text-secondary)">Địa điểm: ${d.location}</p>
-                                <p style="font-size:0.9rem;">Khách: ${d.email} | SĐT: ${d.phone}</p>
+
+            try {
+                // Lấy các đơn hàng đã được cọc hoặc hoàn thành trong ngày đã chọn, sắp xếp theo giờ chụp.
+                // CHÚ Ý: Query này CÓ THỂ GÂY LỖI INDEX vì kết hợp where("date", "==") và where("status", "in") với orderBy("time").
+                // Cần tạo Composite Index trên Firestore cho: date (asc), status (asc), time (asc)
+                const q = query(
+                    collection(db, "orders"), 
+                    where("date", "==", date),
+                    where("status", "in", ["Đã cọc", "Hoàn thành"]),
+                    orderBy("time", "asc")
+                );
+                
+                const snaps = await getDocs(q);
+                
+                if(snaps.empty) {
+                    list.innerHTML = `<p style="color:var(--success)">Tuyệt vời! Ngày ${date} không có lịch chụp đã được duyệt nào.</p>`;
+                } else {
+                    list.innerHTML = snaps.docs.map(doc => {
+                        const d = doc.data();
+                        return `
+                            <div style="padding:15px; border:1px solid var(--border); border-radius:var(--radius); background:var(--bg-secondary); display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <h4 style="margin-bottom:5px; color:var(--accent)">${d.time} - ${d.svcName}</h4>
+                                    <p style="font-size:0.9rem; color:var(--text-secondary)">Địa điểm: ${d.location}</p>
+                                    <p style="font-size:0.9rem;">Khách: ${d.email} | SĐT: ${d.phone}</p>
+                                </div>
+                                <span class="badge ${d.status=='Hoàn thành'?'badge-completed':'badge-deposit'}">${d.status}</span>
                             </div>
-                            <span class="badge ${d.status=='Hoàn thành'?'badge-completed':'badge-deposit'}">${d.status}</span>
-                        </div>
-                    `;
-                }).join('');
+                        `;
+                    }).join('');
+                }
+            } catch(e) {
+                 showToast("LỖI TẢI LỊCH CHỤP! Vui lòng kiểm tra Console/Index Firestore: " + e.message);
+                 list.innerHTML = `<p style="color:var(--danger);">LỖI TẢI LỊCH CHỤP. Vui lòng kiểm tra Console (F12) để xem thông báo lỗi Index.</p>`;
             }
+            showLoader(false); // CRITICAL: Đảm bảo loader ẩn sau khi hàm chạy xong/gặp lỗi
         };
 
 
