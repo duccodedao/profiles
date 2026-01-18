@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="vi" class="light">
 <head>
@@ -331,6 +332,49 @@
         </div>
     </div>
 
+    <!-- User Profile Modal (NEW) -->
+    <div id="modal-user-profile" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[210] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden">
+            <div class="p-6 border-b dark:border-white/5 flex justify-between items-center">
+                <h3 class="font-bold uppercase text-sm tracking-widest text-primary">Thông tin Tài khoản</h3>
+                <button onclick="window.closeModal('modal-user-profile')" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-8 space-y-6">
+                <div class="flex flex-col items-center">
+                    <img id="profile-photo" class="w-20 h-20 rounded-full mb-3 border-4 border-primary/20 p-0.5 shadow-md" alt="Avatar">
+                    <span id="profile-role" class="text-[10px] font-black uppercase tracking-widest px-3 py-1 bg-primary/10 text-primary rounded-full"></span>
+                </div>
+
+                <div class="space-y-4">
+                    <!-- Editable Field Example (Name) -->
+                    <div class="space-y-1 group relative">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Tên hiển thị</label>
+                        <input type="text" id="profile-name" readonly class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium border-none pr-10">
+                        <button onclick="alert('Tính năng chỉnh sửa thông tin Google được chuyển qua mục Nâng cao.')" class="absolute right-3 top-1/2 mt-2 p-1 text-slate-400 hover:text-primary opacity-0 group-hover:opacity-100 transition"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                    </div>
+
+                    <!-- Non-Editable Fields -->
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Email</label>
+                        <input type="email" id="profile-email" readonly class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl text-slate-500 dark:text-slate-400 text-sm font-medium border-none">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">UID Firebase</label>
+                        <p id="profile-uid" class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl text-xs font-mono truncate"></p>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Mục yêu thích</label>
+                        <p class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl text-sm font-bold text-primary"><span id="profile-fav-count">0</span> ứng dụng</p>
+                    </div>
+                </div>
+
+                <a href="https://myaccount.google.com/?utm_source=hub-portal-vtd" target="_blank" class="w-full py-3 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white rounded-xl font-bold shadow-sm uppercase text-xs flex items-center justify-center gap-2 hover:bg-slate-300 transition">
+                    <i data-lucide="external-link" class="w-4 h-4"></i> Nâng cao: Quản lý tài khoản Google
+                </a>
+            </div>
+        </div>
+    </div>
+
     <!-- Notification Toast (No Changes) -->
     <div id="toast" class="fixed bottom-10 right-10 z-[300] transform translate-y-20 opacity-0 transition-all duration-500">
         <div class="bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border dark:border-white/10">
@@ -451,8 +495,70 @@
         window.login = () => signInWithPopup(auth, provider);
         window.logout = () => signOut(auth).then(() => location.reload());
 
+        // NEW: User Menu Dropdown Logic
+        window.toggleUserMenu = (event) => {
+            event.stopPropagation();
+            const menu = document.getElementById('user-menu');
+            menu?.classList.toggle('hidden');
+            lucide.createIcons();
+        };
+        
+        window.closeUserMenu = () => {
+             document.getElementById('user-menu')?.classList.add('hidden');
+        };
+
+        // Close menu if user clicks anywhere else
+        document.addEventListener('click', (e) => {
+             const menu = document.getElementById('user-menu');
+             const btn = document.getElementById('user-avatar-btn');
+             if (menu && !menu.contains(e.target) && btn && !btn.contains(e.target)) {
+                 window.closeUserMenu();
+             }
+        });
+
+        // NEW: User Profile Modal Logic
+        window.openUserProfileModal = () => {
+            if (!currentUser) return;
+            window.closeUserMenu(); 
+
+            const favoritesCount = userFavorites.length;
+            const role = isSuper ? 'SUPER ADMIN' : (isAdmin ? 'PHÓ ADMIN' : 'KHÁCH (GUEST)');
+            
+            // Populate Modal
+            document.getElementById('profile-name').value = currentUser.displayName || 'Chưa đặt tên';
+            document.getElementById('profile-email').value = currentUser.email;
+            document.getElementById('profile-uid').innerText = currentUser.uid;
+            document.getElementById('profile-role').innerText = role;
+            document.getElementById('profile-fav-count').innerText = favoritesCount;
+            document.getElementById('profile-photo').src = currentUser.photoURL;
+
+            window.openModal('modal-user-profile');
+            lucide.createIcons();
+        };
+
+        // CẬP NHẬT: Thay đổi hàm renderAuthUI để sử dụng Dropdown Menu
         function renderAuthUI() {
-            document.getElementById('auth-section').innerHTML = `<div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 pr-3 rounded-lg border dark:border-white/10"><img src="${currentUser.photoURL}" class="w-7 h-7 rounded-md"><button onclick="window.logout()" class="text-[9px] font-black uppercase text-red-500">Exit</button></div>`;
+            document.getElementById('auth-section').innerHTML = `
+                <div class="relative">
+                    <button onclick="window.toggleUserMenu(event)" id="user-avatar-btn" class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 pr-3 rounded-lg border dark:border-white/10">
+                        <img src="${currentUser.photoURL}" class="w-7 h-7 rounded-md">
+                        <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i>
+                    </button>
+                    <!-- Dropdown Menu -->
+                    <div id="user-menu" class="absolute right-0 top-full mt-3 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-2xl z-20 hidden ring-1 ring-black/5 dark:ring-white/10 p-2 transform origin-top-right">
+                        <div class="px-3 py-2 text-sm font-bold truncate">${currentUser.displayName}</div>
+                        <div class="px-3 py-1 text-xs text-slate-500 truncate">${currentUser.email}</div>
+                        <div class="h-px bg-slate-100 dark:bg-slate-700 my-2"></div>
+                        <button onclick="window.openUserProfileModal()" class="flex items-center w-full px-3 py-2 text-sm font-medium rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
+                            <i data-lucide="user-circle" class="w-4 h-4 mr-2"></i> Tài khoản
+                        </button>
+                        <button onclick="window.logout()" class="flex items-center w-full px-3 py-2 text-sm font-medium text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-slate-700/50">
+                            <i data-lucide="log-out" class="w-4 h-4 mr-2"></i> Đăng xuất
+                        </button>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
         }
         
         // NEW: Sidebar Toggle
