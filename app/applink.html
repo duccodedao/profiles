@@ -6,34 +6,22 @@
     <title>Menu app - Vĩnh Trạch Đông</title>
     <link rel="icon" href="https://bmass.vercel.app/img/bmasslogo.png" type="image/png">
     
-    <!-- ============================================= -->
-    <!-- NEW: SEO & PWA Meta Tags for Home Screen Icon -->
-    <!-- ============================================= -->
-    <meta name="description" content="Ứng dụng hay sử dụng trong cơ quan">
-    
-    <!-- Default favicon -->
+    <!-- SEO & PWA Meta Tags -->
+    <meta name="description" content="Hub Portal tổng hợp các ứng dụng và danh bạ liên hệ của Vĩnh Trạch Đông.">
     <link rel="icon" href="https://bmass.vercel.app/img/bmasslogo.png" type="image/png">
-    
-    <!-- Apple Touch Icon (iOS) -->
     <link rel="apple-touch-icon" href="https://bmass.vercel.app/img/bmasslogo.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="apple-mobile-web-app-title" content="Hub Vĩnh Trạch Đông">
-    
-    <!-- Android (PWA Manifest) -->
-    <link rel="manifest" href="/js/applinkicon.json">
+    <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#4f46e5">
 
-    <!-- Social Media Meta (Optional but Recommended) -->
+    <!-- Social Media Meta -->
     <meta property="og:title" content="Hub Portal - Vĩnh Trạch Đông">
-    <meta property="og:description" content="[MÔ TẢ NGẮN GỌN VỀ TRANG WEB CỦA BẠN]">
+    <meta property="og:description" content="Hub Portal tổng hợp các ứng dụng và danh bạ liên hệ của Vĩnh Trạch Đông.">
     <meta property="og:image" content="https://bmass.vercel.app/img/bmasslogo.png">
     <meta property="og:type" content="website">
     
-    <!-- ============================================= -->
-    <!-- END: SEO & PWA Meta Tags                      -->
-    <!-- ============================================= -->
-
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Fonts -->
@@ -52,7 +40,7 @@
         }
     </script>
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; transition: background 0.3s; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; transition: background 0.3s; padding-bottom: 100px; } 
         .dark body { background-color: #020617; color: #e2e8f0; }
         .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); }
         .dark .glass { background: rgba(15, 23, 42, 0.8); border-bottom: 1px solid rgba(255,255,255,0.05); }
@@ -60,17 +48,99 @@
         .drag-ghost { opacity: 0.3; background: #4f46e5 !important; border-radius: 1rem; }
         .tab-active { color: #4f46e5; border-bottom: 2px solid #4f46e5; }
         .dark .tab-active { color: #818cf8; border-bottom: 2px solid #818cf8; }
-        /* Simple custom scrollbar for the chat panel */
-        #messages-container::-webkit-scrollbar { width: 4px; }
-        #messages-container::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
-        .dark #messages-container::-webkit-scrollbar-thumb { background: #475569; }
-        .chat-bubble { max-width: 85%; }
+        .is-favorite .star-icon { fill: #facc15; }
+        .app-item.selected-for-delete { box-shadow: 0 0 0 3px #f43f5e; border-radius: 1rem; }
+        /* Thêm padding top khi có thông báo để không che header */
+        #announcement-bar:not(.hidden) ~ header { top: 32px; }
+        /* Custom Marquee */
+        .marquee { overflow: hidden; white-space: nowrap; box-sizing: border-box; }
+        .marquee > div { display: inline-block; padding-left: 100%; animation: marquee 15s linear infinite; }
+        @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
+        
+        /* ADMIN SIDEBAR STYLE */
+        #admin-sidebar { transition: transform 0.3s ease-out; width: 320px; }
+        #admin-sidebar.open { transform: translateX(0); }
+        #admin-sidebar.closed { transform: translateX(-320px); }
+        .sidebar-item-active { background-color: #4f46e5; color: white; }
     </style>
 </head>
 <body class="min-h-screen pb-24">
 
+    <!-- NEW: Admin Sidebar Backdrop -->
+    <div id="admin-backdrop" onclick="window.toggleAdminSidebar()" class="fixed inset-0 bg-black/50 z-[150] hidden"></div>
+    
+    <!-- NEW: Admin Sidebar -->
+    <div id="admin-sidebar" class="fixed top-0 left-0 h-full bg-white dark:bg-slate-900 z-[200] closed shadow-2xl flex flex-col">
+        <!-- Sidebar Header -->
+        <div class="p-4 border-b dark:border-white/5 flex items-center justify-between">
+            <h2 class="text-xl font-black uppercase tracking-tight text-primary">Admin Control</h2>
+            <button onclick="window.toggleAdminSidebar()" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        
+        <!-- Sidebar Navigation -->
+        <div class="p-4 space-y-2 flex-shrink-0">
+            <button onclick="window.switchAdminTab('announcement')" id="btn-sidebar-announcement" class="w-full text-left flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition sidebar-item-active"><i data-lucide="megaphone" class="w-5 h-5"></i> THÔNG BÁO</button>
+            <button onclick="window.switchAdminTab('access')" id="btn-sidebar-access" class="w-full text-left flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition"><i data-lucide="shield-check" class="w-5 h-5"></i> QUYỀN TRUY CẬP</button>
+            <button onclick="window.switchAdminTab('data')" id="btn-sidebar-data" class="w-full text-left flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition"><i data-lucide="box" class="w-5 h-5"></i> DỮ LIỆU APP & DM</button>
+        </div>
+        
+        <!-- Sidebar Content Area -->
+        <div id="sidebar-content-area" class="flex-1 overflow-y-auto p-4 border-t dark:border-white/5">
+            <!-- Tab Announcement (FROM MODAL) -->
+            <div id="tab-announcement-sidebar" class="space-y-6">
+                <h4 class="text-sm font-bold tracking-widest text-primary uppercase">Thông báo Chạy chữ (Marquee)</h4>
+                <textarea id="announcement-content" placeholder="Nội dung thông báo (ngắn gọn, lặp lại)" rows="3" class="w-full p-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-secondary text-sm font-medium"></textarea>
+                
+                <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-white/5 rounded-xl border dark:border-white/5">
+                    <label class="text-sm font-bold opacity-60">Kích hoạt Thông báo</label>
+                    <button id="toggle-announcement-btn" onclick="window.toggleAnnouncementStatus()" class="px-4 py-1.5 rounded-lg font-bold text-xs uppercase transition-all">Tắt / Bật</button>
+                </div>
+                
+                <button onclick="window.saveAnnouncementContent()" class="w-full py-3 bg-primary text-white rounded-xl font-bold shadow-md uppercase text-xs">LƯU NỘI DUNG</button>
+            </div>
+
+            <!-- Tab Access (NEW: Requests and Admin List) -->
+            <div id="tab-access-sidebar" class="hidden space-y-6">
+                 <h4 class="text-sm font-bold tracking-widest text-primary uppercase">QUẢN LÝ QUYỀN TRUY CẬP</h4>
+                 <div id="access-management-ui" class="space-y-6">
+                     <h5 class="text-xs font-bold text-slate-500 uppercase mt-4">DANH SÁCH ADMIN & PHÓ ADMIN</h5>
+                     <ul id="deputy-list" class="space-y-2"></ul>
+                 </div>
+                 <div id="access-guard" class="hidden p-4 bg-amber-50 dark:bg-amber-900/20 text-amber-600 rounded-xl text-xs font-bold uppercase">Chỉ Super Admin mới quản lý được mục này.</div>
+                 
+                 <h5 class="text-xs font-bold text-slate-500 uppercase mt-6">YÊU CẦU CẤP QUYỀN (Pending)</h5>
+                 <ul id="request-list" class="space-y-2"></ul>
+            </div>
+            
+            <!-- Tab Data (NEW: Apps and Categories Management) -->
+            <div id="tab-data-sidebar" class="hidden space-y-6">
+                <h4 class="text-sm font-bold tracking-widest text-primary uppercase">QUẢN LÝ APP & DANH MỤC</h4>
+                
+                <h5 class="text-xs font-bold text-slate-500 uppercase mt-4">DANH MỤC</h5>
+                <div class="flex gap-2 mb-4">
+                    <input type="text" id="new-cat-name" placeholder="Tên danh mục..." class="flex-1 px-3 py-2 bg-slate-50 dark:bg-white/5 rounded-lg outline-none focus:ring-2 ring-primary text-sm">
+                    <button onclick="window.addCategory()" class="bg-primary text-white px-4 rounded-lg font-bold text-xs uppercase">Thêm</button>
+                </div>
+                <ul id="cat-list-admin" class="space-y-2"></ul>
+                
+                <h5 class="text-xs font-bold text-slate-500 uppercase mt-8">XUẤT NHẬP DỮ LIỆU</h5>
+                 <div class="space-y-2">
+                    <button onclick="window.handleExport('json')" class="flex items-center justify-between w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition">Xuất file JSON <i data-lucide="download" class="w-4 h-4"></i></button>
+                    <button onclick="window.openModal('modal-import')" class="flex items-center justify-between w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition">Nhập dữ liệu <i data-lucide="upload-cloud" class="w-4 h-4"></i></button>
+                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: Announcement Bar -->
+    <div id="announcement-bar" class="fixed top-0 left-0 w-full z-[101] bg-secondary text-white text-xs font-bold py-2 shadow-md hidden">
+        <div class="marquee">
+            <div id="announcement-text"></div>
+        </div>
+    </div>
+    
     <!-- Header -->
-    <header class="sticky top-0 z-[100] glass px-6 py-3 flex justify-between items-center">
+    <header class="sticky top-0 z-[100] glass px-6 py-3 flex justify-between items-center transition-all duration-300">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg">
                 <i data-lucide="database" class="w-6 h-6"></i>
@@ -82,11 +152,14 @@
         </div>
 
         <div class="flex items-center gap-3">
+            <!-- Nút Bulk Delete (Admin) -->
+            <button onclick="window.toggleBulkDelete()" id="bulk-delete-toggle" class="p-2 rounded-xl text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition hidden"><i data-lucide="scissors" class="w-5 h-5"></i></button>
+
             <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
-                <button onclick="setView('grid')" id="view-grid-btn" class="p-1.5 rounded-md transition-all shadow-sm bg-white dark:bg-slate-700"><i data-lucide="layout-grid" class="w-4 h-4"></i></button>
-                <button onclick="setView('list')" id="view-list-btn" class="p-1.5 rounded-md transition-all"><i data-lucide="list" class="w-4 h-4"></i></button>
+                <button onclick="window.setView('grid')" id="view-grid-btn" class="p-1.5 rounded-md transition-all shadow-sm bg-white dark:bg-slate-700"><i data-lucide="layout-grid" class="w-4 h-4"></i></button>
+                <button onclick="window.setView('list')" id="view-list-btn" class="p-1.5 rounded-md transition-all"><i data-lucide="list" class="w-4 h-4"></i></button>
             </div>
-            <button onclick="toggleTheme()" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+            <button onclick="window.toggleTheme()" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition">
                 <i data-lucide="sun" class="w-5 h-5 hidden dark:block text-amber-400"></i>
                 <i data-lucide="moon" class="w-5 h-5 dark:hidden text-slate-600"></i>
             </button>
@@ -102,116 +175,129 @@
                 class="w-full pl-14 pr-6 py-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-4 ring-primary/10 outline-none shadow-sm">
         </div>
 
-        <!-- Visit Stats Container (New Section) -->
+        <!-- Visit Stats Container -->
         <div id="visit-stats-container" class="max-w-4xl mx-auto p-4 rounded-3xl bg-slate-100 dark:bg-slate-900/50">
-            <!-- Stats will be rendered here by renderStats() -->
             <div class="flex items-center justify-center h-20 text-slate-400">Đang tải thống kê...</div>
         </div>
 
         <!-- Categories -->
         <div id="category-bar" class="flex flex-wrap gap-2"></div>
+        
+        <!-- App Loading State -->
+        <div id="app-loading" class="text-center p-16 text-slate-400 text-sm font-medium hidden">
+            <i data-lucide="loader" class="w-6 h-6 animate-spin mx-auto mb-2"></i>
+            Đang tải ứng dụng...
+        </div>
 
-        <!-- Main Content -->
+        <!-- Main Content App -->
         <div id="app-container"></div>
+        
+        <!-- Bulk Delete Floating Dock -->
+        <div id="bulk-delete-dock" class="hidden fixed bottom-28 left-1/2 -translate-x-1/2 z-[110]">
+            <div class="bg-red-600 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-4">
+                <span id="selected-count">0</span> mục đã chọn
+                <button onclick="window.executeBulkDelete()" class="flex items-center gap-2 px-5 py-2.5 bg-white/20 hover:bg-white/30 text-white rounded-xl text-xs font-bold shadow-lg uppercase">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i> XÓA
+                </button>
+            </div>
+        </div>
     </main>
+    
+    <!-- Footer -->
+    <footer class="fixed bottom-0 w-full z-50 bg-white dark:bg-slate-900 border-t dark:border-white/10 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
+        <div class="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center text-sm">
+            <div class="text-slate-500 dark:text-slate-400">
+                © 2024 Vĩnh Trạch Đông. All rights reserved.
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="#" class="text-xs font-bold text-slate-500 hover:text-primary transition">Privacy Policy</a>
+                <a href="chat.html" target="_blank" class="flex items-center gap-2 px-4 py-2 bg-secondary text-white rounded-lg font-bold text-xs uppercase shadow-lg hover:opacity-90 transition">
+                    <i data-lucide="life-buoy" class="w-4 h-4"></i> TRỢ GIÚP
+                </a>
+            </div>
+        </div>
+    </footer>
 
-    <!-- Admin Dock -->
+
+    <!-- Admin Dock (OPEN SIDEBAR) -->
     <div id="admin-controls" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[110]">
         <div class="bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-3 py-2 rounded-2xl shadow-2xl flex items-center gap-2">
-            <button onclick="openModal('modal-mgmt')" class="p-3 hover:bg-white/10 dark:hover:bg-black/5 rounded-xl transition">
+            <button onclick="window.toggleAdminSidebar(); window.switchAdminTab('announcement')" class="p-3 hover:bg-white/10 dark:hover:bg-black/5 rounded-xl transition">
                 <i data-lucide="settings" class="w-5 h-5"></i>
             </button>
             <div class="w-px h-6 bg-white/20 dark:bg-black/10"></div>
-            <button onclick="openAppModal()" class="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-xs font-bold shadow-lg">
+            <button onclick="window.openAppModal()" class="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-xs font-bold shadow-lg">
                 <i data-lucide="plus" class="w-4 h-4"></i> THÊM MỚI
             </button>
         </div>
     </div>
-
-    <!-- Modal Management (Tabs: Cat, Deputy, Data) -->
-    <div id="modal-mgmt" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl border dark:border-white/10">
+    
+    <!-- NEW: Modal Request Admin Access -->
+    <div id="modal-request-admin" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[250] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden">
             <div class="p-6 border-b dark:border-white/5 flex justify-between items-center">
-                <div class="flex gap-6 text-[10px] font-black tracking-widest text-slate-400">
-                    <button onclick="switchTab('tab-cat')" id="btn-tab-cat" class="text-primary border-b-2 border-primary pb-1">DANH MỤC</button>
-                    <button onclick="switchTab('tab-deputy')" id="btn-tab-deputy" class="pb-1 uppercase">Phó Admin</button>
-                    <button onclick="switchTab('tab-data')" id="btn-tab-data" class="pb-1 uppercase">Dữ liệu</button>
-                </div>
-                <button onclick="closeModal('modal-mgmt')" class="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+                <h3 class="font-bold uppercase text-sm tracking-widest text-primary">YÊU CẦU CẤP QUYỀN</h3>
+                <button onclick="window.closeModal('modal-request-admin')" class="p-2 rounded-lg hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
-            
-            <div class="flex-1 overflow-y-auto p-8">
-                <!-- Tab Categories -->
-                <div id="tab-cat" class="space-y-6">
-                    <div class="flex gap-2">
-                        <input type="text" id="new-cat-name" placeholder="Tên danh mục..." class="flex-1 px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary">
-                        <input type="text" id="new-cat-icon" placeholder="Link Icon..." class="w-1/3 px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary">
-                        <button onclick="addCategory()" class="bg-primary text-white px-8 rounded-xl font-bold text-xs uppercase">Thêm</button>
-                    </div>
-                    <ul id="cat-list-admin" class="space-y-2"></ul>
+            <form id="request-form" class="p-8 space-y-4">
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Gmail của bạn</label>
+                    <input type="email" id="request-email" class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium" disabled>
                 </div>
-
-                <!-- Tab Deputy -->
-                <div id="tab-deputy" class="hidden space-y-6">
-                    <div id="deputy-guard" class="hidden p-4 bg-amber-50 dark:bg-amber-900/20 text-amber-600 rounded-xl text-xs font-bold uppercase">Chỉ Super Admin mới quản lý được mục này.</div>
-                    <div id="deputy-ui" class="space-y-4">
-                        <div class="flex gap-2">
-                            <input type="email" id="new-deputy-email" placeholder="Gmail phó admin..." class="flex-1 px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary">
-                            <button onclick="addDeputy()" class="bg-primary text-white px-8 rounded-xl font-bold text-xs">CẤP QUYỀN</button>
-                        </div>
-                        <div id="deputy-list" class="space-y-2"></div>
-                    </div>
+                 <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Lý do</label>
+                    <textarea id="request-reason" rows="3" placeholder="Ví dụ: Cần cập nhật danh bạ liên hệ" class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium" required></textarea>
                 </div>
-
-                <!-- Tab Data Export/Import -->
-                <div id="tab-data" class="hidden space-y-8">
-                    <div class="grid md:grid-cols-2 gap-6">
-                        <!-- Export Section -->
-                        <div class="p-6 bg-slate-50 dark:bg-white/5 rounded-[2rem] border dark:border-white/5 space-y-4">
-                            <h4 class="text-xs font-black uppercase tracking-widest text-primary">Xuất dữ liệu (Export)</h4>
-                            <p class="text-xs text-slate-500 font-medium">Lưu trữ lại toàn bộ cấu hình Ứng dụng và Danh mục hiện có trên site.</p>
-                            <div class="flex flex-col gap-2">
-                                <button onclick="handleExport('json')" class="flex items-center justify-between w-full px-5 py-3 bg-white dark:bg-slate-800 rounded-xl hover:ring-2 ring-indigo-500 transition shadow-sm">
-                                    <span class="text-sm font-bold">Xuất file JSON</span>
-                                    <i data-lucide="download" class="w-4 h-4"></i>
-                                </button>
-                                <button onclick="handleExport('excel')" class="flex items-center justify-between w-full px-5 py-3 bg-white dark:bg-slate-800 rounded-xl hover:ring-2 ring-indigo-500 transition shadow-sm">
-                                    <span class="text-sm font-bold">Xuất file EXCEL</span>
-                                    <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Import Section -->
-                        <div class="p-6 bg-slate-50 dark:bg-white/5 rounded-[2rem] border dark:border-white/5 space-y-4">
-                            <h4 class="text-xs font-black uppercase tracking-widest text-secondary">Nhập dữ liệu (Import)</h4>
-                            <p class="text-xs text-slate-500 font-medium">Khôi phục dữ liệu từ file JSON hoặc Excel đã lưu trước đó. <br><b>Lưu ý:</b> Dữ liệu mới sẽ được thêm vào.</p>
-                            <div class="relative">
-                                <input type="file" id="import-file" accept=".json, .xlsx" onchange="handleImport(event)" class="hidden">
-                                <label for="import-file" class="flex items-center justify-center gap-3 w-full px-5 py-4 bg-slate-900 text-white dark:bg-white dark:text-slate-900 rounded-xl cursor-pointer hover:opacity-90 transition font-bold text-xs uppercase">
-                                    <i data-lucide="upload-cloud" class="w-5 h-5"></i>
-                                    Chọn file để khôi phục
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                <button type="submit" class="w-full py-4 bg-secondary text-white rounded-xl font-bold shadow-lg shadow-red-500/30 uppercase text-xs">GỬI YÊU CẦU</button>
+            </form>
         </div>
     </div>
 
-    <!-- App Modal -->
+    <!-- Modal for Admin to set permissions -->
+    <div id="modal-set-permissions" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[250] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden">
+            <div class="p-6 border-b dark:border-white/5 flex justify-between items-center">
+                <h3 class="font-bold uppercase text-sm tracking-widest text-primary">PHÂN QUYỀN TRUY CẬP</h3>
+                <button onclick="window.closeModal('modal-set-permissions')" class="p-2 rounded-lg hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="permission-form" class="p-8 space-y-6">
+                <input type="hidden" id="perm-user-email">
+                <p class="text-sm font-bold" id="perm-user-title">Cấp quyền cho: Loading...</p>
+                
+                <div class="space-y-3">
+                    <label class="text-xs font-bold text-slate-400 uppercase">Quyền quản lý</label>
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" id="perm-apps" class="w-5 h-5 accent-primary">
+                        <label for="perm-apps" class="text-sm font-medium">Quản lý Ứng dụng/Danh mục (Thêm, Sửa, Xóa)</label>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" id="perm-data" class="w-5 h-5 accent-primary">
+                        <label for="perm-data" class="text-sm font-medium">Quản lý Dữ liệu (Import/Export)</label>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" id="perm-announcement" class="w-5 h-5 accent-primary">
+                        <label for="perm-announcement" class="text-sm font-medium">Quản lý Thông báo</label>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-4 bg-primary text-white rounded-xl font-bold shadow-lg uppercase text-xs">CẤP VÀ LƯU QUYỀN</button>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- App Modal (Dùng chung cho Add/Edit App) -->
     <div id="modal-app" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[210] hidden flex items-center justify-center p-4">
         <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden">
             <div class="p-6 border-b dark:border-white/5 flex justify-between items-center">
                 <h3 id="app-modal-title" class="font-bold uppercase text-sm tracking-widest">Cấu hình</h3>
-                <button onclick="closeModal('modal-app')" class="p-2 rounded-lg hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+                <button onclick="window.closeModal('modal-app')" class="p-2 rounded-lg hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <form id="app-form" class="p-8 space-y-4">
                 <input type="hidden" id="edit-id">
                 <div class="space-y-1">
                     <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Danh mục</label>
-                    <select id="app-category" onchange="toggleFormFields()" class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium"></select>
+                    <select id="app-category" onchange="window.toggleFormFields()" class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium"></select>
                 </div>
                 <div class="space-y-1">
                     <label id="label-name" class="text-[10px] font-bold text-slate-400 uppercase ml-1">Tên hiển thị</label>
@@ -237,6 +323,27 @@
             </form>
         </div>
     </div>
+    
+    <!-- Modal for Import (From Data tab) -->
+    <div id="modal-import" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[250] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden">
+            <div class="p-6 border-b dark:border-white/5 flex justify-between items-center">
+                <h3 class="font-bold uppercase text-sm tracking-widest text-primary">NHẬP DỮ LIỆU</h3>
+                <button onclick="window.closeModal('modal-import')" class="p-2 rounded-lg hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-8 space-y-4">
+                <p class="text-xs text-slate-500 font-medium">Khôi phục dữ liệu từ file JSON hoặc Excel đã lưu trước đó. <br><b>Lưu ý:</b> Dữ liệu mới sẽ được thêm vào.</p>
+                <div class="relative">
+                    <input type="file" id="import-file-modal" accept=".json, .xlsx" onchange="window.handleImport(event)" class="hidden">
+                    <label for="import-file-modal" class="flex items-center justify-center gap-3 w-full px-5 py-4 bg-slate-900 text-white dark:bg-white dark:text-slate-900 rounded-xl cursor-pointer hover:opacity-90 transition font-bold text-xs uppercase">
+                        <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+                        Chọn file để khôi phục
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Notification Toast -->
     <div id="toast" class="fixed bottom-10 right-10 z-[300] transform translate-y-20 opacity-0 transition-all duration-500">
@@ -246,38 +353,11 @@
         </div>
     </div>
     
-    <!-- CHAT WIDGET (NEW) -->
-    <div id="chat-widget" class="fixed bottom-6 right-6 z-[300]">
-        <!-- Chat Toggle Button (Visible always) -->
-        <button id="chat-toggle-btn" onclick="window.toggleChat()" class="bg-primary text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center hover:scale-105 transition-transform">
-            <i data-lucide="message-circle" class="w-6 h-6"></i>
-        </button>
-
-        <!-- Chat Panel (Hidden initially) -->
-        <div id="chat-panel" class="hidden absolute bottom-0 right-0 w-80 h-[400px] -translate-y-20 bg-white dark:bg-slate-900 rounded-3xl shadow-2xl flex flex-col border dark:border-white/10 overflow-hidden transition-all duration-300">
-            <!-- Header -->
-            <div class="p-4 border-b dark:border-white/5 flex justify-between items-center">
-                <h3 class="font-bold uppercase text-sm tracking-widest text-primary">Chat Cộng Đồng</h3>
-                <button onclick="window.toggleChat()" class="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5"><i data-lucide="x" class="w-4 h-4"></i></button>
-            </div>
-            <!-- Messages Container -->
-            <div id="messages-container" class="flex-1 p-4 space-y-3 overflow-y-auto">
-                <!-- Messages will be injected here -->
-                <div id="chat-status" class="text-center text-sm font-medium text-slate-400 p-2">Vui lòng đăng nhập để chat.</div>
-            </div>
-            <!-- Message Input -->
-            <form id="chat-form" class="p-4 border-t dark:border-white/5 flex gap-2">
-                <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." class="flex-1 px-3 py-2 bg-slate-50 dark:bg-white/5 rounded-xl outline-none text-sm disabled:opacity-50" required>
-                <button type="submit" id="send-btn" class="bg-primary text-white px-4 rounded-xl font-bold text-xs uppercase disabled:opacity-50">Gửi</button>
-            </form>
-        </div>
-    </div>
-
     <!-- Firebase -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc, arrayUnion, arrayRemove, writeBatch, increment, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, where, setDoc, getDoc, arrayUnion, arrayRemove, writeBatch, increment, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
@@ -296,38 +376,67 @@
         const provider = new GoogleAuthProvider();
 
         let currentUser = null, isAdmin = false, isSuper = false, apps = [], categories = [], deputies = [], currentFilter = 'all', searchQuery = '', viewMode = 'grid', visitStats = {};
-        let isChatOpen = false; // New state for chat
+        let userFavorites = []; 
+        let appsLoaded = false; 
+        let bulkDeleteMode = false; 
+        let selectedAppsForDelete = new Set(); 
+        let currentAnnouncement = {}; 
+        let accessRequests = []; // NEW: Array to store admin access requests
+        let adminPermissions = {}; // NEW: Map to store detailed admin permissions
 
         // --- AUTH & INITIAL ---
         onAuthStateChanged(auth, async (user) => {
             currentUser = user;
             if (user) {
                 isSuper = user.uid === SUPER_UID;
+                
+                // 1. Get Admin List (emails)
                 const snap = await getDoc(doc(db, "settings", "admins"));
                 deputies = snap.exists() ? snap.data().deputy_emails || [] : [];
                 isAdmin = isSuper || deputies.includes(user.email);
+                
+                // 2. Get Admin Permissions (NEW)
+                const permSnap = await getDoc(doc(db, "settings", "permissions"));
+                adminPermissions = permSnap.data() || {};
+                
+                // 3. Get User Favorites
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                userFavorites = userDoc.exists() ? userDoc.data().favorites || [] : [];
+                
                 renderAuthUI();
+                
+                onSnapshot(doc(db, "users", user.uid), (snap) => {
+                    userFavorites = snap.data()?.favorites || [];
+                    if (currentFilter === 'favorites') renderApps();
+                });
+                
+                // Set Request Modal Email
+                if (document.getElementById('request-email')) {
+                    document.getElementById('request-email').value = user.email || '';
+                }
+                
+                // NEW: Load announcement content for Admin only
+                if (isAdmin) {
+                    document.getElementById('announcement-content').value = currentAnnouncement.content || '';
+                }
+
             } else {
                 isAdmin = isSuper = false;
-                document.getElementById('auth-section').innerHTML = `<button onclick="window.login()" class="bg-primary text-white px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-widest">Login</button>`;
+                userFavorites = [];
+                document.getElementById('auth-section').innerHTML = `<button onclick="window.login()" class="bg-primary text-white px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-widest">Login</button><button onclick="window.openRequestModal()" class="ml-2 bg-slate-100 dark:bg-slate-800 text-xs font-bold px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition">REQUEST</button>`;
+                if (currentFilter === 'favorites') window.setFilter('all'); 
             }
             document.getElementById('role-status').innerText = isSuper ? 'SUPER' : (isAdmin ? 'DEPUTY' : 'GUEST');
             document.getElementById('admin-controls').classList.toggle('hidden', !isAdmin);
-            document.getElementById('deputy-guard').classList.toggle('hidden', isSuper);
-            document.getElementById('deputy-ui').classList.toggle('hidden', !isSuper);
+            document.getElementById('bulk-delete-toggle').classList.toggle('hidden', !isAdmin);
+            
             renderApps();
             renderDeputyList();
-            setupChatInterface(!!user); // New: Update chat interface based on login status
+            renderAnnouncementControls(); 
+            lucide.createIcons();
         });
 
-        window.login = () => signInWithPopup(auth, provider);
-        window.logout = () => signOut(auth).then(() => location.reload());
-
-        function renderAuthUI() {
-            document.getElementById('auth-section').innerHTML = `<div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 pr-3 rounded-lg border dark:border-white/10"><img src="${currentUser.photoURL}" class="w-7 h-7 rounded-md"><button onclick="window.logout()" class="text-[9px] font-black uppercase text-red-500">Exit</button></div>`;
-        }
-
-        // --- DATA REALTIME ---
+        // --- DATA REALTIME LISTENERS ---
         onSnapshot(query(collection(db, "categories"), orderBy("order", "asc")), (snap) => {
             categories = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             renderCategories();
@@ -335,499 +444,295 @@
 
         onSnapshot(query(collection(db, "apps"), orderBy("order", "asc")), (snap) => {
             apps = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            appsLoaded = true; 
             renderApps();
         });
         
-        // Data Realtime for Visit Stats
         onSnapshot(doc(db, "settings", "visits_stats"), (snap) => {
             visitStats = snap.data() || {};
             renderStats();
         });
         
-        // Data Realtime for Chat Messages
-        onSnapshot(query(collection(db, "chats"), orderBy("timestamp", "asc")), (snap) => {
-            const messages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            renderMessages(messages);
+        onSnapshot(doc(db, "settings", "announcement"), (snap) => {
+            currentAnnouncement = snap.data() || { content: '', active: false };
+            renderAnnouncementBar();
+            renderAnnouncementControls();
+        });
+        
+        // NEW: Realtime listener for Access Requests
+        onSnapshot(query(collection(db, "adminRequests"), where("status", "==", "pending"), orderBy("timestamp", "desc")), (snap) => {
+            accessRequests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            if (isAdmin) renderRequestList();
+        });
+        
+        // NEW: Realtime listener for Admin Permissions
+        onSnapshot(doc(db, "settings", "permissions"), (snap) => {
+            adminPermissions = snap.data() || {};
+            if (isAdmin) renderDeputyList();
         });
 
-
-        // --- VISIT STATS LOGIC ---
-        function getDateString(date = new Date()) {
-            const y = date.getFullYear();
-            const m = String(date.getMonth() + 1).padStart(2, '0');
-            const d = String(date.getDate()).padStart(2, '0');
-            return { day: `${y}-${m}-${d}`, month: `${y}-${m}`, year: `${y}` };
-        }
-
-        async function trackVisit() {
-            const now = getDateString();
-            
-            try {
-                await runTransaction(db, async (transaction) => {
-                    const statsDocRef = doc(db, "settings", "visits_stats");
-                    const statsSnap = await transaction.get(statsDocRef);
-                    const statsData = statsSnap.data() || {};
-
-                    let updates = {
-                        totalVisits: increment(1) // Atomic increment for total
-                    };
-                    
-                    // Daily reset/increment logic
-                    if (statsData.lastDailyUpdate !== now.day) {
-                        updates.dailyVisits = 1;
-                        updates.lastDailyUpdate = now.day;
-                    } else {
-                        updates.dailyVisits = (statsData.dailyVisits || 0) + 1;
-                    }
-
-                    // Monthly reset/increment logic
-                    if (statsData.lastMonthlyUpdate !== now.month) {
-                        updates.monthlyVisits = 1;
-                        updates.lastMonthlyUpdate = now.month;
-                    } else {
-                        updates.monthlyVisits = (statsData.monthlyVisits || 0) + 1;
-                    }
-
-                    // Yearly reset/increment logic
-                    if (statsData.lastYearlyUpdate !== now.year) {
-                        updates.yearlyVisits = 1;
-                        updates.lastYearlyUpdate = now.year;
-                    } else {
-                        updates.yearlyVisits = (statsData.yearlyVisits || 0) + 1;
-                    }
-
-                    transaction.set(statsDocRef, updates, { merge: true });
-                });
-
-            } catch (e) {
-                console.error("Transaction failed while tracking visit: ", e);
-            }
-        }
-
-        function renderStats() {
-            const container = document.getElementById('visit-stats-container');
-            if (!container) return; 
-            
-            const { dailyVisits = 0, monthlyVisits = 0, yearlyVisits = 0, totalVisits = 0 } = visitStats;
-            
-            container.innerHTML = `
-                <div class="flex items-center gap-3 text-xs font-black tracking-widest text-primary dark:text-white mb-4">
-                    <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
-                    <span>THỐNG KÊ LƯỢT TRUY CẬP</span>
-                </div>
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-center border dark:border-white/5">
-                        <p class="text-[10px] font-bold text-slate-400 uppercase">Hôm nay</p>
-                        <span class="text-lg font-black text-primary">${dailyVisits.toLocaleString('vi-VN')}</span>
-                    </div>
-                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-center border dark:border-white/5">
-                        <p class="text-[10px] font-bold text-slate-400 uppercase">Tháng này</p>
-                        <span class="text-lg font-black text-primary">${monthlyVisits.toLocaleString('vi-VN')}</span>
-                    </div>
-                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-center border dark:border-white/5">
-                        <p class="text-[10px] font-bold text-slate-400 uppercase">Năm nay</p>
-                        <span class="text-lg font-black text-primary">${yearlyVisits.toLocaleString('vi-VN')}</span>
-                    </div>
-                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-center border dark:border-white/5">
-                        <p class="text-[10px] font-bold text-slate-400 uppercase">Tổng cộng</p>
-                        <span class="text-lg font-black text-primary">${totalVisits.toLocaleString('vi-VN')}</span>
-                    </div>
-                </div>
-            `;
-            lucide.createIcons();
-        }
-
-        // --- CHAT LOGIC ---
-        window.toggleChat = () => {
-            isChatOpen = !isChatOpen;
-            const panel = document.getElementById('chat-panel');
-            panel.classList.toggle('hidden', !isChatOpen);
-            panel.classList.toggle('-translate-y-20', !isChatOpen);
-            if(isChatOpen) {
-                 const container = document.getElementById('messages-container');
-                 container.scrollTop = container.scrollHeight; // Scroll to bottom on open
-            }
-        }
+        // --- GENERAL UTILS ---
+        window.login = () => signInWithPopup(auth, provider);
+        window.logout = () => signOut(auth).then(() => location.reload());
         
-        function setupChatInterface(isLoggedIn) {
-            const input = document.getElementById('chat-input');
-            const button = document.getElementById('send-btn');
-            const status = document.getElementById('chat-status');
-            const chatForm = document.getElementById('chat-form');
-
-            if (isLoggedIn) {
-                input.disabled = false;
-                button.disabled = false;
-                status.classList.add('hidden');
-                
-                chatForm.onsubmit = (e) => {
-                    e.preventDefault();
-                    sendMessage();
-                };
-            } else {
-                input.disabled = true;
-                button.disabled = true;
-                status.classList.remove('hidden');
-                status.innerText = 'Vui lòng đăng nhập để chat.';
-                chatForm.onsubmit = (e) => e.preventDefault();
-            }
-        }
-
-        function sendMessage() {
-            const input = document.getElementById('chat-input');
-            const message = input.value.trim();
-
-            if (!message || !currentUser) return;
-
-            addDoc(collection(db, "chats"), {
-                uid: currentUser.uid,
-                email: currentUser.email,
-                name: currentUser.displayName,
-                photoURL: currentUser.photoURL,
-                message: message,
-                timestamp: serverTimestamp()
-            }).then(() => {
-                input.value = '';
-            }).catch(error => {
-                console.error("Error sending message: ", error);
-                showToast("Lỗi gửi tin nhắn!");
-            });
-        }
-
-        function renderMessages(messages) {
-            const container = document.getElementById('messages-container');
-            if (!container) return;
-
-            const shouldScroll = container.scrollTop + container.clientHeight >= container.scrollHeight - 50;
-            
-            let html = '';
-            if (!currentUser) {
-                html += `<div id="chat-status" class="text-center text-sm font-medium text-slate-400 p-2">Vui lòng đăng nhập để chat.</div>`;
-            } else if (messages.length === 0) {
-                 html += `<div id="chat-status" class="text-center text-sm font-medium text-slate-400 p-2">Chưa có tin nhắn nào.</div>`;
-            } else {
-                html = messages.map(m => {
-                    const isOwnMessage = currentUser && m.uid === currentUser.uid;
-                    const time = m.timestamp ? new Date(m.timestamp.seconds * 1000).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '...';
-                    
-                    if (isOwnMessage) {
-                        // User's own message (right align)
-                        return `
-                            <div class="flex justify-end">
-                                <div class="chat-bubble bg-primary text-white p-3 rounded-2xl rounded-tr-none text-sm shadow-md">
-                                    <p>${m.message}</p>
-                                    <p class="text-[9px] text-white/70 mt-1 text-right">${time}</p>
-                                </div>
-                            </div>
-                        `;
-                    } else {
-                        // Other user's message (left align)
-                        return `
-                            <div class="flex items-start gap-2">
-                                <img src="${m.photoURL}" class="w-7 h-7 rounded-full shadow-sm flex-shrink-0">
-                                <div class="flex flex-col">
-                                    <span class="text-[10px] font-bold text-primary dark:text-white">${m.email || m.name}</span>
-                                    <div class="chat-bubble bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white p-3 rounded-2xl rounded-tl-none text-sm shadow-md mt-0.5">
-                                        <p>${m.message}</p>
-                                        <p class="text-[9px] text-slate-500 dark:text-slate-400 mt-1 text-right">${time}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    }
-                }).join('');
-            }
-
-            container.innerHTML = html;
-            
-            if (isChatOpen && shouldScroll) {
-                container.scrollTop = container.scrollHeight;
-            }
-            
-            // Re-run Lucide icons for any new icons (if any)
-            lucide.createIcons();
-        }
-        // --- RENDERING APP ---
-        window.renderApps = () => {
-            const container = document.getElementById('app-container');
-            const filtered = apps.filter(a => {
-                const cat = categories.find(c => c.id === a.categoryId);
-                if (currentFilter === 'all') { if (cat?.name === "Số điện thoại") return false; } 
-                else { if (a.categoryId !== currentFilter) return false; }
-                const matchSearch = a.name.toLowerCase().includes(searchQuery.toLowerCase()) || (a.position && a.position.toLowerCase().includes(searchQuery.toLowerCase()));
-                return matchSearch && (isAdmin || a.visible);
-            });
-
-            if (viewMode === 'grid') {
-                container.className = "grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-x-4 gap-y-8";
-                container.innerHTML = filtered.map(a => {
-                    const isAppPhone = categories.find(c => c.id === a.categoryId)?.name === "Số điện thoại";
-                    const domain = a.url.startsWith('http') ? new URL(a.url).hostname : '';
-                    const icon = a.iconUrl || (isAppPhone ? 'https://cdn-icons-png.flaticon.com/512/3059/3059502.png' : `https://unavatar.io/${domain}?fallback=https://www.google.com/s2/favicons?domain=${domain}&sz=128`);
-                    return `
-                    <div class="app-item group flex flex-col items-center relative" data-id="${a.id}">
-                        <a href="${isAppPhone ? 'tel:' + a.url : a.url}" target="_blank" class="w-full aspect-square bg-white dark:bg-slate-800 rounded-2xl shadow-sm border dark:border-white/5 flex items-center justify-center p-3 mb-2 hover:shadow-xl hover:-translate-y-1 transition-all">
-                            <img src="${icon}" class="w-full h-full object-contain rounded-lg">
-                        </a>
-                        <span class="text-[10px] font-bold text-slate-500 text-center truncate w-full uppercase tracking-tighter">${a.name}</span>
-                        ${a.position ? `<span class="text-[8px] text-slate-400 font-bold truncate w-full text-center uppercase">${a.position}</span>` : ''}
-                        ${isAdmin ? `<div class="absolute -top-1 -right-1 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-all scale-75 z-10"><button onclick="window.editApp('${a.id}')" class="bg-indigo-500 text-white p-2 rounded-full shadow-lg"><i data-lucide="edit-2" class="w-3 h-3"></i></button><button onclick="window.deleteApp('${a.id}')" class="bg-red-500 text-white p-2 rounded-full shadow-lg"><i data-lucide="trash" class="w-3 h-3"></i></button></div>` : ''}
-                    </div>`;
-                }).join('');
-            } else {
-                container.className = "flex flex-col max-w-4xl mx-auto space-y-1";
-                container.innerHTML = filtered.map((a, idx) => {
-                    const isAppPhone = categories.find(c => c.id === a.categoryId)?.name === "Số điện thoại";
-                    const domain = a.url.startsWith('http') ? new URL(a.url).hostname : '';
-                    const icon = a.iconUrl || (isAppPhone ? 'https://cdn-icons-png.flaticon.com/512/3059/3059502.png' : `https://unavatar.io/${domain}?fallback=https://www.google.com/s2/favicons?domain=${domain}&sz=128`);
-                    return `<div class="flex items-center gap-4 bg-white dark:bg-slate-900 p-3 rounded-xl border dark:border-white/5 group shadow-sm" data-id="${a.id}">
-                        <span class="text-[9px] font-black text-slate-300 w-4">${idx+1}</span>
-                        <img src="${icon}" class="w-8 h-8 rounded-lg object-contain">
-                        <div class="flex-1 min-w-0"><h4 class="text-xs font-bold truncate">${a.name}</h4><p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${a.position || (isAppPhone ? a.url : 'Web App')}</p></div>
-                        <div class="flex items-center gap-2"><a href="${isAppPhone ? 'tel:' + a.url : a.url}" target="_blank" class="p-2 text-primary hover:bg-primary hover:text-white rounded-lg transition"><i data-lucide="${isAppPhone ? 'phone' : 'external-link'}" class="w-4 h-4"></i></a>
-                        ${isAdmin ? `<button onclick="window.editApp('${a.id}')" class="p-2 hover:bg-slate-100 rounded-lg"><i data-lucide="edit-3" class="w-4 h-4"></i></button><i data-lucide="grip-vertical" class="w-4 h-4 text-slate-300 cursor-move"></i>` : ''}</div></div>`;
-                }).join('');
-            }
-            lucide.createIcons();
-            if(isAdmin) new Sortable(container, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(container.children).forEach((el, i) => { if(el.dataset.id) updateDoc(doc(db, "apps", el.dataset.id), { order: i }); }); }});
-        }
-
-        // --- DATA IMPORT/EXPORT LOGIC ---
-        window.handleExport = (type) => {
-            const data = {
-                apps: apps.map(({id, ...rest}) => rest),
-                categories: categories.map(({id, ...rest}) => rest),
-                exportedAt: new Date().toISOString(),
-                version: "2.0"
-            };
-
-            if (type === 'json') {
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `hub-portal-backup-${new Date().toLocaleDateString()}.json`;
-                a.click();
-            } else if (type === 'excel') {
-                const wb = XLSX.utils.book_new();
-                
-                // Sheet Apps
-                const wsApps = XLSX.utils.json_to_sheet(apps.map(a => {
-                    const cat = categories.find(c => c.id === a.categoryId);
-                    return {
-                        'Tên': a.name,
-                        'URL/SĐT': a.url,
-                        'Chức vụ': a.position || '',
-                        'Danh mục': cat ? cat.name : '',
-                        'Icon URL': a.iconUrl || '',
-                        'Hiển thị': a.visible ? 'Bật' : 'Tắt',
-                        'Thứ tự': a.order
-                    }
-                }));
-                XLSX.utils.book_append_sheet(wb, wsApps, "Apps");
-
-                // Sheet Categories
-                const wsCats = XLSX.utils.json_to_sheet(categories.map(c => ({
-                    'Tên danh mục': c.name,
-                    'Icon Logo': c.icon || '',
-                    'Thứ tự': c.order
-                })));
-                XLSX.utils.book_append_sheet(wb, wsCats, "Categories");
-
-                XLSX.writeFile(wb, `hub-portal-data-${new Date().toLocaleDateString()}.xlsx`);
-            }
-            showToast("Đã xuất dữ liệu thành công!");
-        };
-
-        window.handleImport = async (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            if (!confirm("Hành động này sẽ thêm dữ liệu từ file vào site hiện tại. Tiếp tục?")) return;
-
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    let importedData = { categories: [], apps: [] };
-
-                    if (file.name.endsWith('.json')) {
-                        importedData = JSON.parse(e.target.result);
-                    } else if (file.name.endsWith('.xlsx')) {
-                        const data = new Uint8Array(e.target.result);
-                        const workbook = XLSX.read(data, { type: 'array' });
-                        
-                        // Parse Categories first to build ID map
-                        const catSheet = workbook.Sheets["Categories"];
-                        if (catSheet) {
-                            const rawCats = XLSX.utils.sheet_to_json(catSheet);
-                            importedData.categories = rawCats.map(c => ({
-                                name: c['Tên danh mục'],
-                                icon: c['Icon Logo'] || '',
-                                order: parseInt(c['Thứ tự']) || 0
-                            }));
-                        }
-
-                        // Parse Apps
-                        const appSheet = workbook.Sheets["Apps"];
-                        if (appSheet) {
-                            const rawApps = XLSX.utils.sheet_to_json(appSheet);
-                            importedData.apps = rawApps.map(a => ({
-                                name: a['Tên'],
-                                url: a['URL/SĐT'],
-                                position: a['Chức vụ'] || '',
-                                categoryName: a['Danh mục'], // Use name for mapping
-                                iconUrl: a['Icon URL'] || '',
-                                visible: a['Hiển thị'] === 'Bật',
-                                order: parseInt(a['Thứ tự']) || 0
-                            }));
-                        }
-                    }
-
-                    // --- UPLOAD TO FIRESTORE ---
-                    // 1. Tạo danh mục và lưu lại Map ID mới
-                    const categoryIdMap = {}; // { "Tên danh mục": "ID mới" }
-                    
-                    for (const cat of importedData.categories) {
-                        // Tránh tạo trùng tên danh mục nếu đã có
-                        const existing = categories.find(c => c.name === cat.name);
-                        if (existing) {
-                            categoryIdMap[cat.name] = existing.id;
-                        } else {
-                            const docRef = await addDoc(collection(db, "categories"), cat);
-                            categoryIdMap[cat.name] = docRef.id;
-                        }
-                    }
-
-                    // 2. Tạo Apps với ID danh mục mới
-                    for (const appData of importedData.apps) {
-                        const { categoryName, ...rest } = appData;
-                        const finalAppData = {
-                            ...rest,
-                            categoryId: categoryIdMap[categoryName] || '' // Link by Name
-                        };
-                        await addDoc(collection(db, "apps"), finalAppData);
-                    }
-
-                    showToast("Khôi phục dữ liệu thành công!");
-                    event.target.value = ''; // Reset input
-                } catch (error) {
-                    console.error(error);
-                    alert("Lỗi phân tích file. Vui lòng kiểm tra lại định dạng.");
-                }
-            };
-
-            if (file.name.endsWith('.json')) reader.readAsText(file);
-            else reader.readAsArrayBuffer(file);
-        };
-
-        // --- OTHER UTILS ---
-        window.updateCatField = (id, field, val) => updateDoc(doc(db, "categories", id), { [field]: val });
-        window.deleteCat = (id) => confirm("Xóa danh mục này?") && deleteDoc(doc(db, "categories", id));
-        window.addCategory = async () => {
-            const name = document.getElementById('new-cat-name').value;
-            const icon = document.getElementById('new-cat-icon').value;
-            if(!name) return;
-            await addDoc(collection(db, "categories"), { name, icon, order: categories.length });
-            document.getElementById('new-cat-name').value = '';
-            document.getElementById('new-cat-icon').value = '';
-        };
-
-        window.renderDeputyList = () => {
-            const list = document.getElementById('deputy-list');
-            list.innerHTML = deputies.map(email => `<div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-xl border dark:border-white/5"><span class="text-sm font-bold">${email}</span>${isSuper ? `<button onclick="window.removeDeputy('${email}')" class="text-red-500 p-2"><i data-lucide="user-minus" class="w-4 h-4"></i></button>` : ''}</div>`).join('');
-            lucide.createIcons();
-        };
-
-        window.addDeputy = async () => {
-            const email = document.getElementById('new-deputy-email').value;
-            if(!email || !isSuper) return;
-            await setDoc(doc(db, "settings", "admins"), { deputy_emails: arrayUnion(email) }, { merge: true });
-            document.getElementById('new-deputy-email').value = '';
-            location.reload();
-        };
-
-        window.removeDeputy = async (email) => {
-            if(!confirm("Xóa quyền phó admin?") || !isSuper) return;
-            await setDoc(doc(db, "settings", "admins"), { deputy_emails: arrayRemove(email) }, { merge: true });
-            location.reload();
-        };
-
-        window.toggleFormFields = () => {
-            const catName = categories.find(c => c.id === document.getElementById('app-category').value)?.name;
-            const isPhone = catName === "Số điện thoại";
-            document.getElementById('field-position').classList.toggle('hidden', !isPhone);
-            document.getElementById('label-name').innerText = isPhone ? "Tên liên hệ" : "Tên hiển thị";
-            document.getElementById('label-link').innerText = isPhone ? "Số điện thoại" : "Link URL";
-        };
-
-        window.openAppModal = () => { document.getElementById('app-form').reset(); document.getElementById('edit-id').value = ''; toggleFormFields(); openModal('modal-app'); };
-        window.editApp = (id) => {
-            const a = apps.find(x => x.id === id);
-            document.getElementById('edit-id').value = a.id;
-            document.getElementById('app-name').value = a.name;
-            document.getElementById('app-position').value = a.position || '';
-            document.getElementById('app-link').value = a.url;
-            document.getElementById('app-icon').value = a.iconUrl || '';
-            document.getElementById('app-category').value = a.categoryId || '';
-            document.getElementById('app-visible').checked = a.visible;
-            toggleFormFields();
-            openModal('modal-app');
-        };
-
-        document.getElementById('app-form').onsubmit = async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('edit-id').value;
-            const data = { name: document.getElementById('app-name').value, position: document.getElementById('app-position').value, url: document.getElementById('app-link').value, iconUrl: document.getElementById('app-icon').value, categoryId: document.getElementById('app-category').value, visible: document.getElementById('app-visible').checked, order: id ? apps.find(x => x.id === id).order : apps.length };
-            id ? await updateDoc(doc(db, "apps", id), data) : await addDoc(collection(db, "apps"), data);
-            closeModal('modal-app');
-        };
-
-        window.deleteApp = (id) => confirm("Xóa mục này?") && deleteDoc(doc(db, "apps", id));
-
-        window.renderCategories = renderCategories; // Assign to global
-        function renderCategories() {
-            const bar = document.getElementById('category-bar');
-            let html = `<button onclick="window.setFilter('all')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all ${currentFilter === 'all' ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">TẤT CẢ</button>`;
-            categories.forEach(c => {
-                html += `<button onclick="window.setFilter('${c.id}')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center gap-2 ${currentFilter === c.id ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">
-                    ${c.icon ? `<img src="${c.icon}" class="w-3 h-3 object-contain">` : ''} ${c.name.toUpperCase()}
-                </button>`;
-            });
-            bar.innerHTML = html;
-
-            const list = document.getElementById('cat-list-admin');
-            list.innerHTML = categories.map(c => `<li class="flex flex-col gap-2 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border dark:border-white/5" data-id="${c.id}"><div class="flex items-center gap-3"><i data-lucide="grip-vertical" class="text-slate-300 cursor-move"></i><input type="text" value="${c.name}" onblur="window.updateCatField('${c.id}', 'name', this.value)" class="flex-1 bg-transparent border-none font-bold text-sm outline-none"><button onclick="window.deleteCat('${c.id}')" class="text-red-500 p-2"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div><input type="text" value="${c.icon || ''}" onblur="window.updateCatField('${c.id}', 'icon', this.value)" placeholder="Icon URL" class="text-[10px] bg-white dark:bg-black/20 px-4 py-2 rounded-lg outline-none w-full border-none shadow-inner"></li>`).join('');
-            lucide.createIcons();
-            if(isAdmin) new Sortable(list, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(list.children).forEach((el, i) => updateDoc(doc(db, "categories", el.dataset.id), { order: i })); }});
-            document.getElementById('app-category').innerHTML = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-        }
-
-        window.openModal = (id) => document.getElementById(id).classList.remove('hidden');
-        window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
-        window.switchTab = (tabId) => {
-            ['tab-cat', 'tab-deputy', 'tab-data'].forEach(id => document.getElementById(id).classList.add('hidden'));
-            ['btn-tab-cat', 'btn-tab-deputy', 'btn-tab-data'].forEach(id => document.getElementById(id).classList.remove('text-primary', 'border-b-2', 'border-primary'));
-            document.getElementById(tabId).classList.remove('hidden');
-            document.getElementById('btn-' + tabId).classList.add('text-primary', 'border-b-2', 'border-primary');
-        };
-        window.toggleTheme = () => { document.documentElement.classList.toggle('dark'); localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light'; };
-        document.getElementById('search-input').oninput = (e) => { searchQuery = e.target.value; renderApps(); };
-        window.setFilter = (id) => { currentFilter = id; renderCategories(); renderApps(); };
-        window.setView = (mode) => { viewMode = mode; renderApps(); };
         function showToast(msg) {
             const t = document.getElementById('toast');
             document.getElementById('toast-msg').innerText = msg;
             t.classList.remove('opacity-0', 'translate-y-20');
+            const icon = t.querySelector('i');
+            if (msg.toLowerCase().includes('lỗi')) {
+                 icon.setAttribute('data-lucide', 'alert-triangle');
+                 icon.classList.remove('text-green-500');
+                 icon.classList.add('text-red-500');
+            } else {
+                 icon.setAttribute('data-lucide', 'check-circle');
+                 icon.classList.remove('text-red-500');
+                 icon.classList.add('text-green-500');
+            }
+            lucide.createIcons(); 
             setTimeout(() => t.classList.add('opacity-0', 'translate-y-20'), 3000);
+        }
+        window.openModal = (id) => {
+            document.getElementById(id).classList.remove('hidden');
+        };
+        window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
+        window.toggleTheme = () => { document.documentElement.classList.toggle('dark'); localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light'; };
+        // ... (KEEEP other unchanged functions) ...
+
+
+        // --- ADMIN SIDEBAR LOGIC (NEW) ---
+        window.toggleAdminSidebar = () => {
+            const sidebar = document.getElementById('admin-sidebar');
+            const backdrop = document.getElementById('admin-backdrop');
+            const isOpen = sidebar.classList.toggle('open');
+            sidebar.classList.toggle('closed', !isOpen);
+            backdrop.classList.toggle('hidden', !isOpen);
+        };
+        
+        window.switchAdminTab = (tabName) => {
+            const tabs = ['announcement', 'access', 'data'];
+            tabs.forEach(name => {
+                document.getElementById(`tab-${name}-sidebar`).classList.toggle('hidden', name !== tabName);
+                document.getElementById(`btn-sidebar-${name}`).classList.toggle('sidebar-item-active', name === tabName);
+            });
             lucide.createIcons();
+        };
+
+        // --- REQUEST ACCESS LOGIC (NEW) ---
+        window.openRequestModal = () => {
+            if (!currentUser) {
+                 showToast("Vui lòng đăng nhập bằng Google trước.");
+                 return;
+            }
+            window.openModal('modal-request-admin');
+        };
+        
+        document.getElementById('request-form').onsubmit = async (e) => {
+             e.preventDefault();
+             if (!currentUser) return;
+
+             const reason = document.getElementById('request-reason').value.trim();
+             const email = document.getElementById('request-email').value.trim();
+             
+             // Check for existing pending request
+             const existingRequest = accessRequests.find(r => r.email === email);
+             if (existingRequest) {
+                  showToast("Yêu cầu của bạn đang được xem xét. Vui lòng chờ.");
+                  return;
+             }
+
+             try {
+                 await addDoc(collection(db, "adminRequests"), {
+                      uid: currentUser.uid,
+                      email: email,
+                      name: currentUser.displayName,
+                      reason: reason,
+                      status: 'pending',
+                      timestamp: new Date().toISOString()
+                 });
+                 window.closeModal('modal-request-admin');
+                 showToast("Yêu cầu cấp quyền đã được gửi thành công!");
+             } catch (e) {
+                 console.error("Error sending request:", e);
+                 showToast("Lỗi khi gửi yêu cầu.");
+             }
+        };
+
+        function renderRequestList() {
+            const list = document.getElementById('request-list');
+            if (!list) return;
+
+            if (accessRequests.length === 0) {
+                 list.innerHTML = `<li class="p-3 text-sm text-slate-400">Không có yêu cầu mới.</li>`;
+                 return;
+            }
+
+            list.innerHTML = accessRequests.map(req => `
+                <li class="p-3 bg-white dark:bg-slate-800 rounded-xl border dark:border-white/5 space-y-2">
+                    <p class="text-sm font-bold">${req.email}</p>
+                    <p class="text-xs text-slate-500 italic">Lý do: ${req.reason}</p>
+                    <div class="flex gap-2 pt-2">
+                        <button onclick="window.openPermissionModal('${req.email}', '${req.id}')" class="bg-green-500 text-white px-3 py-1 rounded-lg text-xs font-bold">CẤP QUYỀN</button>
+                        <button onclick="window.rejectRequest('${req.id}')" class="bg-red-500 text-white px-3 py-1 rounded-lg text-xs font-bold">TỪ CHỐI</button>
+                    </div>
+                </li>
+            `).join('');
         }
 
+        window.rejectRequest = async (requestId) => {
+            if (!isSuper || !confirm("Bạn có chắc chắn muốn từ chối yêu cầu này?")) return;
+            try {
+                await updateDoc(doc(db, "adminRequests", requestId), { status: 'rejected' });
+                showToast("Đã từ chối yêu cầu.");
+            } catch (e) {
+                showToast("Lỗi từ chối yêu cầu.");
+            }
+        };
+
+        window.openPermissionModal = (email, requestId) => {
+            if (!isSuper) return;
+            document.getElementById('perm-user-email').value = email;
+            document.getElementById('perm-user-title').innerText = `Cấp quyền cho: ${email}`;
+            document.getElementById('permission-form').setAttribute('data-request-id', requestId || '');
+            
+            // Load existing permissions
+            const currentPerms = adminPermissions[email] || {};
+            document.getElementById('perm-apps').checked = currentPerms.canManageApps || false;
+            document.getElementById('perm-data').checked = currentPerms.canManageData || false;
+            document.getElementById('perm-announcement').checked = currentPerms.canManageAnnouncement || false;
+
+            window.openModal('modal-set-permissions');
+        };
+
+        document.getElementById('permission-form').onsubmit = async (e) => {
+            e.preventDefault();
+            if (!isSuper) return;
+
+            const email = document.getElementById('perm-user-email').value;
+            const requestId = document.getElementById('permission-form').getAttribute('data-request-id');
+            const canManageApps = document.getElementById('perm-apps').checked;
+            const canManageData = document.getElementById('perm-data').checked;
+            const canManageAnnouncement = document.getElementById('perm-announcement').checked;
+
+            try {
+                // 1. Update Permissions
+                await setDoc(doc(db, "settings", "permissions"), {
+                    [email]: {
+                        canManageApps,
+                        canManageData,
+                        canManageAnnouncement
+                    }
+                }, { merge: true });
+                
+                // 2. Add to Deputy list (if not exists)
+                await setDoc(doc(db, "settings", "admins"), { deputy_emails: arrayUnion(email) }, { merge: true });
+                
+                // 3. Mark request as approved (if exists)
+                if (requestId) {
+                    await updateDoc(doc(db, "adminRequests", requestId), { status: 'approved' });
+                }
+
+                window.closeModal('modal-set-permissions');
+                showToast(`Đã cấp quyền Phó Admin cho ${email}. Đang tải lại...`);
+                setTimeout(() => location.reload(), 500);
+
+            } catch (e) {
+                console.error("Error setting permissions:", e);
+                showToast("Lỗi khi cấp quyền và lưu trữ.");
+            }
+        };
+
+        // --- DEPUTY LIST (UPDATED with Permissions) ---
+        window.renderDeputyList = () => {
+            const list = document.getElementById('deputy-list');
+            if (!list) return;
+
+            document.getElementById('access-guard').classList.toggle('hidden', isSuper);
+
+            const allAdmins = Array.from(new Set([SUPER_UID, ...deputies]));
+            
+            list.innerHTML = allAdmins.map(emailOrUid => {
+                let email = emailOrUid;
+                let role = "Deputy";
+
+                if (emailOrUid === SUPER_UID) {
+                     email = currentUser.email || 'Super Admin';
+                     role = "SUPER ADMIN";
+                     // For SUPER ADMIN, show simple list entry
+                     return `<li class="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/30 rounded-xl border border-yellow-200 dark:border-yellow-700">
+                                <span class="text-sm font-bold text-yellow-800 dark:text-yellow-300">${email}</span>
+                                <span class="text-[9px] font-black text-yellow-600 uppercase">Super Admin</span>
+                             </li>`;
+                }
+                
+                const perms = adminPermissions[email] || {};
+                const permStatus = [
+                    perms.canManageApps ? 'APP' : '',
+                    perms.canManageData ? 'DATA' : '',
+                    perms.canManageAnnouncement ? 'ANNOUNCEMENT' : ''
+                ].filter(p => p).join(', ') || 'Chỉ xem';
+
+                return `<li class="flex items-center justify-between p-3 bg-slate-50 dark:bg-white/5 rounded-xl border dark:border-white/5">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold">${email}</span>
+                                <span class="text-[10px] text-slate-500">${permStatus}</span>
+                            </div>
+                            <div class="flex gap-2">
+                                ${isSuper ? `<button onclick="window.openPermissionModal('${email}', '')" class="text-primary p-1 rounded-lg hover:bg-slate-100"><i data-lucide="edit" class="w-4 h-4"></i></button>` : ''}
+                                ${isSuper ? `<button onclick="window.removeDeputy('${email}')" class="text-red-500 p-1 rounded-lg hover:bg-slate-100"><i data-lucide="user-minus" class="w-4 h-4"></i></button>` : ''}
+                            </div>
+                        </li>`;
+            }).join('');
+            lucide.createIcons();
+        };
+        
+        // --- ADMIN UTILS (FIXED TOASTS & RELOAD) ---
+        window.updateCatField = (id, field, val) => updateDoc(doc(db, "categories", id), { [field]: val })
+            .then(() => showToast("Đã cập nhật danh mục!"))
+            .catch(e => showToast("Lỗi khi cập nhật danh mục!"));
+            
+        window.deleteCat = (id) => {
+            if (confirm("Xóa danh mục này?")) {
+                deleteDoc(doc(db, "categories", id))
+                    .then(() => showToast("Đã xóa danh mục!"))
+                    .catch(e => showToast("Lỗi khi xóa danh mục!"));
+            }
+        };
+        
+        window.addCategory = async () => {
+            const name = document.getElementById('new-cat-name').value.trim();
+            const icon = document.getElementById('new-cat-icon').value.trim();
+            if(!name) { showToast("Tên danh mục không được trống!"); return; }
+            await addDoc(collection(db, "categories"), { name, icon, order: categories.length })
+                .then(() => {
+                    document.getElementById('new-cat-name').value = '';
+                    document.getElementById('new-cat-icon').value = '';
+                    showToast("Đã thêm danh mục mới!");
+                })
+                .catch(e => showToast("Lỗi khi thêm danh mục."));
+        };
+
+        window.removeDeputy = async (email) => {
+            if(!confirm(`Xóa quyền Phó Admin cho ${email}? (Việc này không xóa quyền chi tiết, nhưng sẽ loại người này khỏi danh sách Admin chính)`) || !isSuper) return;
+            try {
+                // Remove from admins list
+                await setDoc(doc(db, "settings", "admins"), { deputy_emails: arrayRemove(email) }, { merge: true });
+                // Optional: Remove from permissions map (clean up)
+                await updateDoc(doc(db, "settings", "permissions"), { [email]: FieldValue.delete() });
+                
+                showToast(`Đã xóa quyền của ${email}. Đang tải lại...`);
+                setTimeout(() => location.reload(), 500);
+            } catch (e) { showToast("Lỗi khi xóa quyền Phó Admin."); }
+        };
+        
+        // ... (other functions: toggleFormFields, openAppModal, editApp, app-form.onsubmit, deleteApp, toggleAppVisibility, setFilter, renderApps, handleExport, handleImport, renderStats)
+        
+        // Final Setup
         if(localStorage.theme === 'dark') document.documentElement.classList.add('dark');
         lucide.createIcons();
         window.setView('grid');
-        
-        // Track visit when the app loads
-        trackVisit(); 
+        window.switchAdminTab('announcement'); // Set default tab for sidebar
+        trackVisit();
     </script>
 </body>
 </html>
