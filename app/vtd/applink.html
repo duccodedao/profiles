@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="vi" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu app - Vĩnh Trạch Đông</title>
+    <link rel="icon" href="https://bmass.vercel.app/img/bmasslogo.png" type="image/png">
+    
+    <!-- ============================================= -->
+    <!-- NEW: SEO & PWA Meta Tags for Home Screen Icon -->
+    <!-- ============================================= -->
+    <meta name="description" content="[MÔ TẢ NGẮN GỌN VỀ TRANG WEB CỦA BẠN]">
+    
+    <!-- Default favicon -->
+    <link rel="icon" href="https://bmass.vercel.app/img/bmasslogo.png" type="image/png">
+    
+    <!-- Apple Touch Icon (iOS) -->
+    <link rel="apple-touch-icon" href="https://bmass.vercel.app/img/bmasslogo.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Hub Vĩnh Trạch Đông">
+    
+    <!-- Android (PWA Manifest) -->
+    <!-- Lưu ý: Cần tạo file manifest.json riêng -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+
+    <!-- Social Media Meta (Optional but Recommended) -->
+    <meta property="og:title" content="Hub Portal - Vĩnh Trạch Đông">
+    <meta property="og:description" content="[MÔ TẢ NGẮN GỌN VỀ TRANG WEB CỦA BẠN]">
+    <meta property="og:image" content="https://bmass.vercel.app/img/bmasslogo.png">
+    <meta property="og:type" content="website">
+    
+    <!-- ============================================= -->
+    <!-- END: SEO & PWA Meta Tags                      -->
+    <!-- ============================================= -->
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Drag & Drop -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <!-- Excel Library (SheetJS) -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { colors: { primary: '#4f46e5', secondary: '#f43f5e', dark: '#020617' } } }
+        }
+    </script>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; transition: background 0.3s; }
+        .dark body { background-color: #020617; color: #e2e8f0; }
+        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .dark .glass { background: rgba(15, 23, 42, 0.8); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .app-item { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .drag-ghost { opacity: 0.3; background: #4f46e5 !important; border-radius: 1rem; }
+        .tab-active { color: #4f46e5; border-bottom: 2px solid #4f46e5; }
+        .dark .tab-active { color: #818cf8; border-bottom: 2px solid #818cf8; }
+        /* Thêm padding dưới cho body để không che footer */
+        body { padding-bottom: 100px; } 
+    </style>
+</head>
+<body class="min-h-screen pb-24">
+
+    <!-- Header -->
+    <header class="sticky top-0 z-[100] glass px-6 py-3 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg">
+                <i data-lucide="database" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="text-xs font-black tracking-tighter uppercase leading-none">Hub Portal</h1>
+                <span id="role-status" class="text-[9px] font-bold text-slate-400">GUEST</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+                <button onclick="setView('grid')" id="view-grid-btn" class="p-1.5 rounded-md transition-all shadow-sm bg-white dark:bg-slate-700"><i data-lucide="layout-grid" class="w-4 h-4"></i></button>
+                <button onclick="setView('list')" id="view-list-btn" class="p-1.5 rounded-md transition-all"><i data-lucide="list" class="w-4 h-4"></i></button>
+            </div>
+            <button onclick="toggleTheme()" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                <i data-lucide="sun" class="w-5 h-5 hidden dark:block text-amber-400"></i>
+                <i data-lucide="moon" class="w-5 h-5 dark:hidden text-slate-600"></i>
+            </button>
+            <div id="auth-section"></div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-6 space-y-8">
+        <!-- Search -->
+        <div class="relative max-w-2xl mx-auto">
+            <i data-lucide="search" class="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
+            <input type="text" id="search-input" placeholder="Tìm ứng dụng hoặc danh bạ..." 
+                class="w-full pl-14 pr-6 py-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-4 ring-primary/10 outline-none shadow-sm">
+        </div>
+
+        <!-- Visit Stats Container (New Section) -->
+        <div id="visit-stats-container" class="max-w-4xl mx-auto p-4 rounded-3xl bg-slate-100 dark:bg-slate-900/50">
+            <!-- Stats will be rendered here by renderStats() -->
+            <div class="flex items-center justify-center h-20 text-slate-400">Đang tải thống kê...</div>
+        </div>
+
+        <!-- Categories -->
+        <div id="category-bar" class="flex flex-wrap gap-2"></div>
+
+        <!-- Main Content -->
+        <div id="app-container"></div>
+    </main>
+    
+    <!-- NEW: Footer liên hệ và nút Trợ giúp -->
+    <footer class="fixed bottom-0 w-full z-50 bg-white dark:bg-slate-900 border-t dark:border-white/10 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
+        <div class="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center text-sm">
+            <div class="text-slate-500 dark:text-slate-400">
+                © 2024 Vĩnh Trạch Đông. All rights reserved.
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="#" class="text-xs font-bold text-slate-500 hover:text-primary transition">Privacy Policy</a>
+                <!-- Nút Help dẫn đến trang chat.html -->
+                <a href="chat.html" class="flex items-center gap-2 px-4 py-2 bg-secondary text-white rounded-lg font-bold text-xs uppercase shadow-lg hover:opacity-90 transition">
+                    <i data-lucide="life-buoy" class="w-4 h-4"></i> TRỢ GIÚP
+                </a>
+            </div>
+        </div>
+    </footer>
+
+
+    <!-- Admin Dock -->
+    <div id="admin-controls" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[110]">
+        <div class="bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-3 py-2 rounded-2xl shadow-2xl flex items-center gap-2">
+            <button onclick="openModal('modal-mgmt')" class="p-3 hover:bg-white/10 dark:hover:bg-black/5 rounded-xl transition">
+                <i data-lucide="settings" class="w-5 h-5"></i>
+            </button>
+            <div class="w-px h-6 bg-white/20 dark:bg-black/10"></div>
+            <button onclick="openAppModal()" class="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-xs font-bold shadow-lg">
+                <i data-lucide="plus" class="w-4 h-4"></i> THÊM MỚI
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal Management (Tabs: Cat, Deputy, Data) -->
+    <div id="modal-mgmt" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl border dark:border-white/10">
+            <div class="p-6 border-b dark:border-white/5 flex justify-between items-center">
+                <div class="flex gap-6 text-[10px] font-black tracking-widest text-slate-400">
+                    <button onclick="switchTab('tab-cat')" id="btn-tab-cat" class="text-primary border-b-2 border-primary pb-1">DANH MỤC</button>
+                    <button onclick="switchTab('tab-deputy')" id="btn-tab-deputy" class="pb-1 uppercase">Phó Admin</button>
+                    <button onclick="switchTab('tab-data')" id="btn-tab-data" class="pb-1 uppercase">Dữ liệu</button>
+                </div>
+                <button onclick="closeModal('modal-mgmt')" class="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-8">
+                <!-- Tab Categories -->
+                <div id="tab-cat" class="space-y-6">
+                    <div class="flex gap-2">
+                        <input type="text" id="new-cat-name" placeholder="Tên danh mục..." class="flex-1 px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary">
+                        <input type="text" id="new-cat-icon" placeholder="Link Icon..." class="w-1/3 px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary">
+                        <button onclick="addCategory()" class="bg-primary text-white px-8 rounded-xl font-bold text-xs uppercase">Thêm</button>
+                    </div>
+                    <ul id="cat-list-admin" class="space-y-2"></ul>
+                </div>
+
+                <!-- Tab Deputy -->
+                <div id="tab-deputy" class="hidden space-y-6">
+                    <div id="deputy-guard" class="hidden p-4 bg-amber-50 dark:bg-amber-900/20 text-amber-600 rounded-xl text-xs font-bold uppercase">Chỉ Super Admin mới quản lý được mục này.</div>
+                    <div id="deputy-ui" class="space-y-4">
+                        <div class="flex gap-2">
+                            <input type="email" id="new-deputy-email" placeholder="Gmail phó admin..." class="flex-1 px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary">
+                            <button onclick="addDeputy()" class="bg-primary text-white px-8 rounded-xl font-bold text-xs">CẤP QUYỀN</button>
+                        </div>
+                        <div id="deputy-list" class="space-y-2"></div>
+                    </div>
+                </div>
+
+                <!-- Tab Data Export/Import -->
+                <div id="tab-data" class="hidden space-y-8">
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <!-- Export Section -->
+                        <div class="p-6 bg-slate-50 dark:bg-white/5 rounded-[2rem] border dark:border-white/5 space-y-4">
+                            <h4 class="text-xs font-black uppercase tracking-widest text-primary">Xuất dữ liệu (Export)</h4>
+                            <p class="text-xs text-slate-500 font-medium">Lưu trữ lại toàn bộ cấu hình Ứng dụng và Danh mục hiện có trên site.</p>
+                            <div class="flex flex-col gap-2">
+                                <button onclick="handleExport('json')" class="flex items-center justify-between w-full px-5 py-3 bg-white dark:bg-slate-800 rounded-xl hover:ring-2 ring-indigo-500 transition shadow-sm">
+                                    <span class="text-sm font-bold">Xuất file JSON</span>
+                                    <i data-lucide="download" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="handleExport('excel')" class="flex items-center justify-between w-full px-5 py-3 bg-white dark:bg-slate-800 rounded-xl hover:ring-2 ring-indigo-500 transition shadow-sm">
+                                    <span class="text-sm font-bold">Xuất file EXCEL</span>
+                                    <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Import Section -->
+                        <div class="p-6 bg-slate-50 dark:bg-white/5 rounded-[2rem] border dark:border-white/5 space-y-4">
+                            <h4 class="text-xs font-black uppercase tracking-widest text-secondary">Nhập dữ liệu (Import)</h4>
+                            <p class="text-xs text-slate-500 font-medium">Khôi phục dữ liệu từ file JSON hoặc Excel đã lưu trước đó. <br><b>Lưu ý:</b> Dữ liệu mới sẽ được thêm vào.</p>
+                            <div class="relative">
+                                <input type="file" id="import-file" accept=".json, .xlsx" onchange="handleImport(event)" class="hidden">
+                                <label for="import-file" class="flex items-center justify-center gap-3 w-full px-5 py-4 bg-slate-900 text-white dark:bg-white dark:text-slate-900 rounded-xl cursor-pointer hover:opacity-90 transition font-bold text-xs uppercase">
+                                    <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+                                    Chọn file để khôi phục
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Modal -->
+    <div id="modal-app" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[210] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden">
+            <div class="p-6 border-b dark:border-white/5 flex justify-between items-center">
+                <h3 id="app-modal-title" class="font-bold uppercase text-sm tracking-widest">Cấu hình</h3>
+                <button onclick="closeModal('modal-app')" class="p-2 rounded-lg hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="app-form" class="p-8 space-y-4">
+                <input type="hidden" id="edit-id">
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Danh mục</label>
+                    <select id="app-category" onchange="toggleFormFields()" class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium"></select>
+                </div>
+                <div class="space-y-1">
+                    <label id="label-name" class="text-[10px] font-bold text-slate-400 uppercase ml-1">Tên hiển thị</label>
+                    <input type="text" id="app-name" required class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium">
+                </div>
+                <div id="field-position" class="space-y-1 hidden">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Chức vụ</label>
+                    <input type="text" id="app-position" class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium">
+                </div>
+                <div class="space-y-1">
+                    <label id="label-link" class="text-[10px] font-bold text-slate-400 uppercase ml-1">Link URL</label>
+                    <input type="text" id="app-link" required class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Icon URL</label>
+                    <input type="text" id="app-icon" placeholder="Để trống để tự lấy" class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium">
+                </div>
+                <div class="flex items-center gap-3 p-2">
+                    <input type="checkbox" id="app-visible" checked class="w-5 h-5 accent-primary">
+                    <label class="text-xs font-bold opacity-60">Hiển thị công khai</label>
+                </div>
+                <button type="submit" class="w-full py-4 bg-primary text-white rounded-xl font-bold shadow-lg shadow-indigo-500/30 uppercase text-xs">Lưu ứng dụng</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-10 right-10 z-[300] transform translate-y-20 opacity-0 transition-all duration-500">
+        <div class="bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border dark:border-white/10">
+            <i data-lucide="check-circle" class="w-5 h-5 text-green-500"></i>
+            <span id="toast-msg" class="text-sm font-bold tracking-tight">Thành công!</span>
+        </div>
+    </div>
+    
+    <!-- Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        // REMOVED serverTimestamp
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        // ADDED increment, runTransaction
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc, arrayUnion, arrayRemove, writeBatch, increment, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
+            authDomain: "profile-d1214.firebaseapp.com",
+            projectId: "profile-d1214",
+            storageBucket: "profile-d1214.firebasestorage.app",
+            messagingSenderId: "914980131889",
+            appId: "1:914980131889:web:72f8da15c42dbee671b110",
+            measurementId: "G-C587M69LZW"
+        };
+        const SUPER_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1";
+
+        const fbApp = initializeApp(firebaseConfig);
+        const auth = getAuth(fbApp);
+        const db = getFirestore(fbApp);
+        const provider = new GoogleAuthProvider();
+
+        let currentUser = null, isAdmin = false, isSuper = false, apps = [], categories = [], deputies = [], currentFilter = 'all', searchQuery = '', viewMode = 'grid', visitStats = {};
+
+        // --- AUTH & INITIAL ---
+        onAuthStateChanged(auth, async (user) => {
+            currentUser = user;
+            if (user) {
+                isSuper = user.uid === SUPER_UID;
+                const snap = await getDoc(doc(db, "settings", "admins"));
+                deputies = snap.exists() ? snap.data().deputy_emails || [] : [];
+                isAdmin = isSuper || deputies.includes(user.email);
+                renderAuthUI();
+            } else {
+                isAdmin = isSuper = false;
+                document.getElementById('auth-section').innerHTML = `<button onclick="window.login()" class="bg-primary text-white px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-widest">Login</button>`;
+            }
+            document.getElementById('role-status').innerText = isSuper ? 'SUPER' : (isAdmin ? 'DEPUTY' : 'GUEST');
+            document.getElementById('admin-controls').classList.toggle('hidden', !isAdmin);
+            document.getElementById('deputy-guard').classList.toggle('hidden', isSuper);
+            document.getElementById('deputy-ui').classList.toggle('hidden', !isSuper);
+            renderApps();
+            renderDeputyList();
+        });
+
+        window.login = () => signInWithPopup(auth, provider);
+        window.logout = () => signOut(auth).then(() => location.reload());
+
+        function renderAuthUI() {
+            document.getElementById('auth-section').innerHTML = `<div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 pr-3 rounded-lg border dark:border-white/10"><img src="${currentUser.photoURL}" class="w-7 h-7 rounded-md"><button onclick="window.logout()" class="text-[9px] font-black uppercase text-red-500">Exit</button></div>`;
+        }
+
+        // --- DATA REALTIME ---
+        onSnapshot(query(collection(db, "categories"), orderBy("order", "asc")), (snap) => {
+            categories = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderCategories();
+        });
+
+        onSnapshot(query(collection(db, "apps"), orderBy("order", "asc")), (snap) => {
+            apps = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderApps();
+        });
+        
+        // Data Realtime for Visit Stats
+        onSnapshot(doc(db, "settings", "visits_stats"), (snap) => {
+            visitStats = snap.data() || {};
+            renderStats();
+        });
+        
+        // REMOVED Data Realtime for Chat Messages
+
+
+        // --- VISIT STATS LOGIC (Kept) ---
+        function getDateString(date = new Date()) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return { day: `${y}-${m}-${d}`, month: `${y}-${m}`, year: `${y}` };
+        }
+
+        async function trackVisit() {
+            const now = getDateString();
+            
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const statsDocRef = doc(db, "settings", "visits_stats");
+                    const statsSnap = await transaction.get(statsDocRef);
+                    const statsData = statsSnap.data() || {};
+
+                    let updates = {
+                        totalVisits: increment(1) // Atomic increment for total
+                    };
+                    
+                    // Daily reset/increment logic
+                    if (statsData.lastDailyUpdate !== now.day) {
+                        updates.dailyVisits = 1;
+                        updates.lastDailyUpdate = now.day;
+                    } else {
+                        updates.dailyVisits = (statsData.dailyVisits || 0) + 1;
+                    }
+
+                    // Monthly reset/increment logic
+                    if (statsData.lastMonthlyUpdate !== now.month) {
+                        updates.monthlyVisits = 1;
+                        updates.lastMonthlyUpdate = now.month;
+                    } else {
+                        updates.monthlyVisits = (statsData.monthlyVisits || 0) + 1;
+                    }
+
+                    // Yearly reset/increment logic
+                    if (statsData.lastYearlyUpdate !== now.year) {
+                        updates.yearlyVisits = 1;
+                        updates.lastYearlyUpdate = now.year;
+                    } else {
+                        updates.yearlyVisits = (statsData.yearlyVisits || 0) + 1;
+                    }
+
+                    transaction.set(statsDocRef, updates, { merge: true });
+                });
+
+            } catch (e) {
+                console.error("Transaction failed while tracking visit: ", e);
+            }
+        }
+
+        function renderStats() {
+            const container = document.getElementById('visit-stats-container');
+            if (!container) return; 
+            
+            const { dailyVisits = 0, monthlyVisits = 0, yearlyVisits = 0, totalVisits = 0 } = visitStats;
+            
+            container.innerHTML = `
+                <div class="flex items-center gap-3 text-xs font-black tracking-widest text-primary dark:text-white mb-4">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                    <span>THỐNG KÊ LƯỢT TRUY CẬP</span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-center border dark:border-white/5">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Hôm nay</p>
+                        <span class="text-lg font-black text-primary">${dailyVisits.toLocaleString('vi-VN')}</span>
+                    </div>
+                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-center border dark:border-white/5">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Tháng này</p>
+                        <span class="text-lg font-black text-primary">${monthlyVisits.toLocaleString('vi-VN')}</span>
+                    </div>
+                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-center border dark:border-white/5">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Năm nay</p>
+                        <span class="text-lg font-black text-primary">${yearlyVisits.toLocaleString('vi-VN')}</span>
+                    </div>
+                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-center border dark:border-white/5">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Tổng cộng</p>
+                        <span class="text-lg font-black text-primary">${totalVisits.toLocaleString('vi-VN')}</span>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        // --- RENDERING APP & ADMIN LOGIC (Kept) ---
+        window.renderApps = () => {
+            const container = document.getElementById('app-container');
+            const filtered = apps.filter(a => {
+                const cat = categories.find(c => c.id === a.categoryId);
+                if (currentFilter === 'all') { if (cat?.name === "Số điện thoại") return false; } 
+                else { if (a.categoryId !== currentFilter) return false; }
+                const matchSearch = a.name.toLowerCase().includes(searchQuery.toLowerCase()) || (a.position && a.position.toLowerCase().includes(searchQuery.toLowerCase()));
+                return matchSearch && (isAdmin || a.visible);
+            });
+
+            if (viewMode === 'grid') {
+                container.className = "grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-x-4 gap-y-8";
+                container.innerHTML = filtered.map(a => {
+                    const isAppPhone = categories.find(c => c.id === a.categoryId)?.name === "Số điện thoại";
+                    const domain = a.url.startsWith('http') ? new URL(a.url).hostname : '';
+                    const icon = a.iconUrl || (isAppPhone ? 'https://cdn-icons-png.flaticon.com/512/3059/3059502.png' : `https://unavatar.io/${domain}?fallback=https://www.google.com/s2/favicons?domain=${domain}&sz=128`);
+                    return `
+                    <div class="app-item group flex flex-col items-center relative" data-id="${a.id}">
+                        <a href="${isAppPhone ? 'tel:' + a.url : a.url}" target="_blank" class="w-full aspect-square bg-white dark:bg-slate-800 rounded-2xl shadow-sm border dark:border-white/5 flex items-center justify-center p-3 mb-2 hover:shadow-xl hover:-translate-y-1 transition-all">
+                            <img src="${icon}" class="w-full h-full object-contain rounded-lg">
+                        </a>
+                        <span class="text-[10px] font-bold text-slate-500 text-center truncate w-full uppercase tracking-tighter">${a.name}</span>
+                        ${a.position ? `<span class="text-[8px] text-slate-400 font-bold truncate w-full text-center uppercase">${a.position}</span>` : ''}
+                        ${isAdmin ? `<div class="absolute -top-1 -right-1 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-all scale-75 z-10"><button onclick="window.editApp('${a.id}')" class="bg-indigo-500 text-white p-2 rounded-full shadow-lg"><i data-lucide="edit-2" class="w-3 h-3"></i></button><button onclick="window.deleteApp('${a.id}')" class="bg-red-500 text-white p-2 rounded-full shadow-lg"><i data-lucide="trash" class="w-3 h-3"></i></button></div>` : ''}
+                    </div>`;
+                }).join('');
+            } else {
+                container.className = "flex flex-col max-w-4xl mx-auto space-y-1";
+                container.innerHTML = filtered.map((a, idx) => {
+                    const isAppPhone = categories.find(c => c.id === a.categoryId)?.name === "Số điện thoại";
+                    const domain = a.url.startsWith('http') ? new URL(a.url).hostname : '';
+                    const icon = a.iconUrl || (isAppPhone ? 'https://cdn-icons-png.flaticon.com/512/3059/3059502.png' : `https://unavatar.io/${domain}?fallback=https://www.google.com/s2/favicons?domain=${domain}&sz=128`);
+                    return `<div class="flex items-center gap-4 bg-white dark:bg-slate-900 p-3 rounded-xl border dark:border-white/5 group shadow-sm" data-id="${a.id}">
+                        <span class="text-[9px] font-black text-slate-300 w-4">${idx+1}</span>
+                        <img src="${icon}" class="w-8 h-8 rounded-lg object-contain">
+                        <div class="flex-1 min-w-0"><h4 class="text-xs font-bold truncate">${a.name}</h4><p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${a.position || (isAppPhone ? a.url : 'Web App')}</p></div>
+                        <div class="flex items-center gap-2"><a href="${isAppPhone ? 'tel:' + a.url : a.url}" target="_blank" class="p-2 text-primary hover:bg-primary hover:text-white rounded-lg transition"><i data-lucide="${isAppPhone ? 'phone' : 'external-link'}" class="w-4 h-4"></i></a>
+                        ${isAdmin ? `<button onclick="window.editApp('${a.id}')" class="p-2 hover:bg-slate-100 rounded-lg"><i data-lucide="edit-3" class="w-4 h-4"></i></button><i data-lucide="grip-vertical" class="w-4 h-4 text-slate-300 cursor-move"></i>` : ''}</div></div>`;
+                }).join('');
+            }
+            lucide.createIcons();
+            if(isAdmin) new Sortable(container, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(container.children).forEach((el, i) => { if(el.dataset.id) updateDoc(doc(db, "apps", el.dataset.id), { order: i }); }); }});
+        }
+
+        // --- OTHER UTILS (Kept) ---
+        window.updateCatField = (id, field, val) => updateDoc(doc(db, "categories", id), { [field]: val });
+        window.deleteCat = (id) => confirm("Xóa danh mục này?") && deleteDoc(doc(db, "categories", id));
+        window.addCategory = async () => {
+            const name = document.getElementById('new-cat-name').value;
+            const icon = document.getElementById('new-cat-icon').value;
+            if(!name) return;
+            await addDoc(collection(db, "categories"), { name, icon, order: categories.length });
+            document.getElementById('new-cat-name').value = '';
+            document.getElementById('new-cat-icon').value = '';
+        };
+
+        window.renderDeputyList = () => {
+            const list = document.getElementById('deputy-list');
+            list.innerHTML = deputies.map(email => `<div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-xl border dark:border-white/5"><span class="text-sm font-bold">${email}</span>${isSuper ? `<button onclick="window.removeDeputy('${email}')" class="text-red-500 p-2"><i data-lucide="user-minus" class="w-4 h-4"></i></button>` : ''}</div>`).join('');
+            lucide.createIcons();
+        };
+
+        window.addDeputy = async () => {
+            const email = document.getElementById('new-deputy-email').value;
+            if(!email || !isSuper) return;
+            await setDoc(doc(db, "settings", "admins"), { deputy_emails: arrayUnion(email) }, { merge: true });
+            document.getElementById('new-deputy-email').value = '';
+            location.reload();
+        };
+
+        window.removeDeputy = async (email) => {
+            if(!confirm("Xóa quyền phó admin?") || !isSuper) return;
+            await setDoc(doc(db, "settings", "admins"), { deputy_emails: arrayRemove(email) }, { merge: true });
+            location.reload();
+        };
+
+        window.toggleFormFields = () => {
+            const catName = categories.find(c => c.id === document.getElementById('app-category').value)?.name;
+            const isPhone = catName === "Số điện thoại";
+            document.getElementById('field-position').classList.toggle('hidden', !isPhone);
+            document.getElementById('label-name').innerText = isPhone ? "Tên liên hệ" : "Tên hiển thị";
+            document.getElementById('label-link').innerText = isPhone ? "Số điện thoại" : "Link URL";
+        };
+
+        window.openAppModal = () => { document.getElementById('app-form').reset(); document.getElementById('edit-id').value = ''; toggleFormFields(); openModal('modal-app'); };
+        window.editApp = (id) => {
+            const a = apps.find(x => x.id === id);
+            document.getElementById('edit-id').value = a.id;
+            document.getElementById('app-name').value = a.name;
+            document.getElementById('app-position').value = a.position || '';
+            document.getElementById('app-link').value = a.url;
+            document.getElementById('app-icon').value = a.iconUrl || '';
+            document.getElementById('app-category').value = a.categoryId || '';
+            document.getElementById('app-visible').checked = a.visible;
+            toggleFormFields();
+            openModal('modal-app');
+        };
+
+        document.getElementById('app-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit-id').value;
+            const data = { name: document.getElementById('app-name').value, position: document.getElementById('app-position').value, url: document.getElementById('app-link').value, iconUrl: document.getElementById('app-icon').value, categoryId: document.getElementById('app-category').value, visible: document.getElementById('app-visible').checked, order: id ? apps.find(x => x.id === id).order : apps.length };
+            id ? await updateDoc(doc(db, "apps", id), data) : await addDoc(collection(db, "apps"), data);
+            closeModal('modal-app');
+        };
+
+        window.deleteApp = (id) => confirm("Xóa mục này?") && deleteDoc(doc(db, "apps", id));
+
+        window.renderCategories = renderCategories; // Assign to global
+        function renderCategories() {
+            const bar = document.getElementById('category-bar');
+            let html = `<button onclick="window.setFilter('all')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all ${currentFilter === 'all' ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">TẤT CẢ</button>`;
+            categories.forEach(c => {
+                html += `<button onclick="window.setFilter('${c.id}')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center gap-2 ${currentFilter === c.id ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">
+                    ${c.icon ? `<img src="${c.icon}" class="w-3 h-3 object-contain">` : ''} ${c.name.toUpperCase()}
+                </button>`;
+            });
+            bar.innerHTML = html;
+
+            const list = document.getElementById('cat-list-admin');
+            list.innerHTML = categories.map(c => `<li class="flex flex-col gap-2 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border dark:border-white/5" data-id="${c.id}"><div class="flex items-center gap-3"><i data-lucide="grip-vertical" class="text-slate-300 cursor-move"></i><input type="text" value="${c.name}" onblur="window.updateCatField('${c.id}', 'name', this.value)" class="flex-1 bg-transparent border-none font-bold text-sm outline-none"><button onclick="window.deleteCat('${c.id}')" class="text-red-500 p-2"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div><input type="text" value="${c.icon || ''}" onblur="window.updateCatField('${c.id}', 'icon', this.value)" placeholder="Icon URL" class="text-[10px] bg-white dark:bg-black/20 px-4 py-2 rounded-lg outline-none w-full border-none shadow-inner"></li>`).join('');
+            lucide.createIcons();
+            if(isAdmin) new Sortable(list, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(list.children).forEach((el, i) => updateDoc(doc(db, "categories", el.dataset.id), { order: i })); }});
+            document.getElementById('app-category').innerHTML = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        }
+
+        window.openModal = (id) => document.getElementById(id).classList.remove('hidden');
+        window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
+        window.switchTab = (tabId) => {
+            ['tab-cat', 'tab-deputy', 'tab-data'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            ['btn-tab-cat', 'btn-tab-deputy', 'btn-tab-data'].forEach(id => document.getElementById(id).classList.remove('text-primary', 'border-b-2', 'border-primary'));
+            document.getElementById(tabId).classList.remove('hidden');
+            document.getElementById('btn-' + tabId).classList.add('text-primary', 'border-b-2', 'border-primary');
+        };
+        window.toggleTheme = () => { document.documentElement.classList.toggle('dark'); localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light'; };
+        document.getElementById('search-input').oninput = (e) => { searchQuery = e.target.value; renderApps(); };
+        window.setFilter = (id) => { currentFilter = id; renderCategories(); renderApps(); };
+        window.setView = (mode) => { viewMode = mode; renderApps(); };
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            t.classList.remove('opacity-0', 'translate-y-20');
+            setTimeout(() => t.classList.add('opacity-0', 'translate-y-20'), 3000);
+            lucide.createIcons();
+        }
+
+        if(localStorage.theme === 'dark') document.documentElement.classList.add('dark');
+        lucide.createIcons();
+        window.setView('grid');
+        
+        // Track visit when the app loads
+        trackVisit(); 
+    </script>
+</body>
+</html>
