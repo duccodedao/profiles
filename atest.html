@@ -192,6 +192,53 @@
       transform: translateZ(80px) scale(1.05);
     }
 
+    /* Phần mới: Device Info Display */
+    .device-info {
+      background: var(--glass);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      max-width: 800px;
+      margin: 2rem auto;
+      transform: translateZ(40px);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    }
+
+    .device-info h3 {
+      font-size: 1.8rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+
+    .device-info ul {
+      list-style: none;
+      font-size: 1.1rem;
+      line-height: 1.8;
+    }
+
+    .device-info li {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .device-info li:last-child {
+      border-bottom: none;
+    }
+
+    .device-info .label {
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .device-info .value {
+      color: var(--text-dim);
+      text-align: right;
+      max-width: 60%;
+    }
+
     footer {
       text-align: center;
       padding: 4rem 2rem;
@@ -203,6 +250,7 @@
       .hero h1 { font-size: clamp(3rem, 10vw, 6rem); }
       .floating-sphere { display: none; } /* giảm tải mobile */
       section { padding: 12vh 6vw; }
+      .device-info { padding: 1.5rem; font-size: 1rem; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -254,6 +302,25 @@
     </div>
   </section>
 
+  <!-- Phần mới: Device Detection -->
+  <section id="device">
+    <div class="content-layer">
+      <div class="device-info">
+        <h3>Thông Tin Thiết Bị Của Bạn</h3>
+        <ul id="device-list">
+          <li><span class="label">Thiết bị:</span> <span class="value" id="device-type">Đang tải...</span></li>
+          <li><span class="label">Mẫu điện thoại:</span> <span class="value" id="device-model">Đang tải...</span></li>
+          <li><span class="label">IP:</span> <span class="value" id="ip-address">Đang tải...</span></li>
+          <li><span class="label">Ngôn ngữ:</span> <span class="value" id="language">Đang tải...</span></li>
+          <li><span class="label">Quốc gia:</span> <span class="value" id="country">Đang tải...</span></li>
+          <li><span class="label">Vị trí (ước tính):</span> <span class="value" id="location">Đang tải...</span></li>
+          <li><span class="label">Hệ điều hành:</span> <span class="value" id="os">Đang tải...</span></li>
+          <li><span class="label">Trình duyệt:</span> <span class="value" id="browser">Đang tải...</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
   <section id="contact">
     <div class="content-layer" style="text-align: center;">
       <h2 style="font-size: clamp(2.8rem, 8vw, 5rem); margin-bottom: 2rem; transform: translateZ(80px);">
@@ -270,7 +337,7 @@
 </main>
 
 <footer>
-  © 2026 Hhhhh • Made with HTML + CSS + JS • No framework
+  © 2026 Hhhhh • Made with HTML + CSS + JS • No framework • X: @Hhhhhluhb
 </footer>
 
 <script>
@@ -321,8 +388,66 @@ cards.forEach(card => {
 // 4. Flip card khi click (tùy chọn – bạn có thể bỏ nếu chỉ muốn hover)
 cards.forEach(card => {
   card.addEventListener('click', () => {
-    card.querySelector('.card-inner').style.transform += ' rotateY(180deg)';
+    const inner = card.querySelector('.card-inner');
+    inner.style.transform = inner.style.transform.includes('180deg') ? 
+      'rotateX(0deg) rotateY(0deg) translateZ(0)' : 'rotateY(180deg)';
   });
+});
+
+// 5. Phần mới: Phát hiện thiết bị và thông tin (chạy khi load trang)
+window.addEventListener('load', async () => {
+  const ua = navigator.userAgent;
+
+  // Parse thiết bị đơn giản từ userAgent (không thư viện ngoài)
+  function parseDevice(ua) {
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+    const deviceType = isMobile ? 'Di động' : 'Máy tính';
+    
+    let deviceModel = 'Không xác định';
+    if (/iPhone/.test(ua)) deviceModel = 'iPhone' + (ua.match(/iPhone OS (\d+_\d+)/) ? ' ' + ua.match(/iPhone OS (\d+_\d+)/)[1].replace('_', '.') : '');
+    else if (/Android/.test(ua)) deviceModel = 'Android' + (ua.match(/Android (\d+\.\d+)/) ? ' ' + ua.match(/Android (\d+\.\d+)/)[1] : '');
+    else if (/Windows Phone/.test(ua)) deviceModel = 'Windows Phone';
+    
+    const os = ua.match(/(Windows NT|Mac OS X|Linux|Android|iOS|CrOS) [\d._]+/)?.[0] || 'Không xác định';
+    const browser = ua.match(/(Chrome|Firefox|Safari|Edge|Opera|Trident)\/[\d.]+/)?.[1] || 'Không xác định';
+
+    return { deviceType, deviceModel, os, browser };
+  }
+
+  const { deviceType, deviceModel, os, browser } = parseDevice(ua);
+
+  // Ngôn ngữ
+  const language = navigator.language || navigator.userLanguage || 'Không xác định';
+
+  // Lấy IP và geolocation từ API bên thứ ba (vì JS client-side không lấy trực tiếp được)
+  let ip = 'Không xác định';
+  let country = 'Không xác định';
+  let location = 'Không xác định';
+
+  try {
+    // Lấy IP từ api.ipify.org
+    const ipRes = await fetch('https://api.ipify.org?format=json');
+    const ipData = await ipRes.json();
+    ip = ipData.ip;
+
+    // Lấy quốc gia, vị trí từ ipapi.co (miễn phí, giới hạn 45k request/tháng)
+    const geoRes = await fetch(`https://ipapi.co/${ip}/json/`);
+    const geoData = await geoRes.json();
+    country = geoData.country_name || 'Không xác định';
+    location = `${geoData.city || 'Không xác định'}, ${geoData.region || ''} (Latitude: ${geoData.latitude || 'N/A'}, Longitude: ${geoData.longitude || 'N/A'})`;
+  } catch (err) {
+    console.error('Lỗi lấy thông tin IP/geolocation:', err);
+  }
+
+  // Hiển thị thông tin
+  document.getElementById('device-type').textContent = deviceType;
+  document.getElementById('device-model').textContent = deviceModel;
+  document.getElementById('ip-address').textContent = ip;
+  document.getElementById('language').textContent = language;
+  document.getElementById('country').textContent = country;
+  document.getElementById('location').textContent = location;
+  document.getElementById('os').textContent = os;
+  document.getElementById('browser').textContent = browser;
 });
 </script>
 </body>
