@@ -1,3 +1,4 @@
+--- START OF FILE Paste January 19, 2026 - 2:10AM ---
 
 <!DOCTYPE html>
 <html lang="vi" class="light">
@@ -127,18 +128,6 @@
                 <div class="flex items-center justify-center h-20 text-slate-400">Đang tải thống kê...</div>
             </div>
 
-            <!-- Admin Request Form (NEW) -->
-            <div id="request-admin-section" class="max-w-4xl mx-auto hidden p-6 bg-yellow-50 dark:bg-yellow-900/20 rounded-3xl border border-yellow-200 dark:border-yellow-700 space-y-4">
-                <h3 class="text-xl font-bold text-yellow-800 dark:text-yellow-200 flex items-center gap-2"><i data-lucide="key" class="w-6 h-6"></i> Xin Cấp Quyền Quản Trị</h3>
-                <p id="request-admin-status" class="text-sm font-medium text-yellow-700 dark:text-yellow-300">
-                    Bạn chưa có quyền quản trị. Vui lòng gửi yêu cầu để Admin chính duyệt.
-                </p>
-                <form id="request-admin-form" class="flex gap-4">
-                    <input type="text" id="request-admin-reason" placeholder="Lý do xin cấp quyền..." required class="flex-1 px-5 py-3 bg-white dark:bg-slate-800 rounded-xl outline-none focus:ring-2 ring-yellow-500 text-sm">
-                    <button type="submit" class="bg-yellow-500 text-white px-8 py-3 rounded-xl font-bold text-xs uppercase shadow-lg hover:bg-yellow-600 transition">GỬI YÊU CẦU</button>
-                </form>
-            </div>
-            
             <!-- Categories -->
             <div id="category-bar" class="flex flex-wrap gap-2"></div>
             
@@ -184,7 +173,6 @@
                     <button onclick="window.switchTab('tab-cat')" id="btn-tab-cat" class="text-primary border-b-2 border-primary pb-1">DANH MỤC</button>
                     <button onclick="window.switchTab('tab-announcement')" id="btn-tab-announcement" class="pb-1 uppercase">THÔNG BÁO</button>
                     <button onclick="window.switchTab('tab-user-roles')" id="btn-tab-user-roles" class="pb-1 uppercase">QUẢN LÝ QUYỀN</button>
-                    <button onclick="window.switchTab('tab-request')" id="btn-tab-request" class="pb-1 uppercase flex items-center gap-1">YÊU CẦU ADM <span id="request-count" class="text-red-500">(0)</span></button> <!-- NEW TAB -->
                     <button onclick="window.switchTab('tab-data')" id="btn-tab-data" class="pb-1 uppercase">DỮ LIỆU</button>
                 </div>
             </div>
@@ -231,16 +219,6 @@
                     </div>
                 </div>
                 
-                <!-- Tab Admin Requests (NEW) -->
-                <div id="tab-request" class="hidden space-y-6">
-                    <h4 class="text-sm font-bold uppercase tracking-widest text-slate-500">Yêu Cầu Cấp Quyền</h4>
-                    <div id="requests-list" class="space-y-2">
-                        <div class="p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center text-slate-400">Không có yêu cầu mới.</div>
-                    </div>
-                </div>
-                <!-- End Tab Admin Requests -->
-
-
                 <!-- Tab Data Export/Import -->
                 <div id="tab-data" class="hidden space-y-8">
                     <h4 class="text-sm font-bold uppercase tracking-widest text-slate-500">Xuất/Nhập Dữ Liệu</h4>
@@ -412,40 +390,48 @@
         let bulkDeleteMode = false; 
         let selectedAppsForDelete = new Set(); 
         let currentAnnouncement = {}; 
-        let adminRequests = []; 
-        let allUsers = []; // Dùng cho Super Admin quản lý quyền
+        let allUsers = []; 
+
+        // Hàm tiện ích để lấy UID cho Console
+        window.getLoggedInUserUID = () => {
+            if (auth.currentUser) {
+                const user = auth.currentUser;
+                console.log("--- Firebase Auth User Info ---");
+                console.log("UID:", user.uid);
+                console.log("Email:", user.email);
+                console.log("DisplayName:", user.displayName);
+                console.log("-------------------------------");
+                return user.uid;
+            } else {
+                console.error("Lỗi: Không có người dùng nào đăng nhập.");
+                return null;
+            }
+        };
+
 
         // --- AUTH & INITIAL ---
         onAuthStateChanged(auth, async (user) => {
             currentUser = user;
-            const requestSection = document.getElementById('request-admin-section');
-            const requestStatus = document.getElementById('request-admin-status');
-            const requestForm = document.getElementById('request-admin-form');
             
-            // NEW: Listener cho All Users (chỉ cần khi có người dùng đăng nhập)
             if (user) {
-                 // Fetch Super Admin UID từ DB trước
+                 // Fetch Super Admin UID từ DB trước (Bảo mật: Không hardcode UID)
                 const superAdminSnap = await getDoc(doc(db, "settings", "super_admin"));
                 SUPER_UID = superAdminSnap.exists() ? superAdminSnap.data().uid : null;
                 
                  onSnapshot(collection(db, "users"), (snap) => {
                     allUsers = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
-                    // Khi có sự kiện thay đổi trên collection users (ví dụ: cấp quyền), render lại list
+                    // Khi có sự kiện thay đổi trên collection users, render lại list quản lý quyền
                     if (document.getElementById('tab-user-roles').classList.contains('hidden') === false) {
                         renderUserRoleManagement();
                     }
                  });
-            }
 
 
-            if (user) {
-                // Đã fetch SUPER_UID ở trên
                 isSuper = user.uid === SUPER_UID;
-                // CẬP NHẬT: Lấy role trực tiếp từ user document
+                
                 const userDoc = await getDoc(doc(db, "users", user.uid));
                 const userRole = userDoc.exists() ? userDoc.data().role : 'guest';
                 
-                // isAdmin là Super hoặc có role là 'admin'
                 isAdmin = isSuper || (userRole === 'admin');
                 
                 userFavorites = userDoc.exists() ? userDoc.data().favorites || [] : [];
@@ -457,32 +443,18 @@
                     if (currentFilter === 'favorites') renderApps();
                 });
                 
-                requestSection.classList.toggle('hidden', isAdmin);
-
-                if (!isAdmin) {
-                    const reqSnap = await getDoc(doc(db, "adminRequests", user.uid));
-                    if (reqSnap.exists()) {
-                         requestStatus.innerText = "Yêu cầu của bạn đang chờ Admin chính duyệt.";
-                         requestForm.classList.add('hidden');
-                    } else {
-                         requestStatus.innerText = "Bạn chưa có quyền quản trị. Vui lòng gửi yêu cầu để Admin chính duyệt.";
-                         requestForm.classList.remove('hidden');
-                    }
-                }
-                
                 if (isAdmin) {
                     document.getElementById('announcement-content').value = currentAnnouncement.content || '';
                 }
 
             } else {
                 isAdmin = isSuper = false;
-                SUPER_UID = null; // Reset Super UID
+                SUPER_UID = null;
                 userFavorites = [];
                 document.getElementById('auth-section').innerHTML = `<button onclick="window.login()" class="bg-primary text-white px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-widest">Login</button>`;
                 if (currentFilter === 'favorites') window.setFilter('all'); 
-                requestSection.classList.add('hidden'); 
             }
-            // CẬP NHẬT: Hiển thị trạng thái Role mới
+            
             const statusText = isSuper ? 'SUPER' : (isAdmin ? 'ADMIN' : 'GUEST');
             document.getElementById('role-status').innerText = statusText;
             document.getElementById('admin-sidebar-toggle').classList.toggle('hidden', !isAdmin); 
@@ -491,29 +463,7 @@
             renderAnnouncementControls(); 
         });
         
-        // NEW: Handle Admin Request Submission
-        document.getElementById('request-admin-form').onsubmit = async (e) => {
-            e.preventDefault();
-            if (!currentUser) return;
-            const reason = document.getElementById('request-admin-reason').value.trim();
-            if (reason.length < 5) { showToast("Lý do phải dài hơn 5 ký tự!"); return; }
-            
-            try {
-                await setDoc(doc(db, "adminRequests", currentUser.uid), {
-                    uid: currentUser.uid,
-                    email: currentUser.email,
-                    name: currentUser.displayName,
-                    reason: reason,
-                    timestamp: new Date().toISOString()
-                });
-                document.getElementById('request-admin-status').innerText = "Yêu cầu của bạn đang chờ Admin chính duyệt.";
-                document.getElementById('request-admin-form').classList.add('hidden');
-                showToast("Đã gửi yêu cầu thành công!");
-            } catch (e) {
-                console.error("Error submitting request:", e);
-                showToast("Lỗi khi gửi yêu cầu!", true); 
-            }
-        };
+        // CẬP NHẬT: XÓA CHỨC NĂNG ADMIN REQUEST HOÀN TOÀN
 
         window.login = () => signInWithPopup(auth, provider);
         window.logout = () => signOut(auth).then(() => location.reload());
@@ -613,13 +563,9 @@
             renderAnnouncementControls();
         });
         
-        // NEW: Realtime listener for Admin Requests
-        onSnapshot(collection(db, "adminRequests"), (snap) => {
-            adminRequests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            renderAdminRequests();
-        });
+        // CẬP NHẬT: XÓA Realtime listener for Admin Requests
 
-        // --- ANNOUNCEMENT LOGIC ---
+        // --- ANNOUNCEMENT LOGIC (Unchanged) ---
         function renderAnnouncementBar() {
             const bar = document.getElementById('announcement-bar');
             const textDiv = document.getElementById('announcement-text');
@@ -681,58 +627,9 @@
             }
         };
         
-        // --- ADMIN REQUEST LOGIC (NEW) ---
-        function renderAdminRequests() {
-            if (!isSuper) return; 
-            const list = document.getElementById('requests-list');
-            document.getElementById('request-count').innerText = `(${adminRequests.length})`;
-            
-            if (adminRequests.length === 0) {
-                 list.innerHTML = `<div class="p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center text-slate-400">Không có yêu cầu mới.</div>`;
-                 return;
-            }
+        // CẬP NHẬT: XÓA ADMIN REQUEST LOGIC
 
-            list.innerHTML = adminRequests.map(req => `
-                <div class="p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border dark:border-white/5 space-y-2">
-                    <p class="text-sm font-bold">${req.name} <span class="text-xs text-slate-500">(${req.email})</span></p>
-                    <p class="text-xs italic text-slate-600 dark:text-slate-400">Lý do: ${req.reason}</p>
-                    <div class="flex gap-2 pt-2 border-t dark:border-white/5 mt-2">
-                        <button onclick="window.approveAdminRequest('${req.uid}')" class="flex-1 bg-green-500 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase">DUYỆT</button>
-                        <button onclick="window.rejectAdminRequest('${req.uid}')" class="flex-1 bg-red-500 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase">TỪ CHỐI</button>
-                    </div>
-                </div>
-            `).join('');
-            lucide.createIcons();
-        }
-
-        window.approveAdminRequest = async (uid) => {
-            if (!isSuper || !confirm(`Duyệt yêu cầu và cấp quyền Admin cho người dùng này?`)) return;
-            
-            try {
-                // CẬP NHẬT: Cấp quyền Admin bằng cách set role: 'admin'
-                await setDoc(doc(db, "users", uid), { role: 'admin' }, { merge: true });
-                await deleteDoc(doc(db, "adminRequests", uid));
-                
-                showToast(`Đã duyệt yêu cầu và cấp quyền Admin!`);
-            } catch (e) {
-                 console.error("Error approving request:", e);
-                 showToast("Lỗi khi duyệt yêu cầu!", true); 
-            }
-        };
-
-        window.rejectAdminRequest = async (uid) => {
-            if (!isSuper || !confirm("Bạn có chắc chắn muốn từ chối yêu cầu này?")) return;
-            
-            try {
-                await deleteDoc(doc(db, "adminRequests", uid));
-                showToast("Đã từ chối yêu cầu!");
-            } catch (e) {
-                 console.error("Error rejecting request:", e);
-                 showToast("Lỗi khi từ chối yêu cầu!", true); 
-            }
-        };
-
-        // --- USER ROLE MANAGEMENT LOGIC (REPLACES Deputy Logic) ---
+        // --- USER ROLE MANAGEMENT LOGIC ---
         function renderUserRoleManagement(search = '') {
             if (!isSuper) {
                  document.getElementById('user-role-guard').classList.remove('hidden');
@@ -791,7 +688,6 @@
             try {
                 await setDoc(doc(db, "users", uid), { role: newRole }, { merge: true });
                 showToast(`Đã ${newRole === 'admin' ? 'cấp' : 'thu hồi'} quyền thành công!`);
-                // Snapshot listener sẽ tự động gọi renderUserRoleManagement
             } catch (e) { 
                 console.error("Error assigning role:", e);
                 showToast("Lỗi khi cập nhật quyền người dùng.", true); 
@@ -1181,12 +1077,6 @@
                 .catch(e => showToast("Lỗi khi thêm danh mục.", true)); 
         };
 
-        // CẬP NHẬT: Loại bỏ renderDeputyList, addDeputy, removeDeputy (đã được thay thế)
-        window.renderDeputyList = () => { /* Logic này đã được thay thế bằng renderUserRoleManagement */ }; 
-        window.addDeputy = async () => { /* Logic này đã được thay thế bằng assignRole */ };
-        window.removeDeputy = async (email) => { /* Logic này đã được thay thế bằng assignRole */ };
-
-
         window.toggleFormFields = () => {
             const catName = categories.find(c => c.id === document.getElementById('app-category').value)?.name;
             const isPhone = catName === "Số điện thoại";
@@ -1279,8 +1169,8 @@
         window.openModal = (id) => document.getElementById(id).classList.remove('hidden');
         window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
         window.switchTab = (tabId) => {
-            const tabs = ['tab-cat', 'tab-announcement', 'tab-user-roles', 'tab-request', 'tab-data']; // CẬP NHẬT: Tên tab
-            const buttons = ['btn-tab-cat', 'btn-tab-announcement', 'btn-tab-user-roles', 'btn-tab-request', 'btn-tab-data']; // CẬP NHẬT: Tên tab
+            const tabs = ['tab-cat', 'tab-announcement', 'tab-user-roles', 'tab-data']; // CẬP NHẬT: Bỏ tab-request
+            const buttons = ['btn-tab-cat', 'btn-tab-announcement', 'btn-tab-user-roles', 'btn-tab-data']; // CẬP NHẬT: Bỏ btn-tab-request
 
             tabs.forEach(id => document.getElementById(id).classList.add('hidden'));
             buttons.forEach(id => document.getElementById(id).classList.remove('text-primary', 'border-b-2', 'border-primary'));
@@ -1296,10 +1186,6 @@
             // CẬP NHẬT: Xử lý khi chuyển sang tab quản lý quyền
             if (tabId === 'tab-user-roles' && isSuper) {
                  renderUserRoleManagement();
-            }
-            
-            if (tabId === 'tab-request' && isAdmin) {
-                 renderAdminRequests();
             }
         };
         
