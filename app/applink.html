@@ -1,5 +1,3 @@
---- START OF FILE Paste January 19, 2026 - 2:10AM ---
-
 <!DOCTYPE html>
 <html lang="vi" class="light">
 <head>
@@ -10,12 +8,10 @@
     
     <!-- SEO & PWA Meta Tags -->
     <meta name="description" content="Hub Portal tổng hợp các ứng dụng và danh bạ liên hệ của Vĩnh Trạch Đông.">
-    <link rel="icon" href="https://bmass.vercel.app/img/bmasslogo.png" type="image/png">
     <link rel="apple-touch-icon" href="https://bmass.vercel.app/img/bmasslogo.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="apple-mobile-web-app-title" content="Hub Vĩnh Trạch Đông">
-    <link rel="manifest" href="/js/applinkicon.jsonn">
     <meta name="theme-color" content="#4f46e5">
 
     <!-- Social Media Meta -->
@@ -42,20 +38,18 @@
         }
     </script>
     <style>
-        /* ADDED: Styles for Sidebar */
         .admin-sidebar { 
             width: 0; 
             transition: width 0.3s ease-in-out;
             overflow-x: hidden;
         }
         .admin-sidebar.open {
-            width: 28rem; /* Equivalent to max-w-xl in Tailwind, adjust as needed */
-            min-width: 320px; /* Ensures a minimum size on small screens */
+            width: 28rem; 
+            min-width: 320px; 
         }
         @media (max-width: 768px) {
             .admin-sidebar.open { width: 100%; }
         }
-        /* END ADDED */
         
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; transition: background 0.3s; padding-bottom: 100px; } 
         .dark body { background-color: #020617; color: #e2e8f0; }
@@ -67,17 +61,20 @@
         .dark .tab-active { color: #818cf8; border-bottom: 2px solid #818cf8; }
         .is-favorite .star-icon { fill: #facc15; }
         .app-item.selected-for-delete { box-shadow: 0 0 0 3px #f43f5e; border-radius: 1rem; }
-        /* Thêm padding top khi có thông báo để không che header */
         #announcement-bar:not(.hidden) ~ header { top: 32px; }
-        /* Custom Marquee */
         .marquee { overflow: hidden; white-space: nowrap; box-sizing: border-box; }
         .marquee > div { display: inline-block; padding-left: 100%; animation: marquee 15s linear infinite; }
         @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
+        
+        /* Custom scrollbar for user list */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(156, 163, 175, 0.5); border-radius: 20px; }
     </style>
 </head>
 <body class="min-h-screen pb-24">
 
-    <!-- NEW: Announcement Bar -->
+    <!-- Announcement Bar -->
     <div id="announcement-bar" class="fixed top-0 left-0 w-full z-[101] bg-secondary text-white text-xs font-bold py-2 shadow-md hidden">
         <div class="marquee">
             <div id="announcement-text"></div>
@@ -97,7 +94,7 @@
         </div>
 
         <div class="flex items-center gap-3">
-            <!-- Nút Mở Sidebar Admin (NEW) -->
+            <!-- Admin Sidebar Toggle -->
             <button onclick="window.toggleAdminSidebar()" id="admin-sidebar-toggle" class="p-2 rounded-xl text-primary hover:bg-slate-100 dark:hover:bg-slate-800 transition hidden"><i data-lucide="settings-2" class="w-5 h-5"></i></button>
 
             <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
@@ -123,7 +120,7 @@
                     class="w-full pl-14 pr-6 py-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-4 ring-primary/10 outline-none shadow-sm">
             </div>
 
-            <!-- Visit Stats Container -->
+            <!-- Visit Stats -->
             <div id="visit-stats-container" class="max-w-4xl mx-auto p-4 rounded-3xl bg-slate-100 dark:bg-slate-900/50">
                 <div class="flex items-center justify-center h-20 text-slate-400">Đang tải thống kê...</div>
             </div>
@@ -151,7 +148,7 @@
             </div>
         </main>
 
-        <!-- Admin Sidebar (NEW) -->
+        <!-- Admin Sidebar -->
         <div id="admin-sidebar" class="admin-sidebar fixed right-0 top-0 bottom-0 bg-white dark:bg-slate-900 border-l dark:border-white/10 shadow-2xl z-[150] flex flex-col pt-16">
             <!-- Sidebar Header / Controls -->
             <div id="sidebar-controls" class="p-6 border-b dark:border-white/5 flex flex-col gap-3">
@@ -172,7 +169,7 @@
                 <div class="flex flex-wrap gap-2 text-[10px] font-black tracking-widest text-slate-400">
                     <button onclick="window.switchTab('tab-cat')" id="btn-tab-cat" class="text-primary border-b-2 border-primary pb-1">DANH MỤC</button>
                     <button onclick="window.switchTab('tab-announcement')" id="btn-tab-announcement" class="pb-1 uppercase">THÔNG BÁO</button>
-                    <button onclick="window.switchTab('tab-user-roles')" id="btn-tab-user-roles" class="pb-1 uppercase">QUẢN LÝ QUYỀN</button>
+                    <button onclick="window.switchTab('tab-user-roles')" id="btn-tab-user-roles" class="pb-1 uppercase">NGƯỜI DÙNG</button>
                     <button onclick="window.switchTab('tab-data')" id="btn-tab-data" class="pb-1 uppercase">DỮ LIỆU</button>
                 </div>
             </div>
@@ -195,26 +192,55 @@
                 
                 <!-- Tab Announcement -->
                 <div id="tab-announcement" class="hidden space-y-6">
-                    <h4 class="text-sm font-bold uppercase tracking-widest text-slate-500">Thông báo Chạy chữ (Marquee)</h4>
-                    <textarea id="announcement-content" placeholder="Nội dung thông báo (ngắn gọn, lặp lại)" rows="3" class="w-full p-5 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-secondary text-sm font-medium"></textarea>
+                    <h4 class="text-sm font-bold uppercase tracking-widest text-slate-500">Thông báo Chạy chữ</h4>
+                    <textarea id="announcement-content" placeholder="Nội dung thông báo..." rows="3" class="w-full p-5 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-secondary text-sm font-medium"></textarea>
                     
                     <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-xl border dark:border-white/5">
-                        <label class="text-sm font-bold opacity-60">Kích hoạt Thông báo Chạy chữ</label>
+                        <label class="text-sm font-bold opacity-60">Trạng thái</label>
                         <button id="toggle-announcement-btn" onclick="window.toggleAnnouncementStatus()" class="px-5 py-2 rounded-xl font-bold text-xs uppercase transition-all">Tắt / Bật</button>
                     </div>
-                    
                     <button onclick="window.saveAnnouncementContent()" class="w-full py-4 bg-primary text-white rounded-xl font-bold shadow-lg uppercase text-xs">LƯU NỘI DUNG</button>
                 </div>
-                <!-- End Tab Announcement -->
 
-                <!-- Tab User Roles (REPLACED Deputy Tab) -->
+                <!-- Tab User Roles (UPDATED) -->
                 <div id="tab-user-roles" class="hidden space-y-6">
                     <h4 class="text-sm font-bold uppercase tracking-widest text-slate-500">Quản lý Quyền Người Dùng</h4>
-                    <div id="user-role-guard" class="hidden p-4 bg-amber-50 dark:bg-amber-900/20 text-amber-600 rounded-xl text-xs font-bold uppercase">Chỉ Super Admin mới quản lý được mục này.</div>
-                    <div id="user-list-admin" class="space-y-4">
-                        <input type="text" id="user-role-search" placeholder="Tìm người dùng theo tên hoặc email..." class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm">
-                        <div id="role-list" class="space-y-2">
-                             <div class="p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center text-slate-400">Đang tải danh sách người dùng...</div>
+                    
+                    <!-- Guard -->
+                    <div id="user-role-guard" class="hidden p-4 bg-amber-50 dark:bg-amber-900/20 text-amber-600 rounded-xl text-xs font-bold uppercase">
+                        Chỉ Super Admin mới quản lý được mục này.
+                    </div>
+
+                    <!-- User Management Interface -->
+                    <div id="user-list-admin" class="space-y-6">
+                        
+                        <!-- Manual Grant Form -->
+                        <div class="p-5 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-500/20 space-y-3">
+                            <h5 class="text-[10px] font-black uppercase text-indigo-600 dark:text-indigo-400 tracking-widest flex items-center gap-2">
+                                <i data-lucide="zap" class="w-3 h-3"></i> Cấp Admin Nhanh
+                            </h5>
+                            <div class="flex flex-col gap-2">
+                                <input type="text" id="manual-admin-input" placeholder="Nhập Email hoặc UID chính xác..." class="w-full px-4 py-2 bg-white dark:bg-slate-900 rounded-xl text-sm border border-indigo-200 dark:border-indigo-500/30 outline-none focus:ring-2 ring-indigo-500">
+                                <button onclick="window.grantAdminManual()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold uppercase shadow-md transition">
+                                    Cấp Quyền Ngay
+                                </button>
+                            </div>
+                            <p class="text-[9px] text-slate-400 italic leading-tight">
+                                * Nhập <b>Email</b>: Chỉ tìm thấy nếu user đã từng đăng nhập.<br>
+                                * Nhập <b>UID</b>: Cấp được ngay cả khi user chưa đăng nhập.
+                            </p>
+                        </div>
+
+                        <!-- User List -->
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-end">
+                                <h5 class="text-[10px] font-bold uppercase text-slate-400">Danh sách (<span id="user-count">0</span>)</h5>
+                            </div>
+                            <input type="text" id="user-role-search" placeholder="Tìm theo tên, email, uid..." class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm">
+                            
+                            <div id="role-list" class="space-y-2 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+                                 <div class="p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center text-slate-400">Đang tải danh sách người dùng...</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -271,7 +297,7 @@
     </footer>
 
 
-    <!-- App Modal (No Changes) -->
+    <!-- App Modal -->
     <div id="modal-app" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[210] hidden flex items-center justify-center p-4">
         <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden">
             <div class="p-6 border-b dark:border-white/5 flex justify-between items-center">
@@ -309,7 +335,7 @@
         </div>
     </div>
     
-    <!-- User Profile Modal (NEW) -->
+    <!-- User Profile Modal -->
     <div id="modal-user-profile" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[210] hidden flex items-center justify-center p-4">
         <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden">
             <div class="p-6 border-b dark:border-white/5 flex justify-between items-center">
@@ -323,14 +349,10 @@
                 </div>
 
                 <div class="space-y-4">
-                    <!-- Editable Field Example (Name) -->
                     <div class="space-y-1 group relative">
                         <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Tên hiển thị</label>
                         <input type="text" id="profile-name" readonly class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium border-none pr-10">
-                        <button onclick="alert('Tính năng chỉnh sửa thông tin Google được chuyển qua mục Nâng cao.')" class="absolute right-3 top-1/2 mt-2 p-1 text-slate-400 hover:text-primary opacity-0 group-hover:opacity-100 transition"><i data-lucide="pencil" class="w-4 h-4"></i></button>
                     </div>
-
-                    <!-- Non-Editable Fields -->
                     <div class="space-y-1">
                         <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Email</label>
                         <input type="email" id="profile-email" readonly class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl text-slate-500 dark:text-slate-400 text-sm font-medium border-none">
@@ -352,8 +374,7 @@
         </div>
     </div>
 
-
-    <!-- Notification Toast (No Changes) -->
+    <!-- Notification Toast -->
     <div id="toast" class="fixed bottom-10 right-10 z-[300] transform translate-y-20 opacity-0 transition-all duration-500">
         <div class="bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border dark:border-white/10">
             <i data-lucide="check-circle" class="w-5 h-5 text-green-500"></i>
@@ -376,7 +397,7 @@
             appId: "1:914980131889:web:72f8da15c42dbee671b110",
             measurementId: "G-C587M69LZW"
         };
-        // CẬP NHẬT: Loại bỏ SUPER_UID hardcode, thay bằng biến sẽ được load từ DB
+        
         let SUPER_UID = null;
 
         const fbApp = initializeApp(firebaseConfig);
@@ -392,52 +413,62 @@
         let currentAnnouncement = {}; 
         let allUsers = []; 
 
-        // Hàm tiện ích để lấy UID cho Console
-        window.getLoggedInUserUID = () => {
-            if (auth.currentUser) {
-                const user = auth.currentUser;
-                console.log("--- Firebase Auth User Info ---");
-                console.log("UID:", user.uid);
-                console.log("Email:", user.email);
-                console.log("DisplayName:", user.displayName);
-                console.log("-------------------------------");
-                return user.uid;
-            } else {
-                console.error("Lỗi: Không có người dùng nào đăng nhập.");
-                return null;
-            }
-        };
-
+        // Hàm tiện ích
+        window.getLoggedInUserUID = () => auth.currentUser ? auth.currentUser.uid : null;
+        window.showToast = showToast; 
 
         // --- AUTH & INITIAL ---
         onAuthStateChanged(auth, async (user) => {
             currentUser = user;
             
             if (user) {
-                 // Fetch Super Admin UID từ DB trước (Bảo mật: Không hardcode UID)
+                // Lấy Super Admin UID
                 const superAdminSnap = await getDoc(doc(db, "settings", "super_admin"));
                 SUPER_UID = superAdminSnap.exists() ? superAdminSnap.data().uid : null;
                 
-                 onSnapshot(collection(db, "users"), (snap) => {
-                    allUsers = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
-                    // Khi có sự kiện thay đổi trên collection users, render lại list quản lý quyền
-                    if (document.getElementById('tab-user-roles').classList.contains('hidden') === false) {
-                        renderUserRoleManagement();
-                    }
-                 });
-
-
                 isSuper = user.uid === SUPER_UID;
                 
+                // Nếu là Super Admin, lắng nghe toàn bộ user
+                if (isSuper) {
+                     onSnapshot(collection(db, "users"), (snap) => {
+                        allUsers = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+                        if (!document.getElementById('tab-user-roles').classList.contains('hidden')) {
+                            renderUserRoleManagement();
+                        }
+                     });
+                }
+
                 const userDoc = await getDoc(doc(db, "users", user.uid));
-                const userRole = userDoc.exists() ? userDoc.data().role : 'guest';
+                
+                // Nếu user document chưa tồn tại (login lần đầu), tạo mới
+                if (!userDoc.exists()) {
+                    await setDoc(doc(db, "users", user.uid), {
+                        email: user.email,
+                        name: user.displayName,
+                        photoURL: user.photoURL,
+                        role: 'guest',
+                        createdAt: new Date().toISOString()
+                    }, { merge: true }); // merge true để giữ lại role nếu đã được set trước đó qua UID
+                } else {
+                    // Update thông tin mới nhất từ Google login
+                    await updateDoc(doc(db, "users", user.uid), {
+                        name: user.displayName,
+                        photoURL: user.photoURL,
+                        email: user.email,
+                        lastLogin: new Date().toISOString()
+                    });
+                }
+                
+                // Kiểm tra lại role sau khi fetch/create
+                const updatedUserDoc = await getDoc(doc(db, "users", user.uid));
+                const userRole = updatedUserDoc.exists() ? updatedUserDoc.data().role : 'guest';
                 
                 isAdmin = isSuper || (userRole === 'admin');
-                
-                userFavorites = userDoc.exists() ? userDoc.data().favorites || [] : [];
+                userFavorites = updatedUserDoc.exists() ? updatedUserDoc.data().favorites || [] : [];
                 
                 renderAuthUI();
                 
+                // Realtime listener cho favorites của chính user này
                 onSnapshot(doc(db, "users", user.uid), (snap) => {
                     userFavorites = snap.data()?.favorites || [];
                     if (currentFilter === 'favorites') renderApps();
@@ -462,54 +493,39 @@
             renderApps();
             renderAnnouncementControls(); 
         });
-        
-        // CẬP NHẬT: XÓA CHỨC NĂNG ADMIN REQUEST HOÀN TOÀN
 
         window.login = () => signInWithPopup(auth, provider);
         window.logout = () => signOut(auth).then(() => location.reload());
 
-        // NEW: User Menu Dropdown Logic
+        // Menu Dropdown Logic
         window.toggleUserMenu = (event) => {
             event.stopPropagation();
-            const menu = document.getElementById('user-menu');
-            menu?.classList.toggle('hidden');
+            document.getElementById('user-menu')?.classList.toggle('hidden');
             lucide.createIcons();
         };
         
-        window.closeUserMenu = () => {
-             document.getElementById('user-menu')?.classList.add('hidden');
-        };
-
-        // Close menu if user clicks anywhere else
+        window.closeUserMenu = () => document.getElementById('user-menu')?.classList.add('hidden');
         document.addEventListener('click', (e) => {
              const menu = document.getElementById('user-menu');
              const btn = document.getElementById('user-avatar-btn');
-             if (menu && !menu.contains(e.target) && btn && !btn.contains(e.target)) {
-                 window.closeUserMenu();
-             }
+             if (menu && !menu.contains(e.target) && btn && !btn.contains(e.target)) window.closeUserMenu();
         });
 
-        // NEW: User Profile Modal Logic
         window.openUserProfileModal = () => {
             if (!currentUser) return;
             window.closeUserMenu(); 
-
             const favoritesCount = userFavorites.length;
             const role = isSuper ? 'SUPER ADMIN' : (isAdmin ? 'ADMIN' : 'KHÁCH (GUEST)');
-            
-            // Populate Modal
             document.getElementById('profile-name').value = currentUser.displayName || 'Chưa đặt tên';
             document.getElementById('profile-email').value = currentUser.email;
             document.getElementById('profile-uid').innerText = currentUser.uid;
             document.getElementById('profile-role').innerText = role;
             document.getElementById('profile-fav-count').innerText = favoritesCount;
             document.getElementById('profile-photo').src = currentUser.photoURL;
-
             window.openModal('modal-user-profile');
             lucide.createIcons();
         };
 
-        // CẬP NHẬT: Thay đổi hàm renderAuthUI để sử dụng Dropdown Menu
         function renderAuthUI() {
             document.getElementById('auth-section').innerHTML = `
                 <div class="relative">
@@ -517,7 +533,6 @@
                         <img src="${currentUser.photoURL}" class="w-7 h-7 rounded-md">
                         <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i>
                     </button>
-                    <!-- Dropdown Menu -->
                     <div id="user-menu" class="absolute right-0 top-full mt-3 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-2xl z-20 hidden ring-1 ring-black/5 dark:ring-white/10 p-2 transform origin-top-right">
                         <div class="px-3 py-2 text-sm font-bold truncate">${currentUser.displayName}</div>
                         <div class="px-3 py-1 text-xs text-slate-500 truncate">${currentUser.email}</div>
@@ -534,10 +549,7 @@
             lucide.createIcons();
         }
         
-        // NEW: Sidebar Toggle
-        window.toggleAdminSidebar = () => {
-             document.getElementById('admin-sidebar').classList.toggle('open');
-        };
+        window.toggleAdminSidebar = () => document.getElementById('admin-sidebar').classList.toggle('open');
 
         // --- DATA REALTIME ---
         onSnapshot(query(collection(db, "categories"), orderBy("order", "asc")), (snap) => {
@@ -556,16 +568,13 @@
             renderStats();
         });
         
-        // NEW: Realtime listener for Announcement
         onSnapshot(doc(db, "settings", "announcement"), (snap) => {
             currentAnnouncement = snap.data() || { content: '', active: false };
             renderAnnouncementBar();
             renderAnnouncementControls();
         });
-        
-        // CẬP NHẬT: XÓA Realtime listener for Admin Requests
 
-        // --- ANNOUNCEMENT LOGIC (Unchanged) ---
+        // --- ANNOUNCEMENT ---
         function renderAnnouncementBar() {
             const bar = document.getElementById('announcement-bar');
             const textDiv = document.getElementById('announcement-text');
@@ -576,7 +585,6 @@
                 const contentLen = currentAnnouncement.content.length;
                 const speed = Math.max(10, Math.min(30, contentLen * 0.2)); 
                 bar.querySelector('.marquee > div').style.animationDuration = `${speed}s`;
-
             } else {
                 bar.classList.add('hidden');
             }
@@ -600,16 +608,9 @@
         window.saveAnnouncementContent = async () => {
             if (!isAdmin) return;
             const content = document.getElementById('announcement-content').value.trim();
-            if (content.length < 5) {
-                showToast("Nội dung thông báo phải dài hơn 5 ký tự!");
-                return;
-            }
-            try {
-                await setDoc(doc(db, "settings", "announcement"), { content: content }, { merge: true });
-                showToast("Đã lưu nội dung thông báo!");
-            } catch (e) {
-                showToast("Lỗi khi lưu nội dung thông báo!", true); 
-            }
+            if (content.length < 5) { showToast("Nội dung thông báo phải dài hơn 5 ký tự!"); return; }
+            await setDoc(doc(db, "settings", "announcement"), { content: content }, { merge: true });
+            showToast("Đã lưu nội dung thông báo!");
         };
         
         window.toggleAnnouncementStatus = async () => {
@@ -619,17 +620,11 @@
                 showToast("Vui lòng nhập nội dung trước khi bật!");
                 return;
             }
-            try {
-                await setDoc(doc(db, "settings", "announcement"), { active: newState }, { merge: true });
-                showToast(newState ? "Đã BẬT thông báo!" : "Đã TẮT thông báo!");
-            } catch (e) {
-                showToast("Lỗi khi thay đổi trạng thái thông báo!", true); 
-            }
+            await setDoc(doc(db, "settings", "announcement"), { active: newState }, { merge: true });
+            showToast(newState ? "Đã BẬT thông báo!" : "Đã TẮT thông báo!");
         };
         
-        // CẬP NHẬT: XÓA ADMIN REQUEST LOGIC
-
-        // --- USER ROLE MANAGEMENT LOGIC ---
+        // --- USER ROLE MANAGEMENT LOGIC (UPDATED) ---
         function renderUserRoleManagement(search = '') {
             if (!isSuper) {
                  document.getElementById('user-role-guard').classList.remove('hidden');
@@ -643,33 +638,43 @@
             const list = document.getElementById('role-list');
             const searchLower = search.toLowerCase();
             
+            // Filter users
             const filteredUsers = allUsers.filter(u => 
                 (u.name && u.name.toLowerCase().includes(searchLower)) || 
                 (u.email && u.email.toLowerCase().includes(searchLower)) || 
-                u.uid.toLowerCase().includes(searchLower)
-            ).filter(u => u.uid !== SUPER_UID); // Loại bỏ Super Admin ra khỏi danh sách này
+                (u.uid && u.uid.toLowerCase().includes(searchLower))
+            ).filter(u => u.uid !== SUPER_UID); // Exclude Super Admin
+
+            document.getElementById('user-count').innerText = filteredUsers.length;
 
             if (filteredUsers.length === 0) {
-                 list.innerHTML = `<div class="p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center text-slate-400">Không tìm thấy người dùng nào.</div>`;
+                 list.innerHTML = `<div class="p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center text-slate-400 text-xs">Không tìm thấy người dùng phù hợp.</div>`;
                  return;
             }
 
             list.innerHTML = filteredUsers.map(user => {
                 const currentRole = user.role || 'guest';
-                const roleText = currentRole === 'admin' ? 'ADMIN' : 'GUEST';
-                const buttonColor = currentRole === 'admin' ? 'bg-red-500 hover:bg-red-600' : 'bg-primary hover:bg-indigo-600';
-                const buttonAction = currentRole === 'admin' ? `window.assignRole('${user.uid}', 'guest')` : `window.assignRole('${user.uid}', 'admin')`;
-                const buttonText = currentRole === 'admin' ? 'THU HỒI' : 'CẤP ADMIN';
+                const isAdminRole = currentRole === 'admin';
+                const badgeClass = isAdminRole ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800';
+                const btnClass = isAdminRole ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/30' : 'bg-indigo-500 hover:bg-indigo-600 text-white shadow-indigo-500/30';
+                const btnIcon = isAdminRole ? 'shield-off' : 'shield-check';
+                const btnText = isAdminRole ? 'Gỡ Admin' : 'Cấp Admin';
+                const actionFunc = `window.assignRole('${user.uid}', '${isAdminRole ? 'guest' : 'admin'}')`;
+                const avatar = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=random`;
 
                 return `
-                    <div class="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border dark:border-white/5">
+                    <div class="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm border dark:border-white/5 group">
+                        <img src="${avatar}" class="w-10 h-10 rounded-full border dark:border-white/10">
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm font-bold truncate">${user.name || 'Người dùng ẩn danh'}</p>
-                            <p class="text-xs text-slate-500 truncate">${user.email}</p>
-                            <span class="text-[9px] font-black uppercase px-2 py-0.5 mt-1 rounded-full ${currentRole === 'admin' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}">${roleText}</span>
+                            <div class="flex items-center gap-2">
+                                <p class="text-xs font-bold truncate text-slate-700 dark:text-slate-200">${user.name || 'Người dùng ẩn danh'}</p>
+                                <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${badgeClass}">${isAdminRole ? 'ADMIN' : 'GUEST'}</span>
+                            </div>
+                            <p class="text-[10px] text-slate-400 truncate">${user.email || 'Không có email'}</p>
+                            <p class="text-[9px] font-mono text-slate-300 truncate select-all cursor-text" title="Click để copy UID" onclick="navigator.clipboard.writeText('${user.uid}'); window.showToast('Đã copy UID')">${user.uid}</p>
                         </div>
-                        <button onclick="${buttonAction}" class="text-white px-5 py-2 rounded-xl font-bold text-xs uppercase transition-all ${buttonColor}">
-                            ${buttonText}
+                        <button onclick="${actionFunc}" class="p-2 rounded-lg shadow-lg transition-all transform active:scale-95 ${btnClass} flex items-center gap-2" title="${btnText}">
+                            <i data-lucide="${btnIcon}" class="w-4 h-4"></i>
                         </button>
                     </div>
                 `;
@@ -683,53 +688,72 @@
 
         window.assignRole = async (uid, newRole) => {
             if (!isSuper) return;
-            if (!confirm(`Bạn có chắc chắn muốn ${newRole === 'admin' ? 'cấp' : 'thu hồi'} quyền Admin cho người dùng này?`)) return;
-            
+            const actionText = newRole === 'admin' ? 'CẤP' : 'GỠ';
+            if (!confirm(`Bạn có chắc chắn muốn ${actionText} quyền Admin cho người dùng này?`)) return;
             try {
                 await setDoc(doc(db, "users", uid), { role: newRole }, { merge: true });
-                showToast(`Đã ${newRole === 'admin' ? 'cấp' : 'thu hồi'} quyền thành công!`);
+                showToast(`Đã ${actionText} quyền Admin thành công!`);
             } catch (e) { 
                 console.error("Error assigning role:", e);
-                showToast("Lỗi khi cập nhật quyền người dùng.", true); 
+                showToast("Lỗi khi cập nhật quyền.", true); 
             }
         };
-        // END USER ROLE MANAGEMENT LOGIC
 
-        // --- FAVORITES LOGIC (Unchanged) ---
+        window.grantAdminManual = async () => {
+            if (!isSuper) return;
+            
+            const input = document.getElementById('manual-admin-input').value.trim();
+            if (!input) { showToast("Vui lòng nhập Email hoặc UID!", true); return; }
+
+            let targetUid = input;
+            let foundByEmail = false;
+
+            if (input.includes('@')) {
+                const userFound = allUsers.find(u => u.email && u.email.toLowerCase() === input.toLowerCase());
+                if (userFound) {
+                    targetUid = userFound.uid;
+                    foundByEmail = true;
+                } else {
+                    showToast("Email chưa từng đăng nhập. Vui lòng nhập UID.", true);
+                    return;
+                }
+            }
+
+            try {
+                await setDoc(doc(db, "users", targetUid), { 
+                    role: 'admin',
+                    updatedAt: new Date().toISOString() 
+                }, { merge: true });
+
+                showToast(foundByEmail ? `Đã cấp Admin cho: ${input}` : `Đã cấp Admin cho UID: ${targetUid}`);
+                document.getElementById('manual-admin-input').value = ''; 
+            } catch (e) {
+                console.error(e);
+                showToast("Lỗi: Không thể cấp quyền (kiểm tra lại UID).", true);
+            }
+        };
+        // END USER ROLE MANAGEMENT
+
+        // --- FAVORITES & BULK DELETE ---
         window.toggleFavorite = (appId, event) => {
             event.stopPropagation();
-            if (!currentUser) {
-                showToast("Vui lòng đăng nhập để lưu mục yêu thích!");
-                return;
-            }
-
+            if (!currentUser) { showToast("Vui lòng đăng nhập để lưu mục yêu thích!"); return; }
             const isFavorite = userFavorites.includes(appId);
-            const userDocRef = doc(db, "users", currentUser.uid);
-            
-            updateDoc(userDocRef, {
-                favorites: isFavorite ? arrayRemove(appId) : arrayUnion(appId)
-            }).then(() => {
-                showToast(isFavorite ? "Đã gỡ khỏi mục yêu thích" : "Đã thêm vào mục yêu thích!");
-            }).catch(error => {
-                console.error("Error toggling favorite: ", error);
-                showToast("Lỗi khi cập nhật mục yêu thích!", true); 
-            });
+            updateDoc(doc(db, "users", currentUser.uid), { favorites: isFavorite ? arrayRemove(appId) : arrayUnion(appId) })
+                .then(() => showToast(isFavorite ? "Đã gỡ khỏi mục yêu thích" : "Đã thêm vào mục yêu thích!"))
+                .catch(error => showToast("Lỗi khi cập nhật mục yêu thích!", true));
         };
 
-        // --- BULK DELETE LOGIC (Unchanged) ---
         window.toggleBulkDelete = () => {
             if (!isAdmin) return;
             bulkDeleteMode = !bulkDeleteMode;
             selectedAppsForDelete.clear();
-            
-            document.getElementById('bulk-delete-sidebar-toggle').classList.toggle('text-red-500', !bulkDeleteMode);
-            document.getElementById('bulk-delete-sidebar-toggle').classList.toggle('bg-red-500', bulkDeleteMode);
-            document.getElementById('bulk-delete-sidebar-toggle').classList.toggle('text-white', bulkDeleteMode);
-            
+            const btn = document.getElementById('bulk-delete-sidebar-toggle');
+            btn.classList.toggle('text-red-500', !bulkDeleteMode);
+            btn.classList.toggle('bg-red-500', bulkDeleteMode);
+            btn.classList.toggle('text-white', bulkDeleteMode);
             document.getElementById('bulk-delete-dock').classList.toggle('hidden', !bulkDeleteMode);
-            
             window.toggleAdminSidebar(); 
-
             document.querySelectorAll('.app-item').forEach(el => el.classList.remove('selected-for-delete'));
             updateBulkDeleteCount();
             renderApps(); 
@@ -738,7 +762,6 @@
         window.toggleAppSelection = (appId, event) => {
             event.stopPropagation();
             if (!bulkDeleteMode) return;
-
             const appElement = document.querySelector(`.app-item[data-id="${appId}"]`);
             if (selectedAppsForDelete.has(appId)) {
                 selectedAppsForDelete.delete(appId);
@@ -758,128 +781,78 @@
 
         window.executeBulkDelete = async () => {
             if (!isAdmin || selectedAppsForDelete.size === 0) return;
-            
-            if (!confirm(`Bạn có chắc chắn muốn xóa ${selectedAppsForDelete.size} mục đã chọn? Hành động này không thể hoàn tác.`)) return;
-
+            if (!confirm(`Xóa vĩnh viễn ${selectedAppsForDelete.size} mục đã chọn?`)) return;
             const batch = writeBatch(db);
-            selectedAppsForDelete.forEach(appId => {
-                batch.delete(doc(db, "apps", appId));
-            });
-
+            selectedAppsForDelete.forEach(appId => batch.delete(doc(db, "apps", appId)));
             try {
                 await batch.commit();
                 showToast(`Đã xóa thành công ${selectedAppsForDelete.size} mục!`);
                 window.toggleBulkDelete(); 
-            } catch (error) {
-                console.error("Error batch deleting apps: ", error);
-                showToast("Lỗi: Không thể xóa hàng loạt.", true); 
-            }
+            } catch (error) { showToast("Lỗi: Không thể xóa hàng loạt.", true); }
         };
 
-        // --- VISIT STATS LOGIC (Unchanged) ---
-        function getDateString(date = new Date()) {
-            const y = date.getFullYear();
-            const m = String(date.getMonth() + 1).padStart(2, '0');
-            const d = String(date.getDate()).padStart(2, '0');
-            return { day: `${y}-${m}-${d}`, month: `${y}-${m}`, year: `${y}` };
-        }
-
+        // --- VISIT STATS ---
         async function trackVisit() {
-            const now = getDateString();
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            const dateStr = { day: `${y}-${m}-${d}`, month: `${y}-${m}`, year: `${y}` };
             
             try {
                 await runTransaction(db, async (transaction) => {
                     const statsDocRef = doc(db, "settings", "visits_stats");
                     const statsSnap = await transaction.get(statsDocRef);
                     const statsData = statsSnap.data() || {};
-
-                    let updates = {
-                        totalVisits: increment(1)
-                    };
+                    let updates = { totalVisits: increment(1) };
                     
-                    if (statsData.lastDailyUpdate !== now.day) {
-                        updates.dailyVisits = 1;
-                        updates.lastDailyUpdate = now.day;
-                    } else {
-                        updates.dailyVisits = (statsData.dailyVisits || 0) + 1;
-                    }
+                    if (statsData.lastDailyUpdate !== dateStr.day) { updates.dailyVisits = 1; updates.lastDailyUpdate = dateStr.day; } 
+                    else { updates.dailyVisits = (statsData.dailyVisits || 0) + 1; }
 
-                    if (statsData.lastMonthlyUpdate !== now.month) {
-                        updates.monthlyVisits = 1;
-                        updates.lastMonthlyUpdate = now.month;
-                    } else {
-                        updates.monthlyVisits = (statsData.monthlyVisits || 0) + 1;
-                    }
+                    if (statsData.lastMonthlyUpdate !== dateStr.month) { updates.monthlyVisits = 1; updates.lastMonthlyUpdate = dateStr.month; } 
+                    else { updates.monthlyVisits = (statsData.monthlyVisits || 0) + 1; }
 
-                    if (statsData.lastYearlyUpdate !== now.year) {
-                        updates.yearlyVisits = 1;
-                        updates.lastYearlyUpdate = now.year;
-                    } else {
-                        updates.yearlyVisits = (statsData.yearlyVisits || 0) + 1;
-                    }
+                    if (statsData.lastYearlyUpdate !== dateStr.year) { updates.yearlyVisits = 1; updates.lastYearlyUpdate = dateStr.year; } 
+                    else { updates.yearlyVisits = (statsData.yearlyVisits || 0) + 1; }
 
                     transaction.set(statsDocRef, updates, { merge: true });
                 });
-
-            } catch (e) {
-                console.error("Transaction failed while tracking visit: ", e);
-            }
+            } catch (e) { console.error("Tracking error", e); }
         }
 
         function renderStats() {
             const container = document.getElementById('visit-stats-container');
             if (!container) return; 
-            
             const { dailyVisits = 0, monthlyVisits = 0, yearlyVisits = 0, totalVisits = 0 } = visitStats;
-            
             container.innerHTML = `
                 <div class="flex items-center gap-3 text-xs font-black tracking-widest text-primary dark:text-white mb-4">
-                    <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
-                    <span>THỐNG KÊ LƯỢT TRUY CẬP</span>
+                    <i data-lucide="bar-chart-3" class="w-4 h-4"></i> <span>THỐNG KÊ LƯỢT TRUY CẬP</span>
                 </div>
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-center border dark:border-white/5">
-                        <p class="text-[10px] font-bold text-slate-400 uppercase">Hôm nay</p>
-                        <span class="text-lg font-black text-primary">${dailyVisits.toLocaleString('vi-VN')}</span>
-                    </div>
-                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-center border dark:border-white/5">
-                        <p class="text-[10px] font-bold text-slate-400 uppercase">Tháng này</p>
-                        <span class="text-lg font-black text-primary">${monthlyVisits.toLocaleString('vi-VN')}</span>
-                    </div>
-                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-center border dark:border-white/5">
-                        <p class="text-[10px] font-bold text-slate-400 uppercase">Năm nay</p>
-                        <span class="text-lg font-black text-primary">${yearlyVisits.toLocaleString('vi-VN')}</span>
-                    </div>
-                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-center border dark:border-white/5">
-                        <p class="text-[10px] font-bold text-slate-400 uppercase">Tổng cộng</p>
-                        <span class="text-lg font-black text-primary">${totalVisits.toLocaleString('vi-VN')}</span>
-                    </div>
+                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-center border dark:border-white/5"><p class="text-[10px] font-bold text-slate-400 uppercase">Hôm nay</p><span class="text-lg font-black text-primary">${dailyVisits.toLocaleString('vi-VN')}</span></div>
+                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-center border dark:border-white/5"><p class="text-[10px] font-bold text-slate-400 uppercase">Tháng này</p><span class="text-lg font-black text-primary">${monthlyVisits.toLocaleString('vi-VN')}</span></div>
+                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-center border dark:border-white/5"><p class="text-[10px] font-bold text-slate-400 uppercase">Năm nay</p><span class="text-lg font-black text-primary">${yearlyVisits.toLocaleString('vi-VN')}</span></div>
+                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-center border dark:border-white/5"><p class="text-[10px] font-bold text-slate-400 uppercase">Tổng cộng</p><span class="text-lg font-black text-primary">${totalVisits.toLocaleString('vi-VN')}</span></div>
                 </div>
             `;
             lucide.createIcons();
         }
 
-        // --- RENDERING APP (Unchanged) ---
+        // --- RENDER APP ---
         window.renderApps = () => {
             const container = document.getElementById('app-container');
             const loading = document.getElementById('app-loading');
             
-            if (!appsLoaded) {
-                loading.classList.remove('hidden');
-                container.innerHTML = '';
-                return;
-            }
+            if (!appsLoaded) { loading.classList.remove('hidden'); container.innerHTML = ''; return; }
             loading.classList.add('hidden');
 
             const filtered = apps.filter(a => {
-                if (currentFilter === 'favorites') {
-                    if (!userFavorites.includes(a.id)) return false;
-                } else {
+                if (currentFilter === 'favorites') { if (!userFavorites.includes(a.id)) return false; } 
+                else {
                     const cat = categories.find(c => c.id === a.categoryId);
                     if (currentFilter === 'all') { if (cat?.name === "Số điện thoại") return false; } 
                     else { if (a.categoryId !== currentFilter) return false; }
                 }
-
                 const matchSearch = a.name.toLowerCase().includes(searchQuery.toLowerCase()) || (a.position && a.position.toLowerCase().includes(searchQuery.toLowerCase()));
                 return matchSearch && (isAdmin || a.visible);
             });
@@ -908,7 +881,6 @@
                                 <img src="${icon}" class="w-full h-full object-contain rounded-lg ${opacity}">
                             </div>
                             <span class="text-[10px] font-bold text-slate-500 text-center truncate w-full uppercase tracking-tighter ${opacity}">${a.name}</span>
-                            ${a.position ? `<span class="text-[8px] text-slate-400 font-bold truncate w-full text-center uppercase ${opacity}">${a.position}</span>` : ''}
                             <input type="checkbox" class="absolute top-1 right-1 w-5 h-5 accent-red-500 pointer-events-none" ${isSelected ? 'checked' : ''}>
                         </div>`;
                     }
@@ -943,19 +915,13 @@
                     const isSelected = selectedAppsForDelete.has(a.id) ? 'selected-for-delete' : '';
                     const opacity = a.visible ? '' : 'opacity-40';
 
-                    const bulkSelectControl = bulkDeleteMode ? 
-                        `<input type="checkbox" class="w-5 h-5 accent-red-500 pointer-events-none" ${isSelected ? 'checked' : ''}>` : '';
-
                     return `<div class="flex items-center gap-4 bg-white dark:bg-slate-900 p-3 rounded-xl border dark:border-white/5 group shadow-sm ${isSelected} ${opacity}" data-id="${a.id}" onclick="${bulkDeleteMode ? `window.toggleAppSelection('${a.id}', event)` : ''}">
-                        ${bulkSelectControl}
+                        ${bulkDeleteMode ? `<input type="checkbox" class="w-5 h-5 accent-red-500 pointer-events-none" ${isSelected ? 'checked' : ''}>` : ''}
                         <span class="text-[9px] font-black text-slate-300 w-4">${idx+1}</span>
                         <img src="${icon}" class="w-8 h-8 rounded-lg object-contain">
                         <div class="flex-1 min-w-0"><h4 class="text-xs font-bold truncate">${a.name}</h4><p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${a.position || (isAppPhone ? a.url : 'Web App')}</p></div>
                         <div class="flex items-center gap-2">
-                            ${currentUser ? `
-                                <button onclick="window.toggleFavorite('${a.id}', event)" class="p-2 text-yellow-500 hover:bg-slate-100 rounded-lg transition">
-                                    <i data-lucide="star" class="w-4 h-4 star-icon ${isFav ? 'fill-current' : ''}"></i>
-                                </button>` : ''}
+                            ${currentUser ? `<button onclick="window.toggleFavorite('${a.id}', event)" class="p-2 text-yellow-500 hover:bg-slate-100 rounded-lg transition"><i data-lucide="star" class="w-4 h-4 star-icon ${isFav ? 'fill-current' : ''}"></i></button>` : ''}
                             <a href="${isAppPhone ? 'tel:' + a.url : a.url}" target="_blank" class="p-2 text-primary hover:bg-primary hover:text-white rounded-lg transition"><i data-lucide="${isAppPhone ? 'phone' : 'external-link'}" class="w-4 h-4"></i></a>
                             ${isAdmin ? `
                                 <button onclick="window.toggleAppVisibility('${a.id}')" class="p-2 ${a.visible ? 'text-green-500 hover:bg-green-100' : 'text-slate-500 hover:bg-slate-100'} rounded-lg"><i data-lucide="${a.visible ? 'eye' : 'eye-off'}" class="w-4 h-4"></i></button>
@@ -969,112 +935,58 @@
             if(isAdmin) new Sortable(container, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(container.children).forEach((el, i) => { if(el.dataset.id) updateDoc(doc(db, "apps", el.dataset.id), { order: i }); }); }});
         }
 
-        // --- IMPORT / EXPORT LOGIC (Unchanged) ---
+        // --- IMPORT / EXPORT & ADMIN UTILS ---
         window.handleExport = (type) => {
-            const data = {
-                apps: apps.map(({id, ...rest}) => rest),
-                categories: categories.map(({id, ...rest}) => rest),
-                exportedAt: new Date().toISOString(),
-                version: "2.0"
-            };
-
+            const data = { apps: apps.map(({id, ...rest}) => rest), categories: categories.map(({id, ...rest}) => rest), exportedAt: new Date().toISOString(), version: "2.0" };
             if (type === 'json') {
                 const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `hub-portal-backup-${new Date().toLocaleDateString()}.json`;
-                a.click();
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `backup-${new Date().toLocaleDateString()}.json`; a.click();
             } else if (type === 'excel') {
                 const wb = XLSX.utils.book_new();
-                const wsApps = XLSX.utils.json_to_sheet(apps.map(a => {
-                    const cat = categories.find(c => c.id === a.categoryId);
-                    return { 'Tên': a.name, 'URL/SĐT': a.url, 'Chức vụ': a.position || '', 'Danh mục': cat ? cat.name : '', 'Icon URL': a.iconUrl || '', 'Hiển thị': a.visible ? 'Bật' : 'Tắt', 'Thứ tự': a.order }
-                }));
-                XLSX.utils.book_append_sheet(wb, wsApps, "Apps");
-                const wsCats = XLSX.utils.json_to_sheet(categories.map(c => ({ 'Tên danh mục': c.name, 'Icon Logo': c.icon || '', 'Thứ tự': c.order })));
-                XLSX.utils.book_append_sheet(wb, wsCats, "Categories");
-                XLSX.writeFile(wb, `hub-portal-data-${new Date().toLocaleDateString()}.xlsx`);
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(apps), "Apps");
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(categories), "Categories");
+                XLSX.writeFile(wb, `backup-${new Date().toLocaleDateString()}.xlsx`);
             }
             showToast("Đã xuất dữ liệu thành công!");
         };
 
         window.handleImport = async (event) => {
             const file = event.target.files[0];
-            if (!file) return;
-            if (!confirm("Hành động này sẽ thêm dữ liệu từ file vào site hiện tại. Tiếp tục?")) return;
-
+            if (!file || !confirm("Hành động này sẽ thêm dữ liệu từ file vào site hiện tại. Tiếp tục?")) return;
             const reader = new FileReader();
             reader.onload = async (e) => {
                 try {
                     let importedData = { categories: [], apps: [] };
-                    if (file.name.endsWith('.json')) {
-                        importedData = JSON.parse(e.target.result);
-                    } else if (file.name.endsWith('.xlsx')) {
-                        const data = new Uint8Array(e.target.result);
-                        const workbook = XLSX.read(data, { type: 'array' });
-                        const catSheet = workbook.Sheets["Categories"];
-                        if (catSheet) {
-                            importedData.categories = XLSX.utils.sheet_to_json(catSheet).map(c => ({ name: c['Tên danh mục'], icon: c['Icon Logo'] || '', order: parseInt(c['Thứ tự']) || 0 }));
-                        }
-                        const appSheet = workbook.Sheets["Apps"];
-                        if (appSheet) {
-                            importedData.apps = XLSX.utils.sheet_to_json(appSheet).map(a => ({ name: a['Tên'], url: a['URL/SĐT'], position: a['Chức vụ'] || '', categoryName: a['Danh mục'], iconUrl: a['Icon URL'] || '', visible: a['Hiển thị'] === 'Bật', order: parseInt(a['Thứ tự']) || 0 }));
-                        }
+                    if (file.name.endsWith('.json')) importedData = JSON.parse(e.target.result);
+                    else if (file.name.endsWith('.xlsx')) {
+                        const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                        if (wb.Sheets["Categories"]) importedData.categories = XLSX.utils.sheet_to_json(wb.Sheets["Categories"]);
+                        if (wb.Sheets["Apps"]) importedData.apps = XLSX.utils.sheet_to_json(wb.Sheets["Apps"]);
                     }
-
+                    // Import Logic
                     const categoryIdMap = {}; 
                     for (const cat of importedData.categories) {
                         const existing = categories.find(c => c.name === cat.name);
-                        if (existing) {
-                            categoryIdMap[cat.name] = existing.id;
-                        } else {
-                            const docRef = await addDoc(collection(db, "categories"), cat);
-                            categoryIdMap[cat.name] = docRef.id;
-                        }
+                        categoryIdMap[cat.name] = existing ? existing.id : (await addDoc(collection(db, "categories"), cat)).id;
                     }
-
                     for (const appData of importedData.apps) {
                         const { categoryName, ...rest } = appData;
-                        const finalAppData = { ...rest, categoryId: categoryIdMap[categoryName] || '' };
-                        await addDoc(collection(db, "apps"), finalAppData);
+                        await addDoc(collection(db, "apps"), { ...rest, categoryId: categoryIdMap[categoryName] || '' });
                     }
-
                     showToast("Khôi phục dữ liệu thành công!");
-                    event.target.value = ''; 
-                } catch (error) {
-                    console.error(error);
-                    alert("Lỗi phân tích file. Vui lòng kiểm tra lại định dạng.");
-                    showToast("Lỗi phân tích file. Vui lòng kiểm tra lại định dạng.", true); 
-                }
+                } catch (error) { showToast("Lỗi phân tích file.", true); }
+                event.target.value = '';
             };
             if (file.name.endsWith('.json')) reader.readAsText(file); else reader.readAsArrayBuffer(file);
         };
 
-        // --- ADMIN UTILS (Unchanged) ---
-        window.updateCatField = (id, field, val) => updateDoc(doc(db, "categories", id), { [field]: val })
-            .then(() => showToast("Đã cập nhật danh mục!"))
-            .catch(e => showToast("Lỗi khi cập nhật danh mục!", true)); 
-            
-        window.deleteCat = (id) => {
-            if (confirm("Xóa danh mục này?")) {
-                deleteDoc(doc(db, "categories", id))
-                    .then(() => showToast("Đã xóa danh mục!"))
-                    .catch(e => showToast("Lỗi khi xóa danh mục!", true)); 
-            }
-        };
-        
+        window.updateCatField = (id, field, val) => updateDoc(doc(db, "categories", id), { [field]: val }).catch(() => showToast("Lỗi cập nhật", true)); 
+        window.deleteCat = (id) => confirm("Xóa danh mục này?") && deleteDoc(doc(db, "categories", id)).catch(() => showToast("Lỗi xóa", true));
         window.addCategory = async () => {
             const name = document.getElementById('new-cat-name').value.trim();
-            const icon = document.getElementById('new-cat-icon').value.trim();
-            if(!name) { showToast("Tên danh mục không được trống!"); return; }
-            await addDoc(collection(db, "categories"), { name, icon, order: categories.length })
-                .then(() => {
-                    document.getElementById('new-cat-name').value = '';
-                    document.getElementById('new-cat-icon').value = '';
-                    showToast("Đã thêm danh mục mới!");
-                })
-                .catch(e => showToast("Lỗi khi thêm danh mục.", true)); 
+            if(!name) return showToast("Tên không được trống!", true);
+            await addDoc(collection(db, "categories"), { name, icon: document.getElementById('new-cat-icon').value, order: categories.length });
+            document.getElementById('new-cat-name').value = '';
         };
 
         window.toggleFormFields = () => {
@@ -1103,114 +1015,55 @@
             e.preventDefault();
             const id = document.getElementById('edit-id').value;
             const data = { name: document.getElementById('app-name').value, position: document.getElementById('app-position').value, url: document.getElementById('app-link').value, iconUrl: document.getElementById('app-icon').value, categoryId: document.getElementById('app-category').value, visible: document.getElementById('app-visible').checked, order: id ? apps.find(x => x.id === id).order : apps.length };
-            
             try {
                 id ? await updateDoc(doc(db, "apps", id), data) : await addDoc(collection(db, "apps"), data);
-                window.closeModal('modal-app');
-                showToast(id ? "Đã cập nhật ứng dụng!" : "Đã thêm ứng dụng mới!");
-            } catch (e) {
-                console.error("Error saving app:", e);
-                showToast("Lỗi khi lưu ứng dụng!", true); 
-            }
+                window.closeModal('modal-app'); showToast(id ? "Đã cập nhật!" : "Đã thêm mới!");
+            } catch (e) { showToast("Lỗi lưu trữ!", true); }
         };
 
-        window.deleteApp = (id) => {
-            if (confirm("Xóa mục này?")) {
-                deleteDoc(doc(db, "apps", id))
-                    .then(() => showToast("Đã xóa ứng dụng!"))
-                    .catch(e => showToast("Lỗi khi xóa ứng dụng!", true)); 
-            }
-        };
+        window.deleteApp = (id) => confirm("Xóa mục này?") && deleteDoc(doc(db, "apps", id)).catch(() => showToast("Lỗi xóa", true));
+        window.toggleAppVisibility = (id) => { const a = apps.find(x => x.id === id); if(a) updateDoc(doc(db, "apps", id), { visible: !a.visible }); };
 
-        window.toggleAppVisibility = (id) => {
-            if (!isAdmin) return;
-            const app = apps.find(a => a.id === id);
-            if (!app) return;
-            updateDoc(doc(db, "apps", id), { visible: !app.visible })
-                .then(() => showToast(`Đã ${!app.visible ? 'BẬT' : 'TẮT'} hiển thị.`))
-                .catch(e => showToast("Lỗi cập nhật hiển thị!", true)); 
-        };
-
-        window.renderCategories = renderCategories; 
-        function renderCategories() {
+        window.renderCategories = () => {
             const bar = document.getElementById('category-bar');
             let html = `<button onclick="window.setFilter('all')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all ${currentFilter === 'all' ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">TẤT CẢ</button>`;
-            
-            if (currentUser) {
-                html += `<button onclick="window.setFilter('favorites')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center gap-2 ${currentFilter === 'favorites' ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">
-                    <i data-lucide="star" class="w-3 h-3 ${currentFilter === 'favorites' ? 'fill-white' : ''}"></i> ƯA THÍCH
-                </button>`;
-            }
-            
-            categories.forEach(c => {
-                html += `<button onclick="window.setFilter('${c.id}')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center gap-2 ${currentFilter === c.id ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">
-                    ${c.icon ? `<img src="${c.icon}" class="w-3 h-3 object-contain">` : ''} ${c.name.toUpperCase()}
-                </button>`;
-            });
+            if (currentUser) html += `<button onclick="window.setFilter('favorites')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center gap-2 ${currentFilter === 'favorites' ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}"><i data-lucide="star" class="w-3 h-3 ${currentFilter === 'favorites' ? 'fill-white' : ''}"></i> ƯA THÍCH</button>`;
+            categories.forEach(c => html += `<button onclick="window.setFilter('${c.id}')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center gap-2 ${currentFilter === c.id ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">${c.icon ? `<img src="${c.icon}" class="w-3 h-3 object-contain">` : ''} ${c.name.toUpperCase()}</button>`);
             bar.innerHTML = html;
-
             const list = document.getElementById('cat-list-admin');
             list.innerHTML = categories.map(c => `<li class="flex flex-col gap-2 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border dark:border-white/5" data-id="${c.id}"><div class="flex items-center gap-3"><i data-lucide="grip-vertical" class="text-slate-300 cursor-move"></i><input type="text" value="${c.name}" onblur="window.updateCatField('${c.id}', 'name', this.value)" class="flex-1 bg-transparent border-none font-bold text-sm outline-none"><button onclick="window.deleteCat('${c.id}')" class="text-red-500 p-2"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div><input type="text" value="${c.icon || ''}" onblur="window.updateCatField('${c.id}', 'icon', this.value)" placeholder="Icon URL" class="text-[10px] bg-white dark:bg-black/20 px-4 py-2 rounded-lg outline-none w-full border-none shadow-inner"></li>`).join('');
             lucide.createIcons();
             if(isAdmin) new Sortable(list, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(list.children).forEach((el, i) => updateDoc(doc(db, "categories", el.dataset.id), { order: i })); }});
             document.getElementById('app-category').innerHTML = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-        }
+        };
 
         window.setFilter = (id) => { 
-            if (id === 'favorites' && !currentUser) {
-                 showToast("Vui lòng đăng nhập để xem mục yêu thích!");
-                 return;
-            }
-            currentFilter = id; 
-            renderCategories(); 
-            renderApps(); 
+            if (id === 'favorites' && !currentUser) { showToast("Vui lòng đăng nhập!"); return; }
+            currentFilter = id; renderCategories(); renderApps(); 
         };
 
         window.openModal = (id) => document.getElementById(id).classList.remove('hidden');
         window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
         window.switchTab = (tabId) => {
-            const tabs = ['tab-cat', 'tab-announcement', 'tab-user-roles', 'tab-data']; // CẬP NHẬT: Bỏ tab-request
-            const buttons = ['btn-tab-cat', 'btn-tab-announcement', 'btn-tab-user-roles', 'btn-tab-data']; // CẬP NHẬT: Bỏ btn-tab-request
-
-            tabs.forEach(id => document.getElementById(id).classList.add('hidden'));
-            buttons.forEach(id => document.getElementById(id).classList.remove('text-primary', 'border-b-2', 'border-primary'));
-            
+            ['tab-cat', 'tab-announcement', 'tab-user-roles', 'tab-data'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            ['btn-tab-cat', 'btn-tab-announcement', 'btn-tab-user-roles', 'btn-tab-data'].forEach(id => document.getElementById(id).classList.remove('text-primary', 'border-b-2', 'border-primary'));
             document.getElementById(tabId).classList.remove('hidden');
             document.getElementById('btn-' + tabId).classList.add('text-primary', 'border-b-2', 'border-primary');
-            
-            if (tabId === 'tab-announcement' && isAdmin) {
-                 document.getElementById('announcement-content').value = currentAnnouncement.content || '';
-                 renderAnnouncementControls();
-            }
-            
-            // CẬP NHẬT: Xử lý khi chuyển sang tab quản lý quyền
-            if (tabId === 'tab-user-roles' && isSuper) {
-                 renderUserRoleManagement();
-            }
+            if (tabId === 'tab-announcement' && isAdmin) { document.getElementById('announcement-content').value = currentAnnouncement.content || ''; renderAnnouncementControls(); }
+            if (tabId === 'tab-user-roles' && isSuper) renderUserRoleManagement();
         };
         
         window.toggleTheme = () => { document.documentElement.classList.toggle('dark'); localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light'; };
         document.getElementById('search-input').oninput = (e) => { searchQuery = e.target.value; renderApps(); };
         window.setView = (mode) => { viewMode = mode; renderApps(); };
         
-        // CẬP NHẬT: Thêm tham số isError để phân biệt rõ ràng trạng thái thông báo
         function showToast(msg, isError = false) {
             const t = document.getElementById('toast');
             document.getElementById('toast-msg').innerText = msg;
             t.classList.remove('opacity-0', 'translate-y-20');
-            
-            const isErrorMessage = msg.toLowerCase().includes('lỗi') || isError; 
             const icon = t.querySelector('i');
-            
-            if (isErrorMessage) {
-                 icon.setAttribute('data-lucide', 'alert-triangle');
-                 icon.classList.remove('text-green-500');
-                 icon.classList.add('text-red-500');
-            } else {
-                 icon.setAttribute('data-lucide', 'check-circle');
-                 icon.classList.remove('text-red-500');
-                 icon.classList.add('text-green-500');
-            }
+            icon.setAttribute('data-lucide', isError ? 'alert-triangle' : 'check-circle');
+            icon.className = `w-5 h-5 ${isError ? 'text-red-500' : 'text-green-500'}`;
             lucide.createIcons();
             setTimeout(() => t.classList.add('opacity-0', 'translate-y-20'), 3000);
         }
@@ -1218,7 +1071,6 @@
         if(localStorage.theme === 'dark') document.documentElement.classList.add('dark');
         lucide.createIcons();
         window.setView('grid');
-        
         trackVisit();
     </script>
 </body>
