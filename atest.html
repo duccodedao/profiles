@@ -1,3 +1,13 @@
+// CẦN THAY THẾ: UID Của tài khoản Google dùng làm Admin
+const ADMIN_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1"; 
+// CẦN THAY THẾ: UID Của tài khoản Google dùng làm Phó Admin (Hoặc để rỗng "" nếu không có)
+const SUB_ADMIN_UID = "UID_CỦA_PHÓ_ADMIN"; // THAY THẾ BẰNG UID THẬT!```
+
+**Lưu ý:** Vấn đề **Firestore Indexing** vẫn là trách nhiệm của bạn để khắc phục trong Firebase Console. Code đã được tối ưu để báo lỗi rõ ràng nhưng không thể tự tạo Index.
+
+### Mã nguồn đã cập nhật:
+
+```html
 --- START OF FILE text/plain ---
 
 <!DOCTYPE html>
@@ -677,21 +687,23 @@
         </div>
     </div>
 
-    <!-- MODAL: Admin Deliver Job -->
+    <!-- MODAL: Admin Deliver Job (ĐÃ BỊ SỬA THÀNH INPUT CHO updateStatus) -->
+    <!-- Giữ lại ID để dùng cho input trong DeliverModalStatus -->
     <div id="deliverModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('deliverModal')">&times;</span>
-            <h3>Trả ảnh cho khách</h3>
+            <h3>Trả ảnh cho khách và Hoàn thành đơn hàng</h3>
             <input type="hidden" id="deliverOrderId">
+            <input type="hidden" id="deliverOrderOriginalStatus">
             <div class="form-group">
-                <label>Link Google Drive / Gallery</label>
-                <input type="text" id="jobLink" placeholder="https://...">
+                <label>Link Google Drive / Gallery (*)</label>
+                <input type="text" id="jobLink" placeholder="https://..." required>
             </div>
             <div class="form-group">
                 <label>Mật khẩu / Mã truy cập</label>
                 <input type="text" id="jobPass" placeholder="Nếu có">
             </div>
-            <button class="btn btn-fill" style="width:100%; margin-top:10px" onclick="submitDelivery()">Xác nhận trả job</button>
+            <button class="btn btn-fill" style="width:100%; margin-top:10px" onclick="submitDelivery()">Xác nhận Hoàn thành và Trả job</button>
             <button class="btn" style="width:100%; margin-top:10px" onclick="closeModal('deliverModal')">Đóng</button>
         </div>
     </div>
@@ -703,10 +715,14 @@
             <h3 style="color:var(--success)">Ảnh của bạn đã sẵn sàng!</h3>
             <p>Vui lòng dùng thông tin dưới đây để truy cập:</p>
             <div style="background:#f0f0f0; padding:20px; margin:20px 0; border-radius:8px">
-                <p><strong>Link:</strong> <a id="resLink" href="#" target="_blank">Bấm vào đây để mở</a></p>
-                <p style="margin-top:10px"><strong>Mật khẩu:</strong> <span id="resPass" style="font-family:monospace; font-size:1.2rem; background:white; padding:2px 8px; border-radius:var(--radius);"></span></p>
+                <p><strong>Link Truy Cập:</strong></p> 
+                <a id="resLink" href="#" target="_blank" class="btn btn-fill" style="text-decoration:none; margin-top:5px">
+                    <i class="fas fa-external-link-alt"></i> Bấm vào đây để mở
+                </a>
+                <p style="margin-top:20px"><strong>Mật khẩu:</strong></p> 
+                <span id="resPass" style="font-family:monospace; font-size:1.2rem; background:white; padding:5px 10px; border-radius:var(--radius); display:inline-block"></span>
             </div>
-            <button class="btn btn-fill" onclick="closeModal('resultModal')">Đã nhận</button>
+            <button class="btn" onclick="closeModal('resultModal')">Đã nhận</button>
         </div>
     </div>
 
@@ -730,8 +746,12 @@
         
         // CẦN THAY THẾ: UID Của tài khoản Google dùng làm Admin
         const ADMIN_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1"; 
+        // CẦN THAY THẾ: UID Của tài khoản Google dùng làm Phó Admin (Hoặc để rỗng "" nếu không có)
+        const SUB_ADMIN_UID = "UID_CỦA_PHÓ_ADMIN"; // THAY THẾ BẰNG UID THẬT!
         
-        // TỐI ƯU HIỆU SUẤT: Giới hạn số đơn hàng hiển thị mặc định trong bảng Admin
+        // UTILITY: Kiểm tra quyền Admin/SubAdmin
+        const isAdmin = (user) => user && (user.uid === ADMIN_UID || user.uid === SUB_ADMIN_UID);
+
         const ORDER_RENDER_LIMIT = 50; 
 
         const app = initializeApp(firebaseConfig);
@@ -772,11 +792,11 @@
 
                 document.getElementById('menuDash').style.display = 'block';
                 
-                // Initialize admin-only data loading if user is admin
-                if(user.uid === ADMIN_UID) {
+                // Initialize admin-only data loading if user is admin/sub-admin
+                if(isAdmin(user)) {
                     document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'block');
                 } else {
-                    // Client data loading is deferred to switchTab/goDash
+                    document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'none');
                 }
             } else {
                 goHome();
@@ -815,7 +835,7 @@
                 snap.forEach(d => services.push({id: d.id, ...d.data()}));
                 
                 renderServices();
-                if(currentUser && currentUser.uid === ADMIN_UID) renderAdminServices();
+                if(isAdmin(currentUser)) renderAdminServices();
             } catch (e) {
                  showToast("Lỗi tải dịch vụ: " + e.message);
                  console.error("Lỗi tải dịch vụ:", e);
@@ -829,7 +849,6 @@
                 <div class="service-card">
                     <div class="svc-header">
                         <h3>${s.name}</h3>
-                        <!-- Chỉ hiển thị giá gốc, không cần data-curr vì không có tính toán dynamic -->
                         <div class="svc-price">${fmt(s.price)}</div> 
                     </div>
                     <p class="svc-desc">${s.desc || 'Chưa có mô tả'}</p>
@@ -839,7 +858,6 @@
                             <p style="font-size:0.8rem; font-weight:600; margin-bottom:10px">Bao gồm:</p>
                             ${s.options.map(opt => `
                                 <div class="option-row">
-                                    <!-- Hiển thị Options như một tính năng, không phải checkbox -->
                                     <label style="cursor:default; color:var(--text-primary);">${opt.name}</label>
                                     <span style="font-weight:400">${fmt(opt.price)}</span>
                                 </div>
@@ -848,22 +866,19 @@
                     ` : '<div class="option-group"><p style="font-size:0.8rem; color:var(--text-secondary)">Không có tùy chọn thêm.</p></div>'}
 
                     <button class="btn btn-fill" style="width:100%; margin-top:20px" onclick="openBooking('${s.id}')">Đăng ký gói này</button>
-                    ${currentUser && currentUser.uid === ADMIN_UID ? `<button class="btn btn-sm" style="margin-top:10px" onclick="openEditSvc('${s.id}')">Sửa (Admin)</button>` : ''}
+                    ${isAdmin(currentUser) ? `<button class="btn btn-sm" style="margin-top:10px" onclick="openEditSvc('${s.id}')">Sửa (Admin)</button>` : ''}
                 </div>
             `).join('');
         }
         
-        // HÀM calcPrice ĐÃ BỊ XÓA vì không cho phép tùy chọn thêm/bớt
-
         // 4. BOOKING 
         window.openBooking = (id) => {
             if(!currentUser) return login();
             const svc = services.find(s => s.id === id);
             if (!svc) return;
 
-            // Giá mặc định là giá gốc (vì không cho phép tùy chọn thêm/bớt)
             let total = svc.price; 
-            let opts = svc.options || []; // Lấy TẤT CẢ options làm features
+            let opts = svc.options || []; 
 
             bookingData = { svcName: svc.name, opts, total };
             
@@ -950,7 +965,7 @@
                                 <td data-label="Tổng tiền">${fmt(data.total)}</td>
                                 <td data-label="Trạng thái"><span class="badge ${statusClass}">${data.status}</span></td>
                                 <td data-label="Kết quả">
-                                    ${isDone && data.deliveryLink ? `<button class="btn btn-sm btn-fill" onclick="viewResult('${data.deliveryLink}', '${data.deliveryPass}')">NHẬN ẢNH</button>` : '---'}
+                                    ${isDone && data.deliveryLink ? `<button class="btn btn-sm btn-fill" onclick="viewResult('${d.id}')">NHẬN ẢNH</button>` : '---'}
                                 </td>
                             </tr>
                         `;
@@ -965,10 +980,20 @@
             showLoader(false);
         }
         
-        window.viewResult = (link, pass) => {
-            document.getElementById('resLink').href = link;
-            document.getElementById('resPass').innerText = pass || "Không có";
-            document.getElementById('resultModal').style.display = 'flex';
+        window.viewResult = async (id) => {
+            showLoader(true);
+            try {
+                const orderSnap = await getDoc(doc(db, "orders", id));
+                const data = orderSnap.data();
+                
+                document.getElementById('resLink').href = data.deliveryLink || '#';
+                document.getElementById('resPass').innerText = data.deliveryPass || "Không có";
+                document.getElementById('resultModal').style.display = 'flex';
+            } catch (e) {
+                showToast("Lỗi khi tải kết quả: " + e.message);
+                console.error("Lỗi tải kết quả:", e);
+            }
+            showLoader(false);
         }
 
         // TỐI ƯU HIỆU SUẤT: CHỈ RENDER SỐ LƯỢNG GIỚI HẠN MẶC ĐỊNH
@@ -1002,7 +1027,7 @@
                                 </select>
                             </td>
                             <td data-label="Hành động">
-                                 <button class="btn btn-sm" onclick="openDeliver('${d.id}')">Trả Ảnh</button>
+                                 <button class="btn btn-sm" onclick="openDeliver('${d.id}', '${d.deliveryLink||''}', '${d.deliveryPass||''}')">Trả Ảnh</button>
                             </td>
                         </tr>
                     `;
@@ -1031,7 +1056,7 @@
         // 6. ADMIN MANAGEMENT
         // 6a. Orders & Delivery
         window.loadAdminOrders = async () => {
-            if(currentUser.uid !== ADMIN_UID) return;
+            if(!isAdmin(currentUser)) return;
             showLoader(true);
 
             try {
@@ -1087,21 +1112,34 @@
             document.getElementById('statCompleteRate').innerText = `${rate}%`;
         }
 
-
+        // Sửa hàm này để bắt Modal nhập link khi chuyển trạng thái sang "Hoàn thành"
         window.updateStatus = async (id, newStatus) => {
-            if(currentUser.uid !== ADMIN_UID) return showToast("Bạn không có quyền admin");
+            if(!isAdmin(currentUser)) return showToast("Bạn không có quyền admin");
             
             let currentStatus = '';
             const selectEl = document.querySelector(`#adminOrdersTable tbody tr td select[onchange*="${id}"]`);
-            if (selectEl) currentStatus = selectEl.dataset.originalStatus || selectEl.value; // Lấy trạng thái gốc
+            if (selectEl) currentStatus = selectEl.dataset.originalStatus; 
 
+            // Nếu chuyển sang Hoàn thành, MỞ MODAL để nhập link ảnh
+            if (newStatus === 'Hoàn thành' && currentStatus !== 'Hoàn thành') {
+                const orderSnap = await getDoc(doc(db, "orders", id));
+                const order = orderSnap.data();
+                
+                // Mở Modal Deliver để nhập Link/Pass
+                openDeliver(id, order.deliveryLink || '', order.deliveryPass || '', currentStatus);
+                // Giữ nguyên trạng thái cũ trên select box cho đến khi submit thành công
+                if (selectEl) selectEl.value = currentStatus; 
+                return;
+            }
+
+            // Xử lý các trạng thái khác (Chờ xác nhận, Đã cọc, Đã hủy)
             showLoader(true);
             let proceed = true;
 
             try {
                 const isApproved = ['Đã cọc', 'Hoàn thành'].includes(newStatus);
 
-                if (isApproved) {
+                if (isApproved && newStatus === 'Đã cọc') {
                     const orderSnap = await getDoc(doc(db, "orders", id));
                     const order = orderSnap.data();
 
@@ -1129,10 +1167,9 @@
 
                 if (proceed) {
                     await updateDoc(doc(db, "orders", id), {status: newStatus});
-                    showToast("Đã cập nhật trạng thái đơn hàng");
+                    showToast(`Đã cập nhật trạng thái đơn hàng sang: ${newStatus}`);
                 }
                 
-                // Cần load lại bảng ngay cả khi bị lỗi Index trong lúc check conflict để cập nhật trạng thái
                 loadAdminOrders();
                 renderAdminSchedule(); 
 
@@ -1144,11 +1181,13 @@
             }
             showLoader(false);
         };
-
-        window.openDeliver = (id) => {
+        
+        // Modal Deliver
+        window.openDeliver = (id, link, pass, originalStatus) => {
              document.getElementById('deliverOrderId').value = id;
-             document.getElementById('jobLink').value = '';
-             document.getElementById('jobPass').value = '';
+             document.getElementById('jobLink').value = link;
+             document.getElementById('jobPass').value = pass;
+             document.getElementById('deliverOrderOriginalStatus').value = originalStatus;
              document.getElementById('deliverModal').style.display = 'flex';
         }
         
@@ -1156,19 +1195,27 @@
             const id = document.getElementById('deliverOrderId').value;
             const link = document.getElementById('jobLink').value;
             const pass = document.getElementById('jobPass').value;
+            const originalStatus = document.getElementById('deliverOrderOriginalStatus').value;
             
             if(!link) return alert("Vui lòng nhập link trả ảnh");
 
             showLoader(true);
             try {
+                // Cập nhật link/pass và chuyển trạng thái sang Hoàn thành
                 await updateDoc(doc(db, "orders", id), {
                     deliveryLink: link,
                     deliveryPass: pass,
-                    status: "Hoàn thành"
+                    status: "Hoàn thành" 
                 });
                 showToast("Đã trả ảnh và chuyển trạng thái sang Hoàn thành");
                 closeModal('deliverModal');
+                
+                // Cập nhật lại select box trên bảng
+                const selectEl = document.querySelector(`#adminOrdersTable tbody tr td select[onchange*="${id}"]`);
+                if (selectEl) selectEl.value = "Hoàn thành";
+                
                 loadAdminOrders();
+                renderAdminSchedule();
             } catch(e) {
                  alert("Lỗi khi trả ảnh: " + e.message);
                  console.error("Lỗi khi trả ảnh:", e);
@@ -1178,6 +1225,7 @@
 
         // 6b. Services CRUD 
         window.renderAdminServices = () => {
+             if(!isAdmin(currentUser)) return;
              const div = document.getElementById('adminServicesList');
              if (!div) return;
              div.innerHTML = services.map(s => `
@@ -1198,6 +1246,7 @@
         
         // --- Service CRUD Helper Functions ---
         window.openServiceModal = () => {
+            if(!isAdmin(currentUser)) return;
              document.getElementById('svcModalTitle').innerText = 'Tạo gói mới';
              document.getElementById('editSvcId').value = '';
              document.getElementById('svcName').value = '';
@@ -1208,6 +1257,7 @@
         }
 
         window.openEditSvc = (id) => {
+            if(!isAdmin(currentUser)) return;
             const svc = services.find(s => s.id === id);
             if (!svc) return;
 
@@ -1224,6 +1274,7 @@
         }
 
         window.addOptionRow = (name = '', price = 0) => {
+            if(!isAdmin(currentUser)) return;
             const container = document.getElementById('optContainer');
             const newRow = document.createElement('div');
             newRow.style.display = 'flex';
@@ -1238,6 +1289,7 @@
         }
 
         window.saveService = async () => {
+            if(!isAdmin(currentUser)) return;
             const id = document.getElementById('editSvcId').value;
             const name = document.getElementById('svcName').value;
             const price = parseInt(document.getElementById('svcPrice').value || 0);
@@ -1271,6 +1323,7 @@
         }
 
         window.delSvc = async (id) => {
+            if(!isAdmin(currentUser)) return;
             if(!confirm("Bạn có chắc chắn muốn xóa gói dịch vụ này?")) return;
             showLoader(true);
             try {
@@ -1286,6 +1339,7 @@
 
         // 6c. Admin Schedule View (NEW)
         window.renderAdminSchedule = async () => {
+            if(!isAdmin(currentUser)) return;
             const date = document.getElementById('scheduleDateFilter').value;
             const list = document.getElementById('adminScheduleList');
             
@@ -1345,7 +1399,7 @@
             document.getElementById('mainPage').style.display = 'none';
             document.getElementById('dashboardSection').style.display = 'block';
             
-            if(currentUser.uid === ADMIN_UID) {
+            if(isAdmin(currentUser)) {
                 // Admin default: Quản lý Đơn
                 switchTab('admin-orders', document.getElementById('tabBtn-admin-orders'));
                 // Set default date for schedule tab
@@ -1372,7 +1426,17 @@
             if(tabId === 'admin-schedule') renderAdminSchedule();
         };
 
-        window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+        window.closeModal = (id) => {
+            // Revert the status dropdown in case the user closes the deliver modal
+            if (id === 'deliverModal') {
+                const orderId = document.getElementById('deliverOrderId').value;
+                const originalStatus = document.getElementById('deliverOrderOriginalStatus').value;
+                const selectEl = document.querySelector(`#adminOrdersTable tbody tr td select[onchange*="${orderId}"]`);
+                if (selectEl) selectEl.value = originalStatus;
+            }
+            document.getElementById(id).style.display = 'none';
+        }
+        
         window.showLoader = (show) => document.getElementById('loader').style.display = show ? 'flex' : 'none';
         
         window.showToast = (msg) => {
