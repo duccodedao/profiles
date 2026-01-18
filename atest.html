@@ -592,6 +592,7 @@
                         <tbody></tbody>
                     </table>
                 </div>
+                <!-- Vị trí cho nút 'Hiển thị tất cả' -->
             </div>
             
             <!-- Admin: Schedule View (Simple List for time being) -->
@@ -854,21 +855,23 @@
             el.innerText = fmt(total);
         };
 
-        // 4. BOOKING (UPDATED with Time)
+        // 4. BOOKING 
         window.openBooking = (id) => {
             if(!currentUser) return login();
             const svc = services.find(s => s.id === id);
             
             const card = document.querySelector(`input[onchange*="'${id}'"]`)?.closest('.service-card') || document.querySelector(`#price-${id}`).closest('.service-card');
-            // Select checkboxes from the currently opened/hovered card for the total price.
-            const checks = card ? card.querySelectorAll('.option-row input[type="checkbox"]:checked') : []; 
+            
+            // Lấy tổng giá từ thuộc tính data-curr, nếu không có (trang vừa tải), dùng giá gốc.
+            let total = parseInt(document.getElementById(`price-${id}`)?.dataset.curr) || svc.price;
             let opts = [];
-            let total = svc.price;
-
-            checks.forEach(c => {
-                opts.push({name: c.dataset.name, price: parseInt(c.dataset.price)});
-                total += parseInt(c.dataset.price);
-            });
+            // Nếu có card, lặp qua các checkbox để lấy options
+            if (card) {
+                const checks = card.querySelectorAll('.option-row input[type="checkbox"]:checked');
+                checks.forEach(c => {
+                    opts.push({name: c.dataset.name, price: parseInt(c.dataset.price)});
+                });
+            }
 
             bookingData = { svcName: svc.name, opts, total };
             
@@ -891,7 +894,7 @@
         window.submitBooking = async () => {
             const phone = document.getElementById('userPhone').value;
             const date = document.getElementById('shootDate').value;
-            const time = document.getElementById('shootTime').value; // ADDED TIME
+            const time = document.getElementById('shootTime').value; 
             const location = document.getElementById('shootLocation').value;
             
             if(!phone || !date || !time || !location) return alert("Vui lòng nhập đầy đủ Số điện thoại, Ngày chụp, Giờ chụp và Địa điểm");
@@ -905,7 +908,7 @@
                     email: currentUser.email,
                     phone: phone,
                     date: date,
-                    time: time, // SAVE TIME
+                    time: time, 
                     location: location,
                     ...bookingData,
                     status: "Chờ xác nhận",
@@ -919,7 +922,7 @@
             showLoader(false);
         };
 
-        // 5. CLIENT ORDER MANAGEMENT (UPDATED with Time)
+        // 5. CLIENT ORDER MANAGEMENT
         async function loadMyOrders() {
             if(!currentUser) {
                  document.querySelector('#tab-my-orders tbody').innerHTML = '<tr><td colspan="7" style="text-align:center;">Vui lòng Đăng nhập để xem đơn hàng của bạn.</td></tr>';
@@ -938,14 +941,13 @@
                 snaps.forEach(d => {
                     const data = d.data();
                     const isDone = data.status === "Hoàn thành";
-                    // Kiểm tra và chuyển đổi timestamp nếu có
                     const dateOrder = data.createdAt?.toDate().toLocaleDateString('vi-VN') || 'N/A';
                     const statusClass = data.status.includes('Chờ') ? 'badge-pending' : (data.status.includes('Hoàn thành') ? 'badge-completed' : (data.status.includes('Đã hủy') ? 'badge-cancelled' : 'badge-deposit'));
 
                     tbody.innerHTML += `
                         <tr>
                             <td data-label="Ngày đặt">${dateOrder}</td>
-                            <td data-label="Ngày/Giờ chụp">${data.date} ${data.time || ''}</td> <!-- UPDATED: Display Time -->
+                            <td data-label="Ngày/Giờ chụp">${data.date} ${data.time || ''}</td>
                             <td data-label="Gói">${data.svcName}</td>
                             <td data-label="Địa điểm">${data.location}</td>
                             <td data-label="Tổng tiền">${fmt(data.total)}</td>
@@ -1014,14 +1016,17 @@
                 loadAllBtn.id = 'loadAllOrdersBtn';
                 loadAllBtn.className = 'btn btn-sm';
                 loadAllBtn.style = 'margin-top: 20px;';
-                loadAllBtn.innerText = `Hiển thị tất cả ${orders.length} đơn hàng...`;
-                loadAllBtn.onclick = () => renderAdminTableBody(orders, orders.length);
+                loadAllBtn.innerText = `Hiển thị tất cả ${orders.length} đơn hàng... (Hiện chỉ hiển thị ${count} đơn)`;
+                loadAllBtn.onclick = () => {
+                    renderAdminTableBody(orders, orders.length);
+                    loadAllBtn.remove(); // Remove button after clicking
+                }
                 adminOrdersContainer.appendChild(loadAllBtn);
             }
         }
 
         // 6. ADMIN MANAGEMENT
-        // 6a. Orders & Delivery (UPDATED with Search, Filter, Stats, Time)
+        // 6a. Orders & Delivery
         window.loadAdminOrders = async () => {
             if(currentUser.uid !== ADMIN_UID) return;
             showLoader(true);
@@ -1032,7 +1037,7 @@
 
             // Fetch ALL orders for client-side filtering and stats calculation
             const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
-            const snap = await getDocs(q); // <-- Đây vẫn là điểm có thể chậm nếu DB quá lớn
+            const snap = await getDocs(q); 
             allAdminOrders = [];
             snap.forEach(d => allAdminOrders.push({id: d.id, ...d.data()}));
             
@@ -1079,18 +1084,20 @@
 
             const isApproved = ['Đã cọc', 'Hoàn thành'].includes(newStatus);
             let proceed = true;
+            let currentStatus = '';
 
             if (isApproved) {
                 showLoader(true);
                 const orderSnap = await getDoc(doc(db, "orders", id));
                 const order = orderSnap.data();
+                currentStatus = order.status;
 
                 // Check for conflict: Same Date AND Same Location AND Same Time
                 const conflictQuery = query(
                     collection(db, "orders"), 
                     where("date", "==", order.date),
                     where("location", "==", order.location),
-                    where("time", "==", order.time), // ADDED TIME CHECK
+                    where("time", "==", order.time), 
                     where("status", "in", ["Đã cọc", "Hoàn thành"]),
                     where(documentId(), "!=", id) 
                 );
@@ -1110,10 +1117,13 @@
                 showToast("Đã cập nhật trạng thái đơn hàng");
             } else {
                  showToast("Hủy duyệt do trùng lịch");
+                 // Revert the select box state manually if the user cancels
+                 const selectEl = document.querySelector(`#adminOrdersTable tbody tr td select[onchange*="${id}"]`);
+                 if (selectEl) selectEl.value = currentStatus;
             }
             showLoader(false);
             loadAdminOrders();
-            renderAdminSchedule(); // Update schedule if active tab
+            renderAdminSchedule(); 
         };
 
         window.openDeliver = (id) => {
@@ -1286,7 +1296,7 @@
         };
 
 
-        // GENERAL UI (UPDATED goDash and switchTab)
+        // GENERAL UI
         window.goHome = () => {
             document.getElementById('mainPage').style.display = 'block';
             document.getElementById('dashboardSection').style.display = 'none';
