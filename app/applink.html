@@ -1,3 +1,4 @@
+--- START OF FILE Paste January 19, 2026 - 2:10AM ---
 
 <!DOCTYPE html>
 <html lang="vi" class="light">
@@ -183,7 +184,7 @@
                 <div class="flex flex-wrap gap-2 text-[10px] font-black tracking-widest text-slate-400">
                     <button onclick="window.switchTab('tab-cat')" id="btn-tab-cat" class="text-primary border-b-2 border-primary pb-1">DANH MỤC</button>
                     <button onclick="window.switchTab('tab-announcement')" id="btn-tab-announcement" class="pb-1 uppercase">THÔNG BÁO</button>
-                    <button onclick="window.switchTab('tab-deputy')" id="btn-tab-deputy" class="pb-1 uppercase">PHÓ ADMIN</button>
+                    <button onclick="window.switchTab('tab-user-roles')" id="btn-tab-user-roles" class="pb-1 uppercase">QUẢN LÝ QUYỀN</button>
                     <button onclick="window.switchTab('tab-request')" id="btn-tab-request" class="pb-1 uppercase flex items-center gap-1">YÊU CẦU ADM <span id="request-count" class="text-red-500">(0)</span></button> <!-- NEW TAB -->
                     <button onclick="window.switchTab('tab-data')" id="btn-tab-data" class="pb-1 uppercase">DỮ LIỆU</button>
                 </div>
@@ -219,16 +220,15 @@
                 </div>
                 <!-- End Tab Announcement -->
 
-                <!-- Tab Deputy -->
-                <div id="tab-deputy" class="hidden space-y-6">
-                    <h4 class="text-sm font-bold uppercase tracking-widest text-slate-500">Cấp/Thu hồi quyền Phó Admin</h4>
-                    <div id="deputy-guard" class="hidden p-4 bg-amber-50 dark:bg-amber-900/20 text-amber-600 rounded-xl text-xs font-bold uppercase">Chỉ Super Admin mới quản lý được mục này.</div>
-                    <div id="deputy-ui" class="space-y-4">
-                        <div class="flex gap-2">
-                            <input type="email" id="new-deputy-email" placeholder="Gmail phó admin..." class="flex-1 px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary">
-                            <button onclick="window.addDeputy()" class="bg-primary text-white px-6 rounded-xl font-bold text-xs uppercase">CẤP QUYỀN</button>
+                <!-- Tab User Roles (REPLACED Deputy Tab) -->
+                <div id="tab-user-roles" class="hidden space-y-6">
+                    <h4 class="text-sm font-bold uppercase tracking-widest text-slate-500">Quản lý Quyền Người Dùng</h4>
+                    <div id="user-role-guard" class="hidden p-4 bg-amber-50 dark:bg-amber-900/20 text-amber-600 rounded-xl text-xs font-bold uppercase">Chỉ Super Admin mới quản lý được mục này.</div>
+                    <div id="user-list-admin" class="space-y-4">
+                        <input type="text" id="user-role-search" placeholder="Tìm người dùng theo tên hoặc email..." class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm">
+                        <div id="role-list" class="space-y-2">
+                             <div class="p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center text-slate-400">Đang tải danh sách người dùng...</div>
                         </div>
-                        <div id="deputy-list" class="space-y-2"></div>
                     </div>
                 </div>
                 
@@ -331,7 +331,7 @@
             </form>
         </div>
     </div>
-
+    
     <!-- User Profile Modal (NEW) -->
     <div id="modal-user-profile" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[210] hidden flex items-center justify-center p-4">
         <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden">
@@ -375,6 +375,7 @@
         </div>
     </div>
 
+
     <!-- Notification Toast (No Changes) -->
     <div id="toast" class="fixed bottom-10 right-10 z-[300] transform translate-y-20 opacity-0 transition-all duration-500">
         <div class="bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border dark:border-white/10">
@@ -387,6 +388,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        // CẬP NHẬT: Không cần arrayUnion/arrayRemove cho deputy_emails nữa
         import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc, arrayUnion, arrayRemove, writeBatch, increment, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -398,6 +400,7 @@
             appId: "1:914980131889:web:72f8da15c42dbee671b110",
             measurementId: "G-C587M69LZW"
         };
+        // UID của tài khoản Super Admin (người có quyền cao nhất)
         const SUPER_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1";
 
         const fbApp = initializeApp(firebaseConfig);
@@ -405,13 +408,15 @@
         const db = getFirestore(fbApp);
         const provider = new GoogleAuthProvider();
 
-        let currentUser = null, isAdmin = false, isSuper = false, apps = [], categories = [], deputies = [], currentFilter = 'all', searchQuery = '', viewMode = 'grid', visitStats = {};
+        // CẬP NHẬT: Loại bỏ deputies (dùng user.role thay thế)
+        let currentUser = null, isAdmin = false, isSuper = false, apps = [], categories = [], currentFilter = 'all', searchQuery = '', viewMode = 'grid', visitStats = {};
         let userFavorites = []; 
         let appsLoaded = false; 
         let bulkDeleteMode = false; 
         let selectedAppsForDelete = new Set(); 
         let currentAnnouncement = {}; 
         let adminRequests = []; 
+        let allUsers = []; // Dùng cho Super Admin quản lý quyền
 
         // --- AUTH & INITIAL ---
         onAuthStateChanged(auth, async (user) => {
@@ -419,14 +424,28 @@
             const requestSection = document.getElementById('request-admin-section');
             const requestStatus = document.getElementById('request-admin-status');
             const requestForm = document.getElementById('request-admin-form');
+            
+            // NEW: Listener cho All Users (chỉ cần khi có người dùng đăng nhập)
+            if (user) {
+                 onSnapshot(collection(db, "users"), (snap) => {
+                    allUsers = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+                    // Khi có sự kiện thay đổi trên collection users (ví dụ: cấp quyền), render lại list
+                    if (document.getElementById('tab-user-roles').classList.contains('hidden') === false) {
+                        renderUserRoleManagement();
+                    }
+                 });
+            }
+
 
             if (user) {
                 isSuper = user.uid === SUPER_UID;
-                const snap = await getDoc(doc(db, "settings", "admins"));
-                deputies = snap.exists() ? snap.data().deputy_emails || [] : [];
-                isAdmin = isSuper || deputies.includes(user.email);
-                
+                // CẬP NHẬT: Lấy role trực tiếp từ user document
                 const userDoc = await getDoc(doc(db, "users", user.uid));
+                const userRole = userDoc.exists() ? userDoc.data().role : 'guest';
+                
+                // isAdmin là Super hoặc có role là 'admin'
+                isAdmin = isSuper || (userRole === 'admin');
+                
                 userFavorites = userDoc.exists() ? userDoc.data().favorites || [] : [];
                 
                 renderAuthUI();
@@ -460,11 +479,14 @@
                 if (currentFilter === 'favorites') window.setFilter('all'); 
                 requestSection.classList.add('hidden'); 
             }
-            document.getElementById('role-status').innerText = isSuper ? 'SUPER' : (isAdmin ? 'DEPUTY' : 'GUEST');
+            // CẬP NHẬT: Hiển thị trạng thái Role mới
+            const statusText = isSuper ? 'SUPER' : (isAdmin ? 'ADMIN' : 'GUEST');
+            document.getElementById('role-status').innerText = statusText;
             document.getElementById('admin-sidebar-toggle').classList.toggle('hidden', !isAdmin); 
             
             renderApps();
-            renderDeputyList();
+            // CẬP NHẬT: Chỉ render khi có sự kiện từ snapshot All Users
+            // renderDeputyList(); // <-- Loại bỏ
             renderAnnouncementControls(); 
         });
         
@@ -488,7 +510,7 @@
                 showToast("Đã gửi yêu cầu thành công!");
             } catch (e) {
                 console.error("Error submitting request:", e);
-                showToast("Lỗi khi gửi yêu cầu!", true); // <-- FIXED
+                showToast("Lỗi khi gửi yêu cầu!", true); 
             }
         };
 
@@ -522,7 +544,7 @@
             window.closeUserMenu(); 
 
             const favoritesCount = userFavorites.length;
-            const role = isSuper ? 'SUPER ADMIN' : (isAdmin ? 'PHÓ ADMIN' : 'KHÁCH (GUEST)');
+            const role = isSuper ? 'SUPER ADMIN' : (isAdmin ? 'ADMIN' : 'KHÁCH (GUEST)');
             
             // Populate Modal
             document.getElementById('profile-name').value = currentUser.displayName || 'Chưa đặt tên';
@@ -639,7 +661,7 @@
                 await setDoc(doc(db, "settings", "announcement"), { content: content }, { merge: true });
                 showToast("Đã lưu nội dung thông báo!");
             } catch (e) {
-                showToast("Lỗi khi lưu nội dung thông báo!", true); // <-- FIXED
+                showToast("Lỗi khi lưu nội dung thông báo!", true); 
             }
         };
         
@@ -654,7 +676,7 @@
                 await setDoc(doc(db, "settings", "announcement"), { active: newState }, { merge: true });
                 showToast(newState ? "Đã BẬT thông báo!" : "Đã TẮT thông báo!");
             } catch (e) {
-                showToast("Lỗi khi thay đổi trạng thái thông báo!", true); // <-- FIXED
+                showToast("Lỗi khi thay đổi trạng thái thông báo!", true); 
             }
         };
         
@@ -674,7 +696,7 @@
                     <p class="text-sm font-bold">${req.name} <span class="text-xs text-slate-500">(${req.email})</span></p>
                     <p class="text-xs italic text-slate-600 dark:text-slate-400">Lý do: ${req.reason}</p>
                     <div class="flex gap-2 pt-2 border-t dark:border-white/5 mt-2">
-                        <button onclick="window.approveAdminRequest('${req.uid}', '${req.email}')" class="flex-1 bg-green-500 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase">DUYỆT</button>
+                        <button onclick="window.approveAdminRequest('${req.uid}')" class="flex-1 bg-green-500 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase">DUYỆT</button>
                         <button onclick="window.rejectAdminRequest('${req.uid}')" class="flex-1 bg-red-500 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase">TỪ CHỐI</button>
                     </div>
                 </div>
@@ -682,18 +704,18 @@
             lucide.createIcons();
         }
 
-        window.approveAdminRequest = async (uid, email) => {
-            if (!isSuper || !confirm(`Duyệt yêu cầu của ${email} và cấp quyền Phó Admin?`)) return;
+        window.approveAdminRequest = async (uid) => {
+            if (!isSuper || !confirm(`Duyệt yêu cầu và cấp quyền Admin cho người dùng này?`)) return;
             
             try {
-                await setDoc(doc(db, "settings", "admins"), { deputy_emails: arrayUnion(email) }, { merge: true });
+                // CẬP NHẬT: Cấp quyền Admin bằng cách set role: 'admin'
+                await setDoc(doc(db, "users", uid), { role: 'admin' }, { merge: true });
                 await deleteDoc(doc(db, "adminRequests", uid));
                 
-                showToast(`Đã duyệt yêu cầu và cấp quyền cho ${email}! Đang tải lại...`);
-                setTimeout(() => location.reload(), 500);
+                showToast(`Đã duyệt yêu cầu và cấp quyền Admin!`);
             } catch (e) {
                  console.error("Error approving request:", e);
-                 showToast("Lỗi khi duyệt yêu cầu!", true); // <-- FIXED
+                 showToast("Lỗi khi duyệt yêu cầu!", true); 
             }
         };
 
@@ -705,11 +727,78 @@
                 showToast("Đã từ chối yêu cầu!");
             } catch (e) {
                  console.error("Error rejecting request:", e);
-                 showToast("Lỗi khi từ chối yêu cầu!", true); // <-- FIXED
+                 showToast("Lỗi khi từ chối yêu cầu!", true); 
             }
         };
 
-        // --- FAVORITES LOGIC ---
+        // --- USER ROLE MANAGEMENT LOGIC (REPLACES Deputy Logic) ---
+        function renderUserRoleManagement(search = '') {
+            if (!isSuper) {
+                 document.getElementById('user-role-guard').classList.remove('hidden');
+                 document.getElementById('user-list-admin').classList.add('hidden');
+                 return;
+            }
+            
+            document.getElementById('user-role-guard').classList.add('hidden');
+            document.getElementById('user-list-admin').classList.remove('hidden');
+
+            const list = document.getElementById('role-list');
+            const searchLower = search.toLowerCase();
+            
+            const filteredUsers = allUsers.filter(u => 
+                (u.name && u.name.toLowerCase().includes(searchLower)) || 
+                (u.email && u.email.toLowerCase().includes(searchLower)) || 
+                u.uid.toLowerCase().includes(searchLower)
+            ).filter(u => u.uid !== SUPER_UID); // Loại bỏ Super Admin ra khỏi danh sách này
+
+            if (filteredUsers.length === 0) {
+                 list.innerHTML = `<div class="p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center text-slate-400">Không tìm thấy người dùng nào.</div>`;
+                 return;
+            }
+
+            list.innerHTML = filteredUsers.map(user => {
+                const currentRole = user.role || 'guest';
+                const roleText = currentRole === 'admin' ? 'ADMIN' : 'GUEST';
+                const buttonColor = currentRole === 'admin' ? 'bg-red-500 hover:bg-red-600' : 'bg-primary hover:bg-indigo-600';
+                const buttonAction = currentRole === 'admin' ? `window.assignRole('${user.uid}', 'guest')` : `window.assignRole('${user.uid}', 'admin')`;
+                const buttonText = currentRole === 'admin' ? 'THU HỒI' : 'CẤP ADMIN';
+
+                return `
+                    <div class="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border dark:border-white/5">
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-bold truncate">${user.name || 'Người dùng ẩn danh'}</p>
+                            <p class="text-xs text-slate-500 truncate">${user.email}</p>
+                            <span class="text-[9px] font-black uppercase px-2 py-0.5 mt-1 rounded-full ${currentRole === 'admin' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}">${roleText}</span>
+                        </div>
+                        <button onclick="${buttonAction}" class="text-white px-5 py-2 rounded-xl font-bold text-xs uppercase transition-all ${buttonColor}">
+                            ${buttonText}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+        
+        document.getElementById('user-role-search').oninput = (e) => {
+            renderUserRoleManagement(e.target.value);
+        };
+
+        window.assignRole = async (uid, newRole) => {
+            if (!isSuper) return;
+            if (!confirm(`Bạn có chắc chắn muốn ${newRole === 'admin' ? 'cấp' : 'thu hồi'} quyền Admin cho người dùng này?`)) return;
+            
+            try {
+                await setDoc(doc(db, "users", uid), { role: newRole }, { merge: true });
+                showToast(`Đã ${newRole === 'admin' ? 'cấp' : 'thu hồi'} quyền thành công!`);
+                // Snapshot listener sẽ tự động gọi renderUserRoleManagement
+            } catch (e) { 
+                console.error("Error assigning role:", e);
+                showToast("Lỗi khi cập nhật quyền người dùng.", true); 
+            }
+        };
+        // END USER ROLE MANAGEMENT LOGIC
+
+        // --- FAVORITES LOGIC (Unchanged) ---
         window.toggleFavorite = (appId, event) => {
             event.stopPropagation();
             if (!currentUser) {
@@ -726,11 +815,11 @@
                 showToast(isFavorite ? "Đã gỡ khỏi mục yêu thích" : "Đã thêm vào mục yêu thích!");
             }).catch(error => {
                 console.error("Error toggling favorite: ", error);
-                showToast("Lỗi khi cập nhật mục yêu thích!", true); // <-- FIXED
+                showToast("Lỗi khi cập nhật mục yêu thích!", true); 
             });
         };
 
-        // --- BULK DELETE LOGIC ---
+        // --- BULK DELETE LOGIC (Unchanged) ---
         window.toggleBulkDelete = () => {
             if (!isAdmin) return;
             bulkDeleteMode = !bulkDeleteMode;
@@ -786,7 +875,7 @@
                 window.toggleBulkDelete(); 
             } catch (error) {
                 console.error("Error batch deleting apps: ", error);
-                showToast("Lỗi: Không thể xóa hàng loạt.", true); // <-- FIXED
+                showToast("Lỗi: Không thể xóa hàng loạt.", true); 
             }
         };
 
@@ -989,7 +1078,7 @@
             if(isAdmin) new Sortable(container, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(container.children).forEach((el, i) => { if(el.dataset.id) updateDoc(doc(db, "apps", el.dataset.id), { order: i }); }); }});
         }
 
-        // --- IMPORT / EXPORT LOGIC ---
+        // --- IMPORT / EXPORT LOGIC (Unchanged) ---
         window.handleExport = (type) => {
             const data = {
                 apps: apps.map(({id, ...rest}) => rest),
@@ -1065,22 +1154,22 @@
                 } catch (error) {
                     console.error(error);
                     alert("Lỗi phân tích file. Vui lòng kiểm tra lại định dạng.");
-                    showToast("Lỗi phân tích file. Vui lòng kiểm tra lại định dạng.", true); // <-- FIXED
+                    showToast("Lỗi phân tích file. Vui lòng kiểm tra lại định dạng.", true); 
                 }
             };
             if (file.name.endsWith('.json')) reader.readAsText(file); else reader.readAsArrayBuffer(file);
         };
 
-        // --- ADMIN UTILS ---
+        // --- ADMIN UTILS (Unchanged) ---
         window.updateCatField = (id, field, val) => updateDoc(doc(db, "categories", id), { [field]: val })
             .then(() => showToast("Đã cập nhật danh mục!"))
-            .catch(e => showToast("Lỗi khi cập nhật danh mục!", true)); // <-- FIXED
+            .catch(e => showToast("Lỗi khi cập nhật danh mục!", true)); 
             
         window.deleteCat = (id) => {
             if (confirm("Xóa danh mục này?")) {
                 deleteDoc(doc(db, "categories", id))
                     .then(() => showToast("Đã xóa danh mục!"))
-                    .catch(e => showToast("Lỗi khi xóa danh mục!", true)); // <-- FIXED
+                    .catch(e => showToast("Lỗi khi xóa danh mục!", true)); 
             }
         };
         
@@ -1094,39 +1183,14 @@
                     document.getElementById('new-cat-icon').value = '';
                     showToast("Đã thêm danh mục mới!");
                 })
-                .catch(e => showToast("Lỗi khi thêm danh mục.", true)); // <-- FIXED
+                .catch(e => showToast("Lỗi khi thêm danh mục.", true)); 
         };
 
-        window.renderDeputyList = () => {
-            const list = document.getElementById('deputy-list');
-            list.innerHTML = deputies.map(email => `<div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-xl border dark:border-white/5"><span class="text-sm font-bold">${email}</span>${isSuper ? `<button onclick="window.removeDeputy('${email}')" class="text-red-500 p-2"><i data-lucide="user-minus" class="w-4 h-4"></i></button>` : ''}</div>`).join('');
-            
-            document.getElementById('deputy-guard').classList.toggle('hidden', isSuper);
-            document.getElementById('deputy-ui').classList.toggle('hidden', !isSuper);
-            
-            lucide.createIcons();
-        };
+        // CẬP NHẬT: Loại bỏ renderDeputyList, addDeputy, removeDeputy
+        window.renderDeputyList = () => { /* Logic này đã được thay thế bằng renderUserRoleManagement */ }; 
+        window.addDeputy = async () => { /* Logic này đã được thay thế bằng assignRole */ };
+        window.removeDeputy = async (email) => { /* Logic này đã được thay thế bằng assignRole */ };
 
-        window.addDeputy = async () => {
-            const email = document.getElementById('new-deputy-email').value.trim().toLowerCase();
-            if(!email || !isSuper) return;
-            if (!email.includes('@')) { showToast("Vui lòng nhập email hợp lệ!"); return; }
-            try {
-                await setDoc(doc(db, "settings", "admins"), { deputy_emails: arrayUnion(email) }, { merge: true });
-                document.getElementById('new-deputy-email').value = '';
-                showToast(`Đã cấp quyền cho ${email}. Đang tải lại...`);
-                setTimeout(() => location.reload(), 500);
-            } catch (e) { showToast("Lỗi khi cấp quyền Phó Admin.", true); } // <-- FIXED
-        };
-
-        window.removeDeputy = async (email) => {
-            if(!confirm(`Xóa quyền Phó Admin cho ${email}?`) || !isSuper) return;
-            try {
-                await setDoc(doc(db, "settings", "admins"), { deputy_emails: arrayRemove(email) }, { merge: true });
-                showToast(`Đã xóa quyền của ${email}. Đang tải lại...`);
-                setTimeout(() => location.reload(), 500);
-            } catch (e) { showToast("Lỗi khi xóa quyền Phó Admin.", true); } // <-- FIXED
-        };
 
         window.toggleFormFields = () => {
             const catName = categories.find(c => c.id === document.getElementById('app-category').value)?.name;
@@ -1161,7 +1225,7 @@
                 showToast(id ? "Đã cập nhật ứng dụng!" : "Đã thêm ứng dụng mới!");
             } catch (e) {
                 console.error("Error saving app:", e);
-                showToast("Lỗi khi lưu ứng dụng!", true); // <-- FIXED
+                showToast("Lỗi khi lưu ứng dụng!", true); 
             }
         };
 
@@ -1169,7 +1233,7 @@
             if (confirm("Xóa mục này?")) {
                 deleteDoc(doc(db, "apps", id))
                     .then(() => showToast("Đã xóa ứng dụng!"))
-                    .catch(e => showToast("Lỗi khi xóa ứng dụng!", true)); // <-- FIXED
+                    .catch(e => showToast("Lỗi khi xóa ứng dụng!", true)); 
             }
         };
 
@@ -1179,7 +1243,7 @@
             if (!app) return;
             updateDoc(doc(db, "apps", id), { visible: !app.visible })
                 .then(() => showToast(`Đã ${!app.visible ? 'BẬT' : 'TẮT'} hiển thị.`))
-                .catch(e => showToast("Lỗi cập nhật hiển thị!", true)); // <-- FIXED
+                .catch(e => showToast("Lỗi cập nhật hiển thị!", true)); 
         };
 
         window.renderCategories = renderCategories; 
@@ -1220,8 +1284,8 @@
         window.openModal = (id) => document.getElementById(id).classList.remove('hidden');
         window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
         window.switchTab = (tabId) => {
-            const tabs = ['tab-cat', 'tab-announcement', 'tab-deputy', 'tab-request', 'tab-data']; 
-            const buttons = ['btn-tab-cat', 'btn-tab-announcement', 'btn-tab-deputy', 'btn-tab-request', 'btn-tab-data']; 
+            const tabs = ['tab-cat', 'tab-announcement', 'tab-user-roles', 'tab-request', 'tab-data']; // CẬP NHẬT: Tên tab
+            const buttons = ['btn-tab-cat', 'btn-tab-announcement', 'btn-tab-user-roles', 'btn-tab-request', 'btn-tab-data']; // CẬP NHẬT: Tên tab
 
             tabs.forEach(id => document.getElementById(id).classList.add('hidden'));
             buttons.forEach(id => document.getElementById(id).classList.remove('text-primary', 'border-b-2', 'border-primary'));
@@ -1234,8 +1298,9 @@
                  renderAnnouncementControls();
             }
             
-            if (tabId === 'tab-deputy' && isAdmin) {
-                 renderDeputyList();
+            // CẬP NHẬT: Xử lý khi chuyển sang tab quản lý quyền
+            if (tabId === 'tab-user-roles' && isSuper) {
+                 renderUserRoleManagement();
             }
             
             if (tabId === 'tab-request' && isAdmin) {
