@@ -1,4 +1,4 @@
-
+--- START OF FILE text/plain ---
 
 <!DOCTYPE html>
 <html lang="vi">
@@ -111,8 +111,8 @@
             font-size: 0.9rem;
         }
         .option-row label {
-            cursor: pointer;
-            color: var(--text-secondary);
+            cursor: default; /* Changed from pointer to default */
+            color: var(--text-primary); /* Changed to primary color to show it's a feature */
         }
         .option-row span {
             font-weight: 500;
@@ -829,56 +829,41 @@
                 <div class="service-card">
                     <div class="svc-header">
                         <h3>${s.name}</h3>
-                        <div class="svc-price" id="price-${s.id}" data-curr="${s.price}">${fmt(s.price)}</div>
+                        <!-- Chỉ hiển thị giá gốc, không cần data-curr vì không có tính toán dynamic -->
+                        <div class="svc-price">${fmt(s.price)}</div> 
                     </div>
                     <p class="svc-desc">${s.desc || 'Chưa có mô tả'}</p>
                     
                     ${(s.options && s.options.length > 0) ? `
                         <div class="option-group">
-                            <p style="font-size:0.8rem; font-weight:600; margin-bottom:10px">Thêm tùy chọn:</p>
-                            ${s.options.map((opt, i) => `
+                            <p style="font-size:0.8rem; font-weight:600; margin-bottom:10px">Bao gồm:</p>
+                            ${s.options.map(opt => `
                                 <div class="option-row">
-                                    <label>
-                                        <input type="checkbox" onchange="calcPrice('${s.id}', ${s.price}, this, ${opt.price})" data-name="${opt.name}" data-price="${opt.price}">
-                                        ${opt.name}
-                                    </label>
-                                    <span>+${fmt(opt.price)}</span>
+                                    <!-- Hiển thị Options như một tính năng, không phải checkbox -->
+                                    <label style="cursor:default; color:var(--text-primary);">${opt.name}</label>
+                                    <span style="font-weight:400">${fmt(opt.price)}</span>
                                 </div>
                             `).join('')}
                         </div>
-                    ` : ''}
+                    ` : '<div class="option-group"><p style="font-size:0.8rem; color:var(--text-secondary)">Không có tùy chọn thêm.</p></div>'}
 
                     <button class="btn btn-fill" style="width:100%; margin-top:20px" onclick="openBooking('${s.id}')">Đăng ký gói này</button>
                     ${currentUser && currentUser.uid === ADMIN_UID ? `<button class="btn btn-sm" style="margin-top:10px" onclick="openEditSvc('${s.id}')">Sửa (Admin)</button>` : ''}
                 </div>
             `).join('');
         }
-
-        window.calcPrice = (id, base, checkbox, optPrice) => {
-            const el = document.getElementById(`price-${id}`);
-            let total = parseInt(el.dataset.curr || base);
-            total = checkbox.checked ? total + optPrice : total - optPrice;
-            el.dataset.curr = total;
-            el.innerText = fmt(total);
-        };
+        
+        // BỎ HÀM calcPrice vì không cho phép tùy chọn thêm/bớt
 
         // 4. BOOKING 
         window.openBooking = (id) => {
             if(!currentUser) return login();
             const svc = services.find(s => s.id === id);
-            
-            const card = document.querySelector(`input[onchange*="'${id}'"]`)?.closest('.service-card') || document.querySelector(`#price-${id}`).closest('.service-card');
-            
-            // Lấy tổng giá từ thuộc tính data-curr, nếu không có (trang vừa tải), dùng giá gốc.
-            let total = parseInt(document.getElementById(`price-${id}`)?.dataset.curr) || svc.price;
-            let opts = [];
-            // Nếu có card, lặp qua các checkbox để lấy options
-            if (card) {
-                const checks = card.querySelectorAll('.option-row input[type="checkbox"]:checked');
-                checks.forEach(c => {
-                    opts.push({name: c.dataset.name, price: parseInt(c.dataset.price)});
-                });
-            }
+            if (!svc) return;
+
+            // Giá mặc định là giá gốc (vì không cho phép tùy chọn thêm/bớt)
+            let total = svc.price; 
+            let opts = svc.options || []; // Lấy TẤT CẢ options làm features
 
             bookingData = { svcName: svc.name, opts, total };
             
@@ -941,7 +926,6 @@
             showLoader(true);
             
             try {
-                // Đây là query cơ bản, chỉ cần Single Index trên 'uid' và 'createdAt' (tự động có)
                 const q = query(collection(db, "orders"), where("uid", "==", currentUser.uid), orderBy("createdAt", "desc"));
                 const snaps = await getDocs(q);
                 const tbody = document.querySelector('#myOrdersTable tbody');
@@ -1054,6 +1038,7 @@
                 const filterStatus = document.getElementById('orderFilterStatus').value;
 
                 // Fetch ALL orders for client-side filtering and stats calculation
+                // Query này KHÔNG cần Composite Index (chỉ 1 orderBy)
                 const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
                 const snap = await getDocs(q); 
                 allAdminOrders = [];
@@ -1077,8 +1062,7 @@
                 // RENDER ONLY THE LIMITED SET (Tối ưu hóa hiệu suất)
                 renderAdminTableBody(filteredOrders, ORDER_RENDER_LIMIT);
             } catch (e) {
-                // Lỗi ở đây thường do query quá lớn hoặc lỗi mạng, KHÔNG PHẢI Index (do chỉ có 1 orderBy)
-                showToast("LỖI TẢI DỮ LIỆU ĐƠN HÀNG! Vui lòng kiểm tra Console (F12) để xem lỗi: " + e.message);
+                showToast("LỖI TẢI DỮ LIỆU ĐƠN HÀNG! Vui lòng kiểm tra Console (F12) để xem lỗi.");
                 console.error("LỖI TẢI DỮ LIỆU ĐƠN HÀNG:", e);
                 document.querySelector('#adminOrdersTable tbody').innerHTML = '<tr><td colspan="8" style="text-align:center; color: var(--danger);">LỖI TẢI DỮ LIỆU ĐƠN HÀNG. Vui lòng kiểm tra Console (F12) để xem lỗi chi tiết.</td></tr>';
             }
@@ -1120,14 +1104,14 @@
                     const orderSnap = await getDoc(doc(db, "orders", id));
                     const order = orderSnap.data();
 
-                    // CRITICAL: Query này cần một Composite Index: date(asc), location(asc), time(asc), status(asc)
+                    // LƯU Ý: Query này BẮT BUỘC cần Composite Index: date (Asc), location (Asc), time (Asc), status (Asc)
                     const conflictQuery = query(
                         collection(db, "orders"), 
                         where("date", "==", order.date),
                         where("location", "==", order.location),
                         where("time", "==", order.time), 
                         where("status", "in", ["Đã cọc", "Hoàn thành"]),
-                        where(documentId(), "!=", id) // Dùng where(documentId(), "!=") là OK trong query này
+                        where(documentId(), "!=", id) 
                     );
                     
                     const conflictSnaps = await getDocs(conflictQuery);
@@ -1383,7 +1367,6 @@
             // Logic to load data based on tab
             if(tabId === 'admin-orders') loadAdminOrders();
             if(tabId === 'my-orders') loadMyOrders();
-            // renderAdminServices không cần load data, chỉ cần render từ biến services đã có
             if(tabId === 'admin-services') renderAdminServices();
             if(tabId === 'admin-schedule') renderAdminSchedule();
         };
