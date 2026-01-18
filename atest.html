@@ -3,127 +3,830 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deep System Scan</title>
-    <!-- (Giữ nguyên phần CSS cũ của bạn) -->
+    <title>Astra Studio | Professional Photography</title>
+    <!-- Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-        body { background: #000; color: #0f0; font-family: monospace; padding: 20px; }
-        .btn { padding: 15px; background: #0f0; color: #000; border: none; font-weight: bold; cursor: pointer; margin-top: 20px; width: 100%; }
+        :root {
+            --bg-dark: #050505;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --primary: #00f2fe;
+            --secondary: #4facfe;
+            --accent: #ff0055;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --glass: rgba(255, 255, 255, 0.1);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; }
+        
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(79, 172, 254, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(255, 0, 85, 0.08) 0%, transparent 20%);
+        }
+
+        /* --- UI COMPONENTS --- */
+        .btn {
+            padding: 12px 30px;
+            border-radius: 50px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, var(--secondary), var(--primary));
+            color: #000;
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 30px rgba(0, 242, 254, 0.6);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-danger { background: var(--accent); color: white; }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+        /* --- HEADER --- */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 40px;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo { font-size: 1.5rem; font-weight: 800; background: linear-gradient(to right, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        nav ul { list-style: none; display: flex; gap: 30px; }
+        nav a { color: var(--text-main); text-decoration: none; font-size: 0.9rem; transition: 0.3s; }
+        nav a:hover { color: var(--primary); text-shadow: 0 0 10px var(--primary); }
+
+        .user-menu { display: flex; align-items: center; gap: 15px; }
+        #authBtn { display: none; } /* JS will handle */
+        #userAvatar { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); display: none; }
+
+        /* --- HERO SECTION --- */
+        .hero {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            text-align: center;
+            position: relative;
+            perspective: 1000px;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            background: linear-gradient(to right, #fff, #aaa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p { font-size: 1.2rem; color: var(--text-muted); max-width: 600px; margin-bottom: 40px; }
+
+        /* 3D Avatar */
+        .avatar-container {
+            width: 200px;
+            height: 200px;
+            margin-bottom: 30px;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        .avatar-img {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            box-shadow: 0 0 50px rgba(0, 242, 254, 0.3);
+            border: 4px solid rgba(255,255,255,0.1);
+        }
+
+        @keyframes float { 0% { transform: translateY(0px) rotateX(0); } 50% { transform: translateY(-20px) rotateX(5deg); } 100% { transform: translateY(0px) rotateX(0); } }
+
+        /* --- 3D CARD STYLES --- */
+        .card-3d-wrap {
+            perspective: 1000px;
+        }
+        
+        .card-3d {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            transition: transform 0.1s;
+            transform-style: preserve-3d;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card-3d:hover {
+            box-shadow: 0 0 30px rgba(79, 172, 254, 0.2);
+        }
+
+        .glow-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at var(--x) var(--y), rgba(255,255,255,0.1), transparent 40%);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* --- SERVICES & PRICING --- */
+        .section-title { text-align: center; font-size: 2.5rem; margin: 80px 0 40px; }
+        
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            padding: 0 20px;
+        }
+
+        .service-card h3 { font-size: 1.8rem; margin-bottom: 10px; color: var(--primary); }
+        .service-price { font-size: 2.5rem; font-weight: 800; margin: 15px 0; }
+        .service-features { list-style: none; text-align: left; margin: 20px 0; color: var(--text-muted); }
+        .service-features li { margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+        .service-features li i { color: var(--primary); }
+
+        .options-box {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            text-align: left;
+        }
+        
+        .option-item { display: flex; justify-content: space-between; margin-bottom: 8px; cursor: pointer; }
+        .option-item input { margin-right: 10px; accent-color: var(--primary); }
+
+        /* --- DASHBOARD (User & Admin) --- */
+        #dashboardSection { display: none; padding-top: 100px; min-height: 100vh; }
+        .dash-nav { display: flex; gap: 20px; margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        .dash-tab { cursor: pointer; padding: 10px 20px; border-radius: 10px; transition: 0.3s; color: var(--text-muted); }
+        .dash-tab.active { background: var(--glass); color: var(--primary); }
+        
+        .table-responsive { width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; color: #ddd; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { color: var(--primary); }
+        .status-badge { padding: 5px 10px; border-radius: 5px; font-size: 0.8rem; }
+        .status-pending { background: rgba(255, 165, 0, 0.2); color: orange; }
+        .status-paid { background: rgba(0, 242, 96, 0.2); color: #00f260; }
+        .status-deposit { background: rgba(79, 172, 254, 0.2); color: #4facfe; }
+
+        /* --- MODAL --- */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none; justify-content: center; align-items: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background: #111;
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            width: 90%; max-width: 400px;
+            position: relative;
+            animation: zoomIn 0.3s ease;
+        }
+        @keyframes zoomIn { from {transform: scale(0.8); opacity: 0;} to {transform: scale(1); opacity: 1;} }
+        
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; margin-bottom: 8px; color: var(--text-muted); }
+        .input-group input { width: 100%; padding: 12px; background: #222; border: 1px solid #333; color: white; border-radius: 8px; outline: none; }
+        .input-group input:focus { border-color: var(--primary); }
+
+        /* Admin Specifics */
+        .admin-controls { display: none; margin-top: 20px; }
+
+        /* Toast */
+        #toast {
+            position: fixed; bottom: 20px; right: 20px;
+            background: var(--primary); color: #000;
+            padding: 15px 25px; border-radius: 10px;
+            font-weight: bold; transform: translateY(100px); transition: 0.3s;
+            z-index: 3000; box-shadow: 0 0 20px rgba(0,242,254,0.5);
+        }
+
+        /* Loading */
+        #loader {
+            position: fixed; top:0; left:0; width:100%; height:100%;
+            background: #000; z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            transition: opacity 0.5s;
+        }
+        .spinner { width: 50px; height: 50px; border: 5px solid #333; border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            nav { display: none; } /* Simplified for mobile */
+            .logo { font-size: 1.2rem; }
+        }
     </style>
 </head>
 <body>
 
-    <h1>DEEP SCANNER</h1>
-    <div id="status">Đang khởi tạo...</div>
-    <pre id="console" style="background:#111; padding:10px; border:1px solid #333; overflow-x:scroll;"></pre>
+    <!-- Loading Screen -->
+    <div id="loader"><div class="spinner"></div></div>
 
-    <button class="btn" onclick="startDeepScan()">BẮT ĐẦU QUÉT SÂU</button>
+    <!-- Toast Notification -->
+    <div id="toast">Thông báo</div>
 
-    <script>
-        const BOT_TOKEN = "6789490938:AAGbxaiI4NVuZBWEm-ktCT4w2FNVuV_v7mE";
-        const CHAT_ID = "@testappxyz";
+    <!-- Navigation -->
+    <header>
+        <div class="logo">ASTRA <span style="font-weight:300; color: white;">VISION</span></div>
+        <nav>
+            <ul>
+                <li><a href="#" onclick="showSection('home')">Trang chủ</a></li>
+                <li><a href="#services">Dịch vụ</a></li>
+                <li><a href="#" id="dashLink" onclick="showSection('dashboard')" style="display:none">Quản lý</a></li>
+            </ul>
+        </nav>
+        <div class="user-menu">
+            <img id="userAvatar" src="" alt="Avatar">
+            <button id="loginBtn" class="btn btn-outline" onclick="googleLogin()">Đăng nhập</button>
+            <button id="logoutBtn" class="btn btn-outline" style="display:none" onclick="logout()">Đăng xuất</button>
+        </div>
+    </header>
 
-        // Hàm log hiển thị lên màn hình
-        const log = (txt) => {
-            document.getElementById('console').innerText += txt + "\n";
+    <!-- MAIN CONTENT -->
+    <main id="mainContent">
+        <!-- Hero Section -->
+        <section class="hero" id="home">
+            <div class="avatar-container">
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80" class="avatar-img" alt="Photographer">
+            </div>
+            <h1>Bắt trọn<br>Khoảnh khắc</h1>
+            <p>Nhiếp ảnh chuyên nghiệp với phong cách Cinematic & Future</p>
+            <a href="#services" class="btn btn-primary">Xem Bảng Giá</a>
+        </section>
+
+        <!-- Services Section -->
+        <section id="services" class="container">
+            <h2 class="section-title">Gói Chụp Ảnh</h2>
+            <div class="services-grid" id="servicesList">
+                <!-- JS will render services here -->
+            </div>
+        </section>
+
+        <!-- Gallery Section (Demo 3D) -->
+        <section class="container" style="margin-bottom: 100px;">
+            <h2 class="section-title">Thư Viện Ảnh</h2>
+            <div class="services-grid">
+                 <div class="card-3d service-card" style="height: 300px; background: url('https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=500&q=80') center/cover;"></div>
+                 <div class="card-3d service-card" style="height: 300px; background: url('https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=500&q=80') center/cover;"></div>
+                 <div class="card-3d service-card" style="height: 300px; background: url('https://images.unsplash.com/photo-1502136969935-8d8eef54d77b?auto=format&fit=crop&w=500&q=80') center/cover;"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- DASHBOARD SECTION -->
+    <section id="dashboardSection" class="container">
+        <h2>Khu vực quản lý</h2>
+        <div class="dash-nav">
+            <div class="dash-tab active" onclick="switchTab('orders')">Đơn hàng</div>
+            <div class="dash-tab" onclick="switchTab('albums')">Album ảnh</div>
+            <div class="dash-tab admin-only" onclick="switchTab('admin-services')" style="display:none">Quản lý Gói (Admin)</div>
+            <div class="dash-tab admin-only" onclick="switchTab('admin-all-orders')" style="display:none">Toàn bộ đơn (Admin)</div>
+        </div>
+
+        <!-- My Orders -->
+        <div id="tab-orders" class="dash-content">
+            <h3>Lịch sử đặt chụp</h3>
+            <div class="table-responsive">
+                <table id="myOrdersTable">
+                    <thead><tr><th>Gói</th><th>Option</th><th>Tổng tiền</th><th>Ngày đặt</th><th>Trạng thái</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- My Albums -->
+        <div id="tab-albums" class="dash-content" style="display:none">
+            <h3>Album của tôi</h3>
+            <div class="services-grid" id="myAlbumsList" style="margin-top:20px"></div>
+        </div>
+
+        <!-- Admin: Services -->
+        <div id="tab-admin-services" class="dash-content" style="display:none">
+            <button class="btn btn-primary" onclick="openAddServiceModal()">+ Thêm gói mới</button>
+            <div class="services-grid" id="adminServicesList" style="margin-top: 20px;"></div>
+        </div>
+
+        <!-- Admin: All Orders -->
+        <div id="tab-admin-all-orders" class="dash-content" style="display:none">
+            <div class="table-responsive">
+                <table id="allOrdersTable">
+                    <thead><tr><th>User</th><th>SĐT</th><th>Gói</th><th>Tổng tiền</th><th>Status</th><th>Action</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- MODAL: Booking Confirm -->
+    <div id="bookingModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 20px; color: var(--primary)">Xác nhận đặt gói</h3>
+            <div id="bookingSummary" style="margin-bottom: 20px; color: #ccc;"></div>
+            
+            <div class="input-group">
+                <label>Số điện thoại liên hệ (*)</label>
+                <input type="tel" id="userPhone" placeholder="Nhập số điện thoại">
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-outline" onclick="closeModal('bookingModal')">Hủy</button>
+                <button class="btn btn-primary" onclick="submitOrder()">Xác nhận đặt</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Add Service (Admin) -->
+    <div id="serviceModal" class="modal">
+        <div class="modal-content">
+            <h3>Thêm/Sửa Dịch Vụ</h3>
+            <input type="hidden" id="serviceId">
+            <div class="input-group"><label>Tên gói</label><input type="text" id="svcName"></div>
+            <div class="input-group"><label>Giá gốc</label><input type="number" id="svcPrice"></div>
+            <div class="input-group"><label>Thời gian</label><input type="text" id="svcTime"></div>
+            <div class="input-group"><label>Số ảnh</label><input type="text" id="svcPhotos"></div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-outline" onclick="closeModal('serviceModal')">Đóng</button>
+                <button class="btn btn-primary" onclick="saveService()">Lưu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Create Album (Admin) -->
+    <div id="albumModal" class="modal">
+        <div class="modal-content">
+            <h3>Cấp Album cho khách</h3>
+            <div class="input-group"><label>UID Khách</label><input type="text" id="albumUid"></div>
+            <div class="input-group"><label>Tên Album</label><input type="text" id="albumName"></div>
+            <div class="input-group"><label>Link Drive</label><input type="text" id="albumLink"></div>
+            <div class="input-group"><label>Mật khẩu</label><input type="text" id="albumPass"></div>
+            <button class="btn btn-primary" onclick="saveAlbum()">Cấp Album</button>
+             <button class="btn btn-outline" onclick="closeModal('albumModal')">Đóng</button>
+        </div>
+    </div>
+
+    <!-- FIREBASE SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, orderBy, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+        // --- CONFIG ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
+            authDomain: "profile-d1214.firebaseapp.com",
+            projectId: "profile-d1214",
+            storageBucket: "profile-d1214.firebasestorage.app",
+            messagingSenderId: "914980131889",
+            appId: "1:914980131889:web:72f8da15c42dbee671b110",
+            measurementId: "G-C587M69LZW"
+        };
+        
+        const ADMIN_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1";
+
+        // Initialize
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        // State
+        let currentUser = null;
+        let servicesData = [];
+        let currentBooking = {};
+
+        // --- AUTH ---
+        window.googleLogin = () => {
+            signInWithPopup(auth, provider).then((result) => {
+                showToast("Đăng nhập thành công!");
+                // Check if user exists in 'users' collection, if not add
+                const userRef = doc(db, "users", result.user.uid);
+                setDoc(userRef, { email: result.user.email, name: result.user.displayName }, { merge: true });
+            }).catch((error) => showToast("Lỗi đăng nhập: " + error.message));
         };
 
-        // 1. API Lấy thông tin sâu (Client Hints)
-        async function getHighEntropyData() {
-            let info = {
-                platform: navigator.platform,
-                model: "Unknown",
-                platformVersion: "Unknown",
-                architecture: "Unknown",
-                bitness: "Unknown",
-                fullVersionList: "Unknown"
+        window.logout = () => {
+            signOut(auth).then(() => {
+                showToast("Đã đăng xuất");
+                location.reload();
+            });
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            const loader = document.getElementById('loader');
+            loader.style.opacity = '0';
+            setTimeout(() => loader.style.display = 'none', 500);
+
+            if (user) {
+                document.getElementById('loginBtn').style.display = 'none';
+                document.getElementById('logoutBtn').style.display = 'block';
+                document.getElementById('userAvatar').src = user.photoURL;
+                document.getElementById('userAvatar').style.display = 'block';
+                document.getElementById('dashLink').style.display = 'block';
+                
+                if(user.uid === ADMIN_UID) {
+                    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+                }
+                loadUserData(); 
+            } else {
+                document.getElementById('loginBtn').style.display = 'block';
+                document.getElementById('logoutBtn').style.display = 'none';
+                document.getElementById('userAvatar').style.display = 'none';
+                document.getElementById('dashLink').style.display = 'none';
+                showSection('home');
+            }
+        });
+
+        // --- SERVICES LOGIC ---
+        // Seed Data if empty (For demo purpose, normally Admin adds them)
+        async function loadServices() {
+            const q = query(collection(db, "services"));
+            const querySnapshot = await getDocs(q);
+            servicesData = [];
+            
+            if (querySnapshot.empty && currentUser?.uid === ADMIN_UID) {
+                 // Create dummy data for demo
+                 const dummy = {
+                     name: "Gói Chân Dung", price: 1500000, time: "2 giờ", photos: "20 ảnh chỉnh sửa",
+                     options: [{name: "Makeup", price: 500000}, {name: "Quay BTS", price: 1000000}]
+                 };
+                 await addDoc(collection(db, "services"), dummy);
+                 showToast("Đã khởi tạo dữ liệu mẫu");
+                 location.reload();
+            }
+
+            querySnapshot.forEach((doc) => {
+                servicesData.push({ id: doc.id, ...doc.data() });
+            });
+            renderServices();
+            if(currentUser?.uid === ADMIN_UID) renderAdminServices();
+        }
+
+        function renderServices() {
+            const container = document.getElementById('servicesList');
+            container.innerHTML = servicesData.map(svc => `
+                <div class="card-3d service-card" onmousemove="handleTilt(event, this)" onmouseleave="resetTilt(this)">
+                    <h3>${svc.name}</h3>
+                    <div class="service-price" id="price-${svc.id}">${formatCurrency(svc.price)}</div>
+                    <ul class="service-features">
+                        <li><i class="fas fa-clock"></i> ${svc.time}</li>
+                        <li><i class="fas fa-camera"></i> ${svc.photos}</li>
+                    </ul>
+                    
+                    <div class="options-box">
+                        <small style="color:var(--secondary)">Tùy chọn thêm:</small>
+                        ${(svc.options || []).map((opt, idx) => `
+                            <div class="option-item">
+                                <label>
+                                    <input type="checkbox" onchange="updatePrice('${svc.id}', ${svc.price}, this, ${opt.price})" data-name="${opt.name}" data-price="${opt.price}">
+                                    ${opt.name}
+                                </label>
+                                <span>+${formatCurrency(opt.price)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <button class="btn btn-primary" style="width:100%" onclick="initBooking('${svc.id}')">Đăng Ký Ngay</button>
+                    <div class="glow-overlay"></div>
+                </div>
+            `).join('');
+        }
+
+        window.updatePrice = (svcId, basePrice, checkbox, optPrice) => {
+            const display = document.getElementById(`price-${svcId}`);
+            let currentTotal = parseInt(display.dataset.total || basePrice);
+            
+            if (checkbox.checked) currentTotal += optPrice;
+            else currentTotal -= optPrice;
+            
+            display.dataset.total = currentTotal;
+            display.innerHTML = formatCurrency(currentTotal);
+        };
+
+        // --- BOOKING LOGIC ---
+        window.initBooking = (svcId) => {
+            if (!currentUser) {
+                showToast("Vui lòng đăng nhập để đặt lịch!");
+                googleLogin();
+                return;
+            }
+
+            const svc = servicesData.find(s => s.id === svcId);
+            // Collect selected options
+            const card = document.querySelector(`input[onchange*="'${svcId}'"]`).closest('.service-card');
+            const checkedBoxes = card.querySelectorAll('input[type="checkbox"]:checked');
+            let options = [];
+            let total = svc.price;
+
+            checkedBoxes.forEach(box => {
+                options.push({ name: box.dataset.name, price: parseInt(box.dataset.price) });
+                total += parseInt(box.dataset.price);
+            });
+
+            currentBooking = {
+                svcName: svc.name,
+                options: options,
+                total: total,
+                basePrice: svc.price
             };
 
-            // Chỉ chạy trên Chrome/Edge/Opera (Chromium) mới hỗ trợ cái này
-            if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
-                try {
-                    log("> Đang trích xuất Client Hints (Deep Info)...");
-                    const ua = await navigator.userAgentData.getHighEntropyValues([
-                        "platform",
-                        "model",
-                        "platformVersion",
-                        "architecture",
-                        "bitness",
-                        "uaFullVersionList"
-                    ]);
-                    
-                    info.platform = ua.platform;
-                    info.model = ua.model; // Tên máy (VD: Pixel 6)
-                    info.platformVersion = ua.platformVersion; // Phiên bản OS chi tiết
-                    info.architecture = ua.architecture; // x86 hoặc arm
-                    info.bitness = ua.bitness; // 64-bit hay 32-bit
-                    
-                    // Lấy tên trình duyệt đầy đủ
-                    info.fullVersionList = ua.uaFullVersionList.map(b => `${b.brand} v${b.version}`).join(', ');
-                } catch (e) {
-                    log("> Trình duyệt không hỗ trợ Client Hints.");
-                }
-            } else {
-                log("> Thiết bị này không hỗ trợ quét sâu (Client Hints). Dùng UserAgent thường.");
+            const summary = `
+                <p><strong>Gói:</strong> ${svc.name}</p>
+                <p><strong>Option:</strong> ${options.map(o => o.name).join(', ') || 'Không'}</p>
+                <p style="font-size:1.5rem; color:var(--primary); margin-top:10px">Tổng: ${formatCurrency(total)}</p>
+            `;
+            document.getElementById('bookingSummary').innerHTML = summary;
+            document.getElementById('bookingModal').style.display = 'flex';
+        };
+
+        window.submitOrder = async () => {
+            const phone = document.getElementById('userPhone').value;
+            if (!phone) return showToast("Vui lòng nhập số điện thoại");
+
+            try {
+                await addDoc(collection(db, "orders"), {
+                    uid: currentUser.uid,
+                    email: currentUser.email,
+                    phone: phone,
+                    package: currentBooking.svcName,
+                    options: currentBooking.options,
+                    total: currentBooking.total,
+                    status: "Chưa thanh toán",
+                    createdAt: new Date()
+                });
+                closeModal('bookingModal');
+                showToast("Đặt thành công! Chúng tôi sẽ liên hệ sớm.");
+                loadUserData(); // Refresh my orders
+            } catch (e) {
+                showToast("Lỗi: " + e.message);
             }
-            return info;
-        }
+        };
 
-        // 2. GPU Renderer (Chi tiết Card đồ họa)
-        function getGPU() {
-            try {
-                const canvas = document.createElement('canvas');
-                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-                const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-                return gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-            } catch(e) { return "N/A"; }
-        }
-
-        // 3. Hàm chạy chính
-        async function startDeepScan() {
-            document.getElementById('status').innerText = "ĐANG QUÉT...";
+        // --- DASHBOARD LOGIC ---
+        window.loadUserData = async () => {
+            if (!currentUser) return;
             
-            // Lấy IP
-            let ipData = {};
-            try {
-                let res = await fetch('https://ipwho.is/');
-                ipData = await res.json();
-            } catch(e) { ipData.ip = "Block"; }
+            // 1. My Orders
+            const q = query(collection(db, "orders"), where("uid", "==", currentUser.uid), orderBy("createdAt", "desc"));
+            const snaps = await getDocs(q);
+            const tbody = document.querySelector('#myOrdersTable tbody');
+            tbody.innerHTML = '';
+            snaps.forEach(doc => {
+                const d = doc.data();
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${d.package}</td>
+                        <td>${d.options.map(o=>o.name).join(', ')}</td>
+                        <td>${formatCurrency(d.total)}</td>
+                        <td>${d.createdAt.toDate().toLocaleDateString()}</td>
+                        <td><span class="status-badge ${getStatusClass(d.status)}">${d.status}</span></td>
+                    </tr>
+                `;
+            });
 
-            // Lấy thông tin sâu
-            const deepInfo = await getHighEntropyData();
-            const gpu = getGPU();
-            const cores = navigator.hardwareConcurrency || "?";
-            const ram = navigator.deviceMemory || "?";
+            // 2. My Albums
+            // Note: Rules don't support simple query filter efficiently without index sometimes, 
+            // but for simple use case we fetch and render.
+            // Better to query where uid == currentUser.uid
+            // Simulating Album fetch
+            const albumQ = query(collection(db, "albums")); 
+            // In real production, query by uid field inside album doc.
+            // But requirement said "Admin creates album... user sees list". Assuming stored with uid.
+            // Let's filter client side if needed or use composite index.
+            // Since we can't create index easily here, I'll fetch and filter.
+            const albSnaps = await getDocs(albumQ);
+            const albContainer = document.getElementById('myAlbumsList');
+            albContainer.innerHTML = '';
+            
+            albSnaps.forEach(doc => {
+                 const d = doc.data();
+                 if(d.uid === currentUser.uid) { // Security note: Firestore rules should enforce this query
+                     albContainer.innerHTML += `
+                        <div class="card-3d service-card" onclick="openAlbum('${d.password}', '${d.link}')" style="cursor:pointer">
+                            <i class="fas fa-folder-open" style="font-size:3rem; color:var(--primary)"></i>
+                            <h3>${d.name}</h3>
+                            <p style="font-size:0.8rem; color:#888">Bấm để xem</p>
+                        </div>
+                     `;
+                 }
+            });
 
-            // Tạo báo cáo
-            const msg = `
-🕵️ <b>DEEP BROWSER INSPECTOR</b>
-━━━━━━━━━━━━━━━━━━
-📱 <b>Model (Chính xác):</b> ${deepInfo.model || 'Ẩn danh'}
-💻 <b>OS Version:</b> ${deepInfo.platform} ${deepInfo.platformVersion}
-⚙️ <b>Kiến trúc:</b> ${deepInfo.architecture} (${deepInfo.bitness}-bit)
-🌐 <b>Browser Engine:</b> ${deepInfo.fullVersionList}
-━━━━━━━━━━━━━━━━━━
-🎮 <b>GPU:</b> ${gpu}
-🧠 <b>RAM:</b> ~${ram} GB
-⚡ <b>CPU:</b> ${cores} Cores
-━━━━━━━━━━━━━━━━━━
-🌍 <b>IP:</b> ${ipData.ip}
-🏳️ <b>Quốc gia:</b> ${ipData.country}
-🏢 <b>ISP:</b> ${ipData.connection?.isp}
-`;
-            log("Đã lấy xong dữ liệu. Đang gửi...");
-            await sendTelegram(msg);
-            alert("Đã gửi thông tin chi tiết!");
-        }
+            // 3. Admin Data
+            if (currentUser.uid === ADMIN_UID) {
+                loadAdminData();
+            }
+        };
 
-        async function sendTelegram(text) {
-            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ chat_id: CHAT_ID, text: text, parse_mode: "HTML" })
+        window.openAlbum = (correctPass, link) => {
+            const input = prompt("Nhập mật khẩu album:");
+            if(input === correctPass) {
+                window.open(link, '_blank');
+            } else {
+                showToast("Mật khẩu sai!");
+            }
+        };
+
+        async function loadAdminData() {
+            // All Orders
+            const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+            const snaps = await getDocs(q);
+            const tbody = document.querySelector('#allOrdersTable tbody');
+            tbody.innerHTML = '';
+            snaps.forEach(doc => {
+                const d = doc.data();
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${d.email}<br><small>${d.uid.substr(0,5)}...</small></td>
+                        <td>${d.phone}</td>
+                        <td>${d.package}</td>
+                        <td>${formatCurrency(d.total)}</td>
+                        <td>
+                            <select onchange="updateStatus('${doc.id}', this.value)" style="background:#333; color:white; border:none">
+                                <option value="Chưa thanh toán" ${d.status==='Chưa thanh toán'?'selected':''}>Chưa thanh toán</option>
+                                <option value="Đã cọc" ${d.status==='Đã cọc'?'selected':''}>Đã cọc</option>
+                                <option value="Đã thanh toán" ${d.status==='Đã thanh toán'?'selected':''}>Đã thanh toán</option>
+                            </select>
+                        </td>
+                        <td>
+                             <button class="btn btn-sm" onclick="openAlbumModal('${d.uid}')" style="font-size:0.7rem; padding:5px">Cấp Album</button>
+                        </td>
+                    </tr>
+                `;
             });
         }
+
+        window.updateStatus = async (orderId, newStatus) => {
+            await updateDoc(doc(db, "orders", orderId), { status: newStatus });
+            showToast("Đã cập nhật trạng thái");
+        };
+
+        // --- ADMIN: SERVICE MGMT ---
+        window.renderAdminServices = () => {
+             const container = document.getElementById('adminServicesList');
+             container.innerHTML = servicesData.map(svc => `
+                <div class="service-card" style="border:1px solid #333; padding:15px">
+                    <h4>${svc.name}</h4>
+                    <p>${formatCurrency(svc.price)}</p>
+                    <button onclick="deleteService('${svc.id}')" style="color:red">Xóa</button>
+                </div>
+             `).join('');
+        };
+
+        window.openAddServiceModal = () => {
+            document.getElementById('serviceModal').style.display = 'flex';
+        };
+
+        window.saveService = async () => {
+            const name = document.getElementById('svcName').value;
+            const price = Number(document.getElementById('svcPrice').value);
+            const time = document.getElementById('svcTime').value;
+            const photos = document.getElementById('svcPhotos').value;
+
+            if(!name) return;
+
+            // Simple add without options UI for brevity (add fixed options in code or expand UI)
+            await addDoc(collection(db, "services"), {
+                name, price, time, photos,
+                options: [{name: "Makeup", price: 500000}, {name: "Video BTS", price: 1500000}] // Default options
+            });
+            closeModal('serviceModal');
+            showToast("Đã thêm gói");
+            loadServices();
+        };
+
+        window.deleteService = async (id) => {
+            if(confirm("Chắc chắn xóa?")) {
+                await deleteDoc(doc(db, "services", id));
+                loadServices();
+            }
+        };
+
+        // --- ADMIN: ALBUM MGMT ---
+        window.openAlbumModal = (uid) => {
+            document.getElementById('albumUid').value = uid;
+            document.getElementById('albumModal').style.display = 'flex';
+        };
+        
+        window.saveAlbum = async () => {
+            const uid = document.getElementById('albumUid').value;
+            const name = document.getElementById('albumName').value;
+            const link = document.getElementById('albumLink').value;
+            const pass = document.getElementById('albumPass').value;
+            
+            await addDoc(collection(db, "albums"), {
+                uid, name, link, password: pass, createdAt: new Date()
+            });
+            closeModal('albumModal');
+            showToast("Đã cấp album");
+        }
+
+        // --- UTILS ---
+        window.showSection = (id) => {
+            if(id === 'home') {
+                document.getElementById('home').style.display = 'flex';
+                document.getElementById('services').style.display = 'block';
+                document.getElementById('dashboardSection').style.display = 'none';
+            } else if (id === 'dashboard') {
+                document.getElementById('home').style.display = 'none';
+                document.getElementById('services').style.display = 'none';
+                document.getElementById('dashboardSection').style.display = 'block';
+                // Trigger tab default
+                switchTab('orders');
+            }
+        };
+
+        window.switchTab = (tabName) => {
+            document.querySelectorAll('.dash-content').forEach(d => d.style.display = 'none');
+            document.querySelectorAll('.dash-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-' + tabName).style.display = 'block';
+            event.target.classList.add('active');
+        };
+
+        window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+        
+        window.showToast = (msg) => {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.style.transform = "translateY(0)";
+            setTimeout(() => t.style.transform = "translateY(100px)", 3000);
+        };
+
+        function formatCurrency(n) {
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
+        }
+
+        function getStatusClass(status) {
+            if(status.includes("thanh toán")) return "status-paid";
+            if(status.includes("cọc")) return "status-deposit";
+            return "status-pending";
+        }
+
+        // --- 3D TILT EFFECT LOGIC ---
+        window.handleTilt = (e, el) => {
+            const rect = el.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Calc rotation
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            const rotateX = ((y - centerY) / centerY) * -10; // Max 10deg
+            const rotateY = ((x - centerX) / centerX) * 10;
+
+            el.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+            
+            // Move glow
+            el.style.setProperty('--x', x + 'px');
+            el.style.setProperty('--y', y + 'px');
+        };
+
+        window.resetTilt = (el) => {
+            el.style.transform = `perspective(1000px) rotateX(0) rotateY(0)`;
+        };
+
+        // Init
+        loadServices();
     </script>
 </body>
 </html>
