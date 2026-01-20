@@ -1,1159 +1,838 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en" class="dark">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bmass Profile - Personal Web3 Bio</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio & Admin System</title>
+    
+    <!-- 1. RESOURCES: TAILWIND, FONTS, ICONS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1" rel="stylesheet"/>
 
-    <!-- Meta SEO, Libraries, Fonts -->
-    <meta name="description" content="Trang cá nhân chính thức.">
-    <link rel="icon" href="https://bmass.vercel.app/img/bmasslogo.png" type="image/png">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <!-- 2. TAILWIND CONFIG -->
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#0d7ff2",
+                        "primary-dark": "#0b6bcb",
+                        "bg-light": "#f5f7f8",
+                        "bg-dark": "#101922",
+                        "card-dark": "#16212c",
+                        "border-dark": "#1e293b",
+                    },
+                    fontFamily: {
+                        sans: ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
 
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
+    <!-- 3. CUSTOM STYLES -->
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .material-symbols-outlined.fill { font-variation-settings: 'FILL' 1; }
+        
+        /* Utility for SPA Routing */
+        .view-section { display: none; opacity: 0; transition: opacity 0.3s ease-in-out; }
+        .view-section.active { display: block; opacity: 1; }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
-    <!-- Chart.js & QR Code & SortableJS Libraries -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+        /* Loader */
+        .loader { border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid #0d7ff2; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Toast Animation */
+        .toast-enter { transform: translateX(100%); }
+        .toast-enter-active { transform: translateX(0); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .toast-exit { transform: translateX(100%); transition: transform 0.3s ease-in; }
+    </style>
 </head>
-<style>
-    :root {
-        --accent-primary: #915EFF;
-        --accent-secondary: #2BCBC4;
-        --text-primary: #212529;
-        --text-secondary: #6c757d;
-        --color-verified: #007bff;
-        --card-bg: rgba(255, 255, 255, 0.1);
-        --transition-smooth: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-        --shadow-light: 0 4px 15px rgba(0,0,0,0.07);
-        --shadow-strong: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
-    }
+<body class="bg-bg-light dark:bg-bg-dark text-slate-900 dark:text-slate-100 transition-colors duration-300">
 
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes fadeInUp { from { opacity: 0; transform: translateY(25px); } to { opacity: 1; transform: translateY(0); } }
+    <!-- ================= APP CONTAINER ================= -->
+    <div id="app" class="min-h-screen flex flex-col relative">
 
-    body {
-        font-family: 'Poppins', sans-serif;
-        color: var(--text-primary);
-        transition: background 0.5s ease;
-        overflow-x: hidden;
-        margin: 0;
-        background-color: #000000;
-        background-image: linear-gradient(45deg, #000000 0%, #1a0a24 100%);
-        background-attachment: fixed;
-        background-size: cover;
-    }
+        <!-- TOAST CONTAINER -->
+        <div id="toast-container" class="fixed bottom-6 right-6 z-[100] flex flex-col gap-3"></div>
 
-    #particles-js {
-        position: fixed;
-        width: 100%;
-        height: 100%;
-        z-index: -1;
-        top: 0;
-        left: 0;
-        pointer-events: none;
-        transition: opacity 0.3s;
-    }
-
-    /* === Header & Sidebar === */
-    .header-controls { position: fixed; top: 1.5rem; right: 1.5rem; z-index: 1050; }
-    .sidebar-toggle {
-        background: rgba(255, 255, 255, 0.9); border: none; border-radius: 50%; width: 50px; height: 50px;
-        font-size: 1.2rem; box-shadow: var(--shadow-light); transition: var(--transition-smooth);
-        display: flex; align-items: center; justify-content: center; color: var(--text-primary);
-    }
-    .sidebar-toggle:hover { transform: scale(1.1); box-shadow: var(--shadow-strong); }
-    .sidebar {
-        position: fixed; top: 0; left: 0; height: 100%; width: 280px;
-        background: rgba(26, 26, 46, 0.95);
-        backdrop-filter: blur(15px); 
-        z-index: 1051;
-        transform: translateX(-100%); 
-        transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-        box-shadow: 0 0 50px rgba(0,0,0,0.5); 
-        padding: 2rem 1.5rem; 
-        display: flex; 
-        flex-direction: column;
-        color: #fff;
-    }
-    .sidebar.open { transform: translateX(0); }
-    .sidebar-header { font-weight: 700; font-size: 1.6rem; margin-bottom: 2rem; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem;}
-    .sidebar-link {
-        display: block; padding: 1rem 1rem; border-radius: 12px; 
-        color: rgba(255, 255, 255, 0.8);
-        text-decoration: none; font-weight: 500; 
-        margin-bottom: 0.3rem; 
-        transition: background-color 0.3s, color 0.3s, transform 0.2s;
-    }
-    .sidebar-link:hover { 
-        background-color: rgba(145, 94, 255, 0.1); 
-        color: #fff; 
-        transform: translateX(3px);
-    }
-    .sidebar-link i { margin-right: 15px; width: 20px; text-align: center; color: var(--accent-secondary); }
-    .sidebar-link.logout { margin-top: auto; color: #ff6b6b; }
-    .sidebar-link.logout:hover { background-color: rgba(255, 107, 107, 0.1); color: #fff; }
-
-    .overlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4);
-        z-index: 1045; opacity: 0; visibility: hidden; transition: opacity 0.4s, visibility 0.4s;
-    }
-    .overlay.show { opacity: 1; visibility: visible; }
-
-    /* === Main Container & Views === */
-    .main-container { padding: 2rem 1rem; margin: auto; min-height: 100vh; overflow-y: auto; }
-    .view { display: none; animation: fadeIn 0.6s; }
-    .view-center-content {
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 2rem;
-        box-sizing: border-box;
-    }
-    #email-verification-banner { position: sticky; top: 0; z-index: 1040; }
-
-    /* === Profile View === */
-    .card-glass {
-        position: relative; background: var(--card-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 25px; padding: 2rem; box-shadow: var(--shadow-strong); color: #fff;
-    }
-    .profile-avatar { width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 5px solid white; box-shadow: 0 0 20px rgba(0,0,0,0.15); margin-top: -95px; }
-    .profile-name-wrapper { display: flex; align-items: center; justify-content: center; gap: 10px; }
-    .profile-name { font-size: 2rem; font-weight: 700; margin-bottom: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-    .verified-tick { color: var(--color-verified); font-size: 1.6rem; background: white; border-radius: 50%; padding: 2px; box-shadow: 0 2px 5px rgba(0,123,255,0.3); }
-    .social-links { display: flex; justify-content: center; flex-wrap: wrap; gap: 1rem; margin-top: 1.5rem; }
-    .social-link { font-size: 1.5rem; color: #fff; transition: var(--transition-smooth); width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background-color: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); text-decoration: none; }
-    .social-link:hover { transform: translateY(-5px); color: white; background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary)); box-shadow: 0 4px 15px rgba(145, 94, 255, 0.4); }
-    
-    #donate-modal-btn {
-        margin-top: 20px;
-        background: linear-gradient(45deg, #FFD700, #FDB931);
-        border: none;
-        color: #000;
-        font-weight: 700;
-        border-radius: 50px;
-        padding: 10px 30px;
-        box-shadow: 0 4px 15px rgba(253, 185, 49, 0.4);
-        transition: var(--transition-smooth);
-        display: inline-flex;
-        align-items: center;
-        gap: 1px;
-        font-size: 1rem;
-    }
-    #donate-modal-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(253, 185, 49, 0.6); filter: brightness(1.1); }
-
-    .project-card {
-        display: flex;
-        align-items: flex-start;
-        text-decoration: none;
-        color: var(--text-primary);
-        background: rgba(255, 255, 255, 0.95);
-        padding: 0.8rem;
-        border-radius: 12px;
-        border: 1px solid #dee2e6;
-        transition: var(--transition-smooth);
-        box-shadow: var(--shadow-light);
-        cursor: pointer;
-        position: relative;
-        overflow: hidden;
-    }
-    .project-card:hover { transform: translateY(-3px) scale(1.01); box-shadow: 0 5px 15px rgba(145, 94, 255, 0.15); border-color: var(--accent-primary); }
-    .project-icon { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; margin-right: 0.8rem; flex-shrink: 0; }
-    
-    .project-card.expired { opacity: 0.8; pointer-events: none; border-color: #adb5bd; }
-    .expired-overlay {
-        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center;
-        z-index: 5; border-radius: 12px; backdrop-filter: blur(2px);
-    }
-    .expired-text { color: white; font-weight: 800; font-size: 1.2rem; text-transform: uppercase; border: 2px solid white; padding: 5px 15px; border-radius: 8px; transform: rotate(-10deg); letter-spacing: 1px; }
-
-    .countdown-wrapper { margin-top: 8px; display: flex; align-items: center; gap: 6px; }
-    .countdown-label { font-size: 0.7rem; color: #dc3545; font-weight: 700; text-transform: uppercase; margin-right: 2px; animation: pulse-text 2s infinite; }
-    .time-unit { background: linear-gradient(135deg, #212529, #343a40); color: #fff; border-radius: 4px; padding: 3px 5px; min-width: 24px; text-align: center; display: flex; flex-direction: column; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-    .time-val { font-family: 'Roboto Mono', monospace; font-weight: 700; font-size: 0.85rem; line-height: 1; }
-    .time-tag { font-size: 0.5rem; opacity: 0.7; margin-top: 1px; text-transform: uppercase; }
-    .time-sep { font-weight: bold; color: #6c757d; font-size: 0.8rem; margin-top: -8px; }
-    @keyframes pulse-text { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-
-    #edit-profile-btn { position: absolute; bottom: -25px; right: 2rem; width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary)); color: white; font-size: 1.5rem; display: none; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.2); cursor: pointer; transition: transform 0.3s; z-index: 10; }
-    #edit-profile-btn:hover { transform: scale(1.1); }
-
-    .project-card-content { display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; }
-    .project-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2px; }
-    .project-name-text { font-weight: 600; font-size: 1rem; margin-bottom: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 75%; }
-    .project-clicks { font-size: 0.75rem; color: var(--text-secondary); background: #f0f2f5; padding: 2px 6px; border-radius: 6px; white-space: nowrap; display: flex; align-items: center; }
-    .project-desc-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.3; margin-bottom: 0; }
-
-    /* === Category Tabs Styling === */
-    .category-tabs-container { padding: 1rem 0; margin-top: 1.5rem; position: relative; }
-    .category-tabs { display: flex; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.2); position: relative; flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; -ms-overflow-style: none; scrollbar-width: none; padding-bottom: 0; }
-    .category-tabs::-webkit-scrollbar { display: none; }
-    .category-tab { padding: 8px 16px; cursor: pointer; background: none; border: none; color: rgba(255, 255, 255, 0.7); font-weight: 500; font-size: 0.95rem; transition: color 0.3s ease; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-    .category-tab.active { color: #fff; font-weight: 600; }
-    .category-tab:hover { color: #fff; }
-    .rename-category-btn { background: none; border: none; color: rgba(255, 255, 255, 0.5); padding: 0; margin-left: 0; font-size: 0.8em; opacity: 0; transition: opacity 0.3s, color 0.3s; }
-    .category-tab:hover .rename-category-btn { opacity: 1; }
-    .rename-category-btn:hover { color: var(--accent-secondary); }
-    #add-category-btn { background-color: rgba(255,255,255,0.1); border-radius: 50%; width: 28px; height: 28px; margin-left: 10px; color: #fff; display: flex; align-items: center; justify-content: center; }
-    .tab-underline { position: absolute; bottom: -1px; left: 0; height: 3px; background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary)); border-radius: 3px; transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); }
-    .category-content-container { padding-top: 1rem; }
-    .category-content { display: none; animation: fadeInUp 0.5s; }
-    .category-content.active { display: block; }
-
-    /* === Auth Views === */
-    .flip-card { background-color: transparent; width: 100%; max-width: 420px; height: 720px; perspective: 1000px; }
-    .flip-card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.8s; transform-style: preserve-3d; }
-    .flip-card.is-flipped .flip-card-inner { transform: rotateY(180deg); }
-    .flip-card-front, .flip-card-back { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; border-radius: 20px; overflow: hidden; box-shadow: var(--shadow-strong); background: var(--card-bg); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.2); overflow-y: auto; scrollbar-width: none; }
-    .flip-card-front::-webkit-scrollbar, .flip-card-back::-webkit-scrollbar { display: none; }
-    .flip-card-back { transform: rotateY(180deg); }
-    .auth-header { background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary)); color: white; padding: 2rem; }
-    .auth-header h2 { font-weight: 700; margin-bottom: 0.5rem;}
-    .auth-body { padding: 1.5rem 2rem; }
-    .form-control { border-radius: 10px; padding: 0.9rem 1rem; border: 1px solid rgba(255, 255, 255, 0.2); transition: border-color 0.3s, box-shadow 0.3s; background: rgba(255, 255, 255, 0.1); color: #fff; }
-    .form-control::placeholder { color: rgba(255, 255, 255, 0.7); }
-    .form-control:focus { border-color: var(--accent-primary); box-shadow: 0 0 0 0.25rem rgba(145, 94, 255, 0.25); background: rgba(255, 255, 255, 0.2); color: #fff; }
-    .btn-submit-grad { background-size: 200% auto; background-image: linear-gradient(to right, var(--accent-primary) 0%, var(--accent-secondary) 51%, var(--accent-primary) 100%); border: none; border-radius: 10px; padding: 0.9rem; font-weight: 600; color: white; width: 100%; transition: 0.5s; cursor: pointer; }
-    .btn-submit-grad:hover { background-position: right center; transform: translateY(-3px); box-shadow: 0 6px 20px rgba(145, 94, 255, 0.4); }
-    .auth-switch-link, .forgot-password-link { background: none; border: none; color: var(--accent-secondary); font-weight: 600; cursor: pointer; padding: 0; text-decoration: underline !important; }
-    #auth-status { min-height: 24px; margin-top: 1rem; color: #ffcdd2; }
-    .divider { display: flex; align-items: center; text-align: center; color: rgba(255,255,255,0.5); margin: 1.5rem 0;}
-    .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid rgba(255,255,255,0.2); }
-
-    /* === General & Footer === */
-    .footer-section { padding: 2rem 1rem; color: rgba(255, 255, 255, 0.7); font-size: 0.9rem; margin-top: 2rem; }
-    .spinner-border { color: var(--accent-primary); }
-
-    /* === MODAL STYLING === */
-    .modal .form-control, .modal .form-select { background-color: #f8f9fa; color: var(--text-primary); border: 1px solid #ced4da; }
-    .modal .form-control::placeholder { color: #6c757d; }
-    .modal .form-control:focus, .modal .form-select:focus { color: var(--text-primary); background-color: #fff; border-color: var(--accent-primary); box-shadow: 0 0 0 0.25rem rgba(145, 94, 255, 0.25); }
-    #edit-projects-accordion .accordion-button:not(.collapsed) { background-color: rgba(145, 94, 255, 0.1); color: var(--accent-primary); box-shadow: none; }
-    #edit-projects-accordion .accordion-body { background-color: #fdfcff; padding: 1rem; }
-    #edit-projects-accordion .project-form-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #dee2e6; }
-    .accordion-button strong { flex-shrink: 0; }
-    .accordion-button .text-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-    /* DRAG & DROP STYLES */
-    .drag-handle { cursor: grab; color: var(--text-secondary); padding: 10px 15px; font-size: 1.1rem; display: flex; align-items: center; background: #f8f9fa; border-right: 1px solid #dee2e6; border-top-left-radius: calc(var(--bs-accordion-border-radius) - 1px); border-bottom-left-radius: calc(var(--bs-accordion-border-radius) - 1px); }
-    .drag-handle:active { cursor: grabbing; color: var(--accent-primary); background: #e9ecef; }
-    .sortable-ghost { opacity: 0.5; background: #e9ecef; border: 2px dashed var(--accent-primary); }
-    .accordion-header-wrapper { display: flex; align-items: stretch; background: white; border-radius: var(--bs-accordion-border-radius); overflow: hidden; }
-    .accordion-header-wrapper .accordion-button { border-radius: 0; }
-
-    /* CRYPTO WALLET STYLES */
-    .wallet-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; transition: all 0.3s; }
-    .wallet-card:hover { border-color: var(--accent-secondary); background: rgba(255,255,255,0.1); }
-    .wallet-icon { font-size: 1.6rem; width: 45px; text-align: center; margin-right: 12px; color: #ffd700; }
-    .wallet-info { flex-grow: 1; overflow: hidden; }
-    .wallet-name { font-size: 0.8rem; color: #aaa; text-transform: uppercase; margin: 0; font-weight: 600; }
-    .wallet-address { font-size: 0.95rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: 'Courier New', monospace; margin: 0; }
-    .btn-copy-wallet { background: rgba(255,255,255,0.1); border: none; color: white; border-radius: 8px; cursor: pointer; padding: 6px 12px; transition: 0.2s; }
-    .btn-copy-wallet:hover { background: var(--accent-primary); }
-
-    /* EDIT MODAL TABS */
-    .edit-cat-pill { cursor: pointer; padding: 6px 12px; border-radius: 20px; background: #f0f2f5; color: #6c757d; font-size: 0.9rem; margin-right: 5px; border: 1px solid transparent; white-space: nowrap; transition: all 0.3s; }
-    .edit-cat-pill:hover { background: #e2e6ea; }
-    .edit-cat-pill.active { background: var(--accent-primary); color: #fff; font-weight: 500; box-shadow: 0 2px 5px rgba(145, 94, 255, 0.4); }
-    .last-no-border:last-child { border-bottom: none !important; margin-bottom: 0 !important; }
-
-    /* === Project Detail Modal Styling === */
-    #projectDetailModal .modal-content { border-radius: 1rem; border: none; box-shadow: var(--shadow-strong); }
-    #projectDetailModal .modal-header { border-bottom: none; padding: 1.5rem 1.5rem 0.5rem; }
-    #projectDetailModal .modal-body { padding: 0.5rem 1.5rem 1.5rem; }
-    .project-detail-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
-    #project-detail-icon { width: 80px; height: 80px; border-radius: 16px; object-fit: cover; box-shadow: var(--shadow-light); flex-shrink: 0; }
-    #project-detail-name { font-weight: 700; font-size: 1.75rem; margin-bottom: 0.25rem; }
-    #project-detail-category { font-size: 0.9rem; padding: 0.25rem 0.6rem; border-radius: 0.5rem; background-color: #e9ecef; color: var(--text-secondary); font-weight: 500; }
-    #project-detail-description { color: var(--text-primary); font-size: 1rem; margin-bottom: 1.5rem; }
-    #project-detail-stats { display: flex; justify-content: space-around; text-align: center; padding: 1rem; background-color: #f8f9fa; border-radius: 0.75rem; margin-bottom: 1.5rem; }
-    .stat-item h6 { margin-bottom: 0.25rem; font-weight: 700; font-size: 1.25rem; color: var(--accent-primary); }
-    .stat-item p { margin-bottom: 0; font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; }
-    #project-detail-link-btn { width: 100%; padding: 0.8rem; font-size: 1.1rem; font-weight: 600; background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary)); color: white; border: none; border-radius: 0.75rem; transition: var(--transition-smooth); }
-    #project-detail-link-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(145, 94, 255, 0.4); }
-    #project-detail-long-description { background-color: #f8f9fa; padding: 1rem; border-radius: 0.75rem; color: var(--text-primary); font-size: 0.95rem; line-height: 1.6; word-wrap: break-word; }
-    .embedded-link { color: var(--accent-primary); font-weight: 500; text-decoration: none; word-break: break-all; }
-    .embedded-link:hover { text-decoration: underline; }
-    #project-detail-share-btn { background: none; border: none; font-size: 1.2rem; color: var(--text-secondary); transition: color 0.3s; }
-    #project-detail-share-btn:hover { color: var(--accent-primary); }
-
-    .copy-ref-container .input-group-text { background-color: #e9ecef; border: 1px solid #ced4da; color: var(--text-secondary); }
-    .copy-ref-container .form-control[readonly] { background-color: #fff; cursor: text; }
-
-    /* Support Chat History in User Modal */
-    .chat-bubble { padding: 10px 15px; border-radius: 15px; margin-bottom: 10px; max-width: 85%; font-size: 0.9rem; }
-    .chat-bubble.user { background-color: #f0f2f5; color: #333; margin-left: auto; border-bottom-right-radius: 2px; }
-    .chat-bubble.admin { background-color: rgba(145, 94, 255, 0.2); color: var(--text-primary); border: 1px solid rgba(145, 94, 255, 0.3); border-bottom-left-radius: 2px; }
-    .chat-bubble .meta { font-size: 0.7em; opacity: 0.7; margin-bottom: 3px; display: block;}
-
-    /* === MUSIC TOGGLE BUTTON STYLES === */
-    #music-toggle-btn { position: fixed; top: 1.5rem; right: 5.5rem; z-index: 1050; width: 50px; height: 50px; border-radius: 50%; border: none; background: rgba(255, 255, 255, 0.9); color: #333; box-shadow: 0 4px 15px rgba(0,0,0,0.1); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
-    #music-toggle-btn:hover { transform: scale(1.1); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15); }
-    #music-toggle-btn.playing { color: var(--accent-primary); background: white; box-shadow: 0 0 20px rgba(145, 94, 255, 0.6); }
-    #music-toggle-btn.playing i { animation: music-spin 3s linear infinite; }
-    @keyframes music-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-</style>
-<body>
-    <div id="particles-js"></div>
-    
-    <audio id="bg-audio" loop>
-        <source src="nhac.mp3" type="audio/mpeg">
-    </audio>
-
-    <!-- Header Controls -->
-    <div class="header-controls" id="header-controls"></div>
-
-    <!-- Sidebar Navigation -->
-    <div class="sidebar" id="sidebar">
-        <h3 class="sidebar-header">Bmass Profiles <small class="fw-light d-block mt-1" style="font-size: 0.8rem; color: var(--accent-secondary);" id="sidebar-version-tag">Personal</small></h3>
-        <div id="sidebar-links"></div>
-    </div>
-    <div class="overlay" id="overlay"></div>
-
-    <main class="main-container" id="app-container">
-        
-        <input type="file" id="import-json-input" accept=".json" style="display: none;" />
-
-        <div id="email-verification-banner" class="alert alert-warning rounded-3 m-3" style="display: none;">
-            Email của bạn chưa được xác thực.
-            <button id="resend-verification-btn" class="btn btn-sm btn-primary ms-2">Gửi lại email</button>
-        </div>
-
-        <!-- Loading View -->
-        <div class="view text-center" id="view-loading">
-            <div class="spinner-border" style="width: 3rem; height: 3rem; color: white;"></div>
-        </div>
-
-        <!-- Admin View (Support Messages) -->
-        <div class="view" id="view-admin" style="display: none;">
-            <div class="container mt-4">
-                <div class="d-flex align-items-center mb-4">
-                    <button class="btn btn-outline-light me-3" onclick="window.location.reload()"><i class="fas fa-arrow-left"></i></button>
-                    <h2 class="text-white mb-0"><i class="fas fa-user-shield me-2"></i>Admin Dashboard</h2>
-                </div>
-                <div class="card-glass">
-                    <h4 class="mb-3">Yêu cầu hỗ trợ</h4>
-                    <div id="admin-support-list">
-                        <div class="text-center py-4">Đang tải tin nhắn...</div>
-                    </div>
-                </div>
+        <!-- LOADING OVERLAY -->
+        <div id="global-loader" class="fixed inset-0 bg-black/50 z-[90] hidden items-center justify-center backdrop-blur-sm">
+            <div class="bg-card-dark p-6 rounded-xl flex flex-col items-center gap-3">
+                <div class="loader w-10 h-10 border-4"></div>
+                <p class="text-sm font-medium text-white">Processing...</p>
             </div>
         </div>
 
-        <!-- Auth View -->
-        <div class="view view-center-content" id="view-auth">
-            <div class="flip-card" id="auth-flip-card">
-                <div class="flip-card-inner">
-                    <!-- Login Form -->
-                    <div class="flip-card-front">
-                        <div class="auth-header">
-                            <h2>Đăng nhập</h2>
-                            <p class="mb-0">Dành cho Khách & Admin</p>
-                        </div>
-                        <div class="auth-body">
-                            <form id="login-form">
-                                <div class="mb-3"><input type="email" class="form-control" id="login-email" placeholder="Email" required></div>
-                                <div class="mb-3"><input type="password" class="form-control" id="login-password" placeholder="Mật khẩu" required></div>
-                                <div class="d-flex justify-content-end mb-3">
-                                    <button type="button" class="forgot-password-link" id="forgot-password-btn">Quên mật khẩu?</button>
-                                </div>
-                                <div class="d-grid"><button type="submit" class="btn-submit-grad">Đăng nhập</button></div>
-                            </form>
-                            <p class="mt-3 text-center text-white-50">
-                                Chưa có tài khoản? <button class="auth-switch-link" id="show-register-btn">Đăng ký khách</button>
-                            </p>
-                            <p class="text-center mt-3"><button class="btn btn-sm btn-outline-light rounded-pill" onclick="window.location.reload()">Quay lại trang chính</button></p>
-                        </div>
+        <!-- ================= 1. PUBLIC LAYOUT & NAVIGATION ================= -->
+        <header id="public-header" class="sticky top-0 z-50 border-b border-slate-200 dark:border-border-dark bg-white/80 dark:bg-bg-dark/80 backdrop-blur-md">
+            <div class="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
+                <div class="flex items-center gap-2 cursor-pointer" onclick="router.go('home')">
+                    <div class="size-8 bg-primary rounded-lg flex items-center justify-center text-white">
+                        <span class="material-symbols-outlined">code</span>
                     </div>
-                    <!-- Register Form -->
-                    <div class="flip-card-back">
-                         <div class="auth-header">
-                            <h2>Đăng ký Khách</h2>
-                            <p class="mb-0">Tạo tài khoản để gửi hỗ trợ</p>
-                        </div>
-                        <div class="auth-body">
-                            <form id="register-form">
-                                <div class="alert alert-info small p-2">Lưu ý: Bạn đang đăng ký tài khoản khách để xem và tương tác, không thể tạo trang riêng.</div>
-                                <div class="mb-3"><input type="email" class="form-control" id="register-email" placeholder="Email" required></div>
-                                <div class="mb-3"><input type="password" class="form-control" id="register-password" placeholder="Mật khẩu (tối thiểu 6 ký tự)" required minlength="6"></div>
-                                <div class="d-grid mt-4"><button type="submit" class="btn-submit-grad">Đăng ký</button></div>
-                            </form>
-                            <p class="mt-4 text-center text-white-50">
-                                Đã có tài khoản? <button class="auth-switch-link" id="show-login-btn">Đăng nhập</button>
-                            </p>
-                        </div>
-                    </div>
+                    <h2 class="text-xl font-bold tracking-tight">Portfolio</h2>
+                </div>
+                <nav class="hidden md:flex items-center gap-8">
+                    <a onclick="router.go('home')" class="cursor-pointer text-sm font-medium hover:text-primary transition-colors">Home</a>
+                    <a onclick="router.go('projects')" class="cursor-pointer text-sm font-medium hover:text-primary transition-colors">Projects</a>
+                </nav>
+                <div class="flex items-center gap-4">
+                    <button id="theme-toggle" class="p-2 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                        <span class="material-symbols-outlined block dark:hidden">dark_mode</span>
+                        <span class="material-symbols-outlined hidden dark:block">light_mode</span>
+                    </button>
+                    <button id="auth-btn" onclick="router.go('login')" class="bg-primary hover:bg-primary-dark text-white px-5 py-2 rounded-lg text-sm font-bold transition-all shadow-lg shadow-primary/20">
+                        Login
+                    </button>
                 </div>
             </div>
-            <div id="auth-status" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100"></div>
-        </div>
+        </header>
 
-        <!-- Forgot Password View -->
-        <div class="view view-center-content" id="view-forgot-password">
-            <div class="card-glass" style="width: 100%; max-width: 420px;">
-                 <div class="auth-header" style="border-radius: 20px 20px 0 0; margin: -2rem -2rem 0 -2rem;">
-                    <h2>Đặt lại mật khẩu</h2>
-                    <p class="mb-0">Nhập email để nhận liên kết</p>
-                </div>
-                <div class="auth-body">
-                    <form id="forgot-password-form">
-                        <div id="reset-email-group">
-                             <label class="form-label text-white-50">Email đã đăng ký</label>
-                            <input type="email" class="form-control" id="reset-email-input" placeholder="Email của bạn">
-                        </div>
-                        <div class="d-grid mt-4">
-                            <button type="submit" class="btn-submit-grad">Gửi liên kết</button>
-                        </div>
-                    </form>
-                    <p class="mt-4 text-center text-white-50">
-                        <button class="auth-switch-link" id="back-to-login-btn">Quay lại Đăng nhập</button>
+        <!-- ================= 2. VIEWS (PAGES) ================= -->
+
+        <!-- VIEW: HOME -->
+        <div id="view-home" class="view-section max-w-[1200px] mx-auto px-6 py-12 space-y-20">
+            <!-- Hero -->
+            <section class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                <div class="space-y-6">
+                    <h1 class="text-4xl lg:text-6xl font-black leading-tight">
+                        Building digital experiences with <span class="text-primary">code</span> and craft.
+                    </h1>
+                    <p id="hero-bio" class="text-slate-600 dark:text-slate-400 text-lg leading-relaxed max-w-xl">
+                        Loading bio...
                     </p>
+                    <div class="flex gap-4">
+                        <button onclick="router.go('projects')" class="bg-primary text-white px-8 py-3 rounded-lg font-bold flex items-center gap-2 hover:bg-primary-dark transition-all">
+                            View Projects <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                        </button>
+                    </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Profile View -->
-        <div class="view" id="view-profile">
-            <div class="row justify-content-center">
-                <div class="col-12 col-md-10 col-lg-8" id="profile-page-content"></div>
-            </div>
-        </div>
-
-        <!-- Not Found View -->
-        <div class="view text-center" id="view-not-found">
-            <div class="card-glass p-5">
-                <h2>Chưa thiết lập Profile</h2>
-                <p>Admin chưa thiết lập nội dung cho trang này.</p>
-                <a href="#" onclick="switchView('auth')" class="btn btn-primary">Đăng nhập (Admin)</a>
-            </div>
-        </div>
-    </main>
-
-    <footer class="text-center footer-section">
-        <p class="mb-0">© <span id="footer-year"></span> Bmass Profiles. All Rights Reserved.</p>
-    </footer>
-
-    <!-- Edit Modal -->
-    <div class="modal fade" id="editModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header"><h5 class="modal-title">Chỉnh sửa trang cá nhân (Admin)</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                <div class="modal-body" id="edit-modal-body"></div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="button" id="save-profile-btn" class="btn btn-primary">Lưu thay đổi</button>
+                <div class="relative flex justify-center">
+                    <div class="aspect-square w-full max-w-md relative z-10 overflow-hidden rounded-2xl shadow-2xl border border-slate-200 dark:border-border-dark">
+                        <img id="hero-avatar" class="w-full h-full object-cover" src="https://via.placeholder.com/400" alt="Avatar"/>
+                    </div>
+                    <div class="absolute -bottom-6 -right-6 w-64 h-64 bg-primary/20 rounded-full blur-3xl -z-0"></div>
                 </div>
+            </section>
+            
+            <!-- Featured Projects -->
+            <section>
+                <div class="flex items-center justify-between border-b border-slate-200 dark:border-border-dark pb-4 mb-6">
+                    <h2 class="text-2xl font-bold">Featured Projects</h2>
+                </div>
+                <div id="featured-projects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- JS Injected -->
+                </div>
+            </section>
+        </div>
+
+        <!-- VIEW: PROJECTS LIST -->
+        <div id="view-projects" class="view-section max-w-[1200px] mx-auto px-6 py-12">
+            <h1 class="text-3xl font-bold mb-8">All Projects</h1>
+            <div class="flex flex-col md:flex-row gap-4 mb-8">
+                <div class="relative flex-1">
+                    <span class="material-symbols-outlined absolute left-3 top-3 text-slate-500">search</span>
+                    <input id="search-input" type="text" placeholder="Search projects..." class="w-full pl-10 bg-white dark:bg-card-dark border-slate-200 dark:border-border-dark rounded-lg focus:ring-primary text-slate-900 dark:text-white">
+                </div>
+                <select id="category-filter" class="bg-white dark:bg-card-dark border-slate-200 dark:border-border-dark rounded-lg focus:ring-primary text-slate-900 dark:text-white">
+                    <option value="all">All Categories</option>
+                </select>
+            </div>
+            <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- JS Injected -->
             </div>
         </div>
+
+        <!-- VIEW: PROJECT DETAIL -->
+        <div id="view-detail" class="view-section max-w-[1000px] mx-auto px-6 py-12">
+            <button onclick="router.back()" class="flex items-center gap-2 text-slate-500 hover:text-primary mb-6">
+                <span class="material-symbols-outlined">arrow_back</span> Back
+            </button>
+            <div id="detail-content">
+                <!-- JS Injected -->
+            </div>
+        </div>
+
+        <!-- VIEW: LOGIN -->
+        <div id="view-login" class="view-section h-[calc(100vh-64px)] flex items-center justify-center p-6">
+            <div class="bg-white dark:bg-card-dark w-full max-w-[420px] p-8 rounded-2xl shadow-2xl border border-slate-200 dark:border-border-dark text-center">
+                <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <span class="material-symbols-outlined text-3xl text-primary">lock</span>
+                </div>
+                <h1 class="text-2xl font-bold mb-2">Welcome Back</h1>
+                <p class="text-slate-500 mb-8">Sign in to access admin dashboard</p>
+                <button onclick="authManager.login()" class="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-border-dark py-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-all font-medium">
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5">
+                    Sign in with Google
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= 3. ADMIN PANEL LAYOUT ================= -->
+        <div id="admin-layout" class="view-section fixed inset-0 z-[60] bg-bg-light dark:bg-bg-dark flex hidden">
+            <!-- Admin Sidebar -->
+            <aside class="w-64 bg-white dark:bg-card-dark border-r border-slate-200 dark:border-border-dark flex flex-col hidden md:flex">
+                <div class="p-6 border-b border-slate-200 dark:border-border-dark flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white">
+                        <span class="material-symbols-outlined text-lg">admin_panel_settings</span>
+                    </div>
+                    <span class="font-bold text-lg">Admin Pro</span>
+                </div>
+                <nav class="flex-1 p-4 space-y-1">
+                    <button onclick="router.goAdmin('dashboard')" class="admin-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors text-sm font-medium">
+                        <span class="material-symbols-outlined">dashboard</span> Dashboard
+                    </button>
+                    <button onclick="router.goAdmin('projects')" class="admin-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors text-sm font-medium">
+                        <span class="material-symbols-outlined">folder</span> Projects
+                    </button>
+                    <button onclick="router.goAdmin('categories')" class="admin-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors text-sm font-medium">
+                        <span class="material-symbols-outlined">category</span> Categories
+                    </button>
+                    <button onclick="router.goAdmin('users')" class="admin-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors text-sm font-medium">
+                        <span class="material-symbols-outlined">group</span> Users
+                    </button>
+                     <button onclick="router.goAdmin('content')" class="admin-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors text-sm font-medium">
+                        <span class="material-symbols-outlined">edit_document</span> Content
+                    </button>
+                </nav>
+                <div class="p-4 border-t border-slate-200 dark:border-border-dark">
+                     <button onclick="router.go('home')" class="w-full flex items-center gap-3 px-3 py-2 text-slate-500 hover:text-white mb-2 text-sm">
+                        <span class="material-symbols-outlined">home</span> Back Home
+                    </button>
+                    <button onclick="authManager.logout()" class="w-full flex items-center gap-3 px-3 py-2 text-red-500 hover:bg-red-500/10 rounded-lg text-sm font-medium">
+                        <span class="material-symbols-outlined">logout</span> Logout
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Admin Content -->
+            <main class="flex-1 flex flex-col h-screen overflow-hidden">
+                <header class="h-16 border-b border-slate-200 dark:border-border-dark bg-white dark:bg-card-dark flex items-center justify-between px-6">
+                    <h2 id="admin-page-title" class="font-bold text-lg">Dashboard</h2>
+                    <div class="flex items-center gap-4">
+                         <div class="flex items-center gap-2">
+                             <div id="admin-avatar" class="w-8 h-8 rounded-full bg-cover bg-center bg-slate-700"></div>
+                             <span id="admin-name" class="text-sm font-medium">User</span>
+                         </div>
+                    </div>
+                </header>
+                
+                <div class="flex-1 overflow-y-auto p-6 bg-bg-light dark:bg-bg-dark">
+                    <!-- SUB-VIEW: DASHBOARD -->
+                    <div id="admin-dashboard" class="admin-view space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <!-- Stat Card Template -->
+                             <div class="p-6 bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-border-dark">
+                                <p class="text-xs font-bold text-slate-500 uppercase">Total Visits</p>
+                                <h3 class="text-2xl font-black mt-1" id="stat-visits">0</h3>
+                                <div class="mt-2 text-xs text-emerald-500 font-bold flex items-center gap-1"><span class="material-symbols-outlined text-sm">trending_up</span> Live</div>
+                            </div>
+                             <div class="p-6 bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-border-dark">
+                                <p class="text-xs font-bold text-slate-500 uppercase">Projects</p>
+                                <h3 class="text-2xl font-black mt-1" id="stat-projects">0</h3>
+                            </div>
+                             <div class="p-6 bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-border-dark">
+                                <p class="text-xs font-bold text-slate-500 uppercase">Users</p>
+                                <h3 class="text-2xl font-black mt-1" id="stat-users">0</h3>
+                            </div>
+                             <div class="p-6 bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-border-dark">
+                                <p class="text-xs font-bold text-slate-500 uppercase">Categories</p>
+                                <h3 class="text-2xl font-black mt-1" id="stat-cats">0</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SUB-VIEW: PROJECTS -->
+                    <div id="admin-projects" class="admin-view hidden">
+                        <div class="flex justify-between items-center mb-6">
+                             <h3 class="text-xl font-bold">Manage Projects</h3>
+                             <button onclick="projectManager.openModal()" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-bold">
+                                 <span class="material-symbols-outlined text-lg">add</span> Add Project
+                             </button>
+                        </div>
+                        <div class="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-border-dark overflow-hidden">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-slate-50 dark:bg-slate-800/50 text-xs uppercase text-slate-500">
+                                    <tr><th class="p-4">Project</th><th class="p-4">Category</th><th class="p-4">Status</th><th class="p-4 text-right">Actions</th></tr>
+                                </thead>
+                                <tbody id="admin-projects-list" class="divide-y divide-slate-100 dark:divide-border-dark text-sm">
+                                    <!-- Rows injected here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- SUB-VIEW: CATEGORIES -->
+                    <div id="admin-categories" class="admin-view hidden">
+                         <div class="flex justify-between items-center mb-6">
+                             <h3 class="text-xl font-bold">Manage Categories</h3>
+                             <button onclick="categoryManager.add()" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold">Add Category</button>
+                        </div>
+                        <div class="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-border-dark p-4">
+                            <ul id="admin-categories-list" class="space-y-2"></ul>
+                        </div>
+                    </div>
+
+                    <!-- SUB-VIEW: USERS -->
+                    <div id="admin-users" class="admin-view hidden">
+                        <h3 class="text-xl font-bold mb-6">User Permissions</h3>
+                        <div class="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-border-dark overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="bg-slate-50 dark:bg-slate-800/50 text-xs uppercase text-slate-500">
+                                    <tr><th class="p-4">User</th><th class="p-4">Email</th><th class="p-4">Role</th><th class="p-4">Status</th><th class="p-4 text-right">Action</th></tr>
+                                </thead>
+                                <tbody id="admin-users-list" class="divide-y divide-slate-100 dark:divide-border-dark text-sm"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- SUB-VIEW: CONTENT -->
+                    <div id="admin-content" class="admin-view hidden max-w-2xl">
+                        <h3 class="text-xl font-bold mb-6">Profile Settings</h3>
+                        <div class="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-border-dark p-6 space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold uppercase mb-1">Display Name</label>
+                                <input id="content-name" type="text" class="w-full rounded-lg bg-bg-light dark:bg-bg-dark border-slate-200 dark:border-border-dark">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase mb-1">Bio</label>
+                                <textarea id="content-bio" rows="4" class="w-full rounded-lg bg-bg-light dark:bg-bg-dark border-slate-200 dark:border-border-dark"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase mb-1">Avatar URL (Upload via Projects for now)</label>
+                                <input id="content-avatar" type="text" class="w-full rounded-lg bg-bg-light dark:bg-bg-dark border-slate-200 dark:border-border-dark">
+                            </div>
+                            <button onclick="contentManager.save()" class="bg-primary text-white px-6 py-2 rounded-lg font-bold">Save Changes</button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
     </div>
+
+    <!-- ================= MODALS ================= -->
     
-    <!-- Donate/Wallet Modal -->
-    <div class="modal fade" id="donateModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="background: #1a1a2e; color: #fff; border: 1px solid rgba(255,255,255,0.2);">
-                <div class="modal-header border-bottom-0">
-                    <h5 class="modal-title"><i class="fas fa-coins text-warning me-2"></i>Donate</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    <!-- PROJECT MODAL -->
+    <div id="modal-project" class="fixed inset-0 z-[80] hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div class="bg-white dark:bg-card-dark w-full max-w-3xl rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-slate-200 dark:border-border-dark flex justify-between items-center">
+                <h3 class="font-bold text-lg" id="modal-title">Add New Project</h3>
+                <button onclick="projectManager.closeModal()"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-4">
+                <input type="hidden" id="p-id">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input id="p-title" type="text" placeholder="Project Title" class="rounded-lg bg-bg-light dark:bg-bg-dark border-slate-200 dark:border-border-dark">
+                    <select id="p-category" class="rounded-lg bg-bg-light dark:bg-bg-dark border-slate-200 dark:border-border-dark"></select>
                 </div>
-                <div class="modal-body" id="donate-modal-body"></div>
+                <textarea id="p-desc" rows="3" placeholder="Short Description" class="w-full rounded-lg bg-bg-light dark:bg-bg-dark border-slate-200 dark:border-border-dark"></textarea>
+                
+                <div class="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-6 text-center">
+                     <p class="text-sm text-slate-500 mb-2">Cover Image</p>
+                     <input type="file" id="p-file" class="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-primary/10 file:text-primary hover:file:bg-primary/20">
+                     <p id="p-file-current" class="text-xs text-primary mt-2"></p>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="text-sm font-bold">Guide / Content (Markdown)</label>
+                    <textarea id="p-guide" rows="5" class="w-full rounded-lg bg-bg-light dark:bg-bg-dark border-slate-200 dark:border-border-dark"></textarea>
+                </div>
+                
+                <div class="flex gap-4">
+                     <label class="flex items-center gap-2"><input type="checkbox" id="p-featured" class="rounded text-primary focus:ring-primary"> Featured</label>
+                     <label class="flex items-center gap-2"><input type="checkbox" id="p-visible" checked class="rounded text-primary focus:ring-primary"> Visible</label>
+                </div>
+            </div>
+            <div class="p-6 border-t border-slate-200 dark:border-border-dark flex justify-end gap-3">
+                <button onclick="projectManager.closeModal()" class="px-4 py-2 rounded-lg border border-slate-200 dark:border-border-dark hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
+                <button onclick="projectManager.save()" class="px-6 py-2 rounded-lg bg-primary text-white font-bold hover:bg-primary-dark">Save Project</button>
             </div>
         </div>
     </div>
 
-    <!-- Support Modal (User) -->
-    <div class="modal fade" id="supportModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Hỗ trợ khách hàng</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Gửi yêu cầu mới</label>
-                        <textarea id="support-message-input" class="form-control mb-2" rows="3" placeholder="Nhập nội dung cần hỗ trợ..."></textarea>
-                        <button type="button" class="btn btn-sm btn-primary w-100" id="send-support-btn">Gửi đi</button>
-                    </div>
-                    <hr>
-                    <label class="form-label small fw-bold text-muted">Lịch sử hỗ trợ</label>
-                    <div id="user-support-history" style="max-height: 300px; overflow-y: auto;">
-                        <p class="text-center small text-muted">Đang tải...</p>
-                    </div>
-                </div>
+    <!-- CONFIRM MODAL -->
+    <div id="modal-confirm" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/80">
+        <div class="bg-card-dark p-6 rounded-xl max-w-sm text-center border border-border-dark">
+            <span class="material-symbols-outlined text-4xl text-amber-500 mb-2">warning</span>
+            <h3 class="font-bold text-lg text-white mb-2">Are you sure?</h3>
+            <p class="text-slate-400 text-sm mb-6">This action cannot be undone.</p>
+            <div class="flex justify-center gap-3">
+                <button onclick="ui.toggleModal('modal-confirm', false)" class="px-4 py-2 rounded-lg bg-slate-700 text-white">Cancel</button>
+                <button id="confirm-action-btn" class="px-4 py-2 rounded-lg bg-red-600 text-white font-bold">Confirm</button>
             </div>
         </div>
     </div>
 
-    <!-- Project Detail Modal -->
-    <div class="modal fade" id="projectDetailModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <button type="button" id="project-detail-share-btn" title="Chia sẻ dự án"><i class="fas fa-share-alt"></i></button>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="project-detail-header">
-                        <img src="" id="project-detail-icon" alt="Project Icon">
-                        <div>
-                            <h3 id="project-detail-name">Project Name</h3>
-                            <span id="project-detail-category">Category</span>
-                        </div>
-                    </div>
-                    
-                    <div class="d-grid mb-3">
-                         <button id="project-detail-link-btn" data-link="" data-project-index="" data-username=""><i class="fas fa-external-link-alt me-2"></i>Mở ngay</button>
-                    </div>
+    <!-- ================= JAVASCRIPT ================= -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-                    <p id="project-detail-description">Description...</p>
+        // CONFIG
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
+            authDomain: "profile-d1214.firebaseapp.com",
+            projectId: "profile-d1214",
+            storageBucket: "profile-d1214.firebasestorage.app",
+            messagingSenderId: "914980131889",
+            appId: "1:914980131889:web:72f8da15c42dbee671b110",
+            measurementId: "G-C587M69LZW"
+        };
+        const ADMIN_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1";
 
-                    <div id="project-detail-ref-section" class="copy-ref-container mb-3" style="display: none;">
-                        <div class="input-group mb-2" id="ref-link-group">
-                            <span class="input-group-text"><i class="fas fa-link"></i></span>
-                            <input type="text" class="form-control" id="project-detail-ref-link" readonly>
-                            <button class="btn btn-outline-primary" type="button" onclick="handleCopyRef('link', this)"><i class="fas fa-copy"></i></button>
-                        </div>
-                        <div class="input-group" id="ref-code-group">
-                            <span class="input-group-text"><i class="fas fa-tag"></i></span>
-                            <input type="text" class="form-control" id="project-detail-ref-code" readonly>
-                            <button class="btn btn-outline-primary" type="button" onclick="handleCopyRef('code', this)"><i class="fas fa-copy"></i></button>
-                        </div>
-                    </div>
-                    
-                    <div id="project-detail-long-description-container" style="display: none;">
-                         <hr><h6 class="mb-2">Chi tiết</h6><div id="project-detail-long-description"></div>
-                    </div>
+        // INIT
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+        const provider = new GoogleAuthProvider();
 
-                    <div id="project-detail-stats" class="mt-4">
-                        <div class="stat-item"><h6 id="project-detail-clicks">0</h6><p>Lượt xem</p></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+        // STATE
+        const state = {
+            user: null,
+            role: 'guest',
+            projects: [],
+            categories: [],
+            users: []
+        };
 
-    <!-- QR Code Modal -->
-    <div class="modal fade" id="qrModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content text-center p-4">
-                <h5 class="mb-3">Mã QR</h5>
-                <div id="qrcode" class="d-flex justify-content-center mb-3"></div>
-                <p class="small text-muted">Quét để truy cập</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Analytics Modal -->
-    <div class="modal fade" id="analyticsModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="fas fa-chart-bar me-2"></i>Thống kê lượt xem</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <canvas id="clicksChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
-
-<script>
-// --- CẤU HÌNH ADMIN (QUAN TRỌNG) ---
-// Thay thế bằng UID của bạn (lấy từ Firebase Auth Dashboard) và Username bạn muốn.
-const ADMIN_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1"; 
-const ADMIN_USERNAME = "bmassk3"; 
-const IMAGE_BASE_URL = 'https://bmass.vercel.app/img/';
-
-// Global Helpers
-function handleCopyRef(type, btnElement) {
-    const inputId = type === 'link' ? 'project-detail-ref-link' : 'project-detail-ref-code';
-    const inputElement = document.getElementById(inputId);
-    const originalHTML = btnElement.innerHTML;
-    if (inputElement && inputElement.value) {
-        navigator.clipboard.writeText(inputElement.value).then(() => {
-            btnElement.innerHTML = `<span style="font-size: 0.8rem; font-weight: bold;">Đã Copy</span>`;
-            btnElement.classList.replace('btn-outline-primary', 'btn-success');
-            setTimeout(() => { btnElement.innerHTML = originalHTML; btnElement.classList.replace('btn-success', 'btn-outline-primary'); }, 2000);
-        });
-    }
-}
-window.copyToClipboard = function(text, btn) { navigator.clipboard.writeText(text).then(() => { const original = btn.innerHTML; btn.innerHTML = '<i class="fas fa-check text-success"></i>'; setTimeout(() => { btn.innerHTML = original; }, 2000); }); }
-
-// Edit Modal Interactions
-function handleEditSearch(input) {
-    const term = input.value.toLowerCase();
-    document.querySelectorAll('#edit-projects-accordion .accordion-item').forEach(item => {
-        const name = item.querySelector('.project-name').value.toLowerCase();
-        const isActiveTab = item.closest('.edit-category-group').style.display !== 'none';
-        if (isActiveTab) item.style.display = name.includes(term) ? 'block' : 'none';
-    });
-}
-function handleEditTabClick(categoryKey) {
-    document.querySelectorAll('.edit-cat-pill').forEach(pill => pill.classList.toggle('active', pill.dataset.cat === categoryKey));
-    document.querySelectorAll('.edit-category-group').forEach(group => group.style.display = (categoryKey === 'all' || group.dataset.cat === categoryKey) ? 'block' : 'none');
-    const searchInput = document.getElementById('edit-project-search');
-    if(searchInput) handleEditSearch(searchInput);
-}
-
-// Admin Support Logic
-async function handleAdminReply(docId) {
-    const replyInput = document.getElementById(`reply-input-${docId}`);
-    const btn = document.getElementById(`reply-btn-${docId}`);
-    const replyText = replyInput.value.trim();
-    if (!replyText) return;
-    btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-    try {
-        await firebase.firestore().collection('support_messages').doc(docId).update({
-            reply: replyText,
-            replyTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
-            status: 'replied'
-        });
-        document.getElementById(`msg-card-${docId}`).querySelector('.reply-section').innerHTML = `<div class="alert alert-success mt-2 mb-0"><strong><i class="fas fa-check-circle me-1"></i>Đã phản hồi:</strong> ${replyText}</div>`;
-    } catch (error) { alert("Lỗi khi gửi phản hồi."); btn.disabled = false; btn.innerHTML = 'Gửi trả lời'; }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    particlesJS("particles-js", { "particles": { "number": { "value": 80 }, "color": { "value": "#ffffff" }, "shape": { "type": "circle" }, "opacity": { "value": 0.5 }, "size": { "value": 3 }, "line_linked": { "enable": true, "distance": 150, "color": "#ffffff", "opacity": 0.4 }, "move": { "enable": true, "speed": 6 } }, "interactivity": { "events": { "onhover": { "enable": true, "mode": "repulse" }, "onclick": { "enable": true, "mode": "push" } } }, "retina_detect": true });
-
-    const firebaseConfig = {
-        apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
-        authDomain: "profile-d1214.firebaseapp.com",
-        projectId: "profile-d1214",
-        storageBucket: "profile-d1214.firebasestorage.app",
-        messagingSenderId: "914980131889",
-        appId: "1:914980131889:web:72f8da15c42dbee671b110",
-        measurementId: "G-C587M69LZW"
-    };
-
-    let auth, db, storage, currentUser = null;
-
-    const views = { 
-        loading: document.getElementById('view-loading'), 
-        auth: document.getElementById('view-auth'), 
-        profile: document.getElementById('view-profile'), 
-        notFound: document.getElementById('view-not-found'),
-        forgotPassword: document.getElementById('view-forgot-password'),
-        admin: document.getElementById('view-admin')
-    };
-    const profilePageContent = document.getElementById('profile-page-content');
-    const editModal = new bootstrap.Modal(document.getElementById('editModal'));
-    const projectDetailModal = new bootstrap.Modal(document.getElementById('projectDetailModal'));
-    const qrModal = new bootstrap.Modal(document.getElementById('qrModal'));
-    const analyticsModal = new bootstrap.Modal(document.getElementById('analyticsModal'));
-    const supportModal = new bootstrap.Modal(document.getElementById('supportModal'));
-    const donateModal = new bootstrap.Modal(document.getElementById('donateModal'));
-    const importJsonInput = document.getElementById('import-json-input'); 
-
-    const socialIcons = { github: 'fa-brands fa-github', x: 'fa-brands fa-xing', ig: 'fa-brands fa-instagram', tele: 'fa-brands fa-telegram', tiktok: 'fa-brands fa-tiktok', youtube: 'fa-brands fa-youtube', discord: 'fa-brands fa-discord', zalo: 'fa-solid fa-comment-dots', gmail: 'fa-solid fa-envelope', channel: 'fa-solid fa-satellite-dish', website: 'fa-solid fa-globe' };
-    const defaultCategories = {}; 
-    let chartInstance = null;
-
-    function initializeFirebase() {
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        auth = firebase.auth();
-        db = firebase.firestore();
-        storage = firebase.storage();
-    }
-
-    function switchView(viewName) {
-        Object.values(views).forEach(view => view.style.display = 'none');
-        if (views[viewName]) views[viewName].style.display = (views[viewName].classList.contains('view-center-content')) ? 'flex' : 'block';
-    }
-
-    function showToast(message, type = 'danger') {
-        const toastId = 'toast-' + Date.now();
-        const toastHTML = `<div id="${toastId}" class="toast align-items-center text-white bg-${type} border-0" role="alert"><div class="d-flex"><div class="toast-body">${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>`;
-        document.getElementById('auth-status').insertAdjacentHTML('beforeend', toastHTML);
-        new bootstrap.Toast(document.getElementById(toastId)).show();
-    }
-
-    function applyTheme(themeData) {
-        const root = document.documentElement;
-        let bg = 'linear-gradient(45deg, #000000 0%, #1a0a24 100%)'; 
-        if (themeData) {
-            if (themeData.accentColor) {
-                root.style.setProperty('--accent-primary', themeData.accentColor);
-                root.style.setProperty('--accent-secondary', themeData.accentColor); 
+        // --- UI UTILS ---
+        window.ui = {
+            toast: (msg, type = 'success') => {
+                const container = document.getElementById('toast-container');
+                const el = document.createElement('div');
+                const color = type === 'success' ? 'bg-emerald-600' : 'bg-red-600';
+                el.className = `${color} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 toast-enter font-medium text-sm`;
+                el.innerHTML = `<span class="material-symbols-outlined text-lg">${type === 'success' ? 'check_circle' : 'error'}</span> ${msg}`;
+                container.appendChild(el);
+                
+                requestAnimationFrame(() => el.classList.remove('toast-enter'));
+                setTimeout(() => {
+                    el.classList.add('toast-exit');
+                    setTimeout(() => el.remove(), 300);
+                }, 3000);
+            },
+            loading: (show) => {
+                document.getElementById('global-loader').style.display = show ? 'flex' : 'none';
+            },
+            toggleModal: (id, show) => {
+                const el = document.getElementById(id);
+                if(show) { el.classList.remove('hidden'); el.classList.add('flex'); }
+                else { el.classList.add('hidden'); el.classList.remove('flex'); }
+            },
+            confirm: (cb) => {
+                ui.toggleModal('modal-confirm', true);
+                document.getElementById('confirm-action-btn').onclick = async () => {
+                    ui.toggleModal('modal-confirm', false);
+                    await cb();
+                }
             }
-            if (themeData.bgType === 'image' && themeData.bgValue) {
-                bg = `url('${themeData.bgValue}') center/cover no-repeat fixed`;
-                document.getElementById('particles-js').style.opacity = '0.2'; 
-            } else if (themeData.bgType === 'gradient' && themeData.bgValue) {
-                bg = themeData.bgValue;
-                document.getElementById('particles-js').style.opacity = '1';
+        };
+
+        // --- ROUTER ---
+        window.router = {
+            go: (view, param = null) => {
+                // Hide Admin
+                document.getElementById('admin-layout').classList.add('hidden');
+                document.getElementById('public-header').classList.remove('hidden');
+                
+                // Hide all sections
+                document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+                
+                // Show target
+                const target = document.getElementById(`view-${view}`);
+                if(target) target.classList.add('active');
+                
+                // Dynamic Load
+                if(view === 'home') renderHome();
+                if(view === 'projects') renderProjects();
+                if(view === 'detail') renderDetail(param);
+                
+                window.scrollTo(0,0);
+            },
+            goAdmin: (subView) => {
+                if(state.role !== 'admin' && state.role !== 'sub-admin') return router.go('login');
+                
+                document.getElementById('public-header').classList.add('hidden');
+                document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+                document.getElementById('admin-layout').classList.remove('hidden');
+                
+                // Sidebar Active State
+                document.querySelectorAll('.admin-link').forEach(btn => {
+                    btn.classList.remove('bg-primary/10', 'text-primary');
+                    btn.classList.add('text-slate-500');
+                    if(btn.getAttribute('onclick').includes(subView)) {
+                        btn.classList.add('bg-primary/10', 'text-primary');
+                        btn.classList.remove('text-slate-500');
+                    }
+                });
+
+                // Show Sub View
+                document.querySelectorAll('.admin-view').forEach(el => el.classList.add('hidden'));
+                document.getElementById(`admin-${subView}`).classList.remove('hidden');
+                document.getElementById('admin-page-title').innerText = subView.charAt(0).toUpperCase() + subView.slice(1);
+                
+                if(subView === 'dashboard') updateStats();
+                if(subView === 'users') userManager.render();
+            },
+            back: () => router.go('projects')
+        };
+
+        // --- AUTH ---
+        window.authManager = {
+            login: async () => {
+                try {
+                    const res = await signInWithPopup(auth, provider);
+                    const user = res.user;
+                    const ref = doc(db, "users", user.uid);
+                    const snap = await getDoc(ref);
+
+                    if(!snap.exists()) {
+                        await setDoc(ref, {
+                            uid: user.uid,
+                            email: user.email,
+                            displayName: user.displayName,
+                            photoURL: user.photoURL,
+                            role: user.uid === ADMIN_UID ? 'admin' : 'user',
+                            status: 'active',
+                            createdAt: new Date()
+                        });
+                    }
+                } catch (e) { ui.toast(e.message, 'error'); }
+            },
+            logout: async () => {
+                await signOut(auth);
+                window.location.reload();
             }
-        }
-        document.body.style.background = bg;
-    }
+        };
 
-    // New Donate Function
-    window.showDonateModal = async function(username) {
-        const docSnap = await db.collection('profiles').doc(username).get();
-        if (!docSnap.exists) return;
-        const data = docSnap.data();
-        const wallets = data.wallets || {};
-        let html = '';
-        const walletNames = { evm: 'EVM (ETH/BSC/Base)', sol: 'Solana', ton: 'TON (Telegram)', trc20: 'USDT (TRC20)', btc: 'Bitcoin' };
-        for (const [key, addr] of Object.entries(wallets)) {
-            if (addr && addr.trim() !== '') html += `<div class="wallet-card"><div class="wallet-icon"><i class="fas fa-wallet"></i></div><div class="wallet-info"><p class="wallet-name">${walletNames[key] || key}</p><p class="wallet-address">${addr}</p></div><button class="btn-copy-wallet" onclick="copyToClipboard('${addr}', this)"><i class="fas fa-copy"></i></button></div>`;
-        }
-        document.getElementById('donate-modal-body').innerHTML = html || '<p class="text-center text-muted">Chưa cập nhật địa chỉ ví.</p>';
-        donateModal.show();
-    }
-
-    async function showAnalytics() {
-        document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show');
-        const docSnap = await db.collection('profiles').doc(ADMIN_USERNAME).get();
-        if (!docSnap.exists) return;
-        const activeProjects = (docSnap.data().projects || []).filter(p => p.clicks > 0).sort((a,b) => b.clicks - a.clicks);
-        if (activeProjects.length === 0) { showToast("Chưa có dữ liệu thống kê.", "warning"); return; }
-        const ctx = document.getElementById('clicksChart').getContext('2d');
-        if (chartInstance) chartInstance.destroy();
-        chartInstance = new Chart(ctx, { type: 'bar', data: { labels: activeProjects.map(p => p.name.substring(0, 15)), datasets: [{ label: 'Lượt Click', data: activeProjects.map(p => p.clicks), backgroundColor: 'rgba(145, 94, 255, 0.6)' }] } });
-        analyticsModal.show();
-    }
-
-    function showSupportModal() {
-        document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show');
-        document.getElementById('support-message-input').value = '';
-        supportModal.show();
-        loadUserSupportHistory();
-    }
-    async function loadUserSupportHistory() {
-        const container = document.getElementById('user-support-history');
-        container.innerHTML = '<p class="text-center small text-muted">Đang tải...</p>';
-        try {
-            const snapshot = await db.collection('support_messages').where('senderUid', '==', currentUser.uid).get();
-            const messages = []; snapshot.forEach(doc => messages.push(doc.data()));
-            messages.sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
-            let html = messages.length ? '' : '<p class="text-center small text-muted">Chưa có tin nhắn nào.</p>';
-            messages.forEach(msg => {
-                html += `<div class="chat-bubble user"><span class="meta">Bạn - ${msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleString('vi-VN') : ''}</span>${msg.message}</div>`;
-                if (msg.reply) html += `<div class="chat-bubble admin"><span class="meta fw-bold text-primary">Admin - ${msg.replyTimestamp ? new Date(msg.replyTimestamp.seconds * 1000).toLocaleString('vi-VN') : ''}</span>${msg.reply}</div>`;
-            });
-            container.innerHTML = html;
-        } catch (error) { container.innerHTML = '<p class="text-danger small">Lỗi tải lịch sử.</p>'; }
-    }
-    async function handleSendSupport() {
-        const message = document.getElementById('support-message-input').value.trim();
-        if (!message) return;
-        try {
-            await db.collection('support_messages').add({ senderUid: currentUser.uid, senderUsername: "Guest", senderEmail: currentUser.email, message: message, timestamp: firebase.firestore.FieldValue.serverTimestamp(), status: 'unread' });
-            showToast("Đã gửi hỗ trợ!", "success"); loadUserSupportHistory(); document.getElementById('support-message-input').value = '';
-        } catch (e) { showToast("Gửi thất bại."); }
-    }
-
-    async function showAdminDashboard() {
-        document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show');
-        switchView('admin');
-        const listContainer = document.getElementById('admin-support-list');
-        const snapshot = await db.collection('support_messages').orderBy('timestamp', 'desc').get();
-        if (snapshot.empty) { listContainer.innerHTML = '<p class="text-white-50 text-center">Chưa có tin nhắn.</p>'; return; }
-        let html = '';
-        snapshot.forEach(doc => {
-            const data = doc.data(); const docId = doc.id;
-            const replyHTML = data.status === 'replied' ? `<div class="alert alert-success mt-2 p-2 small"><strong>Đã phản hồi:</strong> ${data.reply}</div>` : `<div class="reply-section mt-2"><div class="input-group"><input type="text" class="form-control form-control-sm" id="reply-input-${docId}" placeholder="Trả lời..."><button class="btn btn-sm btn-primary" id="reply-btn-${docId}" onclick="handleAdminReply('${docId}')">Gửi</button></div></div>`;
-            html += `<div class="support-msg-card" id="msg-card-${docId}"><div class="support-msg-header"><span class="text-warning">${data.senderEmail}</span><span>${data.timestamp ? data.timestamp.toDate().toLocaleString('vi-VN') : ''}</span></div><div class="support-msg-body">${data.message}</div>${replyHTML}</div>`;
-        });
-        listContainer.innerHTML = html;
-    }
-
-    // Category Logic
-    window.handleRenameCategory = async function(oldKey) {
-        const docSnap = await db.collection('profiles').doc(ADMIN_USERNAME).get();
-        const data = docSnap.data();
-        const customCategories = data.customCategories || {};
-        const newName = prompt(`Tên mới cho "${customCategories[oldKey] || oldKey}":`, customCategories[oldKey] || oldKey);
-        if (!newName || newName.trim() === '') return;
-        const newKey = newName.trim().toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
-        try {
-            const projects = (data.projects || []).map(p => p.category === oldKey ? { ...p, category: newKey } : p);
-            delete customCategories[oldKey]; customCategories[newKey] = newName.trim();
-            await db.collection('profiles').doc(ADMIN_USERNAME).update({ customCategories, projects });
-            await openEditModal();
-        } catch (e) { showToast("Lỗi đổi tên."); }
-    }
-    window.handleDeleteCategory = async function(key) {
-        if (!confirm("Xóa danh mục này? Dự án sẽ về danh mục chung.")) return;
-        const docRef = db.collection('profiles').doc(ADMIN_USERNAME);
-        const data = (await docRef.get()).data();
-        const customCategories = data.customCategories || {}; delete customCategories[key];
-        const projects = (data.projects || []).map(p => p.category === key ? { ...p, category: 'project' } : p);
-        await docRef.update({ customCategories, projects });
-        await openEditModal();
-    }
-
-    function setupSidebar() {
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('overlay');
-        document.getElementById('header-controls').innerHTML = `<button class="sidebar-toggle" onclick="document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('show');"><i class="fas fa-bars"></i></button>`;
-        
-        let links = `<a class="sidebar-link" href="/"><i class="fas fa-home"></i> Trang chủ</a>`;
-
-        if (currentUser) {
-            // Logged in
-            if (currentUser.uid === ADMIN_UID) {
-                // ADMIN MENU
-                links += `
-                    <a class="sidebar-link" href="#" id="admin-dashboard-btn" style="color: #ff9800;"><i class="fas fa-user-shield"></i> Admin Panel</a>
-                    <a class="sidebar-link" href="#" id="analytics-btn"><i class="fas fa-chart-line"></i> Thống kê</a>
-                    <a class="sidebar-link" href="#" id="qr-code-btn"><i class="fas fa-qrcode"></i> Mã QR</a>
-                    <a class="sidebar-link" href="#" id="export-json-btn"><i class="fas fa-file-export"></i> Xuất JSON</a>
-                    <a class="sidebar-link" href="#" id="import-json-btn"><i class="fas fa-file-import"></i> Nhập JSON</a>
-                `;
+        onAuthStateChanged(auth, async (user) => {
+            if(user) {
+                const snap = await getDoc(doc(db, "users", user.uid));
+                if(snap.exists()) {
+                    const data = snap.data();
+                    if(data.status === 'locked') {
+                        await signOut(auth);
+                        ui.toast("Account locked", "error");
+                        return;
+                    }
+                    state.user = data;
+                    state.role = data.role;
+                    
+                    // UI Updates
+                    document.getElementById('auth-btn').innerText = "Dashboard";
+                    document.getElementById('auth-btn').onclick = () => {
+                         if(['admin','sub-admin'].includes(state.role)) router.goAdmin('dashboard');
+                         else router.go('home');
+                    };
+                    
+                    // Admin UI
+                    document.getElementById('admin-avatar').style.backgroundImage = `url(${state.user.photoURL})`;
+                    document.getElementById('admin-name').innerText = state.user.displayName;
+                    
+                    if(['admin','sub-admin'].includes(state.role)) router.goAdmin('dashboard');
+                    else router.go('home');
+                }
             } else {
-                // GUEST MENU
-                links += `<a class="sidebar-link" href="#" id="support-btn"><i class="fas fa-headset"></i> Hỗ trợ Admin</a>`;
+                state.user = null;
+                state.role = 'guest';
+                document.getElementById('auth-btn').innerText = "Login";
+                document.getElementById('auth-btn').onclick = () => router.go('login');
+                router.go('home');
             }
-            links += `<hr><a class="sidebar-link logout" href="#" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>`;
-        } else {
-            // Not logged in
-            links += `<a class="sidebar-link" href="#" id="sidebar-login-btn"><i class="fas fa-sign-in-alt"></i> Đăng nhập / Đăng ký</a>`;
-        }
-
-        document.getElementById('sidebar-links').innerHTML = links;
-        
-        // Listeners
-        if(document.getElementById('logout-btn')) document.getElementById('logout-btn').addEventListener('click', async () => { await auth.signOut(); window.location.reload(); });
-        if(document.getElementById('sidebar-login-btn')) document.getElementById('sidebar-login-btn').addEventListener('click', () => { sidebar.classList.remove('open'); overlay.classList.remove('show'); switchView('auth'); });
-        
-        if (currentUser && currentUser.uid === ADMIN_UID) {
-            document.getElementById('admin-dashboard-btn').addEventListener('click', showAdminDashboard);
-            document.getElementById('analytics-btn').addEventListener('click', showAnalytics);
-            document.getElementById('qr-code-btn').addEventListener('click', () => { 
-                sidebar.classList.remove('open'); overlay.classList.remove('show');
-                const container = document.getElementById('qrcode'); container.innerHTML = '';
-                new QRCode(container, { text: window.location.href, width: 200, height: 200 }); qrModal.show();
-            });
-            document.getElementById('export-json-btn').addEventListener('click', async () => {
-                const data = (await db.collection('profiles').doc(ADMIN_USERNAME).get()).data();
-                const a = document.createElement('a'); a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2)); a.download = `backup_${ADMIN_USERNAME}.json`; a.click();
-            });
-            document.getElementById('import-json-btn').addEventListener('click', () => importJsonInput.click());
-        } else if (currentUser) {
-            document.getElementById('support-btn').addEventListener('click', showSupportModal);
-        }
-    }
-
-    async function handleImportJson(e) {
-        const file = e.target.files[0]; if (!file || !confirm("Ghi đè dữ liệu hiện tại?")) return;
-        const reader = new FileReader();
-        reader.onload = async (event) => {
-            try {
-                const data = JSON.parse(event.target.result); delete data.ownerUid; delete data.username; delete data.email;
-                await db.collection('profiles').doc(ADMIN_USERNAME).update(data);
-                showToast("Nhập dữ liệu thành công!", "success"); setTimeout(() => location.reload(), 1500);
-            } catch (e) { showToast("File lỗi."); }
-        };
-        reader.readAsText(file);
-    }
-
-    async function fetchAndRenderProfile() {
-        switchView('loading');
-        try {
-            const docSnap = await db.collection('profiles').doc(ADMIN_USERNAME).get();
-            if (!docSnap.exists) {
-                // Nếu chưa có profile và đang là Admin đăng nhập -> Tạo profile mẫu
-                if (currentUser && currentUser.uid === ADMIN_UID) {
-                    await db.collection('profiles').doc(ADMIN_USERNAME).set({
-                        ownerUid: ADMIN_UID, username: ADMIN_USERNAME, name: "Admin", bio: "Welcome to my Web3 Profile",
-                        isVerified: true, email: currentUser.email, socials: {}, projects: [], customCategories: {}
-                    });
-                    return fetchAndRenderProfile();
-                }
-                switchView('not-found'); return;
-            }
-            
-            const data = docSnap.data();
-            applyTheme(data.theme);
-            const isOwner = currentUser && currentUser.uid === ADMIN_UID;
-            const customCategories = data.customCategories || {};
-
-            let socialLinksHTML = '';
-            for (const [key, url] of Object.entries(data.socials || {})) { if(url) socialLinksHTML += `<a href="${key==='gmail'?'mailto:'+url:url}" target="_blank" class="social-link"><i class="${socialIcons[key]}"></i></a>`; }
-            
-            const donateBtn = Object.values(data.wallets||{}).some(w=>w) ? `<div class="mt-3"><button id="donate-modal-btn" onclick="showDonateModal('${ADMIN_USERNAME}')"><i class="fas fa-hand-holding-usd me-2"></i>Donate</button></div>` : '';
-            
-            const profileInfoHTML = `<div class="card-glass text-center" style="padding-top: 80px;"><img src="${data.avatarUrl||'https://via.placeholder.com/150'}" class="profile-avatar"><div class="profile-name-wrapper mt-3"><h1 class="profile-name">${data.name}</h1>${data.isVerified?'<i class="fas fa-check-circle verified-tick"></i>':''}</div><p class="text-secondary mt-2">${data.bio}</p><div class="social-links">${socialLinksHTML}</div>${donateBtn}${isOwner?'<button id="edit-profile-btn" title="Chỉnh sửa"><i class="fas fa-pencil-alt"></i></button>':''}</div>`;
-
-            let contentHTML = ''; let tabsHTML = '';
-            const allProjects = data.projects || [];
-            
-            // Helper to build project card
-            const buildCard = (p, idx) => {
-                let countdown = '';
-                if(p.expiryDate) {
-                    const diff = new Date(p.expiryDate) - new Date();
-                    if(diff < 0) countdown = `<div class="expired-overlay"><div class="expired-text">Hết hạn</div></div>`;
-                    else countdown = `<div class="countdown-wrapper" data-expiry="${p.expiryDate}"><div class="countdown-label">Còn lại:</div><div class="time-unit"><span class="time-val day-val">00</span><span class="time-tag">D</span></div>: <div class="time-unit"><span class="time-val hour-val">00</span><span class="time-tag">H</span></div></div>`;
-                }
-                return `<div class="col-12 col-md-6 mb-2"><div class="project-card h-100 ${countdown.includes('expired')?'expired':''}" onclick="handleProjectClick(${idx})"><img src="${p.imageUrl}" class="project-icon"><div class="project-card-content w-100"><div class="project-card-header"><h5 class="project-name-text">${p.name}</h5><div class="project-clicks"><i class="fas fa-eye me-1"></i>${p.clicks||0}</div></div><p class="project-desc-text">${p.description||''}</p>${countdown}</div></div></div>`;
-            };
-
-            const categories = [...new Set([...Object.keys(defaultCategories), ...Object.keys(customCategories)])];
-            categories.forEach(key => {
-                tabsHTML += `<button class="category-tab" data-category="${key}"><span>${customCategories[key]||key}</span>${isOwner?`<button class="rename-category-btn" onclick="event.stopPropagation();handleRenameCategory('${key}')"><i class="fas fa-pencil-alt"></i></button>`:''}</button>`;
-                contentHTML += `<div class="category-content" data-category="${key}"><div class="row g-2">${allProjects.filter(p=>(p.category||'project')===key).map((p,i)=>buildCard(p, allProjects.indexOf(p))).join('') || '<p class="text-white-50">Trống</p>'}</div></div>`;
-            });
-
-            // Default 'project' category implies 'All' or specific uncategorized?
-            // Let's just render specific categories. If projects have 'project' category (default), we need a tab for it or rename it.
-            // Simplified:
-            const uncategorized = allProjects.filter(p => !p.category || p.category === 'project');
-            if (uncategorized.length > 0 && !categories.includes('project')) {
-                tabsHTML = `<button class="category-tab active" data-category="project"><span>Chung</span></button>` + tabsHTML;
-                contentHTML = `<div class="category-content active" data-category="project"><div class="row g-2">${uncategorized.map((p,i)=>buildCard(p, allProjects.indexOf(p))).join('')}</div></div>` + contentHTML;
-            }
-
-            const containerHTML = `<div class="category-tabs-container"><div class="category-tabs" id="category-tabs">${tabsHTML}${isOwner?'<button class="category-tab" onclick="handleAddCategory()"><i class="fas fa-plus"></i></button>':''}<div class="tab-underline" id="tab-underline"></div></div><div class="category-content-container">${contentHTML}</div></div>`;
-
-            profilePageContent.innerHTML = profileInfoHTML + containerHTML;
-            switchView('profile');
-
-            // Setup Tabs JS
-            const tabs = document.querySelectorAll('.category-tab:not(:last-child)');
-            const contents = document.querySelectorAll('.category-content');
-            const underline = document.getElementById('tab-underline');
-            
-            function setActiveTab(tab) {
-                if(!tab) return;
-                tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active'));
-                tab.classList.add('active');
-                const cat = tab.dataset.category;
-                document.querySelector(`.category-content[data-category="${cat}"]`)?.classList.add('active');
-                underline.style.width = `${tab.offsetWidth}px`; underline.style.transform = `translateX(${tab.offsetLeft}px)`;
-            }
-            tabs.forEach(t => t.addEventListener('click', () => setActiveTab(t)));
-            if(tabs.length) setActiveTab(tabs[0]);
-
-            // Edit Button
-            if(isOwner) document.getElementById('edit-profile-btn').style.display = 'flex'; document.getElementById('edit-profile-btn').onclick = openEditModal;
-
-            // Countdown Timer
-            setInterval(() => {
-                document.querySelectorAll('.countdown-wrapper').forEach(el => {
-                    const diff = new Date(el.dataset.expiry) - new Date();
-                    if(diff < 0) return el.innerHTML = `<div class="expired-text" style="font-size:0.8rem;color:red;">Đã kết thúc</div>`;
-                    const d = Math.floor(diff / (1000 * 60 * 60 * 24));
-                    const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    el.querySelector('.day-val').innerText = d<10?'0'+d:d;
-                    el.querySelector('.hour-val').innerText = h<10?'0'+h:h;
-                });
-            }, 1000);
-
-        } catch (e) { console.error(e); switchView('notFound'); }
-    }
-
-    window.handleProjectClick = async function(index) {
-        const docSnap = await db.collection('profiles').doc(ADMIN_USERNAME).get();
-        const p = docSnap.data().projects[index];
-        if (!p) return;
-        
-        document.getElementById('project-detail-icon').src = p.imageUrl;
-        document.getElementById('project-detail-name').innerText = p.name;
-        document.getElementById('project-detail-description').innerText = p.description;
-        document.getElementById('project-detail-clicks').innerText = p.clicks;
-        
-        const btn = document.getElementById('project-detail-link-btn');
-        btn.onclick = async () => {
-            window.open(p.link, '_blank');
-            const projects = docSnap.data().projects; projects[index].clicks++;
-            await db.collection('profiles').doc(ADMIN_USERNAME).update({ projects });
-        };
-
-        // Refs
-        const refSec = document.getElementById('project-detail-ref-section');
-        if(p.referralLink || p.referralCode) {
-            refSec.style.display = 'block';
-            document.getElementById('ref-link-group').style.display = p.referralLink ? 'flex' : 'none';
-            document.getElementById('project-detail-ref-link').value = p.referralLink || '';
-            document.getElementById('ref-code-group').style.display = p.referralCode ? 'flex' : 'none';
-            document.getElementById('project-detail-ref-code').value = p.referralCode || '';
-        } else refSec.style.display = 'none';
-
-        // Long Desc
-        const longDesc = document.getElementById('project-detail-long-description');
-        if (p.longDescription) {
-            document.getElementById('project-detail-long-description-container').style.display = 'block';
-            longDesc.innerHTML = p.longDescription.replace(/\n/g, '<br>');
-        } else document.getElementById('project-detail-long-description-container').style.display = 'none';
-
-        projectDetailModal.show();
-    }
-
-    async function openEditModal() {
-        const docSnap = await db.collection('profiles').doc(ADMIN_USERNAME).get();
-        const data = docSnap.data();
-        const cats = data.customCategories || {};
-        const catKeys = [...new Set(['project', ...Object.keys(cats)])];
-        
-        let projectsHTML = '';
-        (data.projects||[]).forEach((p, i) => {
-            const catOpts = catKeys.map(k => `<option value="${k}" ${p.category===k?'selected':''}>${cats[k]||(k==='project'?'Chung':k)}</option>`).join('');
-            projectsHTML += `
-                <div class="edit-category-group accordion-item" data-cat="${p.category||'project'}">
-                    <h2 class="accordion-header"><div class="accordion-header-wrapper"><div class="drag-handle"><i class="fas fa-grip-vertical"></i></div><button class="accordion-button collapsed ps-2" data-bs-toggle="collapse" data-bs-target="#collapse-${i}"><strong>#${i+1}</strong> ${p.name}</button></div></h2>
-                    <div id="collapse-${i}" class="accordion-collapse collapse" data-bs-parent="#edit-projects-accordion"><div class="accordion-body project-field">
-                        <input type="hidden" class="project-clicks-hidden" value="${p.clicks||0}">
-                        <div class="row g-2 mb-2"><div class="col-6"><input class="form-control project-name" value="${p.name}" placeholder="Tên"></div><div class="col-6"><select class="form-select project-category">${catOpts}</select></div></div>
-                        <input class="form-control mb-2 project-link" value="${p.link}" placeholder="Link mở ngay">
-                        <input class="form-control mb-2 project-image" value="${p.imageUrl}" placeholder="Link ảnh">
-                        <input class="form-control mb-2 project-desc" value="${p.description||''}" placeholder="Mô tả ngắn">
-                        <div class="row g-2 mb-2"><div class="col-6"><input class="form-control project-ref-link" value="${p.referralLink||''}" placeholder="Link Ref"></div><div class="col-6"><input class="form-control project-ref-code" value="${p.referralCode||''}" placeholder="Mã Ref"></div></div>
-                        <input type="datetime-local" class="form-control mb-2 project-expiry" value="${p.expiryDate||''}">
-                        <textarea class="form-control project-long-desc" placeholder="Chi tiết">${p.longDescription||''}</textarea>
-                        <button class="btn btn-sm btn-outline-danger mt-2" onclick="this.closest('.accordion-item').remove()">Xóa</button>
-                    </div></div>
-                </div>`;
         });
 
-        // Tabs
-        let tabs = `<span class="edit-cat-pill active" onclick="handleEditTabClick('all')">All</span>`;
-        catKeys.forEach(k => tabs += `<span class="edit-cat-pill" onclick="handleEditTabClick('${k}')" data-cat="${k}">${cats[k]||(k==='project'?'Chung':k)}</span>`);
-
-        document.getElementById('edit-modal-body').innerHTML = `
-            <form id="edit-form">
-                <div class="mb-3"><label>Avatar URL</label><input class="form-control" id="edit-avatar" value="${data.avatarUrl}"></div>
-                <div class="mb-3"><label>Tên hiển thị</label><input class="form-control" id="edit-name" value="${data.name}"></div>
-                <div class="mb-3"><label>Bio</label><textarea class="form-control" id="edit-bio">${data.bio}</textarea></div>
-                <hr><h6>Dự án</h6><div class="mb-2">${tabs}</div><div class="accordion" id="edit-projects-accordion">${projectsHTML}</div>
-                <button type="button" class="btn btn-outline-secondary w-100 mt-2" onclick="addProjectField()">+ Thêm dự án</button>
-                <hr><h6>Giao diện</h6>
-                <div class="row"><div class="col-6"><input type="color" class="form-control" id="edit-color" value="${data.theme?.accentColor||'#915EFF'}"></div>
-                <div class="col-6"><input class="form-control" id="edit-bg" placeholder="CSS BG or Img URL" value="${data.theme?.bgValue||''}"></div></div>
-                <select class="form-select mt-2" id="edit-bg-type"><option value="gradient">Gradient</option><option value="image" ${data.theme?.bgType==='image'?'selected':''}>Image</option></select>
-            </form>
-        `;
-
-        new Sortable(document.getElementById('edit-projects-accordion'), { handle: '.drag-handle', animation: 150 });
-        editModal.show();
-    }
-
-    window.addProjectField = function() {
-        const container = document.getElementById('edit-projects-accordion');
-        const id = Date.now();
-        const html = `
-            <div class="edit-category-group accordion-item" data-cat="project">
-                 <h2 class="accordion-header"><div class="accordion-header-wrapper"><div class="drag-handle"><i class="fas fa-grip-vertical"></i></div><button class="accordion-button collapsed ps-2" data-bs-toggle="collapse" data-bs-target="#c-${id}">New Item</button></div></h2>
-                 <div id="c-${id}" class="accordion-collapse collapse show"><div class="accordion-body project-field">
-                    <input type="hidden" class="project-clicks-hidden" value="0">
-                    <div class="row g-2 mb-2"><div class="col-6"><input class="form-control project-name" placeholder="Tên"></div><div class="col-6"><select class="form-select project-category"><option value="project">Chung</option></select></div></div>
-                    <input class="form-control mb-2 project-link" placeholder="Link">
-                    <input class="form-control mb-2 project-image" placeholder="Image URL">
-                    <button class="btn btn-sm btn-outline-danger" onclick="this.closest('.accordion-item').remove()">Xóa</button>
-                 </div></div>
-            </div>`;
-        container.insertAdjacentHTML('beforeend', html);
-    }
-    
-    window.handleAddCategory = async function() {
-        const name = prompt("Tên danh mục mới:");
-        if(!name) return;
-        const key = name.trim().toLowerCase().replace(/\s/g, '-');
-        const docRef = db.collection('profiles').doc(ADMIN_USERNAME);
-        const data = (await docRef.get()).data();
-        const cats = data.customCategories || {}; cats[key] = name;
-        await docRef.update({ customCategories: cats });
-        openEditModal();
-    }
-
-    document.getElementById('save-profile-btn').addEventListener('click', async () => {
-        const btn = document.getElementById('save-profile-btn'); btn.disabled = true;
-        try {
-            const projects = [];
-            document.querySelectorAll('#edit-projects-accordion .project-field').forEach(el => {
-                projects.push({
-                    name: el.querySelector('.project-name').value,
-                    link: el.querySelector('.project-link').value,
-                    imageUrl: el.querySelector('.project-image').value,
-                    category: el.querySelector('.project-category').value,
-                    description: el.querySelector('.project-desc')?.value || '',
-                    referralLink: el.querySelector('.project-ref-link')?.value || '',
-                    referralCode: el.querySelector('.project-ref-code')?.value || '',
-                    expiryDate: el.querySelector('.project-expiry')?.value || null,
-                    longDescription: el.querySelector('.project-long-desc')?.value || '',
-                    clicks: parseInt(el.querySelector('.project-clicks-hidden').value)
-                });
+        // --- DATA ---
+        function setupRealtime() {
+            // Projects
+            onSnapshot(collection(db, "projects"), (snap) => {
+                state.projects = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                renderHome(); // Re-render if home is active
+                projectManager.renderAdmin();
             });
-            
-            await db.collection('profiles').doc(ADMIN_USERNAME).update({
-                avatarUrl: document.getElementById('edit-avatar').value,
-                name: document.getElementById('edit-name').value,
-                bio: document.getElementById('edit-bio').value,
-                projects: projects,
-                theme: {
-                    accentColor: document.getElementById('edit-color').value,
-                    bgType: document.getElementById('edit-bg-type').value,
-                    bgValue: document.getElementById('edit-bg').value
+            // Categories
+            onSnapshot(query(collection(db, "categories"), orderBy('order')), (snap) => {
+                state.categories = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                // Fill Selects
+                const opts = state.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                document.getElementById('category-filter').innerHTML = `<option value="all">All Categories</option>` + opts;
+                document.getElementById('p-category').innerHTML = opts;
+                
+                // Admin List
+                document.getElementById('admin-categories-list').innerHTML = state.categories.map(c => `
+                    <li class="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                        <span>${c.name}</span>
+                        <button onclick="categoryManager.delete('${c.id}')" class="text-red-500 hover:text-red-600"><span class="material-symbols-outlined">delete</span></button>
+                    </li>
+                `).join('');
+            });
+            // Users
+            onSnapshot(collection(db, "users"), (snap) => {
+                state.users = snap.docs.map(d => d.data());
+                if(state.role === 'admin') userManager.render();
+            });
+            // Profile & Stats
+            onSnapshot(doc(db, "settings", "profile"), (snap) => {
+                if(snap.exists()) {
+                    const d = snap.data();
+                    document.getElementById('hero-bio').innerText = d.bio || "Bio loading...";
+                    if(d.avatar) document.getElementById('hero-avatar').src = d.avatar;
+                    
+                    document.getElementById('content-name').value = d.name || "";
+                    document.getElementById('content-bio').value = d.bio || "";
+                    document.getElementById('content-avatar').value = d.avatar || "";
                 }
             });
-            editModal.hide(); fetchAndRenderProfile(); showToast("Đã lưu!", "success");
-        } catch(e) { console.error(e); showToast("Lỗi khi lưu."); } finally { btn.disabled = false; }
-    });
+            onSnapshot(doc(db, "settings", "analytics"), (s) => {
+                if(s.exists()) document.getElementById('stat-visits').innerText = s.data().siteVisits || 0;
+            });
+        }
+        setupRealtime();
 
-    // Auth Logic
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        try {
-            await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value);
-            switchView('loading'); window.location.reload();
-        } catch (e) { showToast("Sai thông tin đăng nhập."); }
-    });
+        // --- MANAGERS (LOGIC) ---
+        
+        // PUBLIC LOGIC
+        function renderHome() {
+            const featured = state.projects.filter(p => p.isFeatured && p.isVisible);
+            document.getElementById('featured-projects-grid').innerHTML = featured.map(p => `
+                <div onclick="router.go('detail', '${p.id}')" class="group bg-white dark:bg-card-dark rounded-xl overflow-hidden border border-slate-200 dark:border-border-dark hover:border-primary transition-all cursor-pointer shadow-sm hover:shadow-xl">
+                    <div class="h-48 bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                        <img src="${p.imageURL || 'https://via.placeholder.com/400'}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="p-6">
+                        <div class="flex gap-2 mb-3">
+                             <span class="text-[10px] font-bold uppercase tracking-wider text-primary px-2 py-1 bg-primary/10 rounded">${state.categories.find(c=>c.id===p.categoryId)?.name || 'App'}</span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2 group-hover:text-primary transition-colors">${p.title}</h3>
+                        <p class="text-sm text-slate-500 line-clamp-2">${p.description}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
 
-    document.getElementById('register-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const btn = e.target.querySelector('button'); btn.disabled = true;
-        try {
-            const email = document.getElementById('register-email').value;
-            const pass = document.getElementById('register-password').value;
-            // Chỉ tạo tài khoản Auth, không tạo Profile Firestore (trừ khi là Admin setup lần đầu trong fetchProfile)
-            await auth.createUserWithEmailAndPassword(email, pass);
-            showToast("Đăng ký khách thành công!", "success");
-            setTimeout(() => window.location.reload(), 1000);
-        } catch (e) { showToast(e.message); btn.disabled = false; }
-    });
+        function renderProjects() {
+            const term = document.getElementById('search-input').value.toLowerCase();
+            const cat = document.getElementById('category-filter').value;
+            
+            const list = state.projects.filter(p => {
+                if(!p.isVisible) return false;
+                if(cat !== 'all' && p.categoryId !== cat) return false;
+                if(term && !p.title.toLowerCase().includes(term)) return false;
+                return true;
+            });
+            
+            document.getElementById('projects-grid').innerHTML = list.map(p => `
+                <div class="bg-white dark:bg-card-dark p-4 rounded-xl border border-slate-200 dark:border-border-dark flex flex-col">
+                    <img src="${p.imageURL}" class="h-40 w-full object-cover rounded-lg bg-slate-100 mb-4">
+                    <h4 class="font-bold text-lg mb-1">${p.title}</h4>
+                    <p class="text-xs text-slate-500 mb-4">${state.categories.find(c=>c.id===p.categoryId)?.name}</p>
+                    <button onclick="router.go('detail', '${p.id}')" class="mt-auto w-full py-2 rounded-lg border border-slate-200 dark:border-border-dark hover:bg-slate-50 dark:hover:bg-slate-800 text-sm font-medium">View Details</button>
+                </div>
+            `).join('');
+        }
+        
+        document.getElementById('search-input').oninput = renderProjects;
+        document.getElementById('category-filter').onchange = renderProjects;
 
-    // Music Player
-    const audio = document.getElementById('bg-audio');
-    const musicBtn = document.createElement('button');
-    musicBtn.id = 'music-toggle-btn'; musicBtn.innerHTML = '<i class="fas fa-music"></i>';
-    document.body.appendChild(musicBtn);
-    let isPlaying = false;
-    musicBtn.onclick = () => {
-        if(isPlaying) { audio.pause(); musicBtn.classList.remove('playing'); musicBtn.innerHTML = '<i class="fas fa-music"></i>'; }
-        else { audio.play(); musicBtn.classList.add('playing'); musicBtn.innerHTML = '<i class="fas fa-compact-disc"></i>'; }
-        isPlaying = !isPlaying;
-    };
-    audio.volume = 0.5; document.body.onclick = () => { if(!isPlaying) { audio.play(); isPlaying = true; musicBtn.classList.add('playing'); musicBtn.innerHTML = '<i class="fas fa-compact-disc"></i>'; } };
+        function renderDetail(id) {
+            const p = state.projects.find(x => x.id === id);
+            if(!p) return;
+            document.getElementById('detail-content').innerHTML = `
+                <div class="w-full h-64 lg:h-80 rounded-2xl overflow-hidden mb-8 relative">
+                    <img src="${p.imageURL}" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-8">
+                        <h1 class="text-3xl lg:text-5xl font-black text-white">${p.title}</h1>
+                    </div>
+                </div>
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="md:col-span-2 space-y-8">
+                        <div>
+                            <h3 class="text-xl font-bold mb-3">Overview</h3>
+                            <p class="text-slate-600 dark:text-slate-400 leading-relaxed">${p.description}</p>
+                        </div>
+                        ${p.guide ? `
+                        <div class="bg-slate-50 dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-border-dark">
+                            <h3 class="font-bold mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-primary">menu_book</span> Guide</h3>
+                            <div class="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">${p.guide}</div>
+                        </div>` : ''}
+                    </div>
+                    <div class="space-y-6">
+                        <div class="p-6 rounded-xl border border-slate-200 dark:border-border-dark bg-white dark:bg-card-dark">
+                            <h4 class="font-bold mb-4 text-sm uppercase text-slate-500">Metadata</h4>
+                            <div class="space-y-3 text-sm">
+                                <div class="flex justify-between"><span>Category</span> <span class="font-medium">${state.categories.find(c=>c.id===p.categoryId)?.name}</span></div>
+                                <div class="flex justify-between"><span>Date</span> <span class="font-medium">${new Date(p.createdAt?.seconds * 1000).toLocaleDateString()}</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            // Log visit
+            updateDoc(doc(db, "settings", "analytics"), { siteVisits: increment(1) });
+        }
 
-    // Entry Point
-    initializeFirebase();
-    auth.onAuthStateChanged(user => {
-        currentUser = user;
-        setupSidebar();
-        fetchAndRenderProfile(); 
-    });
-    
-    // Auth Toggles
-    document.getElementById('show-register-btn').onclick = () => document.getElementById('auth-flip-card').classList.add('is-flipped');
-    document.getElementById('show-login-btn').onclick = () => document.getElementById('auth-flip-card').classList.remove('is-flipped');
-    importJsonInput.addEventListener('change', handleImportJson); 
-    document.getElementById('footer-year').textContent = new Date().getFullYear();
-});
-</script>
+        // ADMIN MANAGERS
+        window.updateStats = () => {
+            document.getElementById('stat-projects').innerText = state.projects.length;
+            document.getElementById('stat-users').innerText = state.users.length;
+            document.getElementById('stat-cats').innerText = state.categories.length;
+        };
+
+        window.projectManager = {
+            renderAdmin: () => {
+                const tbody = document.getElementById('admin-projects-list');
+                tbody.innerHTML = state.projects.map(p => `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                        <td class="p-4 font-bold flex items-center gap-3">
+                            <div class="w-10 h-10 rounded bg-slate-200 dark:bg-slate-700 bg-cover bg-center" style="background-image:url('${p.imageURL}')"></div>
+                            ${p.title}
+                        </td>
+                        <td class="p-4 text-slate-500">${state.categories.find(c=>c.id===p.categoryId)?.name}</td>
+                        <td class="p-4"><span class="px-2 py-1 rounded-full text-xs font-bold ${p.isVisible ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}">${p.isVisible ? 'Published' : 'Hidden'}</span></td>
+                        <td class="p-4 text-right space-x-2">
+                            <button onclick="projectManager.edit('${p.id}')" class="text-blue-500"><span class="material-symbols-outlined">edit</span></button>
+                            <button onclick="projectManager.delete('${p.id}')" class="text-red-500"><span class="material-symbols-outlined">delete</span></button>
+                        </td>
+                    </tr>
+                `).join('');
+            },
+            openModal: () => {
+                ui.toggleModal('modal-project', true);
+                document.getElementById('p-id').value = '';
+                document.getElementById('p-title').value = '';
+                document.getElementById('p-desc').value = '';
+                document.getElementById('p-guide').value = '';
+                document.getElementById('p-file').value = '';
+                document.getElementById('modal-title').innerText = "Add Project";
+            },
+            closeModal: () => ui.toggleModal('modal-project', false),
+            save: async () => {
+                ui.loading(true);
+                try {
+                    const id = document.getElementById('p-id').value;
+                    const file = document.getElementById('p-file').files[0];
+                    let data = {
+                        title: document.getElementById('p-title').value,
+                        categoryId: document.getElementById('p-category').value,
+                        description: document.getElementById('p-desc').value,
+                        guide: document.getElementById('p-guide').value,
+                        isFeatured: document.getElementById('p-featured').checked,
+                        isVisible: document.getElementById('p-visible').checked,
+                        updatedAt: new Date()
+                    };
+
+                    if(file) {
+                        const sRef = ref(storage, `projects/${Date.now()}_${file.name}`);
+                        await uploadBytes(sRef, file);
+                        data.imageURL = await getDownloadURL(sRef);
+                    }
+
+                    if(id) {
+                        await updateDoc(doc(db, "projects", id), data);
+                        ui.toast("Project Updated");
+                    } else {
+                        data.createdAt = new Date();
+                        await addDoc(collection(db, "projects"), data);
+                        ui.toast("Project Created");
+                    }
+                    projectManager.closeModal();
+                } catch(e) { ui.toast(e.message, 'error'); }
+                ui.loading(false);
+            },
+            edit: (id) => {
+                const p = state.projects.find(x => x.id === id);
+                projectManager.openModal();
+                document.getElementById('modal-title').innerText = "Edit Project";
+                document.getElementById('p-id').value = p.id;
+                document.getElementById('p-title').value = p.title;
+                document.getElementById('p-category').value = p.categoryId;
+                document.getElementById('p-desc').value = p.description;
+                document.getElementById('p-guide').value = p.guide || '';
+                document.getElementById('p-featured').checked = p.isFeatured;
+                document.getElementById('p-visible').checked = p.isVisible;
+                document.getElementById('p-file-current').innerText = "Has image. Upload new to replace.";
+            },
+            delete: (id) => ui.confirm(async () => {
+                await deleteDoc(doc(db, "projects", id));
+                ui.toast("Project Deleted");
+            })
+        };
+
+        window.categoryManager = {
+            add: async () => {
+                const name = prompt("Category Name:");
+                if(name) {
+                    await addDoc(collection(db, "categories"), { name, order: state.categories.length + 1 });
+                    ui.toast("Category Added");
+                }
+            },
+            delete: (id) => ui.confirm(async () => await deleteDoc(doc(db, "categories", id)))
+        };
+
+        window.userManager = {
+            render: () => {
+                document.getElementById('admin-users-list').innerHTML = state.users.map(u => `
+                    <tr>
+                        <td class="p-4 font-bold flex items-center gap-2">
+                             <img src="${u.photoURL}" class="w-8 h-8 rounded-full"> ${u.displayName}
+                        </td>
+                        <td class="p-4 text-slate-500">${u.email}</td>
+                        <td class="p-4"><span class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded uppercase">${u.role}</span></td>
+                        <td class="p-4"><span class="${u.status==='active'?'text-emerald-500':'text-red-500'} font-bold text-xs uppercase">${u.status}</span></td>
+                        <td class="p-4 text-right">
+                             ${u.uid !== ADMIN_UID ? `
+                             <button onclick="userManager.toggleRole('${u.uid}', '${u.role}')" class="text-slate-400 hover:text-white" title="Toggle Role"><span class="material-symbols-outlined">shield_person</span></button>
+                             <button onclick="userManager.toggleStatus('${u.uid}', '${u.status}')" class="text-slate-400 hover:text-white" title="Toggle Lock"><span class="material-symbols-outlined">lock</span></button>
+                             `: ''}
+                        </td>
+                    </tr>
+                `).join('');
+            },
+            toggleRole: async (uid, r) => {
+                await updateDoc(doc(db,"users",uid), { role: r === 'admin' ? 'user' : 'admin' });
+                ui.toast("Role Updated");
+            },
+            toggleStatus: async (uid, s) => {
+                await updateDoc(doc(db,"users",uid), { status: s === 'active' ? 'locked' : 'active' });
+                ui.toast("Status Updated");
+            }
+        };
+
+        window.contentManager = {
+            save: async () => {
+                ui.loading(true);
+                await setDoc(doc(db, "settings", "profile"), {
+                    name: document.getElementById('content-name').value,
+                    bio: document.getElementById('content-bio').value,
+                    avatar: document.getElementById('content-avatar').value
+                }, { merge: true });
+                ui.loading(false);
+                ui.toast("Profile Saved");
+            }
+        };
+
+        // Dark Mode Toggle
+        document.getElementById('theme-toggle').onclick = () => {
+            document.documentElement.classList.toggle('dark');
+        };
+
+        // Initial Route
+        router.go('home');
+
+    </script>
 </body>
 </html>
