@@ -1,837 +1,891 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portfolio & Admin System</title>
+    <title>Portfolio & Admin Hub | Profile D1214</title>
     
-    <!-- 1. RESOURCES: TAILWIND, FONTS, ICONS -->
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1" rel="stylesheet"/>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 
-    <!-- 2. TAILWIND CONFIG -->
-    <script>
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        primary: "#0d7ff2",
-                        "primary-dark": "#0b6bcb",
-                        "bg-light": "#f5f7f8",
-                        "bg-dark": "#101922",
-                        "card-dark": "#16212c",
-                        "border-dark": "#1e293b",
-                    },
-                    fontFamily: {
-                        sans: ["Inter", "sans-serif"]
-                    }
-                }
-            }
-        }
-    </script>
+    <!-- Custom Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 
-    <!-- 3. CUSTOM STYLES -->
     <style>
         body { font-family: 'Inter', sans-serif; }
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        .material-symbols-outlined.fill { font-variation-settings: 'FILL' 1; }
-        
-        /* Utility for SPA Routing */
-        .view-section { display: none; opacity: 0; transition: opacity 0.3s ease-in-out; }
-        .view-section.active { display: block; opacity: 1; }
-        
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
-
-        /* Loader */
-        .loader { border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid #0d7ff2; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        .hide { display: none !important; }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* Toast Animation */
-        .toast-enter { transform: translateX(100%); }
-        .toast-enter-active { transform: translateX(0); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-        .toast-exit { transform: translateX(100%); transition: transform 0.3s ease-in; }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body class="bg-bg-light dark:bg-bg-dark text-slate-900 dark:text-slate-100 transition-colors duration-300">
+<body class="bg-slate-50 text-slate-800 antialiased">
 
-    <!-- ================= APP CONTAINER ================= -->
-    <div id="app" class="min-h-screen flex flex-col relative">
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2"></div>
 
-        <!-- TOAST CONTAINER -->
-        <div id="toast-container" class="fixed bottom-6 right-6 z-[100] flex flex-col gap-3"></div>
-
-        <!-- LOADING OVERLAY -->
-        <div id="global-loader" class="fixed inset-0 bg-black/50 z-[90] hidden items-center justify-center backdrop-blur-sm">
-            <div class="bg-card-dark p-6 rounded-xl flex flex-col items-center gap-3">
-                <div class="loader w-10 h-10 border-4"></div>
-                <p class="text-sm font-medium text-white">Processing...</p>
-            </div>
-        </div>
-
-        <!-- ================= 1. PUBLIC LAYOUT & NAVIGATION ================= -->
-        <header id="public-header" class="sticky top-0 z-50 border-b border-slate-200 dark:border-border-dark bg-white/80 dark:bg-bg-dark/80 backdrop-blur-md">
-            <div class="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
-                <div class="flex items-center gap-2 cursor-pointer" onclick="router.go('home')">
-                    <div class="size-8 bg-primary rounded-lg flex items-center justify-center text-white">
-                        <span class="material-symbols-outlined">code</span>
-                    </div>
-                    <h2 class="text-xl font-bold tracking-tight">Portfolio</h2>
+    <!-- NAVIGATION -->
+    <nav class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center cursor-pointer" onclick="router.navigate('home')">
+                    <span class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">DevPortfolio</span>
                 </div>
-                <nav class="hidden md:flex items-center gap-8">
-                    <a onclick="router.go('home')" class="cursor-pointer text-sm font-medium hover:text-primary transition-colors">Home</a>
-                    <a onclick="router.go('projects')" class="cursor-pointer text-sm font-medium hover:text-primary transition-colors">Projects</a>
-                </nav>
                 <div class="flex items-center gap-4">
-                    <button id="theme-toggle" class="p-2 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                        <span class="material-symbols-outlined block dark:hidden">dark_mode</span>
-                        <span class="material-symbols-outlined hidden dark:block">light_mode</span>
-                    </button>
-                    <button id="auth-btn" onclick="router.go('login')" class="bg-primary hover:bg-primary-dark text-white px-5 py-2 rounded-lg text-sm font-bold transition-all shadow-lg shadow-primary/20">
-                        Login
-                    </button>
-                </div>
-            </div>
-        </header>
-
-        <!-- ================= 2. VIEWS (PAGES) ================= -->
-
-        <!-- VIEW: HOME -->
-        <div id="view-home" class="view-section max-w-[1200px] mx-auto px-6 py-12 space-y-20">
-            <!-- Hero -->
-            <section class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-                <div class="space-y-6">
-                    <h1 class="text-4xl lg:text-6xl font-black leading-tight">
-                        Building digital experiences with <span class="text-primary">code</span> and craft.
-                    </h1>
-                    <p id="hero-bio" class="text-slate-600 dark:text-slate-400 text-lg leading-relaxed max-w-xl">
-                        Loading bio...
-                    </p>
-                    <div class="flex gap-4">
-                        <button onclick="router.go('projects')" class="bg-primary text-white px-8 py-3 rounded-lg font-bold flex items-center gap-2 hover:bg-primary-dark transition-all">
-                            View Projects <span class="material-symbols-outlined text-sm">arrow_forward</span>
-                        </button>
+                    <button id="btn-home" onclick="router.navigate('home')" class="text-slate-600 hover:text-blue-600 font-medium hidden">Trang chủ</button>
+                    <button id="btn-admin" onclick="router.navigate('admin')" class="text-slate-600 hover:text-blue-600 font-medium hidden">Admin Panel</button>
+                    <div id="auth-section">
+                        <!-- Rendered by JS -->
                     </div>
                 </div>
-                <div class="relative flex justify-center">
-                    <div class="aspect-square w-full max-w-md relative z-10 overflow-hidden rounded-2xl shadow-2xl border border-slate-200 dark:border-border-dark">
-                        <img id="hero-avatar" class="w-full h-full object-cover" src="https://via.placeholder.com/400" alt="Avatar"/>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN APP CONTAINER -->
+    <main id="app" class="min-h-screen">
+        <!-- Views will be injected here -->
+    </main>
+
+    <!-- MODAL: PROJECT EDITOR -->
+    <div id="project-modal" class="fixed inset-0 z-50 bg-black/50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b flex justify-between items-center sticky top-0 bg-white z-10">
+                <h2 class="text-xl font-bold text-slate-800" id="modal-title">Thêm Dự Án Mới</h2>
+                <button onclick="ui.closeModal()" class="p-2 hover:bg-slate-100 rounded-full"><i data-lucide="x"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <input type="hidden" id="p-id">
+                
+                <!-- Image Upload -->
+                <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:bg-slate-50 transition-colors relative" id="drop-zone">
+                    <input type="file" id="p-image" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*">
+                    <div id="preview-container" class="hidden">
+                        <img id="img-preview" src="" class="mx-auto h-48 object-cover rounded-md shadow-sm">
+                        <button type="button" onclick="ui.clearImage()" class="mt-2 text-red-500 text-sm font-medium">Xóa ảnh</button>
                     </div>
-                    <div class="absolute -bottom-6 -right-6 w-64 h-64 bg-primary/20 rounded-full blur-3xl -z-0"></div>
+                    <div id="upload-placeholder" class="text-slate-500">
+                        <i data-lucide="upload-cloud" class="w-10 h-10 mx-auto mb-2 text-blue-500"></i>
+                        <p>Kéo thả hoặc click để tải ảnh banner</p>
+                    </div>
                 </div>
-            </section>
-            
-            <!-- Featured Projects -->
-            <section>
-                <div class="flex items-center justify-between border-b border-slate-200 dark:border-border-dark pb-4 mb-6">
-                    <h2 class="text-2xl font-bold">Featured Projects</h2>
-                </div>
-                <div id="featured-projects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <!-- JS Injected -->
-                </div>
-            </section>
-        </div>
 
-        <!-- VIEW: PROJECTS LIST -->
-        <div id="view-projects" class="view-section max-w-[1200px] mx-auto px-6 py-12">
-            <h1 class="text-3xl font-bold mb-8">All Projects</h1>
-            <div class="flex flex-col md:flex-row gap-4 mb-8">
-                <div class="relative flex-1">
-                    <span class="material-symbols-outlined absolute left-3 top-3 text-slate-500">search</span>
-                    <input id="search-input" type="text" placeholder="Search projects..." class="w-full pl-10 bg-white dark:bg-card-dark border-slate-200 dark:border-border-dark rounded-lg focus:ring-primary text-slate-900 dark:text-white">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Tên Dự Án</label>
+                        <input type="text" id="p-name" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Danh Mục</label>
+                        <select id="p-category" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="Web App">Web App</option>
+                            <option value="Mobile App">Mobile App</option>
+                            <option value="Landing Page">Landing Page</option>
+                            <option value="UI/UX Design">UI/UX Design</option>
+                        </select>
+                    </div>
                 </div>
-                <select id="category-filter" class="bg-white dark:bg-card-dark border-slate-200 dark:border-border-dark rounded-lg focus:ring-primary text-slate-900 dark:text-white">
-                    <option value="all">All Categories</option>
-                </select>
-            </div>
-            <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- JS Injected -->
-            </div>
-        </div>
 
-        <!-- VIEW: PROJECT DETAIL -->
-        <div id="view-detail" class="view-section max-w-[1000px] mx-auto px-6 py-12">
-            <button onclick="router.back()" class="flex items-center gap-2 text-slate-500 hover:text-primary mb-6">
-                <span class="material-symbols-outlined">arrow_back</span> Back
-            </button>
-            <div id="detail-content">
-                <!-- JS Injected -->
-            </div>
-        </div>
-
-        <!-- VIEW: LOGIN -->
-        <div id="view-login" class="view-section h-[calc(100vh-64px)] flex items-center justify-center p-6">
-            <div class="bg-white dark:bg-card-dark w-full max-w-[420px] p-8 rounded-2xl shadow-2xl border border-slate-200 dark:border-border-dark text-center">
-                <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <span class="material-symbols-outlined text-3xl text-primary">lock</span>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Mô Tả Chi Tiết</label>
+                    <textarea id="p-desc" rows="3" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
                 </div>
-                <h1 class="text-2xl font-bold mb-2">Welcome Back</h1>
-                <p class="text-slate-500 mb-8">Sign in to access admin dashboard</p>
-                <button onclick="authManager.login()" class="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-border-dark py-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-all font-medium">
-                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5">
-                    Sign in with Google
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="text" id="p-demo" placeholder="Link Demo URL" class="w-full border rounded-lg px-3 py-2">
+                    <input type="text" id="p-github" placeholder="GitHub URL" class="w-full border rounded-lg px-3 py-2">
+                </div>
+
+                <!-- Guide -->
+                <div>
+                     <label class="block text-sm font-medium text-slate-700 mb-1">Hướng dẫn sử dụng (Guide)</label>
+                     <textarea id="p-guide" rows="2" class="w-full border rounded-lg px-3 py-2" placeholder="Nhập hướng dẫn ngắn gọn..."></textarea>
+                </div>
+
+                <!-- Dynamic FAQ -->
+                <div class="border-t pt-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-sm font-medium text-slate-700">Câu Hỏi Thường Gặp (FAQ)</label>
+                        <button type="button" onclick="ui.addFaqField()" class="text-sm text-blue-600 hover:underline">+ Thêm câu hỏi</button>
+                    </div>
+                    <div id="faq-list" class="space-y-3">
+                        <!-- Dynamic Fields Here -->
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4 pt-2">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="p-featured" class="w-4 h-4 text-blue-600 rounded">
+                        <span class="text-sm">Nổi bật (Featured)</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="p-visible" class="w-4 h-4 text-blue-600 rounded" checked>
+                        <span class="text-sm">Hiển thị công khai</span>
+                    </label>
+                </div>
+            </div>
+            <div class="p-6 border-t bg-slate-50 flex justify-end gap-3">
+                <button onclick="ui.closeModal()" class="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-lg">Hủy</button>
+                <button onclick="dataManager.saveProject()" class="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg shadow-md flex items-center gap-2">
+                    <span id="save-btn-text">Lưu Dự Án</span>
+                    <div id="save-loader" class="loader w-4 h-4 border-white border-t-transparent hidden"></div>
                 </button>
             </div>
         </div>
-
-        <!-- ================= 3. ADMIN PANEL LAYOUT ================= -->
-        <div id="admin-layout" class="view-section fixed inset-0 z-[60] bg-bg-light dark:bg-bg-dark flex hidden">
-            <!-- Admin Sidebar -->
-            <aside class="w-64 bg-white dark:bg-card-dark border-r border-slate-200 dark:border-border-dark flex flex-col hidden md:flex">
-                <div class="p-6 border-b border-slate-200 dark:border-border-dark flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white">
-                        <span class="material-symbols-outlined text-lg">admin_panel_settings</span>
-                    </div>
-                    <span class="font-bold text-lg">Admin Pro</span>
-                </div>
-                <nav class="flex-1 p-4 space-y-1">
-                    <button onclick="router.goAdmin('dashboard')" class="admin-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors text-sm font-medium">
-                        <span class="material-symbols-outlined">dashboard</span> Dashboard
-                    </button>
-                    <button onclick="router.goAdmin('projects')" class="admin-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors text-sm font-medium">
-                        <span class="material-symbols-outlined">folder</span> Projects
-                    </button>
-                    <button onclick="router.goAdmin('categories')" class="admin-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors text-sm font-medium">
-                        <span class="material-symbols-outlined">category</span> Categories
-                    </button>
-                    <button onclick="router.goAdmin('users')" class="admin-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors text-sm font-medium">
-                        <span class="material-symbols-outlined">group</span> Users
-                    </button>
-                     <button onclick="router.goAdmin('content')" class="admin-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors text-sm font-medium">
-                        <span class="material-symbols-outlined">edit_document</span> Content
-                    </button>
-                </nav>
-                <div class="p-4 border-t border-slate-200 dark:border-border-dark">
-                     <button onclick="router.go('home')" class="w-full flex items-center gap-3 px-3 py-2 text-slate-500 hover:text-white mb-2 text-sm">
-                        <span class="material-symbols-outlined">home</span> Back Home
-                    </button>
-                    <button onclick="authManager.logout()" class="w-full flex items-center gap-3 px-3 py-2 text-red-500 hover:bg-red-500/10 rounded-lg text-sm font-medium">
-                        <span class="material-symbols-outlined">logout</span> Logout
-                    </button>
-                </div>
-            </aside>
-
-            <!-- Admin Content -->
-            <main class="flex-1 flex flex-col h-screen overflow-hidden">
-                <header class="h-16 border-b border-slate-200 dark:border-border-dark bg-white dark:bg-card-dark flex items-center justify-between px-6">
-                    <h2 id="admin-page-title" class="font-bold text-lg">Dashboard</h2>
-                    <div class="flex items-center gap-4">
-                         <div class="flex items-center gap-2">
-                             <div id="admin-avatar" class="w-8 h-8 rounded-full bg-cover bg-center bg-slate-700"></div>
-                             <span id="admin-name" class="text-sm font-medium">User</span>
-                         </div>
-                    </div>
-                </header>
-                
-                <div class="flex-1 overflow-y-auto p-6 bg-bg-light dark:bg-bg-dark">
-                    <!-- SUB-VIEW: DASHBOARD -->
-                    <div id="admin-dashboard" class="admin-view space-y-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            <!-- Stat Card Template -->
-                             <div class="p-6 bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-border-dark">
-                                <p class="text-xs font-bold text-slate-500 uppercase">Total Visits</p>
-                                <h3 class="text-2xl font-black mt-1" id="stat-visits">0</h3>
-                                <div class="mt-2 text-xs text-emerald-500 font-bold flex items-center gap-1"><span class="material-symbols-outlined text-sm">trending_up</span> Live</div>
-                            </div>
-                             <div class="p-6 bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-border-dark">
-                                <p class="text-xs font-bold text-slate-500 uppercase">Projects</p>
-                                <h3 class="text-2xl font-black mt-1" id="stat-projects">0</h3>
-                            </div>
-                             <div class="p-6 bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-border-dark">
-                                <p class="text-xs font-bold text-slate-500 uppercase">Users</p>
-                                <h3 class="text-2xl font-black mt-1" id="stat-users">0</h3>
-                            </div>
-                             <div class="p-6 bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-border-dark">
-                                <p class="text-xs font-bold text-slate-500 uppercase">Categories</p>
-                                <h3 class="text-2xl font-black mt-1" id="stat-cats">0</h3>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- SUB-VIEW: PROJECTS -->
-                    <div id="admin-projects" class="admin-view hidden">
-                        <div class="flex justify-between items-center mb-6">
-                             <h3 class="text-xl font-bold">Manage Projects</h3>
-                             <button onclick="projectManager.openModal()" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-bold">
-                                 <span class="material-symbols-outlined text-lg">add</span> Add Project
-                             </button>
-                        </div>
-                        <div class="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-border-dark overflow-hidden">
-                            <table class="w-full text-left border-collapse">
-                                <thead class="bg-slate-50 dark:bg-slate-800/50 text-xs uppercase text-slate-500">
-                                    <tr><th class="p-4">Project</th><th class="p-4">Category</th><th class="p-4">Status</th><th class="p-4 text-right">Actions</th></tr>
-                                </thead>
-                                <tbody id="admin-projects-list" class="divide-y divide-slate-100 dark:divide-border-dark text-sm">
-                                    <!-- Rows injected here -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- SUB-VIEW: CATEGORIES -->
-                    <div id="admin-categories" class="admin-view hidden">
-                         <div class="flex justify-between items-center mb-6">
-                             <h3 class="text-xl font-bold">Manage Categories</h3>
-                             <button onclick="categoryManager.add()" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold">Add Category</button>
-                        </div>
-                        <div class="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-border-dark p-4">
-                            <ul id="admin-categories-list" class="space-y-2"></ul>
-                        </div>
-                    </div>
-
-                    <!-- SUB-VIEW: USERS -->
-                    <div id="admin-users" class="admin-view hidden">
-                        <h3 class="text-xl font-bold mb-6">User Permissions</h3>
-                        <div class="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-border-dark overflow-x-auto">
-                            <table class="w-full text-left">
-                                <thead class="bg-slate-50 dark:bg-slate-800/50 text-xs uppercase text-slate-500">
-                                    <tr><th class="p-4">User</th><th class="p-4">Email</th><th class="p-4">Role</th><th class="p-4">Status</th><th class="p-4 text-right">Action</th></tr>
-                                </thead>
-                                <tbody id="admin-users-list" class="divide-y divide-slate-100 dark:divide-border-dark text-sm"></tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- SUB-VIEW: CONTENT -->
-                    <div id="admin-content" class="admin-view hidden max-w-2xl">
-                        <h3 class="text-xl font-bold mb-6">Profile Settings</h3>
-                        <div class="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-border-dark p-6 space-y-4">
-                            <div>
-                                <label class="block text-xs font-bold uppercase mb-1">Display Name</label>
-                                <input id="content-name" type="text" class="w-full rounded-lg bg-bg-light dark:bg-bg-dark border-slate-200 dark:border-border-dark">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold uppercase mb-1">Bio</label>
-                                <textarea id="content-bio" rows="4" class="w-full rounded-lg bg-bg-light dark:bg-bg-dark border-slate-200 dark:border-border-dark"></textarea>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold uppercase mb-1">Avatar URL (Upload via Projects for now)</label>
-                                <input id="content-avatar" type="text" class="w-full rounded-lg bg-bg-light dark:bg-bg-dark border-slate-200 dark:border-border-dark">
-                            </div>
-                            <button onclick="contentManager.save()" class="bg-primary text-white px-6 py-2 rounded-lg font-bold">Save Changes</button>
-                        </div>
-                    </div>
-                </div>
-            </main>
-        </div>
-
     </div>
 
-    <!-- ================= MODALS ================= -->
-    
-    <!-- PROJECT MODAL -->
-    <div id="modal-project" class="fixed inset-0 z-[80] hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-        <div class="bg-white dark:bg-card-dark w-full max-w-3xl rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div class="p-6 border-b border-slate-200 dark:border-border-dark flex justify-between items-center">
-                <h3 class="font-bold text-lg" id="modal-title">Add New Project</h3>
-                <button onclick="projectManager.closeModal()"><span class="material-symbols-outlined">close</span></button>
-            </div>
-            <div class="p-6 overflow-y-auto space-y-4">
-                <input type="hidden" id="p-id">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input id="p-title" type="text" placeholder="Project Title" class="rounded-lg bg-bg-light dark:bg-bg-dark border-slate-200 dark:border-border-dark">
-                    <select id="p-category" class="rounded-lg bg-bg-light dark:bg-bg-dark border-slate-200 dark:border-border-dark"></select>
-                </div>
-                <textarea id="p-desc" rows="3" placeholder="Short Description" class="w-full rounded-lg bg-bg-light dark:bg-bg-dark border-slate-200 dark:border-border-dark"></textarea>
-                
-                <div class="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-6 text-center">
-                     <p class="text-sm text-slate-500 mb-2">Cover Image</p>
-                     <input type="file" id="p-file" class="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-primary/10 file:text-primary hover:file:bg-primary/20">
-                     <p id="p-file-current" class="text-xs text-primary mt-2"></p>
-                </div>
-
-                <div class="space-y-2">
-                    <label class="text-sm font-bold">Guide / Content (Markdown)</label>
-                    <textarea id="p-guide" rows="5" class="w-full rounded-lg bg-bg-light dark:bg-bg-dark border-slate-200 dark:border-border-dark"></textarea>
-                </div>
-                
-                <div class="flex gap-4">
-                     <label class="flex items-center gap-2"><input type="checkbox" id="p-featured" class="rounded text-primary focus:ring-primary"> Featured</label>
-                     <label class="flex items-center gap-2"><input type="checkbox" id="p-visible" checked class="rounded text-primary focus:ring-primary"> Visible</label>
-                </div>
-            </div>
-            <div class="p-6 border-t border-slate-200 dark:border-border-dark flex justify-end gap-3">
-                <button onclick="projectManager.closeModal()" class="px-4 py-2 rounded-lg border border-slate-200 dark:border-border-dark hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
-                <button onclick="projectManager.save()" class="px-6 py-2 rounded-lg bg-primary text-white font-bold hover:bg-primary-dark">Save Project</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- CONFIRM MODAL -->
-    <div id="modal-confirm" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/80">
-        <div class="bg-card-dark p-6 rounded-xl max-w-sm text-center border border-border-dark">
-            <span class="material-symbols-outlined text-4xl text-amber-500 mb-2">warning</span>
-            <h3 class="font-bold text-lg text-white mb-2">Are you sure?</h3>
-            <p class="text-slate-400 text-sm mb-6">This action cannot be undone.</p>
-            <div class="flex justify-center gap-3">
-                <button onclick="ui.toggleModal('modal-confirm', false)" class="px-4 py-2 rounded-lg bg-slate-700 text-white">Cancel</button>
-                <button id="confirm-action-btn" class="px-4 py-2 rounded-lg bg-red-600 text-white font-bold">Confirm</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ================= JAVASCRIPT ================= -->
+    <!-- JAVASCRIPT LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, where, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-        // CONFIG
+        // ================= CONFIGURATION =================
         const firebaseConfig = {
-            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
+            // ⚠️ THAY THẾ BẰNG CONFIG CỦA BẠN TỪ FIREBASE CONSOLE
+            apiKey: "YOUR_API_KEY",
             authDomain: "profile-d1214.firebaseapp.com",
             projectId: "profile-d1214",
-            storageBucket: "profile-d1214.firebasestorage.app",
-            messagingSenderId: "914980131889",
-            appId: "1:914980131889:web:72f8da15c42dbee671b110",
-            measurementId: "G-C587M69LZW"
+            storageBucket: "profile-d1214.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
         };
-        const ADMIN_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1";
 
-        // INIT
+        const MASTER_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1";
+
+        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         const storage = getStorage(app);
         const provider = new GoogleAuthProvider();
 
-        // STATE
+        // ================= STATE MANAGEMENT =================
         const state = {
             user: null,
-            role: 'guest',
+            role: 'guest', // guest, user, sub-admin, admin
             projects: [],
-            categories: [],
-            users: []
+            categories: [], // Extracted from projects or settings
+            profile: {},
+            socials: []
         };
 
-        // --- UI UTILS ---
-        window.ui = {
-            toast: (msg, type = 'success') => {
+        // ================= UI HELPERS =================
+        const ui = {
+            toast: (message, type = 'info') => {
                 const container = document.getElementById('toast-container');
-                const el = document.createElement('div');
-                const color = type === 'success' ? 'bg-emerald-600' : 'bg-red-600';
-                el.className = `${color} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 toast-enter font-medium text-sm`;
-                el.innerHTML = `<span class="material-symbols-outlined text-lg">${type === 'success' ? 'check_circle' : 'error'}</span> ${msg}`;
-                container.appendChild(el);
+                const toast = document.createElement('div');
+                const colors = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-slate-800';
+                toast.className = `${colors} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 transition-all transform translate-x-full opacity-0`;
+                toast.innerHTML = `<span>${message}</span>`;
+                container.appendChild(toast);
                 
-                requestAnimationFrame(() => el.classList.remove('toast-enter'));
-                setTimeout(() => {
-                    el.classList.add('toast-exit');
-                    setTimeout(() => el.remove(), 300);
-                }, 3000);
-            },
-            loading: (show) => {
-                document.getElementById('global-loader').style.display = show ? 'flex' : 'none';
-            },
-            toggleModal: (id, show) => {
-                const el = document.getElementById(id);
-                if(show) { el.classList.remove('hidden'); el.classList.add('flex'); }
-                else { el.classList.add('hidden'); el.classList.remove('flex'); }
-            },
-            confirm: (cb) => {
-                ui.toggleModal('modal-confirm', true);
-                document.getElementById('confirm-action-btn').onclick = async () => {
-                    ui.toggleModal('modal-confirm', false);
-                    await cb();
-                }
-            }
-        };
-
-        // --- ROUTER ---
-        window.router = {
-            go: (view, param = null) => {
-                // Hide Admin
-                document.getElementById('admin-layout').classList.add('hidden');
-                document.getElementById('public-header').classList.remove('hidden');
-                
-                // Hide all sections
-                document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-                
-                // Show target
-                const target = document.getElementById(`view-${view}`);
-                if(target) target.classList.add('active');
-                
-                // Dynamic Load
-                if(view === 'home') renderHome();
-                if(view === 'projects') renderProjects();
-                if(view === 'detail') renderDetail(param);
-                
-                window.scrollTo(0,0);
-            },
-            goAdmin: (subView) => {
-                if(state.role !== 'admin' && state.role !== 'sub-admin') return router.go('login');
-                
-                document.getElementById('public-header').classList.add('hidden');
-                document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-                document.getElementById('admin-layout').classList.remove('hidden');
-                
-                // Sidebar Active State
-                document.querySelectorAll('.admin-link').forEach(btn => {
-                    btn.classList.remove('bg-primary/10', 'text-primary');
-                    btn.classList.add('text-slate-500');
-                    if(btn.getAttribute('onclick').includes(subView)) {
-                        btn.classList.add('bg-primary/10', 'text-primary');
-                        btn.classList.remove('text-slate-500');
-                    }
+                // Animate in
+                requestAnimationFrame(() => {
+                    toast.classList.remove('translate-x-full', 'opacity-0');
                 });
 
-                // Show Sub View
-                document.querySelectorAll('.admin-view').forEach(el => el.classList.add('hidden'));
-                document.getElementById(`admin-${subView}`).classList.remove('hidden');
-                document.getElementById('admin-page-title').innerText = subView.charAt(0).toUpperCase() + subView.slice(1);
+                // Remove after 3s
+                setTimeout(() => {
+                    toast.classList.add('opacity-0', 'translate-y-[-20px]');
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            },
+
+            renderIcons: () => {
+                lucide.createIcons();
+            },
+
+            toggleLoading: (btnId, isLoading) => {
+                const btn = document.getElementById(btnId);
+                if(!btn) return;
+                // Simple opacity toggle for demo
+                btn.style.opacity = isLoading ? '0.7' : '1';
+                btn.disabled = isLoading;
+            },
+
+            // Modal Logic
+            openModal: (mode = 'add', project = null) => {
+                document.getElementById('project-modal').classList.remove('hidden');
+                document.getElementById('modal-title').innerText = mode === 'add' ? 'Thêm Dự Án Mới' : 'Cập Nhật Dự Án';
                 
-                if(subView === 'dashboard') updateStats();
-                if(subView === 'users') userManager.render();
-            },
-            back: () => router.go('projects')
-        };
+                // Reset Form
+                document.getElementById('p-id').value = project ? project.id : '';
+                document.getElementById('p-name').value = project ? project.name : '';
+                document.getElementById('p-category').value = project ? project.category : 'Web App';
+                document.getElementById('p-desc').value = project ? project.description : '';
+                document.getElementById('p-demo').value = project ? project.demoLink : '';
+                document.getElementById('p-github').value = project ? project.githubLink : '';
+                document.getElementById('p-guide').value = project ? project.guide : '';
+                document.getElementById('p-featured').checked = project ? project.isFeatured : false;
+                document.getElementById('p-visible').checked = project ? project.isVisible : true;
 
-        // --- AUTH ---
-        window.authManager = {
-            login: async () => {
-                try {
-                    const res = await signInWithPopup(auth, provider);
-                    const user = res.user;
-                    const ref = doc(db, "users", user.uid);
-                    const snap = await getDoc(ref);
+                // Handle Image Preview
+                if (project && project.imageUrl) {
+                    document.getElementById('preview-container').classList.remove('hidden');
+                    document.getElementById('upload-placeholder').classList.add('hidden');
+                    document.getElementById('img-preview').src = project.imageUrl;
+                } else {
+                    ui.clearImage();
+                }
 
-                    if(!snap.exists()) {
-                        await setDoc(ref, {
-                            uid: user.uid,
-                            email: user.email,
-                            displayName: user.displayName,
-                            photoURL: user.photoURL,
-                            role: user.uid === ADMIN_UID ? 'admin' : 'user',
-                            status: 'active',
-                            createdAt: new Date()
-                        });
-                    }
-                } catch (e) { ui.toast(e.message, 'error'); }
+                // Handle FAQs
+                document.getElementById('faq-list').innerHTML = '';
+                if (project && project.faqs) {
+                    project.faqs.forEach(faq => ui.addFaqField(faq.q, faq.a));
+                } else {
+                    ui.addFaqField(); // Add one empty field by default
+                }
             },
-            logout: async () => {
-                await signOut(auth);
-                window.location.reload();
+
+            closeModal: () => {
+                document.getElementById('project-modal').classList.add('hidden');
+            },
+
+            clearImage: () => {
+                document.getElementById('p-image').value = '';
+                document.getElementById('preview-container').classList.add('hidden');
+                document.getElementById('upload-placeholder').classList.remove('hidden');
+                document.getElementById('img-preview').src = '';
+            },
+
+            addFaqField: (q = '', a = '') => {
+                const container = document.getElementById('faq-list');
+                const div = document.createElement('div');
+                div.className = "flex gap-2 items-start bg-slate-50 p-2 rounded border";
+                div.innerHTML = `
+                    <div class="flex-1 space-y-2">
+                        <input type="text" class="w-full text-sm border rounded px-2 py-1 faq-q" placeholder="Câu hỏi" value="${q}">
+                        <textarea class="w-full text-sm border rounded px-2 py-1 faq-a" placeholder="Câu trả lời">${a}</textarea>
+                    </div>
+                    <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:bg-red-50 p-1 rounded"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                `;
+                container.appendChild(div);
+                ui.renderIcons();
             }
         };
 
-        onAuthStateChanged(auth, async (user) => {
-            if(user) {
-                const snap = await getDoc(doc(db, "users", user.uid));
-                if(snap.exists()) {
-                    const data = snap.data();
-                    if(data.status === 'locked') {
-                        await signOut(auth);
-                        ui.toast("Account locked", "error");
-                        return;
-                    }
-                    state.user = data;
-                    state.role = data.role;
-                    
-                    // UI Updates
-                    document.getElementById('auth-btn').innerText = "Dashboard";
-                    document.getElementById('auth-btn').onclick = () => {
-                         if(['admin','sub-admin'].includes(state.role)) router.goAdmin('dashboard');
-                         else router.go('home');
-                    };
-                    
-                    // Admin UI
-                    document.getElementById('admin-avatar').style.backgroundImage = `url(${state.user.photoURL})`;
-                    document.getElementById('admin-name').innerText = state.user.displayName;
-                    
-                    if(['admin','sub-admin'].includes(state.role)) router.goAdmin('dashboard');
-                    else router.go('home');
-                }
-            } else {
-                state.user = null;
-                state.role = 'guest';
-                document.getElementById('auth-btn').innerText = "Login";
-                document.getElementById('auth-btn').onclick = () => router.go('login');
-                router.go('home');
-            }
-        });
+        // Make ui global for HTML access
+        window.ui = ui;
 
-        // --- DATA ---
-        function setupRealtime() {
-            // Projects
-            onSnapshot(collection(db, "projects"), (snap) => {
-                state.projects = snap.docs.map(d => ({id: d.id, ...d.data()}));
-                renderHome(); // Re-render if home is active
-                projectManager.renderAdmin();
-            });
-            // Categories
-            onSnapshot(query(collection(db, "categories"), orderBy('order')), (snap) => {
-                state.categories = snap.docs.map(d => ({id: d.id, ...d.data()}));
-                // Fill Selects
-                const opts = state.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-                document.getElementById('category-filter').innerHTML = `<option value="all">All Categories</option>` + opts;
-                document.getElementById('p-category').innerHTML = opts;
+        // ================= ROUTER & VIEWS =================
+        const router = {
+            currentView: 'home',
+            
+            navigate: (viewId, param = null) => {
+                router.currentView = viewId;
+                const app = document.getElementById('app');
                 
-                // Admin List
-                document.getElementById('admin-categories-list').innerHTML = state.categories.map(c => `
-                    <li class="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                        <span>${c.name}</span>
-                        <button onclick="categoryManager.delete('${c.id}')" class="text-red-500 hover:text-red-600"><span class="material-symbols-outlined">delete</span></button>
-                    </li>
-                `).join('');
-            });
-            // Users
-            onSnapshot(collection(db, "users"), (snap) => {
-                state.users = snap.docs.map(d => d.data());
-                if(state.role === 'admin') userManager.render();
-            });
-            // Profile & Stats
-            onSnapshot(doc(db, "settings", "profile"), (snap) => {
-                if(snap.exists()) {
-                    const d = snap.data();
-                    document.getElementById('hero-bio').innerText = d.bio || "Bio loading...";
-                    if(d.avatar) document.getElementById('hero-avatar').src = d.avatar;
-                    
-                    document.getElementById('content-name').value = d.name || "";
-                    document.getElementById('content-bio').value = d.bio || "";
-                    document.getElementById('content-avatar').value = d.avatar || "";
+                // Hide Navbar Buttons Logic
+                const btnHome = document.getElementById('btn-home');
+                const btnAdmin = document.getElementById('btn-admin');
+                
+                if (viewId === 'home') {
+                    app.innerHTML = views.home();
+                    btnHome.classList.add('hidden');
+                    if (['admin', 'sub-admin'].includes(state.role)) btnAdmin.classList.remove('hidden');
+                } else if (viewId === 'admin') {
+                    if (!['admin', 'sub-admin'].includes(state.role)) {
+                        ui.toast('Bạn không có quyền truy cập!', 'error');
+                        return router.navigate('home');
+                    }
+                    app.innerHTML = views.admin();
+                    btnHome.classList.remove('hidden');
+                    btnAdmin.classList.add('hidden');
+                    // Re-attach listeners for admin after render
+                    adminLogic.init(); 
+                } else if (viewId === 'detail') {
+                    const project = state.projects.find(p => p.id === param);
+                    if (project) {
+                        app.innerHTML = views.detail(project);
+                        btnHome.classList.remove('hidden');
+                    }
                 }
-            });
-            onSnapshot(doc(db, "settings", "analytics"), (s) => {
-                if(s.exists()) document.getElementById('stat-visits').innerText = s.data().siteVisits || 0;
-            });
-        }
-        setupRealtime();
+                
+                window.scrollTo(0, 0);
+                ui.renderIcons();
+            }
+        };
+        window.router = router;
 
-        // --- MANAGERS (LOGIC) ---
-        
-        // PUBLIC LOGIC
-        function renderHome() {
-            const featured = state.projects.filter(p => p.isFeatured && p.isVisible);
-            document.getElementById('featured-projects-grid').innerHTML = featured.map(p => `
-                <div onclick="router.go('detail', '${p.id}')" class="group bg-white dark:bg-card-dark rounded-xl overflow-hidden border border-slate-200 dark:border-border-dark hover:border-primary transition-all cursor-pointer shadow-sm hover:shadow-xl">
-                    <div class="h-48 bg-slate-200 dark:bg-slate-800 overflow-hidden">
-                        <img src="${p.imageURL || 'https://via.placeholder.com/400'}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+        const views = {
+            home: () => {
+                const featured = state.projects.filter(p => p.isVisible && p.isFeatured);
+                const allVisible = state.projects.filter(p => p.isVisible);
+                const categories = [...new Set(allVisible.map(p => p.category))];
+
+                return `
+                <!-- HERO SECTION -->
+                <section class="bg-white py-20 px-4 text-center border-b">
+                    <div class="max-w-4xl mx-auto">
+                        <h1 class="text-4xl md:text-6xl font-extrabold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-violet-600">
+                            ${state.profile.name || 'Xin chào, tôi là Developer'}
+                        </h1>
+                        <p class="text-xl text-slate-600 mb-8 max-w-2xl mx-auto">${state.profile.bio || 'Chuyên xây dựng các giải pháp web hiện đại và hiệu quả.'}</p>
+                        <button onclick="document.getElementById('projects-grid').scrollIntoView({behavior: 'smooth'})" class="bg-blue-600 text-white px-8 py-3 rounded-full font-semibold hover:bg-blue-700 transition shadow-lg hover:shadow-xl">
+                            Khám phá Dự án
+                        </button>
                     </div>
-                    <div class="p-6">
-                        <div class="flex gap-2 mb-3">
-                             <span class="text-[10px] font-bold uppercase tracking-wider text-primary px-2 py-1 bg-primary/10 rounded">${state.categories.find(c=>c.id===p.categoryId)?.name || 'App'}</span>
+                </section>
+
+                <!-- FILTERS -->
+                <div class="max-w-7xl mx-auto px-4 mt-12 mb-8">
+                    <div class="flex flex-wrap gap-2 justify-center" id="filter-container">
+                        <button onclick="filters.apply('all')" class="filter-btn active px-4 py-2 rounded-full text-sm font-medium bg-blue-600 text-white shadow-sm">Tất cả</button>
+                        ${categories.map(c => `
+                            <button onclick="filters.apply('${c}')" class="filter-btn px-4 py-2 rounded-full text-sm font-medium bg-white text-slate-600 border hover:bg-slate-50 shadow-sm">${c}</button>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <!-- PROJECTS GRID -->
+                <section id="projects-grid" class="max-w-7xl mx-auto px-4 pb-20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    ${allVisible.map(p => `
+                        <div class="group bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 project-card" data-category="${p.category}">
+                            <div class="relative h-56 overflow-hidden cursor-pointer" onclick="router.navigate('detail', '${p.id}')">
+                                <img src="${p.imageUrl || 'https://via.placeholder.com/400x300?text=No+Image'}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                                ${p.isFeatured ? '<span class="absolute top-3 right-3 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full shadow-md">Featured</span>' : ''}
+                                <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <span class="bg-white/90 text-slate-800 px-4 py-2 rounded-full text-sm font-bold backdrop-blur-sm">Xem chi tiết</span>
+                                </div>
+                            </div>
+                            <div class="p-6">
+                                <span class="text-xs font-semibold text-blue-600 uppercase tracking-wider">${p.category}</span>
+                                <h3 class="text-xl font-bold mt-2 mb-2 text-slate-800 group-hover:text-blue-600 transition-colors">${p.name}</h3>
+                                <p class="text-slate-500 text-sm line-clamp-2 mb-4">${p.description}</p>
+                                <div class="flex items-center justify-between border-t pt-4">
+                                    <div class="flex gap-3">
+                                        ${p.githubLink ? `<a href="${p.githubLink}" target="_blank" class="text-slate-400 hover:text-slate-800"><i data-lucide="github" class="w-5 h-5"></i></a>` : ''}
+                                        ${p.demoLink ? `<a href="${p.demoLink}" target="_blank" class="text-slate-400 hover:text-blue-600"><i data-lucide="external-link" class="w-5 h-5"></i></a>` : ''}
+                                    </div>
+                                    <button onclick="router.navigate('detail', '${p.id}')" class="text-sm font-medium text-blue-600 hover:underline">Xem thêm &rarr;</button>
+                                </div>
+                            </div>
                         </div>
-                        <h3 class="text-xl font-bold mb-2 group-hover:text-primary transition-colors">${p.title}</h3>
-                        <p class="text-sm text-slate-500 line-clamp-2">${p.description}</p>
-                    </div>
-                </div>
-            `).join('');
-        }
+                    `).join('')}
+                </section>
 
-        function renderProjects() {
-            const term = document.getElementById('search-input').value.toLowerCase();
-            const cat = document.getElementById('category-filter').value;
-            
-            const list = state.projects.filter(p => {
-                if(!p.isVisible) return false;
-                if(cat !== 'all' && p.categoryId !== cat) return false;
-                if(term && !p.title.toLowerCase().includes(term)) return false;
-                return true;
-            });
-            
-            document.getElementById('projects-grid').innerHTML = list.map(p => `
-                <div class="bg-white dark:bg-card-dark p-4 rounded-xl border border-slate-200 dark:border-border-dark flex flex-col">
-                    <img src="${p.imageURL}" class="h-40 w-full object-cover rounded-lg bg-slate-100 mb-4">
-                    <h4 class="font-bold text-lg mb-1">${p.title}</h4>
-                    <p class="text-xs text-slate-500 mb-4">${state.categories.find(c=>c.id===p.categoryId)?.name}</p>
-                    <button onclick="router.go('detail', '${p.id}')" class="mt-auto w-full py-2 rounded-lg border border-slate-200 dark:border-border-dark hover:bg-slate-50 dark:hover:bg-slate-800 text-sm font-medium">View Details</button>
-                </div>
-            `).join('');
-        }
-        
-        document.getElementById('search-input').oninput = renderProjects;
-        document.getElementById('category-filter').onchange = renderProjects;
+                <!-- FOOTER -->
+                <footer class="bg-slate-900 text-white py-12 text-center">
+                    <div class="flex justify-center gap-6 mb-6">
+                        ${state.socials.map(s => `
+                            <a href="${s.url}" target="_blank" class="p-3 bg-white/10 rounded-full hover:bg-white/20 transition"><i data-lucide="${s.icon || 'link'}" class="w-5 h-5"></i></a>
+                        `).join('')}
+                    </div>
+                    <p class="text-slate-400">© 2024 DevPortfolio. Built with Firebase.</p>
+                </footer>
+                `;
+            },
 
-        function renderDetail(id) {
-            const p = state.projects.find(x => x.id === id);
-            if(!p) return;
-            document.getElementById('detail-content').innerHTML = `
-                <div class="w-full h-64 lg:h-80 rounded-2xl overflow-hidden mb-8 relative">
-                    <img src="${p.imageURL}" class="w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-8">
-                        <h1 class="text-3xl lg:text-5xl font-black text-white">${p.title}</h1>
-                    </div>
-                </div>
-                <div class="grid md:grid-cols-3 gap-8">
-                    <div class="md:col-span-2 space-y-8">
-                        <div>
-                            <h3 class="text-xl font-bold mb-3">Overview</h3>
-                            <p class="text-slate-600 dark:text-slate-400 leading-relaxed">${p.description}</p>
-                        </div>
-                        ${p.guide ? `
-                        <div class="bg-slate-50 dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-border-dark">
-                            <h3 class="font-bold mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-primary">menu_book</span> Guide</h3>
-                            <div class="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">${p.guide}</div>
-                        </div>` : ''}
-                    </div>
-                    <div class="space-y-6">
-                        <div class="p-6 rounded-xl border border-slate-200 dark:border-border-dark bg-white dark:bg-card-dark">
-                            <h4 class="font-bold mb-4 text-sm uppercase text-slate-500">Metadata</h4>
-                            <div class="space-y-3 text-sm">
-                                <div class="flex justify-between"><span>Category</span> <span class="font-medium">${state.categories.find(c=>c.id===p.categoryId)?.name}</span></div>
-                                <div class="flex justify-between"><span>Date</span> <span class="font-medium">${new Date(p.createdAt?.seconds * 1000).toLocaleDateString()}</span></div>
+            detail: (p) => {
+                return `
+                <div class="animate-fade-in pb-20">
+                    <!-- Banner -->
+                    <div class="w-full h-[50vh] relative">
+                        <img src="${p.imageUrl || 'https://via.placeholder.com/1200x600'}" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/90 to-transparent flex items-end">
+                            <div class="max-w-7xl mx-auto px-4 w-full pb-12">
+                                <span class="bg-blue-600 text-white px-3 py-1 rounded text-sm font-semibold mb-3 inline-block">${p.category}</span>
+                                <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">${p.name}</h1>
+                                <div class="flex gap-4">
+                                    ${p.demoLink ? `<a href="${p.demoLink}" target="_blank" class="bg-white text-slate-900 px-6 py-2 rounded-lg font-bold hover:bg-slate-100 flex items-center gap-2"><i data-lucide="eye"></i> Xem Demo</a>` : ''}
+                                    ${p.githubLink ? `<a href="${p.githubLink}" target="_blank" class="bg-slate-700/50 backdrop-blur text-white px-6 py-2 rounded-lg font-bold hover:bg-slate-700/70 flex items-center gap-2"><i data-lucide="github"></i> GitHub</a>` : ''}
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            `;
-            // Log visit
-            updateDoc(doc(db, "settings", "analytics"), { siteVisits: increment(1) });
-        }
 
-        // ADMIN MANAGERS
-        window.updateStats = () => {
-            document.getElementById('stat-projects').innerText = state.projects.length;
-            document.getElementById('stat-users').innerText = state.users.length;
-            document.getElementById('stat-cats').innerText = state.categories.length;
+                    <div class="max-w-4xl mx-auto px-4 mt-12 grid gap-12">
+                        <!-- Content -->
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-800 mb-4 border-l-4 border-blue-600 pl-4">Giới thiệu</h2>
+                            <p class="text-lg text-slate-600 leading-relaxed whitespace-pre-line">${p.description}</p>
+                        </div>
+
+                        <!-- Guide -->
+                        ${p.guide ? `
+                        <div class="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                            <h2 class="text-xl font-bold text-blue-800 mb-3 flex items-center gap-2"><i data-lucide="book-open"></i> Hướng dẫn sử dụng</h2>
+                            <p class="text-slate-700">${p.guide}</p>
+                        </div>
+                        ` : ''}
+
+                        <!-- FAQ Accordion -->
+                        ${p.faqs && p.faqs.length > 0 ? `
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-800 mb-6">Câu hỏi thường gặp</h2>
+                            <div class="space-y-4">
+                                ${p.faqs.map((faq, idx) => `
+                                    <div class="border rounded-lg overflow-hidden">
+                                        <button onclick="document.getElementById('faq-${idx}').classList.toggle('hidden')" class="w-full flex justify-between items-center p-4 bg-slate-50 hover:bg-slate-100 text-left font-semibold text-slate-700">
+                                            <span>${faq.q}</span>
+                                            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                                        </button>
+                                        <div id="faq-${idx}" class="hidden p-4 bg-white text-slate-600 border-t">
+                                            ${faq.a}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+                `;
+            },
+
+            admin: () => {
+                const totalViews = state.projects.reduce((acc, p) => acc + (p.views || 0), 0);
+                return `
+                <div class="max-w-7xl mx-auto px-4 py-8">
+                    <!-- Dashboard Header -->
+                    <div class="mb-8">
+                        <h1 class="text-3xl font-bold text-slate-800">Admin Dashboard</h1>
+                        <p class="text-slate-500">Xin chào, ${state.user.email} (${state.role.toUpperCase()})</p>
+                    </div>
+
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-white p-6 rounded-xl shadow-sm border">
+                            <p class="text-sm text-slate-500">Tổng Dự Án</p>
+                            <h3 class="text-3xl font-bold text-slate-800">${state.projects.length}</h3>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border">
+                            <p class="text-sm text-slate-500">Dự Án Hiển Thị</p>
+                            <h3 class="text-3xl font-bold text-blue-600">${state.projects.filter(p => p.isVisible).length}</h3>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border">
+                            <p class="text-sm text-slate-500">Danh Mục</p>
+                            <h3 class="text-3xl font-bold text-indigo-600">${new Set(state.projects.map(p => p.category)).size}</h3>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border">
+                            <p class="text-sm text-slate-500">Lượt Truy Cập</p>
+                            <h3 class="text-3xl font-bold text-green-600">${totalViews}</h3> <!-- Demo metric -->
+                        </div>
+                    </div>
+
+                    <!-- TABS -->
+                    <div class="border-b mb-6">
+                        <nav class="flex gap-6" id="admin-tabs">
+                            <button onclick="adminLogic.switchTab('projects')" class="tab-btn active text-blue-600 border-b-2 border-blue-600 pb-2 font-medium">Quản Lý Dự Án</button>
+                            <button onclick="adminLogic.switchTab('profile')" class="tab-btn text-slate-500 pb-2 font-medium hover:text-slate-700">Thông Tin Profile</button>
+                            ${state.role === 'admin' ? `<button onclick="adminLogic.switchTab('users')" class="tab-btn text-slate-500 pb-2 font-medium hover:text-slate-700">Quản Lý Users</button>` : ''}
+                        </nav>
+                    </div>
+
+                    <!-- TAB CONTENT: PROJECTS -->
+                    <div id="tab-projects" class="admin-tab-content">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold text-slate-800">Danh Sách Dự Án</h2>
+                            <button onclick="ui.openModal('add')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"><i data-lucide="plus-circle" class="w-4 h-4"></i> Thêm mới</button>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+                            <table class="w-full text-left">
+                                <thead class="bg-slate-50 text-slate-500 text-sm">
+                                    <tr>
+                                        <th class="p-4">Tên Dự Án</th>
+                                        <th class="p-4">Category</th>
+                                        <th class="p-4">Trạng Thái</th>
+                                        <th class="p-4">Nổi Bật</th>
+                                        <th class="p-4 text-right">Hành Động</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    ${state.projects.map(p => `
+                                        <tr class="hover:bg-slate-50">
+                                            <td class="p-4 font-medium">${p.name}</td>
+                                            <td class="p-4"><span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs">${p.category}</span></td>
+                                            <td class="p-4">
+                                                <button onclick="dataManager.toggleProject('${p.id}', 'isVisible', ${!p.isVisible})" class="${p.isVisible ? 'text-green-600 bg-green-50' : 'text-slate-400 bg-slate-100'} px-2 py-1 rounded text-xs font-bold">
+                                                    ${p.isVisible ? 'HIỆN' : 'ẨN'}
+                                                </button>
+                                            </td>
+                                            <td class="p-4">
+                                                <button onclick="dataManager.toggleProject('${p.id}', 'isFeatured', ${!p.isFeatured})" class="${p.isFeatured ? 'text-yellow-600 bg-yellow-50' : 'text-slate-400 bg-slate-100'} px-2 py-1 rounded text-xs font-bold">
+                                                    ${p.isFeatured ? '★ YES' : 'NO'}
+                                                </button>
+                                            </td>
+                                            <td class="p-4 text-right flex justify-end gap-2">
+                                                <button onclick='ui.openModal("edit", ${JSON.stringify(p).replace(/'/g, "&apos;")})' class="p-2 text-blue-600 hover:bg-blue-50 rounded"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                                                ${state.role === 'admin' ? `<button onclick="dataManager.deleteProject('${p.id}')" class="p-2 text-red-600 hover:bg-red-50 rounded"><i data-lucide="trash" class="w-4 h-4"></i></button>` : ''}
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB CONTENT: PROFILE (Simplified) -->
+                    <div id="tab-profile" class="admin-tab-content hidden">
+                        <div class="bg-white rounded-xl shadow-sm border p-6 max-w-2xl">
+                             <h2 class="text-xl font-bold mb-4">Cập nhật Profile</h2>
+                             <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Tên hiển thị</label>
+                                    <input type="text" id="prof-name" value="${state.profile.name || ''}" class="w-full border rounded px-3 py-2">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Bio (Slogan)</label>
+                                    <textarea id="prof-bio" class="w-full border rounded px-3 py-2" rows="3">${state.profile.bio || ''}</textarea>
+                                </div>
+                                <button onclick="dataManager.saveProfile()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Lưu thông tin</button>
+                             </div>
+                        </div>
+                    </div>
+                    
+                    <!-- TAB CONTENT: USERS (Admin Only) -->
+                    <div id="tab-users" class="admin-tab-content hidden">
+                         <div class="bg-white rounded-xl shadow-sm border p-6">
+                            <p class="text-slate-500 mb-4">Quản lý người dùng (Tính năng dành riêng cho Master Admin)</p>
+                            <!-- List users logic would fetch from 'users' collection here -->
+                            <div id="user-list-placeholder" class="text-sm text-slate-400 italic">Đang tải danh sách user...</div>
+                         </div>
+                    </div>
+                </div>
+                `;
+            }
         };
 
-        window.projectManager = {
-            renderAdmin: () => {
-                const tbody = document.getElementById('admin-projects-list');
-                tbody.innerHTML = state.projects.map(p => `
-                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                        <td class="p-4 font-bold flex items-center gap-3">
-                            <div class="w-10 h-10 rounded bg-slate-200 dark:bg-slate-700 bg-cover bg-center" style="background-image:url('${p.imageURL}')"></div>
-                            ${p.title}
-                        </td>
-                        <td class="p-4 text-slate-500">${state.categories.find(c=>c.id===p.categoryId)?.name}</td>
-                        <td class="p-4"><span class="px-2 py-1 rounded-full text-xs font-bold ${p.isVisible ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}">${p.isVisible ? 'Published' : 'Hidden'}</span></td>
-                        <td class="p-4 text-right space-x-2">
-                            <button onclick="projectManager.edit('${p.id}')" class="text-blue-500"><span class="material-symbols-outlined">edit</span></button>
-                            <button onclick="projectManager.delete('${p.id}')" class="text-red-500"><span class="material-symbols-outlined">delete</span></button>
-                        </td>
-                    </tr>
-                `).join('');
+        // ================= BUSINESS LOGIC (CLIENT FILTER) =================
+        window.filters = {
+            apply: (category) => {
+                const btns = document.querySelectorAll('.filter-btn');
+                btns.forEach(b => {
+                    if (b.innerText === category || (category === 'all' && b.innerText === 'Tất cả')) {
+                        b.classList.remove('bg-white', 'text-slate-600', 'border');
+                        b.classList.add('bg-blue-600', 'text-white');
+                    } else {
+                        b.classList.add('bg-white', 'text-slate-600', 'border');
+                        b.classList.remove('bg-blue-600', 'text-white');
+                    }
+                });
+
+                const cards = document.querySelectorAll('.project-card');
+                cards.forEach(card => {
+                    if (category === 'all' || card.dataset.category === category) {
+                        card.classList.remove('hide');
+                    } else {
+                        card.classList.add('hide');
+                    }
+                });
+            }
+        };
+
+        // ================= ADMIN LOGIC HELPERS =================
+        window.adminLogic = {
+            init: () => {
+                ui.renderIcons();
+                if (state.role === 'admin') adminLogic.loadUsers();
             },
-            openModal: () => {
-                ui.toggleModal('modal-project', true);
-                document.getElementById('p-id').value = '';
-                document.getElementById('p-title').value = '';
-                document.getElementById('p-desc').value = '';
-                document.getElementById('p-guide').value = '';
-                document.getElementById('p-file').value = '';
-                document.getElementById('modal-title').innerText = "Add Project";
+            switchTab: (tabName) => {
+                document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.add('hidden'));
+                document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+                
+                document.querySelectorAll('.tab-btn').forEach(b => {
+                    b.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
+                    b.classList.add('text-slate-500');
+                });
+                // Highlight active tab logic simplified for demo
+                event.target.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
+                event.target.classList.remove('text-slate-500');
             },
-            closeModal: () => ui.toggleModal('modal-project', false),
-            save: async () => {
-                ui.loading(true);
+            loadUsers: async () => {
+                // Real implementation would utilize onSnapshot on 'users' collection
+                const q = query(collection(db, "users"), orderBy("joinedAt", "desc"));
+                const snapshot = await getDocs(q);
+                const users = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
+                
+                const html = `
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 text-sm"><tr><th class="p-3">Email</th><th class="p-3">Role</th><th class="p-3">Status</th><th class="p-3">Action</th></tr></thead>
+                    <tbody>
+                        ${users.map(u => `
+                            <tr class="border-t">
+                                <td class="p-3 text-sm">${u.email} <br> <span class="text-xs text-slate-400">${u.uid}</span></td>
+                                <td class="p-3">
+                                    ${u.uid === MASTER_UID ? '<span class="font-bold text-red-600">MASTER</span>' : 
+                                    `<select onchange="dataManager.updateUserRole('${u.id}', this.value)" class="border rounded text-sm p-1">
+                                        <option value="user" ${u.role === 'user' ? 'selected' : ''}>User</option>
+                                        <option value="sub-admin" ${u.role === 'sub-admin' ? 'selected' : ''}>Sub-Admin</option>
+                                    </select>`}
+                                </td>
+                                <td class="p-3 text-sm">${u.isBanned ? '<span class="text-red-500">Banned</span>' : '<span class="text-green-500">Active</span>'}</td>
+                                <td class="p-3">
+                                    ${u.uid !== MASTER_UID ? 
+                                    `<button onclick="dataManager.toggleBan('${u.id}', ${!u.isBanned})" class="text-xs underline ${u.isBanned ? 'text-green-600' : 'text-red-600'}">${u.isBanned ? 'Unlock' : 'Lock'}</button>` 
+                                    : ''}
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>`;
+                document.getElementById('user-list-placeholder').innerHTML = html;
+            }
+        };
+
+        // ================= DATA MANAGER (CRUD) =================
+        window.dataManager = {
+            saveProject: async () => {
+                const id = document.getElementById('p-id').value;
+                const fileInput = document.getElementById('p-image');
+                const file = fileInput.files[0];
+                
+                const btn = document.querySelector('button[onclick="dataManager.saveProject()"]');
+                const loader = document.getElementById('save-loader');
+                const btnText = document.getElementById('save-btn-text');
+                
+                btn.disabled = true;
+                loader.classList.remove('hidden');
+                btnText.innerText = 'Đang xử lý...';
+
                 try {
-                    const id = document.getElementById('p-id').value;
-                    const file = document.getElementById('p-file').files[0];
-                    let data = {
-                        title: document.getElementById('p-title').value,
-                        categoryId: document.getElementById('p-category').value,
+                    let imageUrl = document.getElementById('img-preview').src;
+
+                    // Upload Image if new file selected
+                    if (file) {
+                        ui.toast('Đang tải ảnh lên...', 'info');
+                        const storageRef = ref(storage, `projects/${Date.now()}_${file.name}`);
+                        await uploadBytes(storageRef, file);
+                        imageUrl = await getDownloadURL(storageRef);
+                    }
+
+                    // Collect FAQ
+                    const faqs = [];
+                    const qInputs = document.querySelectorAll('.faq-q');
+                    const aInputs = document.querySelectorAll('.faq-a');
+                    qInputs.forEach((q, i) => {
+                        if(q.value.trim()) faqs.push({ q: q.value, a: aInputs[i].value });
+                    });
+
+                    const projectData = {
+                        name: document.getElementById('p-name').value,
+                        category: document.getElementById('p-category').value,
                         description: document.getElementById('p-desc').value,
+                        demoLink: document.getElementById('p-demo').value,
+                        githubLink: document.getElementById('p-github').value,
                         guide: document.getElementById('p-guide').value,
                         isFeatured: document.getElementById('p-featured').checked,
                         isVisible: document.getElementById('p-visible').checked,
-                        updatedAt: new Date()
+                        imageUrl: imageUrl,
+                        faqs: faqs,
+                        updatedAt: serverTimestamp()
                     };
 
-                    if(file) {
-                        const sRef = ref(storage, `projects/${Date.now()}_${file.name}`);
-                        await uploadBytes(sRef, file);
-                        data.imageURL = await getDownloadURL(sRef);
-                    }
-
-                    if(id) {
-                        await updateDoc(doc(db, "projects", id), data);
-                        ui.toast("Project Updated");
+                    if (id) {
+                        await updateDoc(doc(db, "projects", id), projectData);
+                        ui.toast('Cập nhật thành công!', 'success');
                     } else {
-                        data.createdAt = new Date();
-                        await addDoc(collection(db, "projects"), data);
-                        ui.toast("Project Created");
+                        projectData.createdAt = serverTimestamp();
+                        projectData.views = 0;
+                        await addDoc(collection(db, "projects"), projectData);
+                        ui.toast('Thêm dự án mới thành công!', 'success');
                     }
-                    projectManager.closeModal();
-                } catch(e) { ui.toast(e.message, 'error'); }
-                ui.loading(false);
-            },
-            edit: (id) => {
-                const p = state.projects.find(x => x.id === id);
-                projectManager.openModal();
-                document.getElementById('modal-title').innerText = "Edit Project";
-                document.getElementById('p-id').value = p.id;
-                document.getElementById('p-title').value = p.title;
-                document.getElementById('p-category').value = p.categoryId;
-                document.getElementById('p-desc').value = p.description;
-                document.getElementById('p-guide').value = p.guide || '';
-                document.getElementById('p-featured').checked = p.isFeatured;
-                document.getElementById('p-visible').checked = p.isVisible;
-                document.getElementById('p-file-current').innerText = "Has image. Upload new to replace.";
-            },
-            delete: (id) => ui.confirm(async () => {
-                await deleteDoc(doc(db, "projects", id));
-                ui.toast("Project Deleted");
-            })
-        };
-
-        window.categoryManager = {
-            add: async () => {
-                const name = prompt("Category Name:");
-                if(name) {
-                    await addDoc(collection(db, "categories"), { name, order: state.categories.length + 1 });
-                    ui.toast("Category Added");
+                    ui.closeModal();
+                } catch (error) {
+                    console.error(error);
+                    ui.toast('Lỗi: ' + error.message, 'error');
+                } finally {
+                    btn.disabled = false;
+                    loader.classList.add('hidden');
+                    btnText.innerText = 'Lưu Dự Án';
                 }
             },
-            delete: (id) => ui.confirm(async () => await deleteDoc(doc(db, "categories", id)))
-        };
 
-        window.userManager = {
-            render: () => {
-                document.getElementById('admin-users-list').innerHTML = state.users.map(u => `
-                    <tr>
-                        <td class="p-4 font-bold flex items-center gap-2">
-                             <img src="${u.photoURL}" class="w-8 h-8 rounded-full"> ${u.displayName}
-                        </td>
-                        <td class="p-4 text-slate-500">${u.email}</td>
-                        <td class="p-4"><span class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded uppercase">${u.role}</span></td>
-                        <td class="p-4"><span class="${u.status==='active'?'text-emerald-500':'text-red-500'} font-bold text-xs uppercase">${u.status}</span></td>
-                        <td class="p-4 text-right">
-                             ${u.uid !== ADMIN_UID ? `
-                             <button onclick="userManager.toggleRole('${u.uid}', '${u.role}')" class="text-slate-400 hover:text-white" title="Toggle Role"><span class="material-symbols-outlined">shield_person</span></button>
-                             <button onclick="userManager.toggleStatus('${u.uid}', '${u.status}')" class="text-slate-400 hover:text-white" title="Toggle Lock"><span class="material-symbols-outlined">lock</span></button>
-                             `: ''}
-                        </td>
-                    </tr>
-                `).join('');
+            toggleProject: async (id, field, value) => {
+                try {
+                    await updateDoc(doc(db, "projects", id), { [field]: value });
+                    ui.toast('Đã cập nhật trạng thái', 'success');
+                } catch (e) { ui.toast('Lỗi cập nhật', 'error'); }
             },
-            toggleRole: async (uid, r) => {
-                await updateDoc(doc(db,"users",uid), { role: r === 'admin' ? 'user' : 'admin' });
-                ui.toast("Role Updated");
+
+            deleteProject: async (id) => {
+                if(!confirm("Bạn chắc chắn muốn xóa dự án này?")) return;
+                try {
+                    await deleteDoc(doc(db, "projects", id));
+                    ui.toast('Đã xóa dự án', 'success');
+                } catch (e) { ui.toast('Lỗi xóa', 'error'); }
             },
-            toggleStatus: async (uid, s) => {
-                await updateDoc(doc(db,"users",uid), { status: s === 'active' ? 'locked' : 'active' });
-                ui.toast("Status Updated");
+
+            saveProfile: async () => {
+                try {
+                    await setDoc(doc(db, "content", "profile"), {
+                        name: document.getElementById('prof-name').value,
+                        bio: document.getElementById('prof-bio').value
+                    }, { merge: true });
+                    ui.toast('Đã lưu Profile', 'success');
+                } catch (e) { ui.toast('Lỗi lưu Profile', 'error'); }
+            },
+
+            updateUserRole: async (uid, newRole) => {
+                try {
+                    await updateDoc(doc(db, "users", uid), { role: newRole });
+                    ui.toast('Đã cập nhật quyền', 'success');
+                    adminLogic.loadUsers(); // Refresh table
+                } catch (e) { ui.toast('Lỗi cập nhật quyền', 'error'); }
+            },
+
+            toggleBan: async (uid, banStatus) => {
+                try {
+                    await updateDoc(doc(db, "users", uid), { isBanned: banStatus });
+                    ui.toast(banStatus ? 'Đã khóa tài khoản' : 'Đã mở khóa', 'success');
+                    adminLogic.loadUsers();
+                } catch (e) { ui.toast('Lỗi xử lý', 'error'); }
             }
         };
 
-        window.contentManager = {
-            save: async () => {
-                ui.loading(true);
-                await setDoc(doc(db, "settings", "profile"), {
-                    name: document.getElementById('content-name').value,
-                    bio: document.getElementById('content-bio').value,
-                    avatar: document.getElementById('content-avatar').value
-                }, { merge: true });
-                ui.loading(false);
-                ui.toast("Profile Saved");
+        // ================= AUTH LOGIC =================
+        window.authActions = {
+            login: async () => {
+                try {
+                    await signInWithPopup(auth, provider);
+                } catch (error) {
+                    ui.toast(error.message, 'error');
+                }
+            },
+            logout: async () => {
+                await signOut(auth);
+                ui.toast('Đã đăng xuất', 'info');
+                router.navigate('home');
             }
         };
 
-        // Dark Mode Toggle
-        document.getElementById('theme-toggle').onclick = () => {
-            document.documentElement.classList.toggle('dark');
+        // ================= INITIALIZATION & LISTENERS =================
+        const init = () => {
+            // Auth Listener
+            onAuthStateChanged(auth, async (user) => {
+                const authSection = document.getElementById('auth-section');
+                state.user = user;
+                
+                if (user) {
+                    // Check DB for user role
+                    const userRef = doc(db, "users", user.uid);
+                    const userSnap = await getDoc(userRef);
+                    
+                    let role = 'user';
+                    
+                    if (user.uid === MASTER_UID) {
+                        role = 'admin';
+                    } else if (userSnap.exists()) {
+                        const userData = userSnap.data();
+                        if (userData.isBanned) {
+                            await signOut(auth);
+                            ui.toast('Tài khoản của bạn đã bị khóa.', 'error');
+                            return;
+                        }
+                        role = userData.role || 'user';
+                    } else {
+                        // First time login, create doc
+                        await setDoc(userRef, {
+                            email: user.email,
+                            uid: user.uid,
+                            photoURL: user.photoURL,
+                            role: 'user',
+                            joinedAt: serverTimestamp(),
+                            isBanned: false
+                        });
+                    }
+                    
+                    state.role = role;
+                    
+                    authSection.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <img src="${user.photoURL}" class="w-8 h-8 rounded-full border border-slate-300">
+                            <button onclick="authActions.logout()" class="text-sm font-medium text-slate-500 hover:text-red-600">Thoát</button>
+                        </div>
+                    `;
+                } else {
+                    state.role = 'guest';
+                    authSection.innerHTML = `
+                        <button onclick="authActions.login()" class="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-full text-sm font-bold hover:bg-slate-800 transition">
+                            <i data-lucide="log-in" class="w-4 h-4"></i> Login
+                        </button>
+                    `;
+                }
+                
+                // Refresh View if necessary
+                if (router.currentView === 'admin' && state.role === 'guest') {
+                    router.navigate('home');
+                } else {
+                    router.navigate(router.currentView); // re-render nav buttons
+                }
+            });
+
+            // Real-time Data Listeners
+            onSnapshot(collection(db, "projects"), (snapshot) => {
+                state.projects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // Re-render current view to reflect changes
+                router.navigate(router.currentView, router.currentView === 'detail' ? state.projects.find(p=>p.id===document.getElementById('p-id')?.value)?.id : null);
+            });
+
+            onSnapshot(doc(db, "content", "profile"), (doc) => {
+                if(doc.exists()) {
+                    state.profile = doc.data();
+                    if(router.currentView === 'home') router.navigate('home');
+                }
+            });
+            
+            // Initial render
+            router.navigate('home');
         };
 
-        // Initial Route
-        router.go('home');
+        // Initialize App
+        init();
+
+        // Drag and Drop Logic for Modal
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('p-image');
+        
+        dropZone.addEventListener('click', () => fileInput.click());
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('img-preview').src = e.target.result;
+                    document.getElementById('preview-container').classList.remove('hidden');
+                    document.getElementById('upload-placeholder').classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('bg-blue-50', 'border-blue-400');
+        });
+        
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('bg-blue-50', 'border-blue-400');
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('bg-blue-50', 'border-blue-400');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                const event = new Event('change');
+                fileInput.dispatchEvent(event);
+            }
+        });
 
     </script>
 </body>
