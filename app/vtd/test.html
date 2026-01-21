@@ -41,31 +41,32 @@
         }
     </script>
     <style>
-        /* ADDED: Styles for Sidebar */
+        /* SỬA LỖI: Sidebar dùng TRANSFORM để mượt hơn (Issue 5) */
         .admin-sidebar { 
-            width: 0; 
-            transition: width 0.3s ease-in-out;
+            width: 28rem; /* Giữ width cố định */
+            min-width: 320px; 
+            transform: translateX(100%); /* Trượt ra ngoài */
+            transition: transform 0.3s ease-in-out;
             overflow-x: hidden;
         }
         .admin-sidebar.open {
-            width: 28rem; /* Equivalent to max-w-xl in Tailwind, adjust as needed */
-            min-width: 320px; /* Ensures a minimum size on small screens */
+            transform: translateX(0); /* Trượt vào */
         }
         @media (max-width: 768px) {
-            .admin-sidebar.open { width: 100%; }
+            .admin-sidebar { width: 100%; }
         }
         
-        /* NEW: Mobile Category Sidebar */
         .mobile-category-sidebar { 
-            width: 0; 
-            transition: width 0.3s ease-in-out;
+            width: 75%;
+            max-width: 300px;
+            transform: translateX(-100%); /* Trượt ra ngoài */
+            transition: transform 0.3s ease-in-out;
             overflow-x: hidden;
         }
         .mobile-category-sidebar.open {
-            width: 75%;
-            max-width: 300px;
+            transform: translateX(0);
         }
-        /* END ADDED */
+        /* END SỬA LỖI 5 */
         
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; transition: background 0.3s; padding-bottom: 100px; } 
         .dark body { background-color: #020617; color: #e2e8f0; }
@@ -687,6 +688,29 @@
         </div>
     </div>
     <!-- End Modal for Category Delete/Migrate -->
+    
+    <!-- SỬA LỖI 3: Modal Thông Báo Chi Tiết -->
+    <div id="modal-notification-detail" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[210] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden">
+            <div class="p-6 border-b dark:border-white/5 flex justify-between items-center">
+                <h3 id="notify-detail-title" class="font-bold uppercase text-sm tracking-widest text-primary">TIÊU ĐỀ THÔNG BÁO</h3>
+                <button onclick="window.closeModal('modal-notification-detail')" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-8 max-h-[70vh] overflow-y-auto space-y-4">
+                <div class="flex items-center gap-3">
+                     <img id="notify-detail-icon" class="w-10 h-10 rounded-full object-contain" alt="Icon">
+                     <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Đăng bởi: <span id="notify-detail-sender"></span></p>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Lúc: <span id="notify-detail-timestamp"></span></p>
+                    </div>
+                </div>
+                <p id="notify-detail-content" class="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap p-4 bg-slate-50 dark:bg-slate-800 rounded-xl"></p>
+                
+            </div>
+        </div>
+    </div>
+    <!-- END SỬA LỖI 3 -->
+
 
     <!-- Notification Toast (MODIFIED: Mobile style & interaction) -->
     <div id="toast" class="fixed z-[300]" onclick="window.closeToast()" ontouchstart="window.handleToastTouchStart(event)" ontouchmove="window.handleToastTouchMove(event)" ontouchend="window.handleToastTouchEnd(event)">
@@ -1360,15 +1384,17 @@
                 const timestamp = new Date(n.timestamp).toLocaleString('vi-VN');
                 const readClass = isRead ? 'opacity-80 dark:bg-slate-800/80' : 'bg-white dark:bg-slate-900 border-l-4 border-primary shadow-lg';
                 
+                // SỬA LỖI 3: Chỉ truyền ID vào hàm
                 return `
-                    <div class="notification-item flex items-start gap-4 p-4 rounded-xl shadow-sm border dark:border-white/5 ${readClass} cursor-pointer" onclick="window.markAndOpenNotification('${n.id}', '${n.title}', '${n.content}')">
+                    <div class="notification-item flex items-start gap-4 p-4 rounded-xl shadow-sm border dark:border-white/5 ${readClass} cursor-pointer" onclick="window.markAndOpenNotification('${n.id}')">
                         <img src="${icon}" class="w-8 h-8 rounded-full object-contain mt-1">
                         <div class="flex-1 min-w-0 space-y-1">
                             <div class="flex items-center justify-between">
                                 <h4 class="text-sm font-black truncate ${!isRead ? 'text-primary' : ''}">${n.title}</h4>
                                 ${!isRead ? '<span class="w-2 h-2 bg-red-500 rounded-full flex-shrink-0 ml-2"></span>' : ''}
                             </div>
-                            <p class="text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap">${n.content.substring(0, 100)}...</p>
+                            <!-- Hiện thị tóm tắt, chi tiết sẽ mở trong modal -->
+                            <p class="text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap">${n.content.substring(0, 100)}${n.content.length > 100 ? '...' : ''}</p> 
                             <p class="text-[9px] font-bold text-slate-400 uppercase pt-1 border-t dark:border-white/5">
                                 ${n.senderName} • ${timestamp}
                             </p>
@@ -1379,12 +1405,24 @@
             lucide.createIcons();
         };
 
-        window.markAndOpenNotification = (id, title, content) => {
+        // SỬA LỖI 3: Hàm markAndOpenNotification mới để mở Modal
+        window.markAndOpenNotification = (id) => {
             if (currentUser) {
                  markAsRead(id);
             }
-            // MODIFIED: Use toast for display and trigger browser notification
-            showToast(`📣 **${title}**\n\n${content}`, false, true); 
+            
+            const notification = notifications.find(n => n.id === id);
+            if (!notification) return;
+
+            // Điền dữ liệu vào Modal chi tiết
+            document.getElementById('notify-detail-title').innerText = notification.title.toUpperCase();
+            document.getElementById('notify-detail-content').innerText = notification.content;
+            document.getElementById('notify-detail-sender').innerText = notification.senderName;
+            document.getElementById('notify-detail-timestamp').innerText = new Date(notification.timestamp).toLocaleString('vi-VN');
+            document.getElementById('notify-detail-icon').src = notification.iconUrl || 'https://cdn-icons-png.flaticon.com/512/3602/3602145.png';
+            
+            window.openModal('modal-notification-detail');
+            lucide.createIcons();
         };
 
         window.publishNotification = async () => {
@@ -1415,11 +1453,11 @@
                 document.getElementById('notify-content').value = '';
                 document.getElementById('notify-icon').value = '';
 
-                showToast("Đã đăng thông báo mới thành công!"); // showToast sẽ tự gọi browser notification
+                showToast("Đã đăng thông báo mới thành công!"); // showToast sẽ tự gọi browser notification (Issue 2)
                 logActivity('NOTIFICATION_PUBLISHED', docRef.id, title); 
             } catch (e) {
                 console.error("Error publishing notification:", e);
-                showToast("Lỗi khi đăng thông báo! Chi tiết: " + e.message, true); // Thông báo lỗi chi tiết hơn
+                showToast("Lỗi khi đăng thông báo! Chi tiết: " + e.message, true); // Thông báo lỗi chi tiết hơn (Issue 1)
             } finally {
                 window.hideGlobalLoading();
             }
@@ -1625,7 +1663,7 @@
             }
         };
 
-        // --- USER LIST LOGIC (NEW) ---
+        // --- SỬA LỖI 4: USER LIST LOGIC (Logic vai trò Admin/Deputy/Guest) ---
         function renderUserList() {
             if (!isAdmin) return; 
             
@@ -1656,9 +1694,26 @@
             }
 
             list.innerHTML = `<h4 class="text-sm font-bold uppercase tracking-widest text-primary border-b pb-2">Danh sách Người dùng Đã Ghi nhận (${allUsers.length})</h4>` + allUsers.map(u => {
-                const isDeputy = deputies.includes(u.email);
-                const role = u.uid === auth.currentUser.uid ? 'TÔI' : (isDeputy ? 'PHÓ ADMIN' : 'USER');
-                const roleClass = u.uid === auth.currentUser.uid ? 'bg-indigo-500' : (isDeputy ? 'bg-green-500' : 'bg-slate-500');
+                const isDeputyUser = deputies.includes(u.email);
+                const isCurrentUser = u.uid === auth.currentUser.uid;
+                const isSuperUser = isCurrentUser && isSuper; // Chỉ là Super nếu là người dùng hiện tại VÀ đang là Super
+                
+                let role = 'USER';
+                let roleClass = 'bg-slate-500';
+
+                if (isSuperUser) {
+                    role = 'SUPER ADMIN';
+                    roleClass = 'bg-red-600';
+                } else if (isDeputyUser) {
+                    role = 'PHÓ ADMIN';
+                    roleClass = 'bg-green-500';
+                }
+                
+                if (isCurrentUser) {
+                    role = `TÔI (${role})`;
+                    roleClass = 'bg-indigo-500';
+                }
+                
                 const lastLogin = u.lastLogin ? new Date(u.lastLogin).toLocaleString('vi-VN') : 'N/A';
 
                 return `
@@ -2511,7 +2566,7 @@
                  icon.setAttribute('data-lucide', 'check-circle');
                  icon.classList.add('text-green-500');
 
-                 // Trigger Browser Notification
+                 // Trigger Browser Notification (Issue 2)
                  if (Notification.permission === "granted") {
                      // Extract title/body from msg for browser notification
                      const lines = msg.split('\n');
@@ -2530,7 +2585,7 @@
             t.classList.remove('hidden');
             t.classList.add('visible');
 
-            // Set timeout for auto-close (3s for normal, 5s for long content)
+            // Set timeout for auto-close (3s for normal, 7s for long content)
             const duration = isLong ? 7000 : 3000; // Increased long duration for better readability
             toastTimeout = setTimeout(() => {
                  window.closeToast();
