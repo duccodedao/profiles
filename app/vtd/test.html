@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html lang="vi" class="light">
 <head>
@@ -551,9 +550,7 @@
         </div>
     </div>
     
-    <!-- Footer (Desktop Only) -->
-    <!-- MODIFIED: Changed class to fixed bottom footer -->
-
+    <!-- REMOVED: Footer (Desktop Only) -->
 
     <!-- NEW: Mobile Tab Bar (Fixed Bottom Navigation) (UPDATED) -->
     <nav id="mobile-nav-bar" class="fixed bottom-0 left-0 w-full z-100 bg-white dark:bg-slate-900 border-t dark:border-white/10 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] md:hidden">
@@ -970,7 +967,7 @@
                     renderAuthUI(); // render Login button
                     requestSection.classList.add('hidden'); 
                     document.getElementById('profile-admin-panel-btn')?.classList.add('hidden');
-                    renderProfileContent(); 
+                    renderProfileContent(); // GỌI LẠI ĐỂ CẬP NHẬT TAB CÁ NHÂN KHI ĐĂNG XUẤT
                 }
                 document.getElementById('role-status').innerText = isSuper ? 'SUPER' : (isAdmin ? 'DEPUTY' : 'GUEST');
                 document.getElementById('admin-sidebar-toggle').classList.toggle('hidden', !isAdmin); 
@@ -2511,6 +2508,45 @@
         window.handleToastTouchEnd = (e) => {
             // Can be used to check for tap to close if desired, but default onclick is set on the element.
         };
+
+        // --- RENDER PROFILE CONTENT (ĐÃ SỬA LỖI HIỂN THỊ TRỐNG KHI ĐĂNG NHẬP) ---
+        function renderProfileContent() {
+            const details = document.getElementById('profile-content-details');
+            if (!currentUser) {
+                details.innerHTML = `<p class="text-slate-500 dark:text-slate-400">Vui lòng đăng nhập để xem thông tin cá nhân.</p>
+                    <button onclick="window.login()" class="mt-4 w-full py-3 bg-primary text-white rounded-xl font-bold shadow-lg uppercase text-xs hover:bg-indigo-600 transition">ĐĂNG NHẬP VỚI GOOGLE</button>`;
+                document.getElementById('profile-admin-panel-btn')?.classList.add('hidden');
+                return;
+            }
+
+            // START: Bổ sung chi tiết hiển thị cho TAB Cá Nhân
+            const role = isSuper ? 'SUPER ADMIN' : (isAdmin ? 'PHÓ ADMIN' : 'KHÁCH (GUEST)');
+            
+            details.innerHTML = `
+                <div class="flex items-center gap-4 p-4 bg-slate-100 dark:bg-slate-800 rounded-2xl shadow-md border dark:border-white/5">
+                    <img src="${currentUser.photoURL}" class="w-12 h-12 rounded-full border-2 border-primary/20 p-0.5" alt="Avatar">
+                    <div class="min-w-0 flex-1">
+                         <h4 class="text-lg font-black truncate">${currentUser.displayName || 'Tên hiển thị'}</h4>
+                         <p class="text-xs text-slate-500 dark:text-slate-400 truncate">${currentUser.email}</p>
+                    </div>
+                    <span class="text-[9px] font-black uppercase tracking-widest px-3 py-1 bg-primary/10 text-primary rounded-full flex-shrink-0">${role}</span>
+                </div>
+                <div class="space-y-2 mt-4">
+                     <div class="p-3 bg-white dark:bg-slate-900 rounded-xl border dark:border-white/5">
+                         <p class="text-[10px] font-bold text-slate-400 uppercase">Tên hiển thị Google:</p>
+                         <p class="text-sm font-medium">${currentUser.displayName || 'Chưa đặt tên'}</p>
+                     </div>
+                     <div class="p-3 bg-white dark:bg-slate-900 rounded-xl border dark:border-white/5">
+                         <p class="text-[10px] font-bold text-slate-400 uppercase">Email Google:</p>
+                         <p class="text-sm font-medium">${currentUser.email}</p>
+                     </div>
+                </div>
+            `;
+            // END: Bổ sung chi tiết hiển thị cho TAB Cá Nhân
+
+            document.getElementById('profile-admin-panel-btn')?.classList.toggle('hidden', !isAdmin);
+            lucide.createIcons();
+        }
 
 
         if(localStorage.theme === 'dark') document.documentElement.classList.add('dark');
