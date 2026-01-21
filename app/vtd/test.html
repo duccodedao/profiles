@@ -293,7 +293,7 @@
                     </div>
                 </div>
 
-                <!-- Tab: Profile Content -->
+                <!-- Tab: Profile Content (Mobile Only View) -->
                 <div id="tab-profile-content" class="hidden max-w-lg mx-auto p-4">
                     <h3 class="mobile-hidden text-xl font-black text-primary dark:text-white mb-6 border-b pb-2">THÔNG TIN CÁ NHÂN</h3>
                     <div id="profile-content-details" class="space-y-4">
@@ -545,18 +545,8 @@
         </div>
     </div>
     
-    <!-- Footer (Desktop Only) -->
-    <footer class="mobile-hidden fixed bottom-0 left-0 w-full z-50 bg-white dark:bg-slate-900 border-t dark:border-white/10 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
-        <div class="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center text-sm">
-            <div class="text-slate-500 dark:text-slate-400">
-                © 2024 Vĩnh Trạch Đông. All rights reserved.
-            </div>
-            <div class="flex items-center gap-4">
-                <a href="#" class="text-xs font-bold text-slate-500 hover:text-primary transition">Privacy Policy</a>
-                <!-- Removed 'TRỢ GIÚP' link from footer as requested -->
-            </div>
-        </div>
-    </footer>
+    <!-- Footer (Desktop Only) - REMOVED -->
+    
 
     <!-- NEW: Mobile Tab Bar (Fixed Bottom Navigation) (UPDATED) -->
     <nav id="mobile-nav-bar" class="fixed bottom-0 left-0 w-full z-100 bg-white dark:bg-slate-900 border-t dark:border-white/10 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] md:hidden">
@@ -655,7 +645,6 @@
                         <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">UID Firebase</label>
                         <p id="profile-uid" class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl text-xs font-mono truncate"></p>
                     </div>
-                    <!-- REMOVED: Favorites Count -->
                 </div>
 
                 <a href="https://myaccount.google.com/?utm_source=hub-portal-vtd" target="_blank" class="w-full py-3 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white rounded-xl font-bold shadow-sm uppercase text-xs flex items-center justify-center gap-2 hover:bg-slate-300 transition">
@@ -980,6 +969,63 @@
             `;
             lucide.createIcons();
         }
+        
+        // NEW: Render Profile Content for Mobile Tab (and to ensure ProfileModal works)
+        function renderProfileContent() {
+            const profileDetails = document.getElementById('profile-content-details');
+            const profilePanel = document.getElementById('profile-action-panel');
+            const isAdminLoggedIn = isSuper || isAdmin;
+            
+            if (!currentUser) {
+                profileDetails.innerHTML = `<p class="text-slate-500 dark:text-slate-400">Vui lòng đăng nhập để xem thông tin cá nhân.</p>`;
+                profilePanel.classList.add('hidden');
+                return;
+            }
+            
+            profilePanel.classList.remove('hidden');
+
+            const role = isSuper ? 'SUPER ADMIN' : (isAdmin ? 'PHÓ ADMIN' : 'KHÁCH (GUEST)');
+            
+            // Render Profile Details (Main section, used by Mobile Tab and Modal)
+            profileDetails.innerHTML = `
+                <div class="flex flex-col items-center p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border dark:border-white/5">
+                    <img src="${currentUser.photoURL}" class="w-16 h-16 rounded-full mb-3 border-4 border-primary/20 p-0.5 shadow-md" alt="Avatar">
+                    <span class="text-lg font-black">${currentUser.displayName || 'Người dùng'}</span>
+                    <span class="text-xs font-black tracking-widest px-3 py-1 bg-primary/10 text-primary rounded-full mt-1">${role}</span>
+                </div>
+                <div class="space-y-2 p-4">
+                    <div class="text-sm">Email: <span class="font-bold text-primary dark:text-white">${currentUser.email}</span></div>
+                    <div class="text-sm">UID: <span class="text-xs font-mono text-slate-500 truncate">${currentUser.uid}</span></div>
+                </div>
+                <p id="profile-admin-status" class="text-xs font-bold text-red-500 px-4">${isAdminLoggedIn ? '' : 'Bạn chưa có quyền quản trị.'}</p>
+            `;
+            
+            // Update Toggle Button for Notification Permission
+            const perm = Notification.permission;
+            const btn = document.getElementById('profile-notification-toggle');
+            if (btn) {
+                 const icon = btn.querySelector('i');
+                 const span = btn.querySelector('span');
+                 if (perm === 'granted') {
+                    icon.setAttribute('data-lucide', 'bell-ring');
+                    icon.classList.remove('text-red-500');
+                    span.innerText = 'Thông báo Trình duyệt: BẬT';
+                 } else if (perm === 'denied') {
+                    icon.setAttribute('data-lucide', 'bell-off');
+                    icon.classList.add('text-red-500');
+                    span.innerText = 'Thông báo Trình duyệt: TẮT';
+                 } else { // default
+                    icon.setAttribute('data-lucide', 'bell-ring');
+                    icon.classList.remove('text-red-500');
+                    span.innerText = 'Bật Thông báo Trình duyệt';
+                 }
+            }
+
+            // Update Admin Panel button visibility
+            document.getElementById('profile-admin-panel-btn')?.classList.toggle('hidden', !isAdminLoggedIn);
+            
+            lucide.createIcons();
+        }
 
         window.toggleUserMenu = (event) => {
             event.stopPropagation();
@@ -1005,6 +1051,7 @@
             window.closeUserMenu(); 
             const role = isSuper ? 'SUPER ADMIN' : (isAdmin ? 'PHÓ ADMIN' : 'KHÁCH (GUEST)');
             
+            // Populating data for Modal
             document.getElementById('profile-name').value = currentUser.displayName || 'Chưa đặt tên';
             document.getElementById('profile-email').value = currentUser.email;
             document.getElementById('profile-uid').innerText = currentUser.uid;
@@ -1132,7 +1179,7 @@
                 
                 
                 if (tabId === 'profile') {
-                    renderProfileContent();
+                    renderProfileContent(); // Re-render profile content
                 } else if (tabId === 'notify') {
                     renderNotifications(); 
                 } else if (tabId === 'discover') {
@@ -1263,16 +1310,26 @@
                 return; 
             }
             window.showGlobalLoading();
-            if (Notification.permission !== "granted") {
-                const permission = await Notification.requestPermission();
-                if (permission === "granted") {
-                    showToast("Thông báo trình duyệt đã được BẬT!");
-                } else if (permission === "denied") {
-                    showToast("Đã từ chối cấp quyền thông báo!", true);
-                }
-            } else {
-                 showToast("Thông báo đã được bật trước đó rồi.");
+            if (Notification.permission === "denied") {
+                showToast("Vui lòng BẬT quyền thông báo trong cài đặt trình duyệt!", true);
+                window.hideGlobalLoading();
+                return;
             }
+            
+            if (Notification.permission === "granted") {
+                 showToast("Thông báo đã được bật trước đó rồi.");
+                 window.hideGlobalLoading();
+                 return;
+            }
+
+            const permission = await Notification.requestPermission();
+            if (permission === "granted") {
+                showToast("Thông báo trình duyệt đã được BẬT!");
+            } else if (permission === "denied") {
+                showToast("Đã từ chối cấp quyền thông báo!", true);
+            }
+            
+            renderProfileContent(); // Update button state
             window.hideGlobalLoading();
         }
 
