@@ -207,7 +207,7 @@
         <!-- Main Content -->
         <main class="flex-1 p-6 space-y-8 min-w-0">
             <!-- Search -->
-            <div class="relative max-w-2xl mx-auto">
+            <div id="search-container" class="relative max-w-2xl mx-auto">
                 <i data-lucide="search" class="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
                 <input type="text" id="search-input" placeholder="Tìm ứng dụng hoặc danh bạ..." 
                     class="w-full pl-14 pr-6 py-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-4 ring-primary/10 outline-none shadow-sm">
@@ -422,7 +422,15 @@
                         <input type="text" id="notify-icon" placeholder="Icon URL (Để trống để dùng Icon mặc định)" class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-secondary text-sm font-medium">
                         <button onclick="window.publishNotification()" class="w-full py-4 bg-secondary text-white rounded-xl font-bold shadow-lg uppercase text-xs hover:bg-red-600 transition">ĐĂNG THÔNG BÁO</button>
                     </div>
-                    <!-- End Notification Feed Creator -->
+
+                    <!-- New Section: List/Manage Notifications -->
+                    <div class="space-y-4 pt-6 border-t dark:border-white/5">
+                        <h4 class="text-sm font-black uppercase tracking-widest text-slate-500 border-b pb-2">Danh sách Thông báo đã đăng</h4>
+                        <div id="admin-notify-list" class="space-y-2">
+                             <div class="p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center text-slate-400">Đang tải danh sách...</div>
+                        </div>
+                    </div>
+                    <!-- End List/Manage Notifications -->
 
                 </div>
                 <!-- End Tab Announcement -->
@@ -538,8 +546,8 @@
             <button onclick="window.switchMobileTab('notify')" id="tab-notify-btn" class="flex flex-col items-center justify-center w-full h-full text-slate-400">
                 <div class="relative">
                     <i data-lucide="bell" class="w-5 h-5"></i>
-                    <!-- NEW: Unread Count Badge -->
-                    <span id="unread-count" class="absolute -top-2 -right-2 transform translate-x-1/2 -translate-y-1/2 bg-red-500 text-white text-[8px] font-black px-1.5 rounded-full hidden">0</span>
+                    <!-- NEW: Unread Count Badge (FIXED position) -->
+                    <span id="unread-count" class="absolute -top-1 -right-1 transform translate-x-1/2 -translate-y-1/2 bg-red-500 text-white text-[8px] font-black px-1.5 rounded-full hidden">0</span>
                 </div>
                 <span class="text-[9px] font-bold mt-1">Thông Báo</span>
             </button>
@@ -998,14 +1006,12 @@
         };
 
         // --- MOBILE TAB NAVIGATION LOGIC (UPDATED) ---
-        // Renamed 'discover' to 'notify' in mobile view, kept 'discover' tab for content
         window.switchMobileTab = (tabId, isDesktop = false) => {
             currentMobileTab = tabId;
-            // Includes the new 'tab-notify-content'
             const tabContents = ['tab-app-content', 'tab-notify-content', 'tab-discover-content', 'tab-profile-content'];
             const tabButtons = ['tab-app-btn', 'tab-contact-btn', 'tab-notify-btn', 'tab-profile-btn'];
             
-            window.showGlobalLoading(); // Start loading for tab switch
+            window.showGlobalLoading(); 
 
             // Update UI/State
             tabButtons.forEach(btnId => {
@@ -1022,10 +1028,13 @@
             
             // Logic to manage filter and content visibility
             if (tabId === 'app' || tabId === 'contact') {
-                // Show App Content (which handles both app and contact views via filter)
                 tabContents.forEach(id => document.getElementById(id).classList.add('hidden'));
                 document.getElementById('tab-app-content').classList.remove('hidden');
                 
+                // Show search/stats for App/Contact tabs (FIXED: Show Search Bar)
+                document.getElementById('search-container').classList.remove('hidden');
+                document.getElementById('visit-stats-container').classList.remove('hidden');
+
                 if (tabId === 'app') {
                     if (currentFilter === 'contact_filter') {
                        window.setFilter('all');
@@ -1039,37 +1048,29 @@
                     document.getElementById('tab-contact-btn').classList.add('text-primary');
                     document.getElementById('view-grid-btn')?.parentElement.classList.add('mobile-hidden');
                 }
-                document.getElementById('visit-stats-container').classList.remove('hidden');
 
             } else {
+                // Hide search/stats for other tabs (FIXED: Hide Search Bar)
+                document.getElementById('search-container').classList.add('hidden');
+                document.getElementById('visit-stats-container').classList.add('hidden');
+                document.getElementById('view-grid-btn')?.parentElement.classList.add('mobile-hidden');
+
                 tabContents.forEach(id => document.getElementById(id).classList.add('hidden'));
                 
-                // Note: The 'discover' tab in the array is hidden on mobile nav, but still accessible on desktop
-                // The 'notify' tab is new and has a dedicated content div
                 const contentId = tabId === 'notify' ? 'tab-notify-content' : `tab-${tabId}-content`;
 
                 document.getElementById(contentId).classList.remove('hidden');
                 document.getElementById(`tab-${tabId}-btn`).classList.remove('text-slate-400');
                 document.getElementById(`tab-${tabId}-btn`).classList.add('text-primary');
                 
-                // Hide search/stats
-                document.getElementById('search-input').classList.add('hidden');
-                document.getElementById('visit-stats-container').classList.add('hidden');
-                document.getElementById('view-grid-btn')?.parentElement.classList.add('mobile-hidden');
                 
                 if (tabId === 'profile') {
                     renderProfileContent();
                 } else if (tabId === 'notify') {
-                    renderNotifications(); // NEW: Render Notifications
+                    renderNotifications(); 
                 } else if (tabId === 'discover') {
                     renderDiscoverContent();
                 }
-            }
-            
-            // Re-show search/stats if needed
-            if (tabId === 'app' || tabId === 'contact') {
-                 document.getElementById('search-input').classList.remove('hidden');
-                 document.getElementById('visit-stats-container').classList.remove('hidden');
             }
             
             // Desktop mode always resets mobile tab UI
@@ -1078,14 +1079,16 @@
                 document.getElementById('tab-notify-content').classList.add('hidden');
                 document.getElementById('tab-discover-content').classList.add('hidden');
                 document.getElementById('tab-profile-content').classList.add('hidden');
+                document.getElementById('search-container').classList.remove('hidden');
+                document.getElementById('visit-stats-container').classList.remove('hidden');
             }
             
             lucide.createIcons();
-            window.hideGlobalLoading(); // End loading after content switch
+            window.hideGlobalLoading(); 
         };
 
 
-        // --- DATA REALTIME (UPDATED: Added Notifications & Logs Listeners) ---
+        // --- DATA REALTIME ---
         onSnapshot(query(collection(db, "categories"), orderBy("order", "asc")), (snap) => {
             categories = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             renderCategories();
@@ -1103,20 +1106,20 @@
             renderStats();
         });
         
-        // Realtime listener for Announcement (Unchanged)
+        // Realtime listener for Announcement 
         onSnapshot(doc(db, "settings", "announcement"), (snap) => {
             currentAnnouncement = snap.data() || { content: '', active: false, startTime: null, endTime: null }; 
             renderAnnouncementBar();
             renderAnnouncementControls();
         });
         
-        // Realtime listener for Admin Requests (Unchanged)
+        // Realtime listener for Admin Requests 
         onSnapshot(collection(db, "adminRequests"), (snap) => {
             adminRequests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             renderAdminRequests();
         });
         
-        // Realtime listener for global settings (Maintenance Mode)
+        // Realtime listener for global settings 
         onSnapshot(doc(db, "settings", "global"), (snap) => {
             globalSettings = snap.data() || { maintenanceMode: false };
             checkMaintenanceMode();
@@ -1139,11 +1142,14 @@
             }
         });
 
-        // NEW: Realtime listener for Notifications
+        // NEW: Realtime listener for Notifications (UPDATED: Added Admin List Render)
         onSnapshot(query(collection(db, NOTIFY_COLLECTION), orderBy("timestamp", "desc")), (snap) => {
             notifications = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             if (document.getElementById('tab-notify-content') && document.getElementById('tab-notify-content').classList.contains('hidden') === false) {
                  renderNotifications();
+            }
+            if (document.getElementById('tab-announcement') && document.getElementById('tab-announcement').classList.contains('hidden') === false) {
+                 renderAdminNotificationList(); // NEW: Render admin list when data changes
             }
             updateUnreadCount();
         });
@@ -1226,18 +1232,17 @@
                 const isRead = currentUser ? (n.readBy || []).includes(currentUser.uid) : false;
                 const icon = n.iconUrl || 'https://cdn-icons-png.flaticon.com/512/3602/3602145.png'; // Default announcement icon
                 const timestamp = new Date(n.timestamp).toLocaleString('vi-VN');
-                // Use a standard background if read, but keep it clear if unread
                 const readClass = isRead ? 'opacity-80 dark:bg-slate-800/80' : 'bg-white dark:bg-slate-900 border-l-4 border-primary shadow-lg';
                 
                 return `
-                    <div class="notification-item flex items-start gap-4 p-4 rounded-xl shadow-sm border dark:border-white/5 ${readClass}" onclick="window.markAndOpenNotification('${n.id}', '${n.content}')">
+                    <div class="notification-item flex items-start gap-4 p-4 rounded-xl shadow-sm border dark:border-white/5 ${readClass} cursor-pointer" onclick="window.markAndOpenNotification('${n.id}', '${n.title}', '${n.content}')">
                         <img src="${icon}" class="w-8 h-8 rounded-full object-contain mt-1">
                         <div class="flex-1 min-w-0 space-y-1">
                             <div class="flex items-center justify-between">
                                 <h4 class="text-sm font-black truncate ${!isRead ? 'text-primary' : ''}">${n.title}</h4>
                                 ${!isRead ? '<span class="w-2 h-2 bg-red-500 rounded-full flex-shrink-0 ml-2"></span>' : ''}
                             </div>
-                            <p class="text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap">${n.content}</p>
+                            <p class="text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap">${n.content.substring(0, 100)}...</p>
                             <p class="text-[9px] font-bold text-slate-400 uppercase pt-1 border-t dark:border-white/5">
                                 ${n.senderName} • ${timestamp}
                             </p>
@@ -1248,12 +1253,12 @@
             lucide.createIcons();
         };
 
-        window.markAndOpenNotification = (id, content) => {
+        window.markAndOpenNotification = (id, title, content) => {
             if (currentUser) {
                  markAsRead(id);
             }
-            // Optional: Show full content in an alert or custom modal (using alert for simplicity here)
-            alert(`Tiêu đề: ${notifications.find(n => n.id === id)?.title}\n\nNội dung: ${content}`);
+            // MODIFIED: Use toast for display
+            showToast(`📣 ${title}: ${content}`, false);
         };
 
         window.publishNotification = async () => {
@@ -1293,8 +1298,58 @@
             }
         };
 
+        // NEW: Render Admin Notification List
+        function renderAdminNotificationList() {
+             if (!isAdmin) return;
+             const list = document.getElementById('admin-notify-list');
 
-        // --- ANNOUNCEMENT LOGIC (MODIFIED: Refactored save function) ---
+             if (notifications.length === 0) {
+                  list.innerHTML = `<div class="p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center text-slate-400">Chưa có thông báo nào được đăng.</div>`;
+                  return;
+             }
+
+             list.innerHTML = notifications.map(n => {
+                 const timestamp = new Date(n.timestamp).toLocaleString('vi-VN');
+                 return `
+                     <div class="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm border dark:border-white/5">
+                         <div class="flex-1 min-w-0">
+                             <h4 class="text-sm font-bold truncate">${n.title}</h4>
+                             <p class="text-[10px] text-slate-500">Đăng bởi: ${n.senderName} (${timestamp})</p>
+                         </div>
+                         <button onclick="window.deleteNotificationConfirm('${n.id}', '${n.title}')" class="bg-red-500 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase hover:opacity-90 ml-2">XÓA</button>
+                     </div>
+                 `;
+             }).join('');
+        }
+
+        // NEW: Delete Notification Confirm
+        window.deleteNotificationConfirm = (id, title) => {
+            window.showConfirm(
+                'Xác nhận Xóa Thông báo',
+                `Bạn có chắc chắn muốn xóa vĩnh viễn thông báo "${title}" không?`,
+                () => window.deleteNotification(id, title),
+                'XÓA VĨNH VIỄN'
+            );
+        };
+        
+        // NEW: Delete Notification
+        window.deleteNotification = async (id, title) => {
+            if (!isAdmin) return;
+            window.showGlobalLoading();
+            try {
+                await deleteDoc(doc(db, NOTIFY_COLLECTION, id));
+                showToast(`Đã xóa thông báo "${title}"!`);
+                logActivity('NOTIFICATION_DELETED', id, title);
+            } catch (e) {
+                console.error("Error deleting notification:", e);
+                showToast("Lỗi khi xóa thông báo!", true);
+            } finally {
+                window.hideGlobalLoading();
+            }
+        };
+
+
+        // --- ANNOUNCEMENT LOGIC ---
         function renderAnnouncementBar() {
             const bar = document.getElementById('announcement-bar');
             const textDiv = document.getElementById('announcement-text');
@@ -1894,6 +1949,7 @@
                     'ANNOUNCEMENT_ENABLED': 'Bật thông báo Marquee',
                     'ANNOUNCEMENT_DISABLED': 'Tắt thông báo Marquee',
                     'NOTIFICATION_PUBLISHED': 'Đăng thông báo Feed', // NEW
+                    'NOTIFICATION_DELETED': 'Xóa thông báo Feed', // NEW
                     'DATA_EXPORTED': 'Xuất dữ liệu',
                     'DATA_IMPORTED': 'Nhập dữ liệu',
                     'ADMIN_REQUEST_REJECTED': 'Từ chối yêu cầu Admin',
@@ -2096,6 +2152,7 @@
             // Icon Fallback Logic: Use folder icon if no iconUrl provided
             const getIconHtml = (c) => c.icon ? `<img src="${c.icon}" class="w-3 h-3 object-contain">` : `<i data-lucide="folder" class="w-3 h-3"></i>`;
             
+            // MODIFIED: setFilter now only takes id/isDesktop
             let htmlMobile = `<button onclick="window.setFilter('all', false)" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all w-full text-left ${currentFilter === 'all' ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">TẤT CẢ</button>`;
             
             categories.forEach(c => {
@@ -2128,11 +2185,9 @@
             currentFilter = id; 
             renderCategories(); 
             renderApps();
-            // Closing logic only happens explicitly via toggleMobileCategorySidebar() or implicitly when switching main tabs.
+            // Closing logic only happens explicitly via toggleMobileCategorySidebar()
             if (!isDesktop && id !== 'contact_filter') {
                  // For mobile, if a category is selected (and it's not the internal contact filter), close the sidebar.
-                 // This ensures the sidebar closes when an item is clicked inside it.
-                 // We keep the internal 'contact_filter' open/closed state managed by main tab switch.
                  window.toggleMobileCategorySidebar();
             }
         };
@@ -2154,6 +2209,7 @@
                  document.getElementById('announcement-start').value = currentAnnouncement.startTime || ''; 
                  document.getElementById('announcement-end').value = currentAnnouncement.endTime || ''; 
                  renderAnnouncementControls();
+                 renderAdminNotificationList(); // NEW: Render list when tab is opened
             }
             
             if (tabId === 'tab-deputy' && isAdmin) {
@@ -2169,7 +2225,7 @@
             }
 
             if (tabId === 'tab-logs' && isAdmin) {
-                 renderActivityLogs(); // FIXED: Force render when tab is switched to
+                 renderActivityLogs(); 
             }
         };
         
@@ -2253,4 +2309,3 @@
     </script>
 </body>
 </html>
-
