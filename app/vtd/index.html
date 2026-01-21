@@ -14,7 +14,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="apple-mobile-web-app-title" content="Hub Vĩnh Trạch Đông">
-    <link rel="manifest" href="/js/applinkicon.jsonn">
+    <link rel="manifest" href="/js/applinkicon.json">
     <meta name="theme-color" content="#4f46e5">
 
     <!-- Social Media Meta -->
@@ -41,20 +41,32 @@
         }
     </script>
     <style>
-        /* ADDED: Styles for Sidebar */
+        /* SỬA LỖI: Sidebar dùng TRANSFORM để mượt hơn (Issue 5) */
         .admin-sidebar { 
-            width: 0; 
-            transition: width 0.3s ease-in-out;
+            width: 28rem; /* Giữ width cố định */
+            min-width: 320px; 
+            transform: translateX(100%); /* Trượt ra ngoài */
+            transition: transform 0.3s ease-in-out;
             overflow-x: hidden;
         }
         .admin-sidebar.open {
-            width: 28rem; /* Equivalent to max-w-xl in Tailwind, adjust as needed */
-            min-width: 320px; /* Ensures a minimum size on small screens */
+            transform: translateX(0); /* Trượt vào */
         }
         @media (max-width: 768px) {
-            .admin-sidebar.open { width: 100%; }
+            .admin-sidebar { width: 100%; }
         }
-        /* END ADDED */
+        
+        .mobile-category-sidebar { 
+            width: 75%;
+            max-width: 300px;
+            transform: translateX(-100%); /* Trượt ra ngoài */
+            transition: transform 0.3s ease-in-out;
+            overflow-x: hidden;
+        }
+        .mobile-category-sidebar.open {
+            transform: translateX(0);
+        }
+        /* END SỬA LỖI 5 */
         
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; transition: background 0.3s; padding-bottom: 100px; } 
         .dark body { background-color: #020617; color: #e2e8f0; }
@@ -64,10 +76,17 @@
         .drag-ghost { opacity: 0.3; background: #4f46e5 !important; border-radius: 1rem; }
         .tab-active { color: #4f46e5; border-bottom: 2px solid #4f46e5; }
         .dark .tab-active { color: #818cf8; border-bottom: 2px solid #818cf8; }
-        /* .is-favorite .star-icon { fill: #facc15; } *//* REMOVED: Favorites Style */
         .app-item.selected-for-delete { box-shadow: 0 0 0 3px #f43f5e; border-radius: 1rem; }
-        /* Thêm padding top khi có thông báo để không che header */
-        #announcement-bar:not(.hidden) ~ header { top: 32px; }
+        
+        /* FIX: Header and Announcement Bar Position */
+        header { 
+            top: 0;
+            transition: top 0.3s; /* Smooth transition for header position */
+        }
+        #announcement-bar:not(.hidden) ~ header { 
+            top: 32px; 
+        }
+        
         /* Custom Marquee */
         .marquee { overflow: hidden; white-space: nowrap; box-sizing: border-box; }
         .marquee > div { display: inline-block; padding-left: 100%; animation: marquee 15s linear infinite; }
@@ -91,9 +110,47 @@
                 transform: scale(1); /* Thu nhỏ lại */
             }
         }
+        
+        /* NEW: Mobile Footer Height & Padding Correction */
+        @media (max-width: 768px) {
+            body { padding-bottom: 80px; } /* Footer height approx 60px + padding */
+            #main-content-wrapper { padding-bottom: 10px; } /* Reduce padding at the bottom of main content */
+            #category-bar { display: none !important; } /* Hide desktop category bar on mobile */
+            header { padding-right: 0; } /* Remove right padding on mobile */
+            /* REMOVED: .mobile-hidden { display: none !important; } to allow view toggle */
+        }
+        
+        /* NEW: Mobile-like Toast Styling & Transitions */
+        #toast {
+            bottom: 20px;
+            right: 50%;
+            left: 50%;
+            transform: translate(-50%, 100%); /* Start position: bottom center, off-screen */
+            opacity: 0;
+            transition: all 0.4s ease-out; /* Smooth transition */
+            max-width: 90%;
+            width: auto;
+            min-width: 250px;
+            pointer-events: none; /* Allows clicks through when hidden */
+        }
+        
+        #toast.visible {
+            transform: translate(-50%, 0); /* End position: bottom center, on-screen */
+            opacity: 1;
+            pointer-events: auto; /* Enables interaction when visible */
+        }
     </style>
 </head>
 <body class="min-h-screen pb-24">
+    
+    <!-- NEW: Global Loading Overlay -->
+    <!-- MODIFIED: Added content for timeout -->
+    <div id="global-loading-overlay" class="fixed inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm z-[900] flex items-center justify-center transition-opacity duration-300 opacity-0 pointer-events-none">
+        <div id="loading-content" class="flex flex-col items-center justify-center">
+            <img src="https://hdd.io.vn/img/bmassloadings.png" class="logo-loader w-12 h-12" alt="Loading Logo">
+            <span id="loading-text" class="text-slate-600 dark:text-white mt-4 font-medium">Đang tải dữ liệu...</span>
+        </div>
+    </div>
     
     <!-- NEW: Maintenance Mode Overlay -->
     <div id="maintenance-overlay" class="fixed inset-0 bg-white dark:bg-slate-900 z-[500] flex flex-col items-center justify-center p-8 text-center hidden">
@@ -105,7 +162,7 @@
         <p id="maintenance-admin-info" class="text-sm font-bold mt-4 text-red-500 hidden">(Admin đang thao tác. Dữ liệu vẫn được truy cập qua chế độ quản trị.)</p>
     </div>
     
-    <!-- NEW: Announcement Bar -->
+    <!-- NEW: Announcement Bar (Fixed to top) -->
     <div id="announcement-bar" class="fixed top-0 left-0 w-full z-[101] bg-secondary text-white text-xs font-bold py-2 shadow-md hidden">
         <div class="marquee">
             <div id="announcement-text"></div>
@@ -115,11 +172,12 @@
     <!-- Header -->
     <header class="sticky top-0 z-[100] glass px-6 py-3 flex justify-between items-center transition-all duration-300">
         <div class="flex items-center gap-3">
-            <!-- START MODIFIED: Thay thế icon database bằng logo và xóa nền màu để trong suốt -->
+            <!-- NEW: Mobile Category Toggle (Only visible on mobile) -->
+            <button onclick="window.toggleMobileCategorySidebar()" id="mobile-category-toggle" class="p-2 rounded-xl text-slate-600 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition md:hidden"><i data-lucide="menu" class="w-5 h-5"></i></button>
+
             <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg p-1">
                 <img src="https://hdd.io.vn/img/bmassloadings.png" alt="Hub Logo" class="w-full h-full object-contain rounded-lg">
             </div>
-            <!-- END MODIFIED -->
             <div>
                 <h1 class="text-xs font-black tracking-tighter uppercase leading-none">Hub Portal</h1>
                 <span id="role-status" class="text-[9px] font-bold text-slate-400">GUEST</span>
@@ -130,24 +188,51 @@
             <!-- Nút Mở Sidebar Admin (NEW) -->
             <button onclick="window.toggleAdminSidebar()" id="admin-sidebar-toggle" class="p-2 rounded-xl text-primary hover:bg-slate-100 dark:hover:bg-slate-800 transition hidden"><i data-lucide="settings-2" class="w-5 h-5"></i></button>
 
+            <!-- Desktop View Mode Toggles (Now visible on mobile, remove mobile-hidden) -->
             <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
                 <button onclick="window.setView('grid')" id="view-grid-btn" class="p-1.5 rounded-md transition-all shadow-sm bg-white dark:bg-slate-700"><i data-lucide="layout-grid" class="w-4 h-4"></i></button>
                 <button onclick="window.setView('list')" id="view-list-btn" class="p-1.5 rounded-md transition-all"><i data-lucide="list" class="w-4 h-4"></i></button>
             </div>
-            <button onclick="window.toggleTheme()" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+            
+            <!-- Desktop Theme Toggle -->
+            <button onclick="window.toggleTheme()" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition mobile-hidden">
                 <i data-lucide="sun" class="w-5 h-5 hidden dark:block text-amber-400"></i>
                 <i data-lucide="moon" class="w-5 h-5 dark:hidden text-slate-600"></i>
             </button>
-            <div id="auth-section"></div>
+            
+            <div id="auth-section">
+                <!-- Auth UI rendered by JS -->
+            </div>
         </div>
     </header>
 
+    <!-- NEW: Mobile Category Sidebar (Slide-in from left) -->
+    <div id="mobile-category-sidebar" class="mobile-category-sidebar fixed top-0 left-0 bottom-0 bg-white dark:bg-slate-900 border-r dark:border-white/10 shadow-2xl z-[200] flex flex-col pt-0 md:hidden">
+        <!-- Sidebar Header (Updated) -->
+        <div class="p-6 border-b dark:border-white/5 flex flex-col items-start justify-between">
+            <div class="flex items-center gap-2 mb-2">
+                <div class="w-8 h-8 flex items-center justify-center p-0.5">
+                    <img src="https://hdd.io.vn/img/bmassloadings.png" alt="Hub Logo" class="w-full h-full object-contain rounded-lg">
+                </div>
+                <h3 class="text-sm font-black tracking-tighter uppercase leading-none">Hub Portal</h3>
+            </div>
+            <div class="flex items-center justify-between w-full">
+                <h3 class="text-lg font-black uppercase tracking-widest text-primary dark:text-white">DANH MỤC</h3>
+                <button onclick="window.toggleMobileCategorySidebar()" class="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+        </div>
+        <!-- Sidebar Content -->
+        <div id="category-bar-mobile" class="flex-1 overflow-y-auto p-6 space-y-2">
+            <!-- Categories will be rendered here -->
+        </div>
+    </div>
+
     <!-- Main Content and Admin Sidebar Wrapper -->
-    <div class="flex max-w-7xl mx-auto">
+    <div id="main-content-wrapper" class="flex max-w-7xl mx-auto">
         <!-- Main Content -->
         <main class="flex-1 p-6 space-y-8 min-w-0">
             <!-- Search -->
-            <div class="relative max-w-2xl mx-auto">
+            <div id="search-container" class="relative max-w-2xl mx-auto">
                 <i data-lucide="search" class="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
                 <input type="text" id="search-input" placeholder="Tìm ứng dụng hoặc danh bạ..." 
                     class="w-full pl-14 pr-6 py-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-4 ring-primary/10 outline-none shadow-sm">
@@ -170,17 +255,108 @@
                 </form>
             </div>
             
-            <!-- Categories -->
-            <div id="category-bar" class="flex flex-wrap gap-2"></div>
+            <!-- Categories (Desktop Only) -->
+            <div id="category-bar" class="mobile-hidden flex flex-wrap gap-2"></div>
             
-            <!-- App Loading State (UPDATED: Logo Loading) -->
-            <div id="app-loading" class="text-center p-16 text-slate-400 text-sm font-medium hidden">
-                <img src="/img/bmassloadings.png" class="logo-loader w-6 h-6 mx-auto mb-2" alt="Loading Logo">
-                Đang tải ứng dụng...
-            </div>
+            <!-- Main Content Tabs -->
+            <div id="main-tabs-content">
+                <!-- Tab: App (Home) / Danh bạ (Contacts) Content -->
+                <div id="tab-app-content">
+                    <!-- App Loading State (UPDATED: Logo Loading) -->
+                    <div id="app-loading" class="text-center p-16 text-slate-400 text-sm font-medium hidden">
+                        <img src="/img/bmassloadings.png" class="logo-loader w-6 h-6 mx-auto mb-2" alt="Loading Logo">
+                        Đang tải ứng dụng...
+                    </div>
 
-            <!-- Main Content App -->
-            <div id="app-container"></div>
+                    <!-- Main Content App -->
+                    <div id="app-container"></div>
+                </div>
+
+                <!-- Tab: Notification Content (NEW) -->
+                <div id="tab-notify-content" class="hidden max-w-4xl mx-auto">
+                    <h3 class="text-xl font-black text-primary dark:text-white mb-6 border-b pb-2 px-2">THÔNG BÁO MỚI</h3>
+                    <div id="notification-content-list" class="space-y-4">
+                        <div class="p-16 text-center">
+                            <i data-lucide="bell" class="w-12 h-12 text-primary mx-auto mb-4"></i>
+                            <p class="text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                                Đang tải các thông báo...
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Discover Content -->
+                <div id="tab-discover-content" class="hidden max-w-4xl mx-auto">
+                    <h3 class="text-xl font-black text-primary dark:text-white mb-6 border-b pb-2 px-2">KHÁM PHÁ</h3>
+                    <div id="discover-content-list" class="space-y-4">
+                        <div class="p-16 text-center">
+                            <i data-lucide="compass" class="w-12 h-12 text-primary mx-auto mb-4"></i>
+                            <p class="text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                                Đang tải các tiện ích khám phá...
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Profile Content -->
+                <div id="tab-profile-content" class="hidden max-w-lg mx-auto p-4">
+                    <h3 class="mobile-hidden text-xl font-black text-primary dark:text-white mb-6 border-b pb-2">THÔNG TIN CÁ NHÂN</h3>
+                    <div id="profile-content-details" class="space-y-4">
+                        <p class="text-slate-500 dark:text-slate-400">Vui lòng đăng nhập để xem thông tin cá nhân.</p>
+                        <!-- Populated by JS on load/login -->
+                    </div>
+                    
+                    <div id="profile-action-panel" class="space-y-4 mt-8">
+                         <!-- Admin Panel Button (Conditionally Rendered) -->
+                        <button id="profile-admin-panel-btn" onclick="window.toggleAdminSidebar()" class="hidden w-full py-3 bg-primary text-white rounded-xl font-bold shadow-lg uppercase text-xs flex items-center justify-center gap-2 hover:bg-indigo-600 transition">
+                            <i data-lucide="settings" class="w-4 h-4"></i> ADMIN PANEL
+                        </button>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                             <a href="#" onclick="window.showToast('Bảo mật 2 yếu tố sắp ra mắt!', false)" class="flex items-center gap-3 p-4 bg-slate-100 dark:bg-slate-800 rounded-xl shadow-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                                <i data-lucide="shield-check" class="w-5 h-5 text-primary"></i>
+                                <span class="text-xs font-bold">Tài khoản & Bảo mật (2FA Sắp ra mắt)</span>
+                            </a>
+                            <!-- BỔ SUNG: Thay thế link Quyền riêng tư bằng nút mở Modal -->
+                             <button onclick="window.openPrivacyModal()" class="flex items-center gap-3 p-4 bg-slate-100 dark:bg-slate-800 rounded-xl shadow-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition text-left">
+                                <i data-lucide="lock" class="w-5 h-5 text-primary"></i>
+                                <span class="text-xs font-bold">Quyền riêng tư</span>
+                            </button>
+                            <!-- END BỔ SUNG -->
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <!-- Theme Toggle (Now with dynamic icon) -->
+                            <button onclick="window.toggleTheme()" id="profile-theme-toggle" class="flex items-center gap-3 p-4 bg-slate-100 dark:bg-slate-800 rounded-xl shadow-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                                <i data-lucide="${document.documentElement.classList.contains('dark') ? 'sun' : 'moon'}" class="w-5 h-5 text-primary"></i>
+                                <span class="text-xs font-bold">Chế độ Sáng/Tối</span>
+                            </button>
+                            <!-- Language Toggle -->
+                            <button onclick="window.setLang(currentLang === 'vi' ? 'en' : 'vi')" id="profile-lang-toggle" class="flex items-center gap-3 p-4 bg-slate-100 dark:bg-slate-800 rounded-xl shadow-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                                <i data-lucide="globe" class="w-5 h-5 text-primary"></i>
+                                <span id="current-lang-text" class="text-xs font-bold">Ngôn ngữ: VI</span>
+                            </button>
+                        </div>
+
+                        <!-- NEW: Notification Permission Toggle (Placeholder/Instruction) -->
+                        <button onclick="window.requestNotificationPermission()" class="w-full py-3 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white rounded-xl font-bold text-xs uppercase shadow-sm hover:bg-slate-300 transition flex items-center justify-center gap-2">
+                            <i data-lucide="bell" class="w-4 h-4"></i> XIN PHÉP THÔNG BÁO TRÌNH DUYỆT
+                        </button>
+                        
+                        <!-- NEW: Symmetrical Logout and Help Buttons -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <a href="#" onclick="window.logout()" class="w-full py-3 bg-red-500 text-white rounded-xl font-bold text-xs uppercase shadow-lg hover:bg-red-600 transition flex items-center justify-center gap-2">
+                                <i data-lucide="log-out" class="w-4 h-4"></i> ĐĂNG XUẤT
+                            </a>
+                            <a href="chat.html" target="_blank" class="w-full py-3 bg-secondary text-white rounded-xl font-bold text-xs uppercase shadow-lg hover:opacity-90 transition flex items-center justify-center gap-2">
+                                <i data-lucide="life-buoy" class="w-4 h-4"></i> TRỢ GIÚP & HỖ TRỢ
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
             
             <!-- Bulk Delete Floating Dock -->
             <div id="bulk-delete-dock" class="hidden fixed bottom-28 left-1/2 -translate-x-1/2 z-[110]">
@@ -216,7 +392,8 @@
                     <button onclick="window.switchTab('tab-trash')" id="btn-tab-trash" class="pb-1 uppercase">THÙNG RÁC</button>
                     <button onclick="window.switchTab('tab-announcement')" id="btn-tab-announcement" class="pb-1 uppercase">THÔNG BÁO</button>
                     <button onclick="window.switchTab('tab-deputy')" id="btn-tab-deputy" class="pb-1 uppercase">PHÓ ADMIN</button>
-                    <button onclick="window.switchTab('tab-request')" id="btn-tab-request" class="pb-1 uppercase flex items-center gap-1">YÊU CẦU ADM <span id="request-count" class="text-red-500">(0)</span></button>
+                    <!-- MODIFIED: Changed tab to Users -->
+                    <button onclick="window.switchTab('tab-users')" id="btn-tab-users" class="pb-1 uppercase flex items-center gap-1">NGƯỜI DÙNG <span id="user-count" class="text-red-500">(0)</span></button>
                     <button onclick="window.switchTab('tab-logs')" id="btn-tab-logs" class="pb-1 uppercase">NHẬT KÝ</button>
                     <button onclick="window.switchTab('tab-data')" id="btn-tab-data" class="pb-1 uppercase">DỮ LIỆU</button>
                 </div>
@@ -244,13 +421,14 @@
                     <div id="trash-list" class="space-y-2">
                         <div class="p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center text-slate-400">Thùng rác trống.</div>
                     </div>
-                    <button onclick="window.clearTrash(true)" id="clear-trash-btn" class="w-full py-3 bg-red-600 text-white rounded-xl font-bold shadow-lg uppercase text-xs hidden">DỌN SẠCH VĨNH VIỄN</button>
+                    <button onclick="window.clearTrashConfirm(true)" id="clear-trash-btn" class="w-full py-3 bg-red-600 text-white rounded-xl font-bold shadow-lg uppercase text-xs hidden">DỌN SẠCH VĨNH VIỄN</button>
                 </div>
                 <!-- End Tab Soft Delete -->
                 
-                <!-- Tab Announcement -->
-                <div id="tab-announcement" class="hidden space-y-6">
-                    <h4 class="text-sm font-bold uppercase tracking-widest text-slate-500">Thông báo Chạy chữ (Marquee)</h4>
+                <!-- Tab Announcement & Notification Feed Creator (UPDATED) -->
+                <div id="tab-announcement" class="hidden space-y-8">
+                    
+                    <h4 class="text-sm font-black uppercase tracking-widest text-primary border-b pb-2">Thông báo Chạy chữ (Marquee)</h4>
                     <textarea id="announcement-content" placeholder="Nội dung thông báo (ngắn gọn, lặp lại)" rows="3" class="w-full p-5 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-secondary text-sm font-medium"></textarea>
                     
                     <!-- NEW: Schedule Inputs -->
@@ -268,10 +446,30 @@
                     
                     <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-xl border dark:border-white/5">
                         <label class="text-sm font-bold opacity-60">Kích hoạt Thông báo Chạy chữ</label>
-                        <button id="toggle-announcement-btn" onclick="window.toggleAnnouncementStatus()" class="px-5 py-2 rounded-xl font-bold text-xs uppercase transition-all">Tắt / Bật</button>
+                        <div class="flex gap-2">
+                           <button onclick="window.saveAnnouncementContent(true)" class="px-5 py-2 rounded-xl font-bold text-xs uppercase transition-all bg-primary text-white hover:bg-indigo-600">LƯU & BẬT</button>
+                           <button id="toggle-announcement-btn" onclick="window.toggleAnnouncementStatus()" class="px-5 py-2 rounded-xl font-bold text-xs uppercase transition-all">Tắt / Bật</button>
+                        </div>
                     </div>
                     
-                    <button onclick="window.saveAnnouncementContent()" class="w-full py-4 bg-primary text-white rounded-xl font-bold shadow-lg uppercase text-xs">LƯU NỘI DUNG</button>
+                    <!-- New Section: Notification Feed Creator -->
+                    <div class="space-y-4 pt-6 border-t dark:border-white/5">
+                        <h4 class="text-sm font-black uppercase tracking-widest text-secondary border-b pb-2">Tạo Thông Báo Mới (Notification Feed)</h4>
+                        <input type="text" id="notify-title" placeholder="Tiêu đề thông báo..." class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-secondary text-sm font-bold">
+                        <textarea id="notify-content" placeholder="Nội dung chi tiết..." rows="3" class="w-full p-5 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-secondary text-sm font-medium"></textarea>
+                        <input type="text" id="notify-icon" placeholder="Icon URL (Để trống để dùng Icon mặc định)" class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-secondary text-sm font-medium">
+                        <button onclick="window.publishNotification()" class="w-full py-4 bg-secondary text-white rounded-xl font-bold shadow-lg uppercase text-xs hover:bg-red-600 transition">ĐĂNG THÔNG BÁO</button>
+                    </div>
+
+                    <!-- New Section: List/Manage Notifications -->
+                    <div class="space-y-4 pt-6 border-t dark:border-white/5">
+                        <h4 class="text-sm font-black uppercase tracking-widest text-slate-500 border-b pb-2">Danh sách Thông báo đã đăng</h4>
+                        <div id="admin-notify-list" class="space-y-2">
+                             <div class="p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center text-slate-400">Đang tải danh sách...</div>
+                        </div>
+                    </div>
+                    <!-- End List/Manage Notifications -->
+
                 </div>
                 <!-- End Tab Announcement -->
 
@@ -287,14 +485,21 @@
                         <div id="deputy-list" class="space-y-2"></div>
                     </div>
                 </div>
-                
-                <!-- Tab Admin Requests (NEW) -->
-                <div id="tab-request" class="hidden space-y-6">
-                    <h4 class="text-sm font-bold uppercase tracking-widest text-slate-500">Yêu Cầu Cấp Quyền</h4>
-                    <div id="requests-list" class="space-y-2">
-                        <div class="p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center text-slate-400">Không có yêu cầu mới.</div>
+
+                <!-- NEW: Tab Users -->
+                <div id="tab-users" class="hidden space-y-6">
+                    <h4 class="text-sm font-bold uppercase tracking-widest text-slate-500">Danh sách Người dùng</h4>
+                    <div id="users-list" class="space-y-2 max-h-[50vh] overflow-y-auto">
+                        <div class="p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center text-slate-400">Tính năng này cần API Admin hoặc Collection User riêng.</div>
+                    </div>
+                    <div id="user-request-info" class="p-4 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-200 rounded-xl text-xs font-bold">
+                        (*) Chỉ hiển thị nếu có collection "users" hoặc "adminRequests" (danh sách yêu cầu cũ).
+                        <p id="old-request-list" class="mt-2 space-y-1"></p>
                     </div>
                 </div>
+                
+                <!-- Tab Admin Requests (OLD - Removed in logic, retained as placeholder) -->
+                <!-- <div id="tab-request" class="hidden space-y-6"></div> -->
                 <!-- End Tab Admin Requests -->
 
                 <!-- Tab Activity Logs (NEW) -->
@@ -356,20 +561,35 @@
         </div>
     </div>
     
-    <!-- Footer -->
-    <footer class="fixed bottom-0 w-full z-50 bg-white dark:bg-slate-900 border-t dark:border-white/10 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
-        <div class="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center text-sm">
-            <div class="text-slate-500 dark:text-slate-400">
-                © 2024 Vĩnh Trạch Đông. All rights reserved.
-            </div>
-            <div class="flex items-center gap-4">
-                <a href="#" class="text-xs font-bold text-slate-500 hover:text-primary transition">Privacy Policy</a>
-                <a href="chat.html" target="_blank" class="flex items-center gap-2 px-4 py-2 bg-secondary text-white rounded-lg font-bold text-xs uppercase shadow-lg hover:opacity-90 transition">
-                    <i data-lucide="life-buoy" class="w-4 h-4"></i> TRỢ GIÚP
-                </a>
-            </div>
+    <!-- REMOVED: Footer (Desktop Only) -->
+
+    <!-- NEW: Mobile Tab Bar (Fixed Bottom Navigation) (UPDATED) -->
+    <nav id="mobile-nav-bar" class="fixed bottom-0 left-0 w-full z-100 bg-white dark:bg-slate-900 border-t dark:border-white/10 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] md:hidden">
+        <div class="flex justify-around items-center h-16">
+            <button onclick="window.switchMobileTab('app')" id="tab-app-btn" class="flex flex-col items-center justify-center w-full h-full text-primary">
+                <i data-lucide="layout-grid" class="w-5 h-5"></i>
+                <span class="text-[9px] font-bold mt-1">Ứng Dụng</span>
+            </button>
+            <button onclick="window.switchMobileTab('contact')" id="tab-contact-btn" class="flex flex-col items-center justify-center w-full h-full text-slate-400">
+                <i data-lucide="users" class="w-5 h-5"></i>
+                <span class="text-[9px] font-bold mt-1">Danh Bạ</span>
+            </button>
+            <!-- UPDATED: Replaced Discover with Notify (Bell) -->
+            <button onclick="window.switchMobileTab('notify')" id="tab-notify-btn" class="flex flex-col items-center justify-center w-full h-full text-slate-400">
+                <div class="relative">
+                    <i data-lucide="bell" class="w-5 h-5"></i>
+                    <!-- NEW: Unread Count Badge (FIXED position) -->
+                    <span id="unread-count" class="absolute -top-1 -right-1 transform translate-x-1/2 -translate-y-1/2 bg-red-500 text-white text-[8px] font-black px-1.5 rounded-full hidden">0</span>
+                </div>
+                <span class="text-[9px] font-bold mt-1">Thông Báo</span>
+            </button>
+            <button onclick="window.switchMobileTab('profile')" id="tab-profile-btn" class="flex flex-col items-center justify-center w-full h-full text-slate-400">
+                <i data-lucide="user-circle" class="w-5 h-5"></i>
+                <span class="text-[9px] font-bold mt-1">Cá Nhân</span>
+            </button>
         </div>
-    </footer>
+    </nav>
+    <!-- End Mobile Tab Bar -->
 
 
     <!-- App Modal (No Changes) -->
@@ -410,7 +630,7 @@
         </div>
     </div>
 
-    <!-- User Profile Modal (NEW) -->
+    <!-- User Profile Modal (No Changes) -->
     <div id="modal-user-profile" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[210] hidden flex items-center justify-center p-4">
         <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden">
             <div class="p-6 border-b dark:border-white/5 flex justify-between items-center">
@@ -449,15 +669,60 @@
             </div>
         </div>
     </div>
+    
+    <!-- Modal for Category Delete/Migrate (NEW) -->
+    <div id="modal-cat-migrate" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[210] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden">
+            <div class="p-6 border-b dark:border-white/5 flex justify-between items-center">
+                <h3 class="font-bold uppercase text-sm tracking-widest text-red-500">Chuyển đổi Ứng dụng trước khi Xóa</h3>
+                <button onclick="window.closeModal('modal-cat-migrate')" class="p-2 rounded-lg hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-8 space-y-4">
+                <p id="cat-migrate-message" class="text-sm text-slate-700 dark:text-slate-300">
+                    Danh mục này có <span id="cat-migrate-count" class="font-bold">0</span> ứng dụng. Vui lòng chọn danh mục mới để chuyển các ứng dụng này đến trước khi xóa.
+                </p>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Danh mục mới</label>
+                    <select id="cat-migrate-select" class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium"></select>
+                </div>
+                <button onclick="window.executeCatDeleteAndMigrate()" class="w-full py-4 bg-red-500 text-white rounded-xl font-bold shadow-lg uppercase text-xs hover:bg-red-600 transition">XÁC NHẬN XÓA & CHUYỂN ĐỔI</button>
+            </div>
+        </div>
+    </div>
+    <!-- End Modal for Category Delete/Migrate -->
+    
+    <!-- SỬA LỖI 3: Modal Thông Báo Chi Tiết -->
+    <div id="modal-notification-detail" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[210] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden">
+            <div class="p-6 border-b dark:border-white/5 flex justify-between items-center">
+                <h3 id="notify-detail-title" class="font-bold uppercase text-sm tracking-widest text-primary">TIÊU ĐỀ THÔNG BÁO</h3>
+                <button onclick="window.closeModal('modal-notification-detail')" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-8 max-h-[70vh] overflow-y-auto space-y-4">
+                <div class="flex items-center gap-3">
+                     <img id="notify-detail-icon" class="w-10 h-10 rounded-full object-contain" alt="Icon">
+                     <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Đăng bởi: <span id="notify-detail-sender"></span></p>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Lúc: <span id="notify-detail-timestamp"></span></p>
+                    </div>
+                </div>
+                <p id="notify-detail-content" class="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap p-4 bg-slate-50 dark:bg-slate-800 rounded-xl"></p>
+                
+            </div>
+        </div>
+    </div>
+    <!-- END SỬA LỖI 3 -->
 
-    <!-- Notification Toast (No Changes) -->
-    <div id="toast" class="fixed bottom-10 right-10 z-[300] transform translate-y-20 opacity-0 transition-all duration-500">
+
+    <!-- Notification Toast (MODIFIED: Mobile style & interaction) -->
+    <div id="toast" class="fixed z-[300]" onclick="window.closeToast()" ontouchstart="window.handleToastTouchStart(event)" ontouchmove="window.handleToastTouchMove(event)" ontouchend="window.handleToastTouchEnd(event)">
         <div class="bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border dark:border-white/10">
             <i data-lucide="check-circle" class="w-5 h-5 text-green-500"></i>
             <span id="toast-msg" class="text-sm font-bold tracking-tight">Thành công!</span>
         </div>
     </div>
-
+    <!-- End Notification Toast -->
+    
 
 
     <!-- Custom Confirmation Modal (NEW) -->
@@ -476,11 +741,31 @@
         </div>
     </div>
 </div>
-    
-    <script type="module">
+
+<!-- NEW: Modal Quyền Riêng Tư -->
+<div id="modal-privacy-settings" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[210] hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-2xl shadow-2xl overflow-hidden">
+        <div class="p-6 border-b dark:border-white/5 flex justify-between items-center">
+            <h3 class="font-bold uppercase text-sm tracking-widest text-primary">CÀI ĐẶT QUYỀN RIÊNG TƯ</h3>
+            <button onclick="window.closeModal('modal-privacy-settings')" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="p-8 max-h-[70vh] overflow-y-auto space-y-6">
+             <p class="text-sm text-yellow-800 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-xl">
+                <i data-lucide="alert-triangle" class="w-4 h-4 inline-block align-text-top mr-1"></i>
+                LƯU Ý: Các công tắc này KHÔNG ảnh hưởng đến quyền truy cập thực tế của ứng dụng này.
+            </p>
+            <div id="privacy-settings-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Settings will be rendered here by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc, arrayUnion, arrayRemove, writeBatch, increment, runTransaction, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        // MODIFIED: Added arrayRemove and getDocs (for notification cleanup)
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc, arrayUnion, arrayRemove, writeBatch, increment, runTransaction, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
@@ -491,8 +776,9 @@
             appId: "1:914980131889:web:72f8da15c42dbee671b110",
             measurementId: "G-C587M69LZW"
         };
-        // *** ĐÃ XÓA: Hằng số SUPER_UID được chuyển vào Firestore (settings/admins/super_uid) ***
         const LOGS_COLLECTION = "activityLogs"; 
+        const NOTIFY_COLLECTION = "notifications"; 
+        const USERS_COLLECTION = "users"; // NEW: For potential user listing
 
         const fbApp = initializeApp(firebaseConfig);
         const auth = getAuth(fbApp);
@@ -507,7 +793,200 @@
         let adminRequests = []; 
         let globalSettings = {}; 
         let activityLogs = []; 
-        let confirmActionCallback = () => {}; // NEW: Global callback for confirmation modal
+        let discoverApps = []; 
+        let notifications = []; 
+        let allUsers = []; // NEW: Array for all users
+        let unreadCount = 0; 
+        let confirmActionCallback = () => {}; 
+        let currentMobileTab = 'app'; 
+        let currentLang = 'vi'; 
+        let toastTimeout = null; // NEW: Toast timer
+        let toastTouchStartY = 0; // NEW: Toast swipe detection
+        let catToDeleteId = null; // NEW: For category migrate logic
+        let loadingTimeout = null; // NEW: Loading timeout timer
+
+        // BỔ SUNG: Dữ liệu mô phỏng Cài đặt Quyền riêng tư của Trình duyệt (Issue #1)
+        const PRIVACY_SETTINGS = [
+            { key: 'location', name: 'Vị trí', icon: 'map-pin' },
+            { key: 'camera', name: 'Camera', icon: 'camera' },
+            { key: 'microphone', name: 'Micrô', icon: 'mic' },
+            { key: 'motion_sensors', name: 'Cảm biến chuyển động', icon: 'move' },
+            { key: 'notifications', name: 'Thông báo', icon: 'bell' },
+            { key: 'javascript', name: 'JavaScript', icon: 'code' },
+            { key: 'images', name: 'Hình ảnh', icon: 'image' },
+            { key: 'popups_redirects', name: 'Cửa sổ bật lên/Chuyển hướng', icon: 'arrow-right' },
+            { key: 'intrusive_ads', name: 'Quảng cáo xâm nhập', icon: 'alert-circle' },
+            { key: 'background_sync', name: 'Đồng bộ hoá trong nền', icon: 'refresh-cw' },
+            { key: 'sound', name: 'Âm thanh', icon: 'volume-2' },
+            { key: 'auto_downloads', name: 'Tự động tải xuống', icon: 'download-cloud' },
+            { key: 'midi', name: 'Lập trình lại/Điều khiển MIDI', icon: 'sliders' },
+            { key: 'usb_devices', name: 'Thiết bị USB', icon: 'usb' },
+            { key: 'serial_ports', name: 'Cổng nối tiếp', icon: 'hard-drive' },
+            { key: 'file_editing', name: 'Chỉnh sửa tệp', icon: 'file-text' },
+            { key: 'hid_devices', name: 'Thiết bị HID', icon: 'mouse-pointer' },
+            { key: 'content_identifiers', name: 'Giá trị nhận dạng nội dung', icon: 'fingerprint' },
+            { key: 'clipboard', name: 'Bảng nhớ tạm', icon: 'clipboard' },
+            { key: 'payment_handlers', name: 'Trình xử lý thanh toán', icon: 'credit-card' },
+            { key: 'insecure_content', name: 'Nội dung không an toàn (HTTP)', icon: 'globe-off' },
+            { key: 'js_security', name: 'Tối ưu hoá & Bảo mật JS', icon: 'shield-half' },
+            { key: 'third_party_login', name: 'Đăng nhập qua bên thứ ba', icon: 'key' },
+            { key: 'ar_vr', name: 'Thực tế tăng cường/ảo (AR/VR)', icon: 'vr' },
+            { key: 'hand_tracking', name: 'Theo dõi cử chỉ tay', icon: 'hand-metal' },
+            { key: 'device_usage', name: 'Hoạt động dùng thiết bị', icon: 'activity' },
+            { key: 'window_management', name: 'Quản lý cửa sổ', icon: 'layout' },
+            { key: 'fonts', name: 'Phông chữ', icon: 'type' },
+            { key: 'auto_pip', name: 'Chế độ Hình trong hình tự động', icon: 'square-gantt' },
+            { key: 'scroll_zoom', name: 'Cuộn và thu phóng thẻ chia sẻ', icon: 'mouse-scroll' },
+            { key: 'web_app_installs', name: 'Lượt cài đặt ứng dụng web', icon: 'package' },
+            { key: 'local_network', name: 'Quyền truy cập mạng cục bộ', icon: 'router' },
+        ];
+
+        window.renderPrivacySettings = () => {
+            const listContainer = document.getElementById('privacy-settings-list');
+            listContainer.innerHTML = PRIVACY_SETTINGS.map(setting => {
+                const isEnabled = localStorage.getItem(`privacy_${setting.key}`) !== 'false'; // Default to true if not set
+                const iconClass = isEnabled ? 'text-primary' : 'text-slate-400';
+                
+                return `
+                    <div class="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border dark:border-white/5">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="${setting.icon}" class="w-5 h-5 ${iconClass}"></i>
+                            <span class="text-sm font-bold">${setting.name}</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" value="" class="sr-only peer" ${isEnabled ? 'checked' : ''} onchange="window.togglePrivacySetting('${setting.key}', this.checked)">
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 dark:peer-focus:ring-primary rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-primary"></div>
+                        </label>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        };
+
+        window.togglePrivacySetting = (key, isEnabled) => {
+             localStorage.setItem(`privacy_${key}`, isEnabled);
+             const settingName = PRIVACY_SETTINGS.find(s => s.key === key)?.name || key;
+             const status = isEnabled ? 'CHO PHÉP' : 'CHẶN';
+             showToast(`Đã thay đổi mô phỏng quyền **${settingName}** thành **${status}**.`);
+             window.renderPrivacySettings(); // Re-render to update icon color
+        };
+
+        window.openPrivacyModal = () => {
+             window.renderPrivacySettings();
+             window.openModal('modal-privacy-settings');
+        };
+
+        // --- GLOBAL LOADING EFFECT (MODIFIED for timeout) ---
+        window.showGlobalLoading = () => {
+             document.getElementById('global-loading-overlay').classList.remove('opacity-0', 'pointer-events-none');
+             document.getElementById('loading-text').innerText = 'Đang tải dữ liệu...';
+             document.getElementById('loading-content').innerHTML = `
+                 <img src="https://hdd.io.vn/img/bmassloadings.png" class="logo-loader w-12 h-12" alt="Loading Logo">
+                 <span id="loading-text" class="text-slate-600 dark:text-white mt-4 font-medium">Đang tải dữ liệu...</span>
+             `;
+
+             // Start 30 second timer
+             clearTimeout(loadingTimeout);
+             loadingTimeout = setTimeout(() => {
+                 const contentDiv = document.getElementById('loading-content');
+                 contentDiv.innerHTML = `
+                     <i data-lucide="clock" class="w-12 h-12 text-yellow-500 mb-4"></i>
+                     <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">Tải quá lâu!</h3>
+                     <p class="text-sm text-slate-600 dark:text-slate-300 mb-6 text-center">Đã mất hơn 30 giây. Bạn muốn làm gì tiếp theo?</p>
+                     <div class="flex gap-4">
+                         <button onclick="window.location.reload()" class="bg-primary text-white px-6 py-3 rounded-xl font-bold text-xs uppercase shadow-lg hover:bg-indigo-600 transition">TẢI LẠI TRANG</button>
+                         <button onclick="window.continueWaiting()" class="bg-slate-500 text-white px-6 py-3 rounded-xl font-bold text-xs uppercase shadow-lg hover:bg-slate-600 transition">ĐỢI TIẾP</button>
+                     </div>
+                 `;
+                 lucide.createIcons();
+             }, 30000); // 30 seconds
+        };
+        
+        window.hideGlobalLoading = () => {
+             clearTimeout(loadingTimeout);
+             document.getElementById('global-loading-overlay').classList.add('opacity-0', 'pointer-events-none');
+        };
+
+        window.continueWaiting = () => {
+            // Simply update the loading text and let the original process continue (if it ever resolves)
+            const contentDiv = document.getElementById('loading-content');
+            contentDiv.innerHTML = `
+                 <img src="https://hdd.io.vn/img/bmassloadings.png" class="logo-loader w-12 h-12" alt="Loading Logo">
+                 <span id="loading-text" class="text-slate-600 dark:text-white mt-4 font-medium">Vẫn đang tải...</span>
+            `;
+            // Restart a longer timer (e.g., 60 more seconds) if needed, but for simplicity, let's just clear the prompt.
+            clearTimeout(loadingTimeout);
+            loadingTimeout = setTimeout(() => {
+                const contentDiv = document.getElementById('loading-content');
+                contentDiv.innerHTML = `
+                    <i data-lucide="clock" class="w-12 h-12 text-yellow-500 mb-4"></i>
+                    <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">Vẫn chưa tải xong!</h3>
+                    <p class="text-sm text-slate-600 dark:text-slate-300 mb-6 text-center">Vui lòng tải lại trang nếu vẫn không có kết quả.</p>
+                    <button onclick="window.location.reload()" class="bg-primary text-white px-6 py-3 rounded-xl font-bold text-xs uppercase shadow-lg hover:bg-indigo-600 transition">TẢI LẠI TRANG</button>
+                `;
+                lucide.createIcons();
+            }, 60000); // 60 more seconds
+        };
+        
+        // --- BROWSER NOTIFICATION LOGIC (NEW) ---
+        window.requestNotificationPermission = () => {
+            if (!("Notification" in window)) {
+                showToast("Trình duyệt này không hỗ trợ thông báo.", true);
+                return;
+            }
+
+            if (Notification.permission === "granted") {
+                showToast("Bạn đã cấp quyền thông báo!", false);
+                return;
+            }
+
+            if (Notification.permission !== "denied") {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        showToast("Đã cấp quyền thông báo thành công!", false);
+                        window.sendBrowserNotification('Hub Portal Vĩnh Trạch Đông', 'Thông báo trình duyệt đã được kích hoạt.');
+                    } else {
+                        showToast("Bạn đã từ chối cấp quyền thông báo.", true);
+                    }
+                });
+            } else {
+                showToast("Bạn đã chặn thông báo. Vui lòng bật lại trong cài đặt trình duyệt.", true);
+            }
+        };
+
+        window.sendBrowserNotification = (title, body) => {
+            if (Notification.permission === "granted") {
+                const options = {
+                    body: body,
+                    icon: 'https://hdd.io.vn/img/bmassloadings.png',
+                    vibrate: [200, 100, 200]
+                };
+                new Notification(title, options);
+            }
+        };
+
+
+        // --- LANGUAGE LOGIC ---
+        window.setLang = (lang, initial = false) => {
+             currentLang = lang;
+             localStorage.setItem('language', lang);
+             const langText = lang === 'vi' ? 'VI' : 'EN';
+             
+             document.getElementById('current-lang-text').innerText = `Ngôn ngữ: ${langText}`;
+             
+             // Update theme toggle icon dynamically for consistency
+             const isDark = document.documentElement.classList.contains('dark');
+             const themeIconElement = document.getElementById('profile-theme-toggle')?.querySelector('i');
+             if(themeIconElement) {
+                themeIconElement.setAttribute('data-lucide', isDark ? 'sun' : 'moon');
+             }
+             
+             if (!initial) {
+                showToast(`Đã chuyển sang ngôn ngữ: ${langText}`);
+                lucide.createIcons();
+             }
+        };
+
 
         // --- CUSTOM CONFIRMATION MODAL LOGIC (NEW) ---
         /**
@@ -518,22 +997,55 @@
          * @param {string} confirmText Text for the confirm button.
          */
         window.showConfirm = (title, message, callback, confirmText = 'XÁC NHẬN') => {
-            if (!isAdmin) return; // Only Admin can trigger Admin confirmation
-
+            if (!isAdmin) return; 
             document.getElementById('confirm-modal-title').innerText = title;
             document.getElementById('confirm-modal-message').innerText = message;
             document.getElementById('confirm-modal-btn').innerText = confirmText;
-            
-            confirmActionCallback = callback; // Set the callback function
-            
-            // Re-bind click listener to confirm button to use the new callback
+            confirmActionCallback = callback; 
             document.getElementById('confirm-modal-btn').onclick = () => {
                 window.closeModal('modal-confirm');
-                confirmActionCallback(); // Execute the stored callback
+                confirmActionCallback(); 
             };
-
             window.openModal('modal-confirm');
         };
+        
+        // --- MAINTENANCE MODE FIX (Hide Main Content) ---
+        function checkMaintenanceMode() {
+            const maintenanceActive = globalSettings.maintenanceMode;
+            const overlay = document.getElementById('maintenance-overlay');
+            const adminInfo = document.getElementById('maintenance-admin-info');
+            const mainContentWrapper = document.getElementById('main-content-wrapper');
+            const mobileNavBar = document.getElementById('mobile-nav-bar');
+
+            if (maintenanceActive && !isAdmin) {
+                overlay.classList.remove('hidden');
+                mainContentWrapper.classList.add('hidden'); 
+                if (mobileNavBar) mobileNavBar.classList.add('hidden'); 
+            } else {
+                overlay.classList.add('hidden');
+                mainContentWrapper.classList.remove('hidden'); 
+                if (window.innerWidth <= 768 && mobileNavBar) mobileNavBar.classList.remove('hidden'); 
+            }
+            adminInfo.classList.toggle('hidden', !maintenanceActive || !isAdmin);
+        }
+
+        function renderMaintenanceControls() {
+            if (!isAdmin) return;
+            const statusSpan = document.getElementById('maintenance-status');
+            const toggleBtn = document.getElementById('maintenance-toggle-btn');
+            
+            if (globalSettings.maintenanceMode) {
+                statusSpan.innerText = "Trạng thái: Bật";
+                toggleBtn.innerText = "TẮT CHẾ ĐỘ";
+                toggleBtn.classList.remove('bg-slate-500');
+                toggleBtn.classList.add('bg-red-500');
+            } else {
+                statusSpan.innerText = "Trạng thái: Tắt";
+                toggleBtn.innerText = "BẬT CHẾ ĐỘ";
+                toggleBtn.classList.remove('bg-red-500');
+                toggleBtn.classList.add('bg-slate-500');
+            }
+        }
 
 
         // --- AUTH & INITIAL ---
@@ -542,130 +1054,86 @@
             const requestSection = document.getElementById('request-admin-section');
             const requestStatus = document.getElementById('request-admin-status');
             const requestForm = document.getElementById('request-admin-form');
+            window.showGlobalLoading(); // Start loading effect
 
-            if (user) {
-                // *** KHỐI CODE ĐÃ CHỈNH SỬA: Lấy super_uid từ Firestore ***
-                const snap = await getDoc(doc(db, "settings", "admins"));
-                const adminData = snap.data() || {};
-                const superUidFromDB = adminData.super_uid; // Lấy Super UID từ DB
-                
-                isSuper = user.uid === superUidFromDB; // Xác định isSuper bằng UID từ DB
-                deputies = adminData.deputy_emails || []; // Lấy danh sách phó admin
-                
-                isAdmin = isSuper || deputies.includes(user.email);
-                // *** KẾT THÚC KHỐI CODE ĐÃ CHỈNH SỬA ***
-                
-                // REMOVED: Fetching user favorites
-                
-                renderAuthUI();
-                
-                // REMOVED: Realtime listener for user favorites
-                
-                requestSection.classList.toggle('hidden', isAdmin);
+            try { 
+                if (user) {
+                    const snap = await getDoc(doc(db, "settings", "admins"));
+                    const adminData = snap.data() || {};
+                    const superUidFromDB = adminData.super_uid; 
+                    
+                    isSuper = user.uid === superUidFromDB; 
+                    deputies = adminData.deputy_emails || []; 
+                    
+                    isAdmin = isSuper || deputies.includes(user.email);
+                    
+                    renderAuthUI();
+                    renderProfileContent(); 
+                    document.getElementById('profile-admin-panel-btn')?.classList.toggle('hidden', !isAdmin);
 
-                if (!isAdmin) {
-                    const reqSnap = await getDoc(doc(db, "adminRequests", user.uid));
-                    if (reqSnap.exists()) {
-                         requestStatus.innerText = "Yêu cầu của bạn đang chờ Admin chính duyệt.";
-                         requestForm.classList.add('hidden');
-                    } else {
-                         requestStatus.innerText = "Bạn chưa có quyền quản trị. Vui lòng gửi yêu cầu để Admin chính duyệt.";
-                         requestForm.classList.remove('hidden');
+                    requestSection.classList.toggle('hidden', isAdmin);
+
+                    if (!isAdmin) {
+                        const reqSnap = await getDoc(doc(db, "adminRequests", user.uid));
+                        if (reqSnap.exists()) {
+                            requestStatus.innerText = "Yêu cầu của bạn đang chờ Admin chính duyệt.";
+                            requestForm.classList.add('hidden');
+                        } else {
+                            requestStatus.innerText = "Bạn chưa có quyền quản trị. Vui lòng gửi yêu cầu để Admin chính duyệt.";
+                            requestForm.classList.remove('hidden');
+                        }
                     }
+                    
+                    if (isAdmin) {
+                        document.getElementById('announcement-content').value = currentAnnouncement.content || '';
+                    }
+
+                } else {
+                    isAdmin = isSuper = false;
+                    renderAuthUI(); // render Login button
+                    requestSection.classList.add('hidden'); 
+                    document.getElementById('profile-admin-panel-btn')?.classList.add('hidden');
+                    renderProfileContent(); // GỌI LẠI ĐỂ CẬP NHẬT TAB CÁ NHÂN KHI ĐĂNG XUẤT
                 }
+                document.getElementById('role-status').innerText = isSuper ? 'SUPER' : (isAdmin ? 'DEPUTY' : 'GUEST');
+                document.getElementById('admin-sidebar-toggle').classList.toggle('hidden', !isAdmin); 
                 
-                if (isAdmin) {
-                    document.getElementById('announcement-content').value = currentAnnouncement.content || '';
+                checkMaintenanceMode(); 
+                // REMOVED mobile specific viewMode set
+                if (window.innerWidth <= 768) { 
+                    viewMode = localStorage.getItem('viewModeMobile') || 'list';
+                } else { 
+                    viewMode = localStorage.getItem('viewModeDesktop') || 'grid';
                 }
 
-            } else {
-                isAdmin = isSuper = false;
-                // REMOVED: userFavorites = [];
-                document.getElementById('auth-section').innerHTML = `<button onclick="window.login()" class="bg-primary text-white px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-widest">Login</button>`;
-                // REMOVED: if (currentFilter === 'favorites') window.setFilter('all'); 
-                requestSection.classList.add('hidden'); 
+                window.setView(viewMode, true); // Force set view to update buttons
+                renderApps();
+                renderDeputyList();
+                renderAnnouncementControls();
+                
+                // FIX: Đảm bảo tab nội dung chính được chuyển và render sau khi tải dữ liệu ban đầu
+                if (window.innerWidth <= 768) { 
+                    window.switchMobileTab('app', false);
+                } else {
+                    window.switchMobileTab('app', true);
+                }
+                window.setLang(localStorage.getItem('language') || 'vi', true);
+
+            } catch (error) {
+                 console.error("Lỗi trong quá trình khởi tạo Auth:", error);
+                 showToast("Lỗi tải dữ liệu người dùng!", true);
+            } finally {
+                window.hideGlobalLoading(); // Always hide loading
             }
-            document.getElementById('role-status').innerText = isSuper ? 'SUPER' : (isAdmin ? 'DEPUTY' : 'GUEST');
-            document.getElementById('admin-sidebar-toggle').classList.toggle('hidden', !isAdmin); 
-            
-            checkMaintenanceMode(); 
-            renderApps();
-            renderDeputyList();
-            renderAnnouncementControls(); 
         });
         
-        // NEW: Handle Admin Request Submission
-        document.getElementById('request-admin-form').onsubmit = async (e) => {
-            e.preventDefault();
-            if (!currentUser) return;
-            const reason = document.getElementById('request-admin-reason').value.trim();
-            if (reason.length < 5) { showToast("Lý do phải dài hơn 5 ký tự!"); return; }
-            
-            try {
-                await setDoc(doc(db, "adminRequests", currentUser.uid), {
-                    uid: currentUser.uid,
-                    email: currentUser.email,
-                    name: currentUser.displayName,
-                    reason: reason,
-                    timestamp: new Date().toISOString()
-                });
-                document.getElementById('request-admin-status').innerText = "Yêu cầu của bạn đang chờ Admin chính duyệt.";
-                document.getElementById('request-admin-form').classList.add('hidden');
-                showToast("Đã gửi yêu cầu thành công!");
-            } catch (e) {
-                console.error("Error submitting request:", e);
-                showToast("Lỗi khi gửi yêu cầu!", true); 
-            }
-        };
-
-        window.login = () => signInWithPopup(auth, provider);
-        window.logout = () => signOut(auth).then(() => location.reload());
-
-        // NEW: User Menu Dropdown Logic
-        window.toggleUserMenu = (event) => {
-            event.stopPropagation();
-            const menu = document.getElementById('user-menu');
-            menu?.classList.toggle('hidden');
-            lucide.createIcons();
-        };
-        
-        window.closeUserMenu = () => {
-             document.getElementById('user-menu')?.classList.add('hidden');
-        };
-
-        // Close menu if user clicks anywhere else
-        document.addEventListener('click', (e) => {
-             const menu = document.getElementById('user-menu');
-             const btn = document.getElementById('user-avatar-btn');
-             const confirmModal = document.getElementById('modal-confirm');
-             if (menu && !menu.contains(e.target) && btn && !btn.contains(e.target)) {
-                 window.closeUserMenu();
-             }
-             // FIXED: Close confirm modal with Escape key or click outside (handled by general closeModal logic)
-        });
-
-        // NEW: User Profile Modal Logic
-        window.openUserProfileModal = () => {
-            if (!currentUser) return;
-            window.closeUserMenu(); 
-
-            // REMOVED: favoritesCount calculation
-            const role = isSuper ? 'SUPER ADMIN' : (isAdmin ? 'PHÓ ADMIN' : 'KHÁCH (GUEST)');
-            
-            // Populate Modal
-            document.getElementById('profile-name').value = currentUser.displayName || 'Chưa đặt tên';
-            document.getElementById('profile-email').value = currentUser.email;
-            document.getElementById('profile-uid').innerText = currentUser.uid;
-            document.getElementById('profile-role').innerText = role;
-            // REMOVED: profile-fav-count population
-            document.getElementById('profile-photo').src = currentUser.photoURL;
-
-            window.openModal('modal-user-profile');
-            lucide.createIcons();
-        };
-
-        // CẬP NHẬT: Thay đổi hàm renderAuthUI để sử dụng Dropdown Menu
+        // NEW: Auth UI Render Fix (For desktop login/user dropdown)
         function renderAuthUI() {
+            if (!currentUser) {
+                document.getElementById('auth-section').innerHTML = `<button onclick="window.login()" class="bg-primary text-white px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-widest">Login</button>`;
+                return;
+            }
+
             document.getElementById('auth-section').innerHTML = `
                 <div class="relative">
                     <button onclick="window.toggleUserMenu(event)" id="user-avatar-btn" class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 pr-3 rounded-lg border dark:border-white/10">
@@ -688,16 +1156,175 @@
             `;
             lucide.createIcons();
         }
+
+        window.toggleUserMenu = (event) => {
+            event.stopPropagation();
+            const menu = document.getElementById('user-menu');
+            menu?.classList.toggle('hidden');
+            lucide.createIcons();
+        };
         
-        // NEW: Sidebar Toggle
-        window.toggleAdminSidebar = () => {
-             document.getElementById('admin-sidebar').classList.toggle('open');
+        window.closeUserMenu = () => {
+             document.getElementById('user-menu')?.classList.add('hidden');
         };
 
-        // --- DATA REALTIME (Unchanged) ---
+        document.addEventListener('click', (e) => {
+             const menu = document.getElementById('user-menu');
+             const btn = document.getElementById('user-avatar-btn');
+             if (menu && !menu.contains(e.target) && btn && !btn.contains(e.target)) {
+                 window.closeUserMenu();
+             }
+        });
+        
+        window.openUserProfileModal = () => {
+            if (!currentUser) return;
+            window.closeUserMenu(); 
+            const role = isSuper ? 'SUPER ADMIN' : (isAdmin ? 'PHÓ ADMIN' : 'KHÁCH (GUEST)');
+            
+            document.getElementById('profile-name').value = currentUser.displayName || 'Chưa đặt tên';
+            document.getElementById('profile-email').value = currentUser.email;
+            document.getElementById('profile-uid').innerText = currentUser.uid;
+            document.getElementById('profile-role').innerText = role;
+            document.getElementById('profile-photo').src = currentUser.photoURL;
+
+            window.openModal('modal-user-profile');
+            lucide.createIcons();
+        };
+
+        
+        // NEW: Handle Admin Request Submission (Unchanged)
+        document.getElementById('request-admin-form').onsubmit = async (e) => {
+            e.preventDefault();
+            if (!currentUser) return;
+            const reason = document.getElementById('request-admin-reason').value.trim();
+            if (reason.length < 5) { showToast("Lý do phải dài hơn 5 ký tự!", true); return; }
+            
+            window.showGlobalLoading();
+            try {
+                await setDoc(doc(db, "adminRequests", currentUser.uid), {
+                    uid: currentUser.uid,
+                    email: currentUser.email,
+                    name: currentUser.displayName,
+                    reason: reason,
+                    timestamp: new Date().toISOString()
+                });
+                document.getElementById('request-admin-status').innerText = "Yêu cầu của bạn đang chờ Admin chính duyệt.";
+                document.getElementById('request-admin-form').classList.add('hidden');
+                showToast("Đã gửi yêu cầu thành công!");
+            } catch (e) {
+                console.error("Error submitting request:", e);
+                showToast("Lỗi khi gửi yêu cầu!", true); 
+            } finally {
+                window.hideGlobalLoading();
+            }
+        };
+
+        window.login = () => { window.showGlobalLoading(); signInWithPopup(auth, provider).catch(() => window.hideGlobalLoading()); };
+        window.logout = () => { window.showGlobalLoading(); signOut(auth).then(() => location.reload()).catch(() => window.hideGlobalLoading()); };
+
+        // NEW: Sidebar Toggle (Unchanged)
+        window.toggleAdminSidebar = () => {
+             document.getElementById('admin-sidebar').classList.toggle('open');
+             if(window.innerWidth <= 768) {
+                document.getElementById('mobile-category-sidebar').classList.remove('open'); // Close mobile category sidebar when opening admin
+             }
+        };
+        
+        // NEW: Mobile Category Sidebar Toggle
+        window.toggleMobileCategorySidebar = () => {
+             document.getElementById('mobile-category-sidebar').classList.toggle('open');
+        };
+
+        // --- MOBILE TAB NAVIGATION LOGIC (FIXED: Search and Sidebar issue) ---
+        window.switchMobileTab = (tabId, isDesktop = false) => {
+            currentMobileTab = tabId;
+            const tabContents = ['tab-app-content', 'tab-notify-content', 'tab-discover-content', 'tab-profile-content'];
+            const tabButtons = ['tab-app-btn', 'tab-contact-btn', 'tab-notify-btn', 'tab-profile-btn'];
+            
+            window.showGlobalLoading(); 
+
+            tabButtons.forEach(btnId => {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    btn.classList.remove('text-primary');
+                    btn.classList.add('text-slate-400');
+                }
+            });
+
+            // Close mobile sidebars to avoid overlay conflict
+            document.getElementById('mobile-category-sidebar')?.classList.remove('open');
+            document.getElementById('admin-sidebar')?.classList.remove('open');
+            
+            // Logic to manage filter and content visibility
+            if (tabId === 'app' || tabId === 'contact') {
+                tabContents.forEach(id => document.getElementById(id).classList.add('hidden'));
+                document.getElementById('tab-app-content').classList.remove('hidden');
+                
+                // Show search/stats for App/Contact tabs
+                document.getElementById('search-container').classList.remove('hidden');
+                document.getElementById('visit-stats-container').classList.remove('hidden');
+
+                if (tabId === 'app') {
+                    // FIX: Prevent re-setting filter/re-rendering if already on app/all
+                    if (currentFilter === 'contact_filter') {
+                       window.setFilter('all', false, false); // Only set filter, do not auto-close sidebar, do not force app/contact switch
+                    }
+                    document.getElementById('tab-app-btn').classList.remove('text-slate-400');
+                    document.getElementById('tab-app-btn').classList.add('text-primary');
+                    // Removed mobile-hidden check for view buttons
+                } else if (tabId === 'contact') {
+                    window.setFilter('contact_filter', false, false); 
+                    document.getElementById('tab-contact-btn').classList.remove('text-slate-400');
+                    document.getElementById('tab-contact-btn').classList.add('text-primary');
+                    // Removed mobile-hidden check for view buttons
+                }
+
+            } else {
+                // Hide search/stats for other tabs
+                document.getElementById('search-container').classList.add('hidden');
+                document.getElementById('visit-stats-container').classList.add('hidden');
+                // Removed mobile-hidden check for view buttons
+
+                tabContents.forEach(id => document.getElementById(id).classList.add('hidden'));
+                
+                const contentId = tabId === 'notify' ? 'tab-notify-content' : `tab-${tabId}-content`;
+
+                document.getElementById(contentId).classList.remove('hidden');
+                document.getElementById(`tab-${tabId}-btn`).classList.remove('text-slate-400');
+                document.getElementById(`tab-${tabId}-btn`).classList.add('text-primary');
+                
+                
+                if (tabId === 'profile') {
+                    renderProfileContent(); // GỌI HÀM RENDER PROFILE
+                } else if (tabId === 'notify') {
+                    renderNotifications(); // GỌI HÀM RENDER NOTIFICATIONS
+                } else if (tabId === 'discover') {
+                    renderDiscoverContent();
+                }
+            }
+            
+            // Desktop mode always resets mobile tab UI
+            if (isDesktop && window.innerWidth > 768) {
+                document.getElementById('tab-app-content').classList.remove('hidden');
+                document.getElementById('tab-notify-content').classList.add('hidden');
+                document.getElementById('tab-discover-content').classList.add('hidden');
+                document.getElementById('tab-profile-content').classList.add('hidden');
+                document.getElementById('search-container').classList.remove('hidden');
+                document.getElementById('visit-stats-container').classList.remove('hidden');
+            }
+            
+            lucide.createIcons();
+            window.hideGlobalLoading(); 
+        };
+
+
+        // --- DATA REALTIME ---
         onSnapshot(query(collection(db, "categories"), orderBy("order", "asc")), (snap) => {
             categories = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             renderCategories();
+            // Update Select list for Cat Migrate Modal
+            const migrateSelect = document.getElementById('cat-migrate-select');
+            migrateSelect.innerHTML = categories.filter(c => c.id !== catToDeleteId).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
         });
 
         onSnapshot(query(collection(db, "apps"), orderBy("order", "asc")), (snap) => {
@@ -712,35 +1339,275 @@
             renderStats();
         });
         
-        // NEW: Realtime listener for Announcement
+        // Realtime listener for Announcement 
         onSnapshot(doc(db, "settings", "announcement"), (snap) => {
             currentAnnouncement = snap.data() || { content: '', active: false, startTime: null, endTime: null }; 
             renderAnnouncementBar();
             renderAnnouncementControls();
         });
         
-        // NEW: Realtime listener for Admin Requests
+        // Realtime listener for Admin Requests (Kept for User tab to list unapproved requests)
         onSnapshot(collection(db, "adminRequests"), (snap) => {
             adminRequests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            renderAdminRequests();
+            if (isAdmin) renderUserList(); // Update user list when requests change
         });
         
-        // NEW: Realtime listener for global settings (Maintenance Mode)
+        // Realtime listener for global settings 
         onSnapshot(doc(db, "settings", "global"), (snap) => {
             globalSettings = snap.data() || { maintenanceMode: false };
             checkMaintenanceMode();
             renderMaintenanceControls();
         });
 
+        // Realtime listener for Discover Apps
+        onSnapshot(doc(db, "settings", "discover"), (snap) => {
+            discoverApps = snap.data()?.apps || [];
+            if (document.getElementById('tab-discover-content') && document.getElementById('tab-discover-content').classList.contains('hidden') === false) {
+                 renderDiscoverContent();
+            }
+        });
+        
         // NEW: Realtime listener for Activity Logs
-        onSnapshot(query(collection(db, LOGS_COLLECTION), orderBy("timestamp", "desc"), limit(50)), (snap) => {
-            activityLogs = snap.docs.map(d => d.data()); 
-            if (document.getElementById('tab-logs').classList.contains('hidden') === false) {
+        onSnapshot(query(collection(db, LOGS_COLLECTION), orderBy("timestamp", "desc"), limit(100)), (snap) => {
+            activityLogs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            if (document.getElementById('tab-logs') && document.getElementById('tab-logs').classList.contains('hidden') === false) {
                  renderActivityLogs();
             }
         });
 
-        // --- ANNOUNCEMENT LOGIC (Unchanged) ---
+        // NEW: Realtime listener for Notifications (UPDATED: Added Admin List Render)
+        onSnapshot(query(collection(db, NOTIFY_COLLECTION), orderBy("timestamp", "desc")), (snap) => {
+            notifications = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            if (document.getElementById('tab-notify-content') && document.getElementById('tab-notify-content').classList.contains('hidden') === false) {
+                 renderNotifications();
+            }
+            if (document.getElementById('tab-announcement') && document.getElementById('tab-announcement').classList.contains('hidden') === false) {
+                 renderAdminNotificationList(); // NEW: Render admin list when data changes
+            }
+            updateUnreadCount();
+        });
+
+        // NEW: Realtime listener for all users (Admin purpose - assumes a `users` collection exists)
+        onSnapshot(query(collection(db, USERS_COLLECTION), orderBy("lastLogin", "desc")), (snap) => {
+            allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            if (isAdmin) renderUserList();
+        });
+
+
+        // NEW: Render Discover Content (Unchanged)
+        function renderDiscoverContent() {
+            const list = document.getElementById('discover-content-list');
+            
+            if (discoverApps.length === 0) {
+                 list.innerHTML = `<div class="p-16 text-center">
+                    <i data-lucide="compass" class="w-12 h-12 text-primary mx-auto mb-4"></i>
+                    <p class="text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                        Chưa có tiện ích khám phá nào được thiết lập.
+                    </p>
+                    ${isAdmin ? `<p class="text-xs font-bold mt-4">Admin: Thêm mục tại settings/discover trong Firestore.</p>` : ''}
+                 </div>`;
+                 lucide.createIcons();
+                 return;
+            }
+
+            list.innerHTML = discoverApps.map(app => `
+                <a href="${app.url}" target="_blank" class="flex items-center gap-4 p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border dark:border-white/5 group hover:bg-slate-50 dark:hover:bg-slate-700 transition">
+                    <img src="${app.iconUrl || 'https://hdd.io.vn/img/bmassloadings.png'}" class="w-10 h-10 rounded-lg object-contain">
+                    <div class="flex-1 min-w-0">
+                        <h4 class="text-base font-bold truncate">${app.name}</h4>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">${app.description || 'Tiện ích khám phá'}</p>
+                    </div>
+                    <i data-lucide="external-link" class="w-5 h-5 text-primary"></i>
+                </a>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        // --- NEW: NOTIFICATION FEED LOGIC ---
+        
+        function updateUnreadCount() {
+            if (!currentUser) {
+                unreadCount = 0;
+            } else {
+                unreadCount = notifications.filter(n => !(n.readBy || []).includes(currentUser.uid)).length;
+            }
+
+            const countSpan = document.getElementById('unread-count');
+            if (countSpan) {
+                countSpan.innerText = unreadCount > 99 ? '99+' : unreadCount;
+                countSpan.classList.toggle('hidden', unreadCount === 0);
+            }
+        }
+
+        async function markAsRead(notificationId) {
+            if (!currentUser) return;
+            
+            const notification = notifications.find(n => n.id === notificationId);
+            if (notification && !(notification.readBy || []).includes(currentUser.uid)) {
+                try {
+                    await updateDoc(doc(db, NOTIFY_COLLECTION, notificationId), {
+                        readBy: arrayUnion(currentUser.uid)
+                    });
+                    // FIX: Call updateUnreadCount manually since arrayUnion is asynchronous and might not trigger immediate snapshot update
+                    // The snapshot listener will eventually call it, but this is for faster UX response.
+                    updateUnreadCount();
+                } catch (e) {
+                    console.error("Error marking notification as read:", e);
+                }
+            }
+        }
+
+        window.renderNotifications = () => {
+            const list = document.getElementById('notification-content-list');
+            
+            if (notifications.length === 0) {
+                 list.innerHTML = `<div class="p-16 text-center">
+                    <i data-lucide="bell-off" class="w-12 h-12 text-slate-400 mx-auto mb-4"></i>
+                    <p class="text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                        Hiện chưa có thông báo nào.
+                    </p>
+                 </div>`;
+                 lucide.createIcons();
+                 return;
+            }
+            
+            list.innerHTML = notifications.map(n => {
+                const isRead = currentUser ? (n.readBy || []).includes(currentUser.uid) : false;
+                const icon = n.iconUrl || 'https://cdn-icons-png.flaticon.com/512/3602/3602145.png'; // Default announcement icon
+                const timestamp = new Date(n.timestamp).toLocaleString('vi-VN');
+                const readClass = isRead ? 'opacity-80 dark:bg-slate-800/80' : 'bg-white dark:bg-slate-900 border-l-4 border-primary shadow-lg';
+                
+                // SỬA LỖI 3: Chỉ truyền ID vào hàm
+                return `
+                    <div class="notification-item flex items-start gap-4 p-4 rounded-xl shadow-sm border dark:border-white/5 ${readClass} cursor-pointer" onclick="window.markAndOpenNotification('${n.id}')">
+                        <img src="${icon}" class="w-8 h-8 rounded-full object-contain mt-1">
+                        <div class="flex-1 min-w-0 space-y-1">
+                            <div class="flex items-center justify-between">
+                                <h4 class="text-sm font-black truncate ${!isRead ? 'text-primary' : ''}">${n.title}</h4>
+                                ${!isRead ? '<span class="w-2 h-2 bg-red-500 rounded-full flex-shrink-0 ml-2"></span>' : ''}
+                            </div>
+                            <!-- Hiện thị tóm tắt, chi tiết sẽ mở trong modal -->
+                            <p class="text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap">${n.content.substring(0, 100)}${n.content.length > 100 ? '...' : ''}</p> 
+                            <p class="text-[9px] font-bold text-slate-400 uppercase pt-1 border-t dark:border-white/5">
+                                ${n.senderName} • ${timestamp}
+                            </p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        };
+
+        // SỬA LỖI 3: Hàm markAndOpenNotification mới để mở Modal
+        window.markAndOpenNotification = (id) => {
+            if (currentUser) {
+                 markAsRead(id);
+            }
+            
+            const notification = notifications.find(n => n.id === id);
+            if (!notification) return;
+
+            // Điền dữ liệu vào Modal chi tiết
+            document.getElementById('notify-detail-title').innerText = notification.title.toUpperCase();
+            document.getElementById('notify-detail-content').innerText = notification.content;
+            document.getElementById('notify-detail-sender').innerText = notification.senderName;
+            document.getElementById('notify-detail-timestamp').innerText = new Date(notification.timestamp).toLocaleString('vi-VN');
+            document.getElementById('notify-detail-icon').src = notification.iconUrl || 'https://cdn-icons-png.flaticon.com/512/3602/3602145.png';
+            
+            window.openModal('modal-notification-detail');
+            lucide.createIcons();
+        };
+
+        window.publishNotification = async () => {
+            if (!isAdmin || !currentUser) { showToast("Bạn không có quyền Admin!", true); return; }
+            const title = document.getElementById('notify-title').value.trim();
+            const content = document.getElementById('notify-content').value.trim();
+            const iconUrl = document.getElementById('notify-icon').value.trim();
+
+            if (title.length < 5 || content.length < 5) {
+                showToast("Tiêu đề và Nội dung phải dài hơn 5 ký tự!", true);
+                return;
+            }
+            
+            window.showGlobalLoading();
+            try {
+                const docRef = await addDoc(collection(db, NOTIFY_COLLECTION), {
+                    title: title,
+                    content: content,
+                    iconUrl: iconUrl,
+                    timestamp: new Date().toISOString(),
+                    senderName: currentUser.displayName,
+                    senderEmail: currentUser.email,
+                    readBy: []
+                });
+                
+                // Cập nhật lại form chỉ khi thành công
+                document.getElementById('notify-title').value = '';
+                document.getElementById('notify-content').value = '';
+                document.getElementById('notify-icon').value = '';
+
+                showToast("Đã đăng thông báo mới thành công!"); // showToast sẽ tự gọi browser notification (Issue 2)
+                logActivity('NOTIFICATION_PUBLISHED', docRef.id, title); 
+            } catch (e) {
+                console.error("Error publishing notification:", e);
+                showToast("Lỗi khi đăng thông báo! Chi tiết: " + e.message, true); // Thông báo lỗi chi tiết hơn (Issue 1)
+            } finally {
+                window.hideGlobalLoading();
+            }
+        };
+
+        // NEW: Render Admin Notification List
+        function renderAdminNotificationList() {
+             if (!isAdmin) return;
+             const list = document.getElementById('admin-notify-list');
+
+             if (notifications.length === 0) {
+                  list.innerHTML = `<div class="p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center text-slate-400">Chưa có thông báo nào được đăng.</div>`;
+                  return;
+             }
+
+             list.innerHTML = notifications.map(n => {
+                 const timestamp = new Date(n.timestamp).toLocaleString('vi-VN');
+                 return `
+                     <div class="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm border dark:border-white/5">
+                         <div class="flex-1 min-w-0">
+                             <h4 class="text-sm font-bold truncate">${n.title}</h4>
+                             <p class="text-[10px] text-slate-500">Đăng bởi: ${n.senderName} (${timestamp})</p>
+                         </div>
+                         <button onclick="window.deleteNotificationConfirm('${n.id}', '${n.title}')" class="bg-red-500 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase hover:opacity-90 ml-2">XÓA</button>
+                     </div>
+                 `;
+             }).join('');
+        }
+
+        // NEW: Delete Notification Confirm
+        window.deleteNotificationConfirm = (id, title) => {
+            window.showConfirm(
+                'Xác nhận Xóa Thông báo',
+                `Bạn có chắc chắn muốn xóa vĩnh viễn thông báo "${title}" không?`,
+                () => window.deleteNotification(id, title),
+                'XÓA VĨNH VIỄN'
+            );
+        };
+        
+        // NEW: Delete Notification
+        window.deleteNotification = async (id, title) => {
+            if (!isAdmin) return;
+            window.showGlobalLoading();
+            try {
+                await deleteDoc(doc(db, NOTIFY_COLLECTION, id));
+                showToast(`Đã xóa thông báo "${title}"!`);
+                logActivity('NOTIFICATION_DELETED', id, title);
+            } catch (e) {
+                console.error("Error deleting notification:", e);
+                showToast("Lỗi khi xóa thông báo!", true);
+            } finally {
+                window.hideGlobalLoading();
+            }
+        };
+
+
+        // --- ANNOUNCEMENT LOGIC ---
         function renderAnnouncementBar() {
             const bar = document.getElementById('announcement-bar');
             const textDiv = document.getElementById('announcement-text');
@@ -777,26 +1644,35 @@
             }
         }
         
-        window.saveAnnouncementContent = async () => {
+        window.saveAnnouncementContent = async (andEnable = false) => {
             if (!isAdmin) return;
             const content = document.getElementById('announcement-content').value.trim();
             const startTime = document.getElementById('announcement-start').value || null; 
             const endTime = document.getElementById('announcement-end').value || null; 
             
             if (content.length < 5) {
-                showToast("Nội dung thông báo phải dài hơn 5 ký tự!");
+                showToast("Nội dung thông báo phải dài hơn 5 ký tự!", true);
                 return;
             }
+            window.showGlobalLoading();
             try {
-                await setDoc(doc(db, "settings", "announcement"), { 
+                const updateData = { 
                     content: content, 
                     startTime: startTime, 
                     endTime: endTime 
-                }, { merge: true });
+                };
+                if (andEnable) {
+                    updateData.active = true; // Automatically enable on save if triggered by 'Lưu & Bật'
+                }
+                
+                await setDoc(doc(db, "settings", "announcement"), updateData, { merge: true });
                 showToast("Đã lưu nội dung thông báo và hẹn giờ!");
                 logActivity('ANNOUNCEMENT_UPDATED', 'system', 'Thông báo Marquee'); 
             } catch (e) {
+                console.error("Error saving announcement:", e);
                 showToast("Lỗi khi lưu nội dung thông báo!", true); 
+            } finally {
+                window.hideGlobalLoading();
             }
         };
         
@@ -804,40 +1680,28 @@
             if (!isAdmin) return;
             const newState = !currentAnnouncement.active;
             if (newState && (!currentAnnouncement.content || currentAnnouncement.content.trim() === '')) {
-                showToast("Vui lòng nhập nội dung trước khi bật!");
+                showToast("Vui lòng nhập nội dung trước khi bật!", true);
                 return;
             }
+            window.showGlobalLoading();
             try {
                 await setDoc(doc(db, "settings", "announcement"), { active: newState }, { merge: true });
                 showToast(newState ? "Đã BẬT thông báo!" : "Đã TẮT thông báo!");
                 logActivity(newState ? 'ANNOUNCEMENT_ENABLED' : 'ANNOUNCEMENT_DISABLED', 'system', 'Thông báo Marquee'); 
             } catch (e) {
+                console.error("Error toggling announcement status:", e);
                 showToast("Lỗi khi thay đổi trạng thái thông báo!", true); 
+            } finally {
+                window.hideGlobalLoading();
             }
         };
         
-        // --- ADMIN REQUEST LOGIC (MODIFIED: Use Custom Confirm) ---
+        // --- ADMIN REQUEST LOGIC (Unchanged) ---
         function renderAdminRequests() {
+            // This function is still here but no longer called directly from the tab switch.
+            // It's used in renderUserList for non-approved requests.
             if (!isSuper) return; 
-            const list = document.getElementById('requests-list');
-            document.getElementById('request-count').innerText = `(${adminRequests.length})`;
-            
-            if (adminRequests.length === 0) {
-                 list.innerHTML = `<div class="p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center text-slate-400">Không có yêu cầu mới.</div>`;
-                 return;
-            }
-
-            list.innerHTML = adminRequests.map(req => `
-                <div class="p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border dark:border-white/5 space-y-2">
-                    <p class="text-sm font-bold">${req.name} <span class="text-xs text-slate-500">(${req.email})</span></p>
-                    <p class="text-xs italic text-slate-600 dark:text-slate-400">Lý do: ${req.reason}</p>
-                    <div class="flex gap-2 pt-2 border-t dark:border-white/5 mt-2">
-                        <button onclick="window.requestApproveConfirm('${req.uid}', '${req.email}')" class="flex-1 bg-green-500 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase">DUYỆT</button>
-                        <button onclick="window.requestRejectConfirm('${req.uid}')" class="flex-1 bg-red-500 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase">TỪ CHỐI</button>
-                    </div>
-                </div>
-            `).join('');
-            lucide.createIcons();
+            // The rest of the old logic for rendering requests has been moved/integrated into renderUserList for the combined 'NGƯỜI DÙNG' tab.
         }
         
         window.requestApproveConfirm = (uid, email) => {
@@ -861,6 +1725,7 @@
 
         window.approveAdminRequest = async (uid, email) => {
             if (!isSuper) return;
+            window.showGlobalLoading();
             try {
                 await setDoc(doc(db, "settings", "admins"), { deputy_emails: arrayUnion(email) }, { merge: true });
                 await deleteDoc(doc(db, "adminRequests", uid));
@@ -871,11 +1736,14 @@
             } catch (e) {
                  console.error("Error approving request:", e);
                  showToast("Lỗi khi duyệt yêu cầu!", true); 
+            } finally {
+                window.hideGlobalLoading();
             }
         };
 
         window.rejectAdminRequest = async (uid) => {
             if (!isSuper) return;
+            window.showGlobalLoading();
             try {
                 await deleteDoc(doc(db, "adminRequests", uid));
                 showToast("Đã từ chối yêu cầu!");
@@ -883,34 +1751,79 @@
             } catch (e) {
                  console.error("Error rejecting request:", e);
                  showToast("Lỗi khi từ chối yêu cầu!", true); 
+            } finally {
+                window.hideGlobalLoading();
             }
         };
 
-        // --- FAVORITES LOGIC (REMOVED) ---
-        /*
-        window.toggleFavorite = (appId, event) => {
-            event.stopPropagation();
-            if (!currentUser) {
-                showToast("Vui lòng đăng nhập để lưu mục yêu thích!");
-                return;
-            }
-
-            const isFavorite = userFavorites.includes(appId);
-            const userDocRef = doc(db, "users", currentUser.uid);
+        // --- SỬA LỖI 4: USER LIST LOGIC (Logic vai trò Admin/Deputy/Guest) ---
+        function renderUserList() {
+            if (!isAdmin) return; 
             
-            updateDoc(userDocRef, {
-                favorites: isFavorite ? arrayRemove(appId) : arrayUnion(appId)
-            }).then(() => {
-                showToast(isFavorite ? "Đã gỡ khỏi mục yêu thích" : "Đã thêm vào mục yêu thích!");
-                renderApps(); 
-            }).catch(error => {
-                console.error("Error toggling favorite: ", error);
-                showToast("Lỗi khi cập nhật mục yêu thích!", true); 
-            });
-        };
-        */
+            // 1. Render Admin Requests (using the existing adminRequests array)
+            const oldRequestList = document.getElementById('old-request-list');
+            document.getElementById('user-count').innerText = `(${adminRequests.length})`; // Show count of pending requests
+            
+            if (adminRequests.length === 0) {
+                 oldRequestList.innerHTML = `<div class="text-sm font-medium text-blue-700 dark:text-blue-200">Không có yêu cầu cấp quyền nào đang chờ duyệt.</div>`;
+            } else {
+                 oldRequestList.innerHTML = `<h5 class="text-base font-bold text-red-500 mb-2 border-b dark:border-white/10 pb-1">(${adminRequests.length}) YÊU CẦU CẤP QUYỀN CHỜ DUYỆT:</h5>` + adminRequests.map(req => `
+                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm border dark:border-white/5 space-y-2">
+                        <p class="text-sm font-bold">${req.name} <span class="text-xs text-slate-500">(${req.email})</span></p>
+                        <p class="text-xs italic text-slate-600 dark:text-slate-400">Lý do: ${req.reason}</p>
+                        <div class="flex gap-2 pt-2 border-t dark:border-white/5 mt-2">
+                            <button onclick="window.requestApproveConfirm('${req.uid}', '${req.email}')" class="flex-1 bg-green-500 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase">DUYỆT</button>
+                            <button onclick="window.requestRejectConfirm('${req.uid}')" class="flex-1 bg-red-500 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase">TỪ CHỐI</button>
+                        </div>
+                    </div>
+                 `).join('');
+            }
 
-        // --- BULK DELETE (SOFT DELETE) LOGIC (MODIFIED: Use Custom Confirm) ---
+            // 2. Render Full User List (if available in `users` collection)
+            const list = document.getElementById('users-list');
+            if (allUsers.length === 0) {
+                 list.innerHTML = `<div class="p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center text-slate-400">Không có người dùng nào trong collection 'users'.</div>`;
+                 return;
+            }
+
+            list.innerHTML = `<h4 class="text-sm font-bold uppercase tracking-widest text-primary border-b pb-2">Danh sách Người dùng Đã Ghi nhận (${allUsers.length})</h4>` + allUsers.map(u => {
+                const isDeputyUser = deputies.includes(u.email);
+                const isCurrentUser = u.uid === auth.currentUser.uid;
+                const isSuperUser = isCurrentUser && isSuper; // Chỉ là Super nếu là người dùng hiện tại VÀ đang là Super
+                
+                let role = 'USER';
+                let roleClass = 'bg-slate-500';
+
+                if (isSuperUser) {
+                    role = 'SUPER ADMIN';
+                    roleClass = 'bg-red-600';
+                } else if (isDeputyUser) {
+                    role = 'PHÓ ADMIN';
+                    roleClass = 'bg-green-500';
+                }
+                
+                if (isCurrentUser) {
+                    role = `TÔI (${role})`;
+                    roleClass = 'bg-indigo-500';
+                }
+                
+                const lastLogin = u.lastLogin ? new Date(u.lastLogin).toLocaleString('vi-VN') : 'N/A';
+
+                return `
+                    <div class="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm border dark:border-white/5">
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-sm font-bold truncate">${u.name}</h4>
+                            <p class="text-[10px] text-slate-500 truncate">${u.email}</p>
+                            <p class="text-[9px] font-bold text-slate-400 uppercase">Đăng nhập cuối: ${lastLogin}</p>
+                        </div>
+                        <span class="px-3 py-1 text-[9px] font-black uppercase text-white ${roleClass} rounded-full flex-shrink-0">${role}</span>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        // --- BULK DELETE (SOFT DELETE) LOGIC (Unchanged) ---
         window.executeBulkDelete = () => {
             if (!isAdmin || selectedAppsForDelete.size === 0) return;
             
@@ -920,6 +1833,7 @@
                 'Xác nhận Chuyển vào Thùng rác',
                 `Bạn có chắc chắn muốn chuyển ${count} mục đã chọn vào Thùng rác? Bạn có thể khôi phục sau.`,
                 async () => {
+                    window.showGlobalLoading();
                     const batch = writeBatch(db);
                     selectedAppsForDelete.forEach(appId => {
                         batch.update(doc(db, "apps", appId), { isDeleted: true, deletedAt: new Date().toISOString() }); 
@@ -934,6 +1848,8 @@
                     } catch (error) {
                         console.error("Error batch soft-deleting apps: ", error);
                         showToast("Lỗi: Không thể chuyển hàng loạt vào Thùng rác.", true); 
+                    } finally {
+                        window.hideGlobalLoading();
                     }
                 },
                 `CHUYỂN ${count} MỤC VÀO THÙNG RÁC`
@@ -1062,7 +1978,7 @@
             lucide.createIcons();
         }
 
-        // --- RENDERING APP (Modified for Favorites removal) ---
+        // --- RENDERING APP (Modified for Mobile List View) ---
         window.renderApps = () => {
             const container = document.getElementById('app-container');
             const loading = document.getElementById('app-loading');
@@ -1074,32 +1990,42 @@
             }
             loading.classList.add('hidden');
 
+            // REMOVED: const isMobile = window.innerWidth <= 768;
+            // REMOVED: const effectiveViewMode = isMobile ? 'list' : viewMode; 
+            const effectiveViewMode = viewMode; // Use global viewMode regardless of screen size
+
+            const phoneCat = categories.find(c => c.name === "Số điện thoại");
+
             const filtered = apps.filter(a => {
                 if (a.isDeleted) return false; 
-                
-                // Reworked filtering without favorites:
                 const cat = categories.find(c => c.id === a.categoryId);
-                if (currentFilter !== 'all' && a.categoryId !== currentFilter) { return false; }
-                if (currentFilter === 'all' && cat?.name === "Số điện thoại") { return false; }
-
+                
+                // Logic for Mobile Tab filtering:
+                if (currentMobileTab === 'contact' && cat?.name !== "Số điện thoại") return false;
+                
+                // Filtering by category bar/sidebar
+                if (currentFilter !== 'all' && currentFilter !== 'contact_filter' && a.categoryId !== currentFilter) return false;
+                
+                // Hide phone numbers on "all" filter (unless in mobile contact tab)
+                if (currentFilter === 'all' && cat?.name === "Số điện thoại" && currentMobileTab !== 'contact') return false;
+                
                 const matchSearch = a.name.toLowerCase().includes(searchQuery.toLowerCase()) || (a.position && a.position.toLowerCase().includes(searchQuery.toLowerCase()));
                 return matchSearch && (isAdmin || a.visible);
             });
 
             if (filtered.length === 0) {
                  container.className = "flex justify-center items-center h-40 text-slate-400";
-                 container.innerHTML = `<i data-lucide="folder-search" class="w-6 h-6 mr-2"></i>Không tìm thấy ứng dụng nào.`;
+                 container.innerHTML = `<i data-lucide="folder-search" class="w-6 h-6 mr-2"></i>Không tìm thấy ${currentMobileTab === 'contact' ? 'danh bạ' : 'ứng dụng'} nào.`;
                  lucide.createIcons();
                  return;
             }
 
-            if (viewMode === 'grid') {
+            if (effectiveViewMode === 'grid') {
                 container.className = "grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-x-4 gap-y-8";
                 container.innerHTML = filtered.map(a => {
                     const isAppPhone = categories.find(c => c.id === a.categoryId)?.name === "Số điện thoại";
                     const domain = a.url.startsWith('http') ? new URL(a.url).hostname : '';
                     const icon = a.iconUrl || (isAppPhone ? 'https://cdn-icons-png.flaticon.com/512/3059/3059502.png' : `https://unavatar.io/${domain}?fallback=https://www.google.com/s2/favicons?domain=${domain}&sz=128`);
-                    // REMOVED: isFav logic
                     const isSelected = selectedAppsForDelete.has(a.id) ? 'selected-for-delete' : '';
                     const opacity = a.visible ? '' : 'opacity-40';
                     
@@ -1124,7 +2050,6 @@
                         ${a.position ? `<span class="text-[8px] text-slate-400 font-bold truncate w-full text-center uppercase ${opacity}">${a.position}</span>` : ''}
                         
                         <div class="absolute -top-1 -right-1 flex flex-col gap-1 transition-all scale-90 z-10 ${isAdmin ? 'opacity-0 group-hover:opacity-100' : 'hidden'}">
-                            <!-- REMOVED: Favorite button -->
                             ${isAdmin ? `
                                 <button onclick="window.toggleAppVisibility('${a.id}')" class="p-2 ${a.visible ? 'bg-green-500' : 'bg-slate-500'} text-white rounded-full shadow-lg">
                                     <i data-lucide="${a.visible ? 'eye' : 'eye-off'}" class="w-3 h-3"></i>
@@ -1139,26 +2064,25 @@
                         </div>
                     </div>`;
                 }).join('');
-            } else {
+            } else { // List View (Vertical for mobile & desktop list mode)
                 container.className = "flex flex-col max-w-4xl mx-auto space-y-1";
                 container.innerHTML = filtered.map((a, idx) => {
                     const isAppPhone = categories.find(c => c.id === a.categoryId)?.name === "Số điện thoại";
                     const domain = a.url.startsWith('http') ? new URL(a.url).hostname : '';
                     const icon = a.iconUrl || (isAppPhone ? 'https://cdn-icons-png.flaticon.com/512/3059/3059502.png' : `https://unavatar.io/${domain}?fallback=https://www.google.com/s2/favicons?domain=${domain}&sz=128`);
-                    // REMOVED: isFav logic
                     const isSelected = selectedAppsForDelete.has(a.id) ? 'selected-for-delete' : '';
                     const opacity = a.visible ? '' : 'opacity-40';
+                    const listIndex = a.order + 1;
 
                     const bulkSelectControl = bulkDeleteMode ? 
                         `<input type="checkbox" class="w-5 h-5 accent-red-500 pointer-events-none" ${isSelected ? 'checked' : ''}>` : '';
 
-                    return `<div class="flex items-center gap-4 bg-white dark:bg-slate-900 p-3 rounded-xl border dark:border-white/5 group shadow-sm ${isSelected} ${opacity}" data-id="${a.id}" onclick="${bulkDeleteMode ? `window.toggleAppSelection('${a.id}', event)` : ''}">
+                    return `<div class="app-item flex items-center gap-4 bg-white dark:bg-slate-900 p-3 rounded-xl border dark:border-white/5 group shadow-sm ${isSelected} ${opacity}" data-id="${a.id}" onclick="${bulkDeleteMode ? `window.toggleAppSelection('${a.id}', event)` : ''}">
                         ${bulkSelectControl}
-                        <span class="text-[9px] font-black text-slate-300 w-4">${idx+1}</span>
+                        <span class="text-[9px] font-black text-slate-300 w-4">${listIndex}</span>
                         <img src="${icon}" class="w-8 h-8 rounded-lg object-contain">
                         <div class="flex-1 min-w-0"><h4 class="text-xs font-bold truncate">${a.name}</h4><p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${a.position || (isAppPhone ? a.url : 'Web App')}</p></div>
                         <div class="flex items-center gap-2">
-                            <!-- REMOVED: Favorite button -->
                             <a href="${isAppPhone ? 'tel:' + a.url : a.url}" target="_blank" class="p-2 text-primary hover:bg-primary hover:text-white rounded-lg transition"><i data-lucide="${isAppPhone ? 'phone' : 'external-link'}" class="w-4 h-4"></i></a>
                             ${isAdmin ? `
                                 <button onclick="window.toggleAppVisibility('${a.id}')" class="p-2 ${a.visible ? 'text-green-500 hover:bg-green-100' : 'text-slate-500 hover:bg-slate-100'} rounded-lg"><i data-lucide="${a.visible ? 'eye' : 'eye-off'}" class="w-4 h-4"></i></button>
@@ -1169,122 +2093,96 @@
                 }).join('');
             }
             lucide.createIcons();
-            if(isAdmin) new Sortable(container, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(container.children).forEach((el, i) => { if(el.dataset.id) updateDoc(doc(db, "apps", el.dataset.id), { order: i }); logActivity('APP_ORDER_UPDATED', 'bulk', 'Sắp xếp ứng dụng'); }); }});
+            // Only allow sorting on admin list view
+            if(isAdmin && effectiveViewMode === 'list') new Sortable(container, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(container.children).forEach((el, i) => { if(el.dataset.id) updateDoc(doc(db, "apps", el.dataset.id), { order: i }); logActivity('APP_ORDER_UPDATED', 'bulk', 'Sắp xếp ứng dụng'); }); }});
         }
 
-        // --- IMPORT / EXPORT LOGIC (Unchanged) ---
-        window.handleExport = (type) => {
-            const data = {
-                apps: apps.map(({id, ...rest}) => rest),
-                categories: categories.map(({id, ...rest}) => rest),
-                exportedAt: new Date().toISOString(),
-                version: "2.1"
-            };
-
-            if (type === 'json') {
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `hub-portal-backup-${new Date().toLocaleDateString()}.json`;
-                a.click();
-            } else if (type === 'excel') {
-                const wb = XLSX.utils.book_new();
-                const wsApps = XLSX.utils.json_to_sheet(apps.map(a => {
-                    const cat = categories.find(c => c.id === a.categoryId);
-                    return { 'Tên': a.name, 'URL/SĐT': a.url, 'Chức vụ': a.position || '', 'Danh mục': cat ? cat.name : '', 'Icon URL': a.iconUrl || '', 'Hiển thị': a.visible ? 'Bật' : 'Tắt', 'Thứ tự': a.order }
-                }));
-                XLSX.utils.book_append_sheet(wb, wsApps, "Apps");
-                const wsCats = XLSX.utils.json_to_sheet(categories.map(c => ({ 'Tên danh mục': c.name, 'Icon Logo': c.icon || '', 'Thứ tự': c.order })));
-                XLSX.utils.book_append_sheet(wb, wsCats, "Categories");
-                XLSX.writeFile(wb, `hub-portal-data-${new Date().toLocaleDateString()}.xlsx`);
-            }
-            showToast("Đã xuất dữ liệu thành công!");
-            logActivity('DATA_EXPORTED', 'system', `Xuất dữ liệu ${type}`); 
-        };
-
-        window.handleImport = async (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            window.showConfirm(
-                'Xác nhận Nhập Dữ liệu',
-                `Bạn có chắc chắn muốn thêm dữ liệu từ file "${file.name}" vào site hiện tại?`,
-                async () => {
-                    const reader = new FileReader();
-                    reader.onload = async (e) => {
-                        try {
-                            let importedData = { categories: [], apps: [] };
-                            if (file.name.endsWith('.json')) {
-                                importedData = JSON.parse(e.target.result);
-                            } else if (file.name.endsWith('.xlsx')) {
-                                const data = new Uint8Array(e.target.result);
-                                const workbook = XLSX.read(data, { type: 'array' });
-                                const catSheet = workbook.Sheets["Categories"];
-                                if (catSheet) {
-                                    importedData.categories = XLSX.utils.sheet_to_json(catSheet).map(c => ({ name: c['Tên danh mục'], icon: c['Icon Logo'] || '', order: parseInt(c['Thứ tự']) || 0 }));
-                                }
-                                const appSheet = workbook.Sheets["Apps"];
-                                if (appSheet) {
-                                    importedData.apps = XLSX.utils.sheet_to_json(appSheet).map(a => ({ name: a['Tên'], url: a['URL/SĐT'], position: a['Chức vụ'] || '', categoryName: a['Danh mục'], iconUrl: a['Icon URL'] || '', visible: a['Hiển thị'] === 'Bật', order: parseInt(a['Thứ tự']) || 0 }));
-                                }
-                            }
-
-                            const categoryIdMap = {}; 
-                            for (const cat of importedData.categories) {
-                                const existing = categories.find(c => c.name === cat.name);
-                                if (existing) {
-                                    categoryIdMap[cat.name] = existing.id;
-                                } else {
-                                    const docRef = await addDoc(collection(db, "categories"), cat);
-                                    categoryIdMap[cat.name] = docRef.id;
-                                }
-                            }
-
-                            for (const appData of importedData.apps) {
-                                const { categoryName, ...rest } = appData;
-                                const finalAppData = { ...rest, categoryId: categoryIdMap[categoryName] || '' };
-                                await addDoc(collection(db, "apps"), finalAppData);
-                            }
-
-                            showToast("Khôi phục dữ liệu thành công!");
-                            logActivity('DATA_IMPORTED', 'system', `Nhập dữ liệu từ ${file.name}`); 
-                            event.target.value = ''; 
-                        } catch (error) {
-                            console.error(error);
-                            showToast("Lỗi phân tích file. Vui lòng kiểm tra lại định dạng.", true); 
-                        }
-                    };
-                    if (file.name.endsWith('.json')) reader.readAsText(file); else reader.readAsArrayBuffer(file);
-                },
-                'NHẬP DỮ LIỆU'
-            );
-        };
-
-        // --- ADMIN UTILS (MODIFIED: Use Custom Confirm) ---
-        window.updateCatField = (id, field, val) => updateDoc(doc(db, "categories", id), { [field]: val })
+        // --- ADMIN UTILS ---
+        window.updateCatField = (id, field, val) => {
+            window.showGlobalLoading();
+            updateDoc(doc(db, "categories", id), { [field]: val })
             .then(() => { showToast("Đã cập nhật danh mục!"); logActivity('CAT_UPDATED', id, categories.find(c=>c.id === id)?.name); }) 
-            .catch(e => showToast("Lỗi khi cập nhật danh mục!", true)); 
+            .catch(e => showToast("Lỗi khi cập nhật danh mục!", true))
+            .finally(window.hideGlobalLoading);
+        }
             
+        // MODIFIED: Category Delete Logic (Logic confirmed correct per user request)
         window.deleteCatConfirm = (id, name) => {
-            window.showConfirm(
-                'Xác nhận Xóa Danh mục',
-                `Bạn có chắc chắn muốn xóa vĩnh viễn danh mục "${name}" không?`,
-                () => window.deleteCat(id, name),
-                'XÓA VĨNH VIỄN'
-            );
+            catToDeleteId = id;
+            const appsInCategory = apps.filter(a => a.categoryId === id && !a.isDeleted);
+            
+            if (appsInCategory.length > 0) {
+                 const availableCats = categories.filter(c => c.id !== id);
+                 if (availableCats.length === 0) {
+                     showToast("Không thể xóa. Vui lòng thêm ít nhất một danh mục khác trước!", true);
+                     return;
+                 }
+                 document.getElementById('cat-migrate-count').innerText = appsInCategory.length;
+                 
+                 const migrateSelect = document.getElementById('cat-migrate-select');
+                 migrateSelect.innerHTML = availableCats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                 
+                 window.openModal('modal-cat-migrate');
+            } else {
+                window.showConfirm(
+                    'Xác nhận Xóa Danh mục',
+                    `Bạn có chắc chắn muốn xóa vĩnh viễn danh mục "${name}" không?`,
+                    () => window.deleteCat(id, name),
+                    'XÓA VĨNH VIỄN'
+                );
+            }
+        };
+
+        window.executeCatDeleteAndMigrate = async () => {
+            const oldCatId = catToDeleteId;
+            const newCatId = document.getElementById('cat-migrate-select').value;
+            const oldCatName = categories.find(c => c.id === oldCatId)?.name;
+            const newCatName = categories.find(c => c.id === newCatId)?.name;
+
+            if (!oldCatId || !newCatId) return;
+
+            window.closeModal('modal-cat-migrate');
+            window.showGlobalLoading();
+
+            try {
+                const batch = writeBatch(db);
+                const appsToMigrate = apps.filter(a => a.categoryId === oldCatId && !a.isDeleted);
+                
+                // 1. Update all apps in the old category
+                appsToMigrate.forEach(app => {
+                    batch.update(doc(db, "apps", app.id), { categoryId: newCatId });
+                });
+
+                // 2. Delete the old category
+                batch.delete(doc(db, "categories", oldCatId));
+                
+                await batch.commit();
+                
+                showToast(`Đã xóa danh mục "${oldCatName}" và chuyển ${appsToMigrate.length} ứng dụng sang "${newCatName}"!`);
+                logActivity('CAT_DELETED_MIGRATED', oldCatId, oldCatName, `Đã chuyển sang ${newCatName}`);
+                catToDeleteId = null; 
+
+            } catch (e) {
+                console.error("Error deleting category and migrating apps:", e);
+                showToast("Lỗi khi xóa danh mục và chuyển đổi ứng dụng!", true);
+            } finally {
+                window.hideGlobalLoading();
+            }
         };
         
         window.deleteCat = (id, name) => {
+            window.showGlobalLoading();
             deleteDoc(doc(db, "categories", id))
                 .then(() => { showToast(`Đã xóa danh mục "${name}"!`); logActivity('CAT_DELETED', id, name); }) 
-                .catch(e => showToast("Lỗi khi xóa danh mục!", true)); 
+                .catch(e => showToast("Lỗi khi xóa danh mục!", true))
+                .finally(window.hideGlobalLoading); 
         };
         
         window.addCategory = async () => {
             const name = document.getElementById('new-cat-name').value.trim();
             const icon = document.getElementById('new-cat-icon').value.trim();
-            if(!name) { showToast("Tên danh mục không được trống!"); return; }
+            if(!name) { showToast("Tên danh mục không được trống!", true); return; }
+            window.showGlobalLoading();
             await addDoc(collection(db, "categories"), { name, icon, order: categories.length })
                 .then((docRef) => {
                     document.getElementById('new-cat-name').value = '';
@@ -1292,7 +2190,8 @@
                     showToast("Đã thêm danh mục mới!");
                     logActivity('CAT_ADDED', docRef.id, name); 
                 })
-                .catch(e => showToast("Lỗi khi thêm danh mục.", true)); 
+                .catch(e => showToast("Lỗi khi thêm danh mục.", true))
+                .finally(window.hideGlobalLoading);
         };
 
         window.renderDeputyList = () => {
@@ -1308,14 +2207,19 @@
         window.addDeputy = async () => {
             const email = document.getElementById('new-deputy-email').value.trim().toLowerCase();
             if(!email || !isSuper) return;
-            if (!email.includes('@')) { showToast("Vui lòng nhập email hợp lệ!"); return; }
+            if (!email.includes('@')) { showToast("Vui lòng nhập email hợp lệ!", true); return; }
+            window.showGlobalLoading();
             try {
                 await setDoc(doc(db, "settings", "admins"), { deputy_emails: arrayUnion(email) }, { merge: true });
                 document.getElementById('new-deputy-email').value = '';
                 showToast(`Đã cấp quyền cho ${email}. Đang tải lại...`);
                 logActivity('DEPUTY_ADDED', email, email); 
                 setTimeout(() => location.reload(), 500);
-            } catch (e) { showToast("Lỗi khi cấp quyền Phó Admin.", true); } 
+            } catch (e) { 
+                showToast("Lỗi khi cấp quyền Phó Admin.", true); 
+            } finally {
+                window.hideGlobalLoading();
+            }
         };
         
         window.removeDeputyConfirm = (email) => {
@@ -1329,12 +2233,17 @@
 
         window.removeDeputy = async (email) => {
             if (!isSuper) return;
+            window.showGlobalLoading();
             try {
                 await setDoc(doc(db, "settings", "admins"), { deputy_emails: arrayRemove(email) }, { merge: true });
                 showToast(`Đã xóa quyền của ${email}. Đang tải lại...`);
                 logActivity('DEPUTY_REMOVED', email, email); 
                 setTimeout(() => location.reload(), 500);
-            } catch (e) { showToast("Lỗi khi xóa quyền Phó Admin.", true); } 
+            } catch (e) { 
+                showToast("Lỗi khi xóa quyền Phó Admin.", true); 
+            } finally {
+                window.hideGlobalLoading();
+            }
         };
         
         // NEW: Maintenance Mode Logic (MODIFIED: Use Custom Confirm)
@@ -1347,12 +2256,15 @@
                 `Xác nhận ${action} Chế độ Bảo trì`,
                 `Bạn có chắc chắn muốn ${action} Chế độ Bảo trì không? Khi bật, tất cả Khách (Guest) sẽ không thể xem nội dung.`,
                 async () => {
+                    window.showGlobalLoading();
                     try {
                         await setDoc(doc(db, "settings", "global"), { maintenanceMode: newState }, { merge: true });
                         showToast(`Đã ${action} Chế độ Bảo trì!`);
                         logActivity(newState ? 'ENABLED_MAINTENANCE' : 'DISABLED_MAINTENANCE', 'system', 'Chế độ Bảo trì'); 
                     } catch (e) {
                         showToast("Lỗi khi thay đổi Chế độ Bảo trì!", true);
+                    } finally {
+                        window.hideGlobalLoading();
                     }
                 },
                 action
@@ -1373,7 +2285,7 @@
             }).catch(e => console.error("Error logging activity:", e));
         }
 
-        // NEW: Render Activity Logs (Unchanged)
+        // NEW: Render Activity Logs (FIXED: The listener should fetch data)
         function renderActivityLogs() { 
             if (!isAdmin) return;
             const logs = activityLogs;
@@ -1395,13 +2307,16 @@
                     'CAT_UPDATED': 'Cập nhật danh mục',
                     'CAT_ADDED': 'Thêm danh mục',
                     'CAT_DELETED': 'Xóa danh mục',
+                    'CAT_DELETED_MIGRATED': 'Xóa & Chuyển đổi Danh mục', // NEW
                     'DEPUTY_ADDED': 'Cấp quyền Phó Admin',
                     'DEPUTY_REMOVED': 'Thu hồi quyền Phó Admin',
                     'ENABLED_MAINTENANCE': 'Bật chế độ Bảo trì',
                     'DISABLED_MAINTENANCE': 'Tắt chế độ Bảo trì',
-                    'ANNOUNCEMENT_UPDATED': 'Cập nhật thông báo',
-                    'ANNOUNCEMENT_ENABLED': 'Bật thông báo',
-                    'ANNOUNCEMENT_DISABLED': 'Tắt thông báo',
+                    'ANNOUNCEMENT_UPDATED': 'Cập nhật thông báo Marquee',
+                    'ANNOUNCEMENT_ENABLED': 'Bật thông báo Marquee',
+                    'ANNOUNCEMENT_DISABLED': 'Tắt thông báo Marquee',
+                    'NOTIFICATION_PUBLISHED': 'Đăng thông báo Feed', 
+                    'NOTIFICATION_DELETED': 'Xóa thông báo Feed', 
                     'DATA_EXPORTED': 'Xuất dữ liệu',
                     'DATA_IMPORTED': 'Nhập dữ liệu',
                     'ADMIN_REQUEST_REJECTED': 'Từ chối yêu cầu Admin',
@@ -1420,7 +2335,7 @@
             lucide.createIcons();
         }
 
-        // NEW: Trash List Renderer and Actions (MODIFIED: Use Custom Confirm)
+        // NEW: Trash List Renderer and Actions (Unchanged)
         function renderTrash() {
             if (!isAdmin) return;
             const trashList = document.getElementById('trash-list');
@@ -1462,12 +2377,15 @@
         // NEW: Restore App
         window.restoreApp = async (id, name) => {
             if (!isAdmin) return;
+            window.showGlobalLoading();
             try {
                 await updateDoc(doc(db, "apps", id), { isDeleted: false, deletedAt: null });
                 showToast(`Đã khôi phục ứng dụng "${name}"!`);
                 logActivity('APP_RESTORED', id, name);
             } catch (e) {
                 showToast("Lỗi khi khôi phục ứng dụng!", true);
+            } finally {
+                window.hideGlobalLoading();
             }
         };
 
@@ -1489,29 +2407,27 @@
         // NEW: Permanent Delete App / Clear All Trash 
         window.clearTrash = async (clearAll = false, id = null, name = '') => {
             if (!isAdmin) return;
-            
-            if (clearAll) {
-                const deletedApps = apps.filter(a => a.isDeleted);
-                const batch = writeBatch(db);
-                deletedApps.forEach(a => batch.delete(doc(db, "apps", a.id)));
-                
-                logActivity('APP_PERM_DELETED', 'bulk', `Tất cả ${deletedApps.length} mục`);
-                
-                try {
+            window.showGlobalLoading();
+            try {
+                if (clearAll) {
+                    const deletedApps = apps.filter(a => a.isDeleted);
+                    const batch = writeBatch(db);
+                    deletedApps.forEach(a => batch.delete(doc(db, "apps", a.id)));
+                    
+                    logActivity('APP_PERM_DELETED', 'bulk', `Tất cả ${deletedApps.length} mục`);
+                    
                     await batch.commit();
                     showToast(`Đã dọn sạch ${deletedApps.length} mục trong Thùng rác!`);
-                } catch (e) {
-                    showToast("Lỗi khi dọn sạch thùng rác!", true);
-                }
-                
-            } else if (id) {
-                try {
+                    
+                } else if (id) {
                     await deleteDoc(doc(db, "apps", id));
                     showToast(`Đã xóa vĩnh viễn ứng dụng "${name}"!`);
                     logActivity('APP_PERM_DELETED', id, name);
-                } catch (e) {
-                    showToast("Lỗi khi xóa vĩnh viễn!", true);
                 }
+            } catch (e) {
+                showToast("Lỗi khi xóa vĩnh viễn!", true);
+            } finally {
+                window.hideGlobalLoading();
             }
         };
 
@@ -1542,6 +2458,7 @@
             const id = document.getElementById('edit-id').value;
             const data = { name: document.getElementById('app-name').value, position: document.getElementById('app-position').value, url: document.getElementById('app-link').value, iconUrl: document.getElementById('app-icon').value, categoryId: document.getElementById('app-category').value, visible: document.getElementById('app-visible').checked, order: id ? apps.find(x => x.id === id).order : apps.length };
             
+            window.showGlobalLoading();
             try {
                 if (id) {
                     await updateDoc(doc(db, "apps", id), data);
@@ -1556,6 +2473,8 @@
             } catch (e) {
                 console.error("Error saving app:", e);
                 showToast("Lỗi khi lưu ứng dụng!", true); 
+            } finally {
+                window.hideGlobalLoading();
             }
         };
         
@@ -1571,43 +2490,55 @@
         // MODIFIED: Soft Delete instead of hard delete (Unchanged logic, now only called by confirm)
         window.deleteApp = (id, appName) => {
             if (!isAdmin) return;
+            window.showGlobalLoading();
             updateDoc(doc(db, "apps", id), { isDeleted: true, deletedAt: new Date().toISOString() })
                 .then(() => {
                     showToast(`Đã chuyển ứng dụng "${appName}" vào Thùng rác!`);
                     logActivity('APP_SOFT_DELETED', id, appName); 
                 })
-                .catch(e => showToast("Lỗi khi chuyển vào thùng rác!", true)); 
+                .catch(e => showToast("Lỗi khi chuyển vào thùng rác!", true))
+                .finally(window.hideGlobalLoading); 
         };
 
         window.toggleAppVisibility = (id) => {
             if (!isAdmin) return;
             const app = apps.find(a => a.id === id);
             if (!app) return;
+            window.showGlobalLoading();
             updateDoc(doc(db, "apps", id), { visible: !app.visible })
                 .then(() => { showToast(`Đã ${!app.visible ? 'BẬT' : 'TẮT'} hiển thị.`); logActivity('APP_VISIBILITY_TOGGLED', id, app.name); }) 
-                .catch(e => showToast("Lỗi cập nhật hiển thị!", true)); 
+                .catch(e => showToast("Lỗi cập nhật hiển thị!", true))
+                .finally(window.hideGlobalLoading); 
         };
 
         window.renderCategories = renderCategories; 
         function renderCategories() {
-            const bar = document.getElementById('category-bar');
-            let html = `<button onclick="window.setFilter('all')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all ${currentFilter === 'all' ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">TẤT CẢ</button>`;
+            const barDesktop = document.getElementById('category-bar');
+            const barMobile = document.getElementById('category-bar-mobile');
             
-            // REMOVED: Favorites button logic
-            /*
-            if (currentUser) {
-                html += `<button onclick="window.setFilter('favorites')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center gap-2 ${currentFilter === 'favorites' ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">
-                    <i data-lucide="star" class="w-3 h-3 ${currentFilter === 'favorites' ? 'fill-white' : ''}"></i> ƯA THÍCH
-                </button>`;
-            }
-            */
+            // Icon Fallback Logic: Use folder icon if no iconUrl provided
+            const getIconHtml = (c) => c.icon ? `<img src="${c.icon}" class="w-3 h-3 object-contain">` : `<i data-lucide="folder" class="w-3 h-3"></i>`;
+            
+            // MODIFIED: setFilter now only takes id/isDesktop
+            let htmlMobile = `<button onclick="window.setFilter('all', false)" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all w-full text-left ${currentFilter === 'all' ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">TẤT CẢ</button>`;
             
             categories.forEach(c => {
-                html += `<button onclick="window.setFilter('${c.id}')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center gap-2 ${currentFilter === c.id ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">
-                    ${c.icon ? `<img src="${c.icon}" class="w-3 h-3 object-contain">` : ''} ${c.name.toUpperCase()}
+                const buttonClass = `px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center gap-2 w-full text-left ${currentFilter === c.id ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}`;
+                htmlMobile += `<button onclick="window.setFilter('${c.id}', false)" class="${buttonClass}">
+                    ${getIconHtml(c)} ${c.name.toUpperCase()}
                 </button>`;
             });
-            bar.innerHTML = html;
+            
+            // Render to Desktop Bar
+            barDesktop.innerHTML = `<button onclick="window.setFilter('all', true)" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all ${currentFilter === 'all' ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">TẤT CẢ</button>` + categories.map(c => {
+                const isSelected = currentFilter === c.id;
+                return `<button onclick="window.setFilter('${c.id}', true)" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center gap-2 ${isSelected ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">
+                    ${getIconHtml(c)} ${c.name.toUpperCase()}
+                </button>`;
+            }).join('');
+            
+            // Render to Mobile Sidebar (Use list style)
+            barMobile.innerHTML = `<div class="space-y-2">${htmlMobile}</div>`;
 
             const list = document.getElementById('cat-list-admin');
             list.innerHTML = categories.map(c => `<li class="flex flex-col gap-2 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border dark:border-white/5" data-id="${c.id}"><div class="flex items-center gap-3"><i data-lucide="grip-vertical" class="text-slate-300 cursor-move"></i><input type="text" value="${c.name}" onblur="window.updateCatField('${c.id}', 'name', this.value)" class="flex-1 bg-transparent border-none font-bold text-sm outline-none"><button onclick="window.deleteCatConfirm('${c.id}', '${c.name}')" class="text-red-500 p-2"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div><input type="text" value="${c.icon || ''}" onblur="window.updateCatField('${c.id}', 'icon', this.value)" placeholder="Icon URL" class="text-[10px] bg-white dark:bg-black/20 px-4 py-2 rounded-lg outline-none w-full border-none shadow-inner"></li>`).join('');
@@ -1616,44 +2547,47 @@
             document.getElementById('app-category').innerHTML = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
         }
 
-        window.setFilter = (id) => { 
-            // REMOVED: Favorites check
-            /*
-            if (id === 'favorites' && !currentUser) {
-                 showToast("Vui lòng đăng nhập để xem mục yêu thích!");
-                 return;
-            }
-            */
+        // MODIFIED: Removed auto-close logic
+        window.setFilter = (id, isDesktop, closeSidebar = true) => { // Added optional closeSidebar param
             currentFilter = id; 
             renderCategories(); 
-            renderApps(); 
+            renderApps();
+            // Closing logic only happens explicitly via toggleMobileCategorySidebar()
+            if (!isDesktop && id !== 'contact_filter' && closeSidebar) {
+                 window.toggleMobileCategorySidebar();
+            }
         };
 
         window.openModal = (id) => document.getElementById(id).classList.remove('hidden');
         window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
         window.switchTab = (tabId) => {
-            const tabs = ['tab-cat', 'tab-announcement', 'tab-deputy', 'tab-request', 'tab-data', 'tab-trash', 'tab-logs']; 
-            const buttons = ['btn-tab-cat', 'btn-tab-announcement', 'btn-tab-deputy', 'btn-tab-request', 'btn-tab-data', 'btn-tab-trash', 'btn-tab-logs']; 
+            const tabs = ['tab-cat', 'tab-announcement', 'tab-deputy', 'tab-users', 'tab-data', 'tab-trash', 'tab-logs']; 
+            const buttons = ['btn-tab-cat', 'btn-tab-announcement', 'btn-tab-deputy', 'btn-tab-users', 'btn-tab-data', 'btn-tab-trash', 'btn-tab-logs']; 
 
             tabs.forEach(id => document.getElementById(id).classList.add('hidden'));
-            buttons.forEach(id => document.getElementById(id).classList.remove('text-primary', 'border-b-2', 'border-primary'));
+            buttons.forEach(id => {
+                const btn = document.getElementById(id);
+                if(btn) btn.classList.remove('text-primary', 'border-b-2', 'border-primary');
+            });
             
             document.getElementById(tabId).classList.remove('hidden');
-            document.getElementById('btn-' + tabId).classList.add('text-primary', 'border-b-2', 'border-primary');
+            const targetBtn = document.getElementById('btn-' + tabId);
+            if(targetBtn) targetBtn.classList.add('text-primary', 'border-b-2', 'border-primary');
             
             if (tabId === 'tab-announcement' && isAdmin) {
                  document.getElementById('announcement-content').value = currentAnnouncement.content || '';
                  document.getElementById('announcement-start').value = currentAnnouncement.startTime || ''; 
                  document.getElementById('announcement-end').value = currentAnnouncement.endTime || ''; 
                  renderAnnouncementControls();
+                 renderAdminNotificationList(); // NEW: Render list when tab is opened
             }
             
             if (tabId === 'tab-deputy' && isAdmin) {
                  renderDeputyList();
             }
             
-            if (tabId === 'tab-request' && isAdmin) {
-                 renderAdminRequests();
+            if (tabId === 'tab-users' && isAdmin) {
+                 renderUserList();
             }
 
             if (tabId === 'tab-trash' && isAdmin) {
@@ -1665,14 +2599,54 @@
             }
         };
         
-        window.toggleTheme = () => { document.documentElement.classList.toggle('dark'); localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light'; };
+        window.toggleTheme = () => { 
+            window.showGlobalLoading();
+            document.documentElement.classList.toggle('dark'); 
+            localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light'; 
+            
+            // NEW: Update Profile Theme Toggle Icon/Text
+            const isDark = document.documentElement.classList.contains('dark');
+            const themeIconElement = document.getElementById('profile-theme-toggle')?.querySelector('i');
+            if(themeIconElement) {
+                themeIconElement.setAttribute('data-lucide', isDark ? 'sun' : 'moon');
+            }
+            
+            lucide.createIcons();
+            window.hideGlobalLoading();
+        };
+
         document.getElementById('search-input').oninput = (e) => { searchQuery = e.target.value; renderApps(); };
-        window.setView = (mode) => { viewMode = mode; renderApps(); };
+        window.setView = (mode, initial = false) => { 
+            viewMode = mode; 
+
+            // Save preference locally
+            if (window.innerWidth <= 768) {
+                localStorage.setItem('viewModeMobile', mode);
+            } else {
+                 localStorage.setItem('viewModeDesktop', mode);
+            }
+            
+            // Update desktop/mobile view button styles
+            document.getElementById('view-grid-btn')?.classList.remove('bg-white', 'dark:bg-slate-700', 'shadow-sm');
+            document.getElementById('view-list-btn')?.classList.remove('bg-white', 'dark:bg-slate-700', 'shadow-sm');
+            if(mode === 'grid') {
+                 document.getElementById('view-grid-btn')?.classList.add('bg-white', 'dark:bg-slate-700', 'shadow-sm');
+            } else {
+                 document.getElementById('view-list-btn')?.classList.add('bg-white', 'dark:bg-slate-700', 'shadow-sm');
+            }
+
+            if (!initial) renderApps(); 
+        };
         
-        // CẬP NHẬT & SỬA LỖI TOAST (FIXED)
-        function showToast(msg, isError = false) {
+        // CẬP NHẬT & SỬA LỖI TOAST (FIXED & IMPROVED UX)
+        function showToast(msg, isError = false, isLong = false) {
             const t = document.getElementById('toast');
-            document.getElementById('toast-msg').innerText = msg;
+            const toastContent = t.querySelector('div'); // SỬA LỖI: Chọn phần tử div bên trong toast
+            
+            if (!toastContent) return; // Nếu toast chưa được render hoàn toàn, thoát
+
+            // Support markdown bold in toast
+            document.getElementById('toast-msg').innerHTML = msg.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
             
             const icon = t.querySelector('i');
             
@@ -1681,34 +2655,120 @@
             if (isError) {
                  icon.setAttribute('data-lucide', 'alert-triangle');
                  icon.classList.add('text-red-500');
+
+                 // Re-check for real-world notification permission issue only if it's a notification
+                 if (msg.includes('Thông báo') && Notification.permission !== "granted") {
+                      // Do nothing, the original warning is clear enough
+                 }
             } else {
                  icon.setAttribute('data-lucide', 'check-circle');
                  icon.classList.add('text-green-500');
+
+                 // Trigger Browser Notification (Issue 2)
+                 if (Notification.permission === "granted" && !msg.includes('mô phỏng')) { // Don't send browser notification for mock-up actions
+                     // Extract title/body from msg for browser notification
+                     const lines = msg.split('\n');
+                     const browserTitle = lines[0].replace(/\*\*(.*?)\*\*/g, '$1').trim();
+                     const browserBody = lines.length > 1 ? lines.slice(1).join('\n').replace(/\*\*(.*?)\*\*/g, '$1').trim() : "Thông báo mới từ Hub Portal";
+                     window.sendBrowserNotification(browserTitle, browserBody.substring(0, 100) + '...');
+                 }
             }
             
             lucide.createIcons();
             
-            // Hiện toast (SỬA LỖI: Xóa hidden và reset vị trí/độ mờ)
+            // Clear existing timeout
+            clearTimeout(toastTimeout);
+            
+            // Show toast
             t.classList.remove('hidden');
-            
-            // Đảm bảo toast đang ở trạng thái ẩn (opacity: 0, translate-y: 20) trước khi bật hiệu ứng chuyển tiếp
-            t.classList.add('no-transition');
-            t.classList.add('opacity-0', 'translate-y-20');
-            t.offsetHeight; 
-            t.classList.remove('no-transition');
-            
-            // Kích hoạt chuyển đổi để hiển thị
-            t.classList.remove('opacity-0', 'translate-y-20');
+            t.classList.add('visible');
 
-            // Tự đóng sau 3 giây 
-            setTimeout(() => {
-                 t.classList.add('opacity-0', 'translate-y-20');
-            }, 3000);
+            // Set timeout for auto-close (3s for normal, 7s for long content)
+            const duration = isLong ? 7000 : 3000; // Increased long duration for better readability
+            toastTimeout = setTimeout(() => {
+                 window.closeToast();
+            }, duration);
         }
+
+        window.closeToast = () => {
+             const t = document.getElementById('toast');
+             t.classList.remove('visible');
+             // Hide after transition
+             setTimeout(() => {
+                 t.classList.add('hidden');
+             }, 500); 
+             clearTimeout(toastTimeout);
+        };
+
+        // NEW: Toast swipe detection (Mobile UX)
+        window.handleToastTouchStart = (e) => {
+            if (e.touches.length === 1) {
+                toastTouchStartY = e.touches[0].clientY;
+            }
+        };
+
+        window.handleToastTouchMove = (e) => {
+            if (e.touches.length === 1) {
+                const deltaY = e.touches[0].clientY - toastTouchStartY;
+                if (deltaY < -30) { // Swipe up threshold
+                    window.closeToast();
+                }
+            }
+        };
+
+        window.handleToastTouchEnd = (e) => {
+            // Can be used to check for tap to close if desired, but default onclick is set on the element.
+        };
+
+        // --- RENDER PROFILE CONTENT (ĐÃ SỬA LỖI HIỂN THỊ TRỐNG KHI ĐĂNG NHẬP) ---
+        function renderProfileContent() {
+            const details = document.getElementById('profile-content-details');
+            if (!currentUser) {
+                details.innerHTML = `<p class="text-slate-500 dark:text-slate-400">Vui lòng đăng nhập để xem thông tin cá nhân.</p>
+                    <button onclick="window.login()" class="mt-4 w-full py-3 bg-primary text-white rounded-xl font-bold shadow-lg uppercase text-xs hover:bg-indigo-600 transition">ĐĂNG NHẬP VỚI GOOGLE</button>`;
+                document.getElementById('profile-admin-panel-btn')?.classList.add('hidden');
+                return;
+            }
+
+            // START: Bổ sung chi tiết hiển thị cho TAB Cá Nhân
+            const role = isSuper ? 'SUPER ADMIN' : (isAdmin ? 'PHÓ ADMIN' : 'KHÁCH (GUEST)');
+            
+            details.innerHTML = `
+                <div class="flex items-center gap-4 p-4 bg-slate-100 dark:bg-slate-800 rounded-2xl shadow-md border dark:border-white/5">
+                    <img src="${currentUser.photoURL}" class="w-12 h-12 rounded-full border-2 border-primary/20 p-0.5" alt="Avatar">
+                    <div class="min-w-0 flex-1">
+                         <h4 class="text-lg font-black truncate">${currentUser.displayName || 'Tên hiển thị'}</h4>
+                         <p class="text-xs text-slate-500 dark:text-slate-400 truncate">${currentUser.email}</p>
+                    </div>
+                    <span class="text-[9px] font-black uppercase tracking-widest px-3 py-1 bg-primary/10 text-primary rounded-full flex-shrink-0">${role}</span>
+                </div>
+                <div class="space-y-2 mt-4">
+                     <div class="p-3 bg-white dark:bg-slate-900 rounded-xl border dark:border-white/5">
+                         <p class="text-[10px] font-bold text-slate-400 uppercase">Tên hiển thị Google:</p>
+                         <p class="text-sm font-medium">${currentUser.displayName || 'Chưa đặt tên'}</p>
+                     </div>
+                     <div class="p-3 bg-white dark:bg-slate-900 rounded-xl border dark:border-white/5">
+                         <p class="text-[10px] font-bold text-slate-400 uppercase">Email Google:</p>
+                         <p class="text-sm font-medium">${currentUser.email}</p>
+                     </div>
+                </div>
+            `;
+            // END: Bổ sung chi tiết hiển thị cho TAB Cá Nhân
+
+            document.getElementById('profile-admin-panel-btn')?.classList.toggle('hidden', !isAdmin);
+            lucide.createIcons();
+        }
+
 
         if(localStorage.theme === 'dark') document.documentElement.classList.add('dark');
         lucide.createIcons();
-        window.setView('grid');
+        
+        // Initial view mode based on stored preference or screen size default
+        if (window.innerWidth <= 768) {
+            window.setView(localStorage.getItem('viewModeMobile') || 'list', true); 
+        } else {
+            window.setView(localStorage.getItem('viewModeDesktop') || 'grid', true);
+        }
         
         trackVisit();
     </script>
