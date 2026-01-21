@@ -118,6 +118,26 @@
             header { padding-right: 0; } /* Remove right padding on mobile */
             .mobile-hidden { display: none !important; }
         }
+        
+        /* NEW: Mobile-like Toast Styling & Transitions */
+        #toast {
+            bottom: 20px;
+            right: 50%;
+            left: 50%;
+            transform: translate(-50%, 100%); /* Start position: bottom center, off-screen */
+            opacity: 0;
+            transition: all 0.4s ease-out; /* Smooth transition */
+            max-width: 90%;
+            width: auto;
+            min-width: 250px;
+            pointer-events: none; /* Allows clicks through when hidden */
+        }
+        
+        #toast.visible {
+            transform: translate(-50%, 0); /* End position: bottom center, on-screen */
+            opacity: 1;
+            pointer-events: auto; /* Enables interaction when visible */
+        }
     </style>
 </head>
 <body class="min-h-screen pb-24">
@@ -637,15 +657,37 @@
             </div>
         </div>
     </div>
+    
+    <!-- Modal for Category Delete/Migrate (NEW) -->
+    <div id="modal-cat-migrate" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[210] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden">
+            <div class="p-6 border-b dark:border-white/5 flex justify-between items-center">
+                <h3 class="font-bold uppercase text-sm tracking-widest text-red-500">Chuyển đổi Ứng dụng trước khi Xóa</h3>
+                <button onclick="window.closeModal('modal-cat-migrate')" class="p-2 rounded-lg hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-8 space-y-4">
+                <p id="cat-migrate-message" class="text-sm text-slate-700 dark:text-slate-300">
+                    Danh mục này có <span id="cat-migrate-count" class="font-bold">0</span> ứng dụng. Vui lòng chọn danh mục mới để chuyển các ứng dụng này đến trước khi xóa.
+                </p>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Danh mục mới</label>
+                    <select id="cat-migrate-select" class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium"></select>
+                </div>
+                <button onclick="window.executeCatDeleteAndMigrate()" class="w-full py-4 bg-red-500 text-white rounded-xl font-bold shadow-lg uppercase text-xs hover:bg-red-600 transition">XÁC NHẬN XÓA & CHUYỂN ĐỔI</button>
+            </div>
+        </div>
+    </div>
+    <!-- End Modal for Category Delete/Migrate -->
 
-    <!-- Notification Toast (No Changes) -->
-    <div id="toast" class="fixed bottom-10 right-10 z-[300] transform translate-y-20 opacity-0 transition-all duration-500">
+    <!-- Notification Toast (MODIFIED: Mobile style & interaction) -->
+    <div id="toast" class="fixed z-[300]" onclick="window.closeToast()" ontouchstart="window.handleToastTouchStart(event)" ontouchmove="window.handleToastTouchMove(event)" ontouchend="window.handleToastTouchEnd(event)">
         <div class="bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border dark:border-white/10">
             <i data-lucide="check-circle" class="w-5 h-5 text-green-500"></i>
             <span id="toast-msg" class="text-sm font-bold tracking-tight">Thành công!</span>
         </div>
     </div>
-
+    <!-- End Notification Toast -->
+    
 
 
     <!-- Custom Confirmation Modal (NEW) -->
@@ -702,7 +744,10 @@
         let confirmActionCallback = () => {}; 
         let currentMobileTab = 'app'; 
         let currentLang = 'vi'; 
-        
+        let toastTimeout = null; // NEW: Toast timer
+        let toastTouchStartY = 0; // NEW: Toast swipe detection
+        let catToDeleteId = null; // NEW: For category migrate logic
+
         // --- GLOBAL LOADING EFFECT ---
         window.showGlobalLoading = () => {
              document.getElementById('global-loading-overlay').classList.remove('opacity-0', 'pointer-events-none');
@@ -801,7 +846,7 @@
             const requestForm = document.getElementById('request-admin-form');
             window.showGlobalLoading(); // Start loading effect
 
-            try { // ADDED try...catch for initial load
+            try { 
                 if (user) {
                     const snap = await getDoc(doc(db, "settings", "admins"));
                     const adminData = snap.data() || {};
@@ -929,45 +974,12 @@
         };
 
         
-        // NEW: User Profile Content Renderer (Updated)
-        function renderProfileContent() {
-            const container = document.getElementById('profile-content-details');
-            if (!currentUser) {
-                container.innerHTML = '<div class="p-6 bg-slate-100 dark:bg-slate-800 rounded-xl shadow-sm border dark:border-white/5 text-center"><p class="text-slate-500 dark:text-slate-400">Vui lòng <button onclick="window.login()" class="text-primary font-bold">đăng nhập</button> để xem thông tin cá nhân.</p></div>';
-                document.getElementById('profile-admin-panel-btn')?.classList.add('hidden');
-                return;
-            }
-
-            const role = isSuper ? 'SUPER ADMIN' : (isAdmin ? 'PHÓ ADMIN' : 'KHÁCH (GUEST)');
-
-            container.innerHTML = `
-                <div class="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-xl shadow-sm border dark:border-white/5">
-                    <img src="${currentUser.photoURL}" class="w-12 h-12 rounded-full border-2 border-primary/50" alt="Avatar">
-                    <div>
-                        <p class="font-bold">${currentUser.displayName || 'Chưa đặt tên'}</p>
-                        <p class="text-xs text-slate-500">${currentUser.email}</p>
-                    </div>
-                </div>
-                <div class="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl shadow-sm border dark:border-white/5">
-                    <p class="text-xs font-bold text-slate-400 uppercase">Trạng thái</p>
-                    <p class="text-sm font-black text-primary">${role}</p>
-                </div>
-                <button onclick="window.openUserProfileModal()" class="w-full py-3 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white rounded-xl font-bold shadow-sm uppercase text-xs flex items-center justify-center gap-2 hover:bg-slate-300 transition">
-                    <i data-lucide="external-link" class="w-4 h-4"></i> Xem Chi Tiết Tài Khoản
-                </button>
-                <button onclick="window.logout()" class="w-full py-3 bg-red-500 text-white rounded-xl font-bold shadow-lg uppercase text-xs">Đăng Xuất</button>
-            `;
-            document.getElementById('profile-admin-panel-btn')?.classList.toggle('hidden', !isAdmin);
-            lucide.createIcons();
-        }
-
-        
         // NEW: Handle Admin Request Submission (Unchanged)
         document.getElementById('request-admin-form').onsubmit = async (e) => {
             e.preventDefault();
             if (!currentUser) return;
             const reason = document.getElementById('request-admin-reason').value.trim();
-            if (reason.length < 5) { showToast("Lý do phải dài hơn 5 ký tự!"); return; }
+            if (reason.length < 5) { showToast("Lý do phải dài hơn 5 ký tự!", true); return; }
             
             window.showGlobalLoading();
             try {
@@ -1005,7 +1017,7 @@
              document.getElementById('mobile-category-sidebar').classList.toggle('open');
         };
 
-        // --- MOBILE TAB NAVIGATION LOGIC (UPDATED) ---
+        // --- MOBILE TAB NAVIGATION LOGIC (FIXED: Search and Sidebar issue) ---
         window.switchMobileTab = (tabId, isDesktop = false) => {
             currentMobileTab = tabId;
             const tabContents = ['tab-app-content', 'tab-notify-content', 'tab-discover-content', 'tab-profile-content'];
@@ -1013,7 +1025,6 @@
             
             window.showGlobalLoading(); 
 
-            // Update UI/State
             tabButtons.forEach(btnId => {
                 const btn = document.getElementById(btnId);
                 if (btn) {
@@ -1031,26 +1042,27 @@
                 tabContents.forEach(id => document.getElementById(id).classList.add('hidden'));
                 document.getElementById('tab-app-content').classList.remove('hidden');
                 
-                // Show search/stats for App/Contact tabs (FIXED: Show Search Bar)
+                // Show search/stats for App/Contact tabs
                 document.getElementById('search-container').classList.remove('hidden');
                 document.getElementById('visit-stats-container').classList.remove('hidden');
 
                 if (tabId === 'app') {
+                    // FIX: Prevent re-setting filter/re-rendering if already on app/all
                     if (currentFilter === 'contact_filter') {
-                       window.setFilter('all');
+                       window.setFilter('all', false, false); // Only set filter, do not auto-close sidebar, do not force app/contact switch
                     }
                     document.getElementById('tab-app-btn').classList.remove('text-slate-400');
                     document.getElementById('tab-app-btn').classList.add('text-primary');
                     document.getElementById('view-grid-btn')?.parentElement.classList.remove('mobile-hidden');
                 } else if (tabId === 'contact') {
-                    window.setFilter('contact_filter'); 
+                    window.setFilter('contact_filter', false, false); 
                     document.getElementById('tab-contact-btn').classList.remove('text-slate-400');
                     document.getElementById('tab-contact-btn').classList.add('text-primary');
                     document.getElementById('view-grid-btn')?.parentElement.classList.add('mobile-hidden');
                 }
 
             } else {
-                // Hide search/stats for other tabs (FIXED: Hide Search Bar)
+                // Hide search/stats for other tabs
                 document.getElementById('search-container').classList.add('hidden');
                 document.getElementById('visit-stats-container').classList.add('hidden');
                 document.getElementById('view-grid-btn')?.parentElement.classList.add('mobile-hidden');
@@ -1092,6 +1104,9 @@
         onSnapshot(query(collection(db, "categories"), orderBy("order", "asc")), (snap) => {
             categories = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             renderCategories();
+            // Update Select list for Cat Migrate Modal
+            const migrateSelect = document.getElementById('cat-migrate-select');
+            migrateSelect.innerHTML = categories.filter(c => c.id !== catToDeleteId).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
         });
 
         onSnapshot(query(collection(db, "apps"), orderBy("order", "asc")), (snap) => {
@@ -1208,6 +1223,9 @@
                     await updateDoc(doc(db, NOTIFY_COLLECTION, notificationId), {
                         readBy: arrayUnion(currentUser.uid)
                     });
+                    // FIX: Call updateUnreadCount manually since arrayUnion is asynchronous and might not trigger immediate snapshot update
+                    // The snapshot listener will eventually call it, but this is for faster UX response.
+                    updateUnreadCount();
                 } catch (e) {
                     console.error("Error marking notification as read:", e);
                 }
@@ -1258,17 +1276,17 @@
                  markAsRead(id);
             }
             // MODIFIED: Use toast for display
-            showToast(`📣 ${title}: ${content}`, false);
+            showToast(`📣 **${title}**\n\n${content}`, false, true); // Added isLong=true for better display of multi-line content
         };
 
         window.publishNotification = async () => {
-            if (!isAdmin || !currentUser) { showToast("Bạn không có quyền Admin!"); return; }
+            if (!isAdmin || !currentUser) { showToast("Bạn không có quyền Admin!", true); return; }
             const title = document.getElementById('notify-title').value.trim();
             const content = document.getElementById('notify-content').value.trim();
             const iconUrl = document.getElementById('notify-icon').value.trim();
 
             if (title.length < 5 || content.length < 5) {
-                showToast("Tiêu đề và Nội dung phải dài hơn 5 ký tự!");
+                showToast("Tiêu đề và Nội dung phải dài hơn 5 ký tự!", true);
                 return;
             }
             
@@ -1393,7 +1411,7 @@
             const endTime = document.getElementById('announcement-end').value || null; 
             
             if (content.length < 5) {
-                showToast("Nội dung thông báo phải dài hơn 5 ký tự!");
+                showToast("Nội dung thông báo phải dài hơn 5 ký tự!", true);
                 return;
             }
             window.showGlobalLoading();
@@ -1422,7 +1440,7 @@
             if (!isAdmin) return;
             const newState = !currentAnnouncement.active;
             if (newState && (!currentAnnouncement.content || currentAnnouncement.content.trim() === '')) {
-                showToast("Vui lòng nhập nội dung trước khi bật!");
+                showToast("Vui lòng nhập nội dung trước khi bật!", true);
                 return;
             }
             window.showGlobalLoading();
@@ -1786,7 +1804,7 @@
             if(isAdmin && effectiveViewMode === 'list' && !isMobile) new Sortable(container, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(container.children).forEach((el, i) => { if(el.dataset.id) updateDoc(doc(db, "apps", el.dataset.id), { order: i }); logActivity('APP_ORDER_UPDATED', 'bulk', 'Sắp xếp ứng dụng'); }); }});
         }
 
-        // --- ADMIN UTILS (MODIFIED: Ensure loading is hidden on fail) ---
+        // --- ADMIN UTILS ---
         window.updateCatField = (id, field, val) => {
             window.showGlobalLoading();
             updateDoc(doc(db, "categories", id), { [field]: val })
@@ -1795,13 +1813,68 @@
             .finally(window.hideGlobalLoading);
         }
             
+        // MODIFIED: Category Delete Logic
         window.deleteCatConfirm = (id, name) => {
-            window.showConfirm(
-                'Xác nhận Xóa Danh mục',
-                `Bạn có chắc chắn muốn xóa vĩnh viễn danh mục "${name}" không?`,
-                () => window.deleteCat(id, name),
-                'XÓA VĨNH VIỄN'
-            );
+            catToDeleteId = id;
+            const appsInCategory = apps.filter(a => a.categoryId === id && !a.isDeleted);
+            
+            if (appsInCategory.length > 0) {
+                 const availableCats = categories.filter(c => c.id !== id);
+                 if (availableCats.length === 0) {
+                     showToast("Không thể xóa. Vui lòng thêm ít nhất một danh mục khác trước!", true);
+                     return;
+                 }
+                 document.getElementById('cat-migrate-count').innerText = appsInCategory.length;
+                 
+                 const migrateSelect = document.getElementById('cat-migrate-select');
+                 migrateSelect.innerHTML = availableCats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                 
+                 window.openModal('modal-cat-migrate');
+            } else {
+                window.showConfirm(
+                    'Xác nhận Xóa Danh mục',
+                    `Bạn có chắc chắn muốn xóa vĩnh viễn danh mục "${name}" không?`,
+                    () => window.deleteCat(id, name),
+                    'XÓA VĨNH VIỄN'
+                );
+            }
+        };
+
+        window.executeCatDeleteAndMigrate = async () => {
+            const oldCatId = catToDeleteId;
+            const newCatId = document.getElementById('cat-migrate-select').value;
+            const oldCatName = categories.find(c => c.id === oldCatId)?.name;
+            const newCatName = categories.find(c => c.id === newCatId)?.name;
+
+            if (!oldCatId || !newCatId) return;
+
+            window.closeModal('modal-cat-migrate');
+            window.showGlobalLoading();
+
+            try {
+                const batch = writeBatch(db);
+                const appsToMigrate = apps.filter(a => a.categoryId === oldCatId && !a.isDeleted);
+                
+                // 1. Update all apps in the old category
+                appsToMigrate.forEach(app => {
+                    batch.update(doc(db, "apps", app.id), { categoryId: newCatId });
+                });
+
+                // 2. Delete the old category
+                batch.delete(doc(db, "categories", oldCatId));
+                
+                await batch.commit();
+                
+                showToast(`Đã xóa danh mục "${oldCatName}" và chuyển ${appsToMigrate.length} ứng dụng sang "${newCatName}"!`);
+                logActivity('CAT_DELETED_MIGRATED', oldCatId, oldCatName, `Đã chuyển sang ${newCatName}`);
+                catToDeleteId = null; 
+
+            } catch (e) {
+                console.error("Error deleting category and migrating apps:", e);
+                showToast("Lỗi khi xóa danh mục và chuyển đổi ứng dụng!", true);
+            } finally {
+                window.hideGlobalLoading();
+            }
         };
         
         window.deleteCat = (id, name) => {
@@ -1815,7 +1888,7 @@
         window.addCategory = async () => {
             const name = document.getElementById('new-cat-name').value.trim();
             const icon = document.getElementById('new-cat-icon').value.trim();
-            if(!name) { showToast("Tên danh mục không được trống!"); return; }
+            if(!name) { showToast("Tên danh mục không được trống!", true); return; }
             window.showGlobalLoading();
             await addDoc(collection(db, "categories"), { name, icon, order: categories.length })
                 .then((docRef) => {
@@ -1841,7 +1914,7 @@
         window.addDeputy = async () => {
             const email = document.getElementById('new-deputy-email').value.trim().toLowerCase();
             if(!email || !isSuper) return;
-            if (!email.includes('@')) { showToast("Vui lòng nhập email hợp lệ!"); return; }
+            if (!email.includes('@')) { showToast("Vui lòng nhập email hợp lệ!", true); return; }
             window.showGlobalLoading();
             try {
                 await setDoc(doc(db, "settings", "admins"), { deputy_emails: arrayUnion(email) }, { merge: true });
@@ -1941,6 +2014,7 @@
                     'CAT_UPDATED': 'Cập nhật danh mục',
                     'CAT_ADDED': 'Thêm danh mục',
                     'CAT_DELETED': 'Xóa danh mục',
+                    'CAT_DELETED_MIGRATED': 'Xóa & Chuyển đổi Danh mục', // NEW
                     'DEPUTY_ADDED': 'Cấp quyền Phó Admin',
                     'DEPUTY_REMOVED': 'Thu hồi quyền Phó Admin',
                     'ENABLED_MAINTENANCE': 'Bật chế độ Bảo trì',
@@ -1948,8 +2022,8 @@
                     'ANNOUNCEMENT_UPDATED': 'Cập nhật thông báo Marquee',
                     'ANNOUNCEMENT_ENABLED': 'Bật thông báo Marquee',
                     'ANNOUNCEMENT_DISABLED': 'Tắt thông báo Marquee',
-                    'NOTIFICATION_PUBLISHED': 'Đăng thông báo Feed', // NEW
-                    'NOTIFICATION_DELETED': 'Xóa thông báo Feed', // NEW
+                    'NOTIFICATION_PUBLISHED': 'Đăng thông báo Feed', 
+                    'NOTIFICATION_DELETED': 'Xóa thông báo Feed', 
                     'DATA_EXPORTED': 'Xuất dữ liệu',
                     'DATA_IMPORTED': 'Nhập dữ liệu',
                     'ADMIN_REQUEST_REJECTED': 'Từ chối yêu cầu Admin',
@@ -2181,13 +2255,12 @@
         }
 
         // MODIFIED: Removed auto-close logic
-        window.setFilter = (id, isDesktop) => { 
+        window.setFilter = (id, isDesktop, closeSidebar = true) => { // Added optional closeSidebar param
             currentFilter = id; 
             renderCategories(); 
             renderApps();
             // Closing logic only happens explicitly via toggleMobileCategorySidebar()
-            if (!isDesktop && id !== 'contact_filter') {
-                 // For mobile, if a category is selected (and it's not the internal contact filter), close the sidebar.
+            if (!isDesktop && id !== 'contact_filter' && closeSidebar) {
                  window.toggleMobileCategorySidebar();
             }
         };
@@ -2259,10 +2332,11 @@
             renderApps(); 
         };
         
-        // CẬP NHẬT & SỬA LỖI TOAST (FIXED)
-        function showToast(msg, isError = false) {
+        // CẬP NHẬT & SỬA LỖI TOAST (FIXED & IMPROVED UX)
+        function showToast(msg, isError = false, isLong = false) {
             const t = document.getElementById('toast');
-            document.getElementById('toast-msg').innerText = msg;
+            // Support markdown bold in toast
+            document.getElementById('toast-msg').innerHTML = msg.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
             
             const icon = t.querySelector('i');
             
@@ -2278,23 +2352,50 @@
             
             lucide.createIcons();
             
-            // Hiện toast (SỬA LỖI: Xóa hidden và reset vị trí/độ mờ)
+            // Clear existing timeout
+            clearTimeout(toastTimeout);
+            
+            // Show toast
             t.classList.remove('hidden');
-            
-            // Đảm bảo toast đang ở trạng thái ẩn (opacity: 0, translate-y: 20) trước khi bật hiệu ứng chuyển tiếp
-            t.classList.add('no-transition');
-            t.classList.add('opacity-0', 'translate-y-20');
-            t.offsetHeight; 
-            t.classList.remove('no-transition');
-            
-            // Kích hoạt chuyển đổi để hiển thị
-            t.classList.remove('opacity-0', 'translate-y-20');
+            t.classList.add('visible');
 
-            // Tự đóng sau 3 giây 
-            setTimeout(() => {
-                 t.classList.add('opacity-0', 'translate-y-20');
-            }, 3000);
+            // Set timeout for auto-close (3s for normal, 5s for long content)
+            const duration = isLong ? 5000 : 3000;
+            toastTimeout = setTimeout(() => {
+                 window.closeToast();
+            }, duration);
         }
+
+        window.closeToast = () => {
+             const t = document.getElementById('toast');
+             t.classList.remove('visible');
+             // Hide after transition
+             setTimeout(() => {
+                 t.classList.add('hidden');
+             }, 500); 
+             clearTimeout(toastTimeout);
+        };
+
+        // NEW: Toast swipe detection (Mobile UX)
+        window.handleToastTouchStart = (e) => {
+            if (e.touches.length === 1) {
+                toastTouchStartY = e.touches[0].clientY;
+            }
+        };
+
+        window.handleToastTouchMove = (e) => {
+            if (e.touches.length === 1) {
+                const deltaY = e.touches[0].clientY - toastTouchStartY;
+                if (deltaY < -30) { // Swipe up threshold
+                    window.closeToast();
+                }
+            }
+        };
+
+        window.handleToastTouchEnd = (e) => {
+            // Can be used to check for tap to close if desired, but default onclick is set on the element.
+        };
+
 
         if(localStorage.theme === 'dark') document.documentElement.classList.add('dark');
         lucide.createIcons();
@@ -2309,5 +2410,3 @@
     </script>
 </body>
 </html>
-
-
