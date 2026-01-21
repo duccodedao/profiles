@@ -9,7 +9,7 @@
     
     <!-- SEO & PWA Meta Tags -->
     <meta name="description" content="Hub Portal tổng hợp các ứng dụng và danh bạ liên hệ của Vĩnh Trạch Đông.">
-    <link rel="icon" href=https://hdd.io.vn/img/bmassloadings.png" type="image/png">
+    <link rel="icon" href="https://hdd.io.vn/img/bmassloadings.png" type="image/png">
     <link rel="apple-touch-icon" href="https://hdd.io.vn/img/bmassloadings.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -115,9 +115,11 @@
     <!-- Header -->
     <header class="sticky top-0 z-[100] glass px-6 py-3 flex justify-between items-center transition-all duration-300">
         <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg">
-                <i data-lucide="database" class="w-6 h-6"></i>
+            <!-- START MODIFIED: Thay thế icon database bằng logo và xóa nền màu để trong suốt -->
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg p-1">
+                <img src="https://hdd.io.vn/img/bmassloadings.png" alt="Hub Logo" class="w-full h-full object-contain rounded-lg">
             </div>
+            <!-- END MODIFIED -->
             <div>
                 <h1 class="text-xs font-black tracking-tighter uppercase leading-none">Hub Portal</h1>
                 <span id="role-status" class="text-[9px] font-bold text-slate-400">GUEST</span>
@@ -489,7 +491,7 @@
             appId: "1:914980131889:web:72f8da15c42dbee671b110",
             measurementId: "G-C587M69LZW"
         };
-        const SUPER_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1";
+        // *** ĐÃ XÓA: Hằng số SUPER_UID được chuyển vào Firestore (settings/admins/super_uid) ***
         const LOGS_COLLECTION = "activityLogs"; 
 
         const fbApp = initializeApp(firebaseConfig);
@@ -542,10 +544,16 @@
             const requestForm = document.getElementById('request-admin-form');
 
             if (user) {
-                isSuper = user.uid === SUPER_UID;
+                // *** KHỐI CODE ĐÃ CHỈNH SỬA: Lấy super_uid từ Firestore ***
                 const snap = await getDoc(doc(db, "settings", "admins"));
-                deputies = snap.exists() ? snap.data().deputy_emails || [] : [];
+                const adminData = snap.data() || {};
+                const superUidFromDB = adminData.super_uid; // Lấy Super UID từ DB
+                
+                isSuper = user.uid === superUidFromDB; // Xác định isSuper bằng UID từ DB
+                deputies = adminData.deputy_emails || []; // Lấy danh sách phó admin
+                
                 isAdmin = isSuper || deputies.includes(user.email);
+                // *** KẾT THÚC KHỐI CODE ĐÃ CHỈNH SỬA ***
                 
                 // REMOVED: Fetching user favorites
                 
@@ -1068,17 +1076,6 @@
 
             const filtered = apps.filter(a => {
                 if (a.isDeleted) return false; 
-                
-                // REMOVED: Favorites filter logic
-                /*
-                if (currentFilter === 'favorites') {
-                    if (!userFavorites.includes(a.id)) return false;
-                } else {
-                    const cat = categories.find(c => c.id === a.categoryId);
-                    if (currentFilter === 'all') { if (cat?.name === "Số điện thoại") return false; } 
-                    else { if (a.categoryId !== currentFilter) return false; }
-                }
-                */
                 
                 // Reworked filtering without favorites:
                 const cat = categories.find(c => c.id === a.categoryId);
