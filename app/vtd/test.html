@@ -491,7 +491,7 @@
             appId: "1:914980131889:web:72f8da15c42dbee671b110",
             measurementId: "G-C587M69LZW"
         };
-        const SUPER_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1";
+        // *** ĐÃ XÓA: Hằng số SUPER_UID được chuyển vào Firestore (settings/admins/super_uid) ***
         const LOGS_COLLECTION = "activityLogs"; 
 
         const fbApp = initializeApp(firebaseConfig);
@@ -544,10 +544,16 @@
             const requestForm = document.getElementById('request-admin-form');
 
             if (user) {
-                isSuper = user.uid === SUPER_UID;
+                // *** KHỐI CODE ĐÃ CHỈNH SỬA: Lấy super_uid từ Firestore ***
                 const snap = await getDoc(doc(db, "settings", "admins"));
-                deputies = snap.exists() ? snap.data().deputy_emails || [] : [];
+                const adminData = snap.data() || {};
+                const superUidFromDB = adminData.super_uid; // Lấy Super UID từ DB
+                
+                isSuper = user.uid === superUidFromDB; // Xác định isSuper bằng UID từ DB
+                deputies = adminData.deputy_emails || []; // Lấy danh sách phó admin
+                
                 isAdmin = isSuper || deputies.includes(user.email);
+                // *** KẾT THÚC KHỐI CODE ĐÃ CHỈNH SỬA ***
                 
                 // REMOVED: Fetching user favorites
                 
