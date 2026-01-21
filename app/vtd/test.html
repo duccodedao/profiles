@@ -933,13 +933,16 @@
                 document.getElementById('admin-sidebar-toggle').classList.toggle('hidden', !isAdmin); 
                 
                 checkMaintenanceMode(); 
-                // Removed forced viewMode setting on initial load (now allows user preference)
                 
+                // Initialize view mode based on screen size (default to grid, but set list for smaller screens)
                 if (window.innerWidth <= 768) { 
+                    viewMode = 'list';
                     window.switchMobileTab('app', false);
                 } else {
+                    viewMode = 'grid';
                     window.switchMobileTab('app', true);
                 }
+                window.setView(viewMode); // Apply view mode settings initially
                 window.setLang(localStorage.getItem('language') || 'vi', true);
 
             } catch (error) {
@@ -1106,12 +1109,13 @@
                     }
                     document.getElementById('tab-app-btn').classList.remove('text-slate-400');
                     document.getElementById('tab-app-btn').classList.add('text-primary');
-                    if(viewToggles) viewToggles.classList.remove('hidden'); // SHOW view toggles
+                    if(viewToggles && window.innerWidth > 768) viewToggles.classList.remove('hidden'); 
+                    if(viewToggles && window.innerWidth <= 768) viewToggles.classList.remove('hidden'); // Show view toggles on mobile App tab
                 } else if (tabId === 'contact') {
                     window.setFilter('contact_filter', false, false); 
                     document.getElementById('tab-contact-btn').classList.remove('text-slate-400');
                     document.getElementById('tab-contact-btn').classList.add('text-primary');
-                    if(viewToggles) viewToggles.classList.add('hidden'); // HIDE view toggles
+                    if(viewToggles) viewToggles.classList.add('hidden'); // HIDE view toggles on Contact tab
                 }
 
             } else {
@@ -1886,7 +1890,7 @@
                 }).join('');
             }
             lucide.createIcons();
-            // Only allow sorting on non-mobile desktop mode in list view
+            // Only allow sorting on desktop in list view
             if(isAdmin && effectiveViewMode === 'list' && window.innerWidth > 768) new Sortable(container, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(container.children).forEach((el, i) => { if(el.dataset.id) updateDoc(doc(db, "apps", el.dataset.id), { order: i }); logActivity('APP_ORDER_UPDATED', 'bulk', 'Sắp xếp ứng dụng'); }); }});
         }
 
