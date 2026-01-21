@@ -116,7 +116,7 @@
             #main-content-wrapper { padding-bottom: 10px; } /* Reduce padding at the bottom of main content */
             #category-bar { display: none !important; } /* Hide desktop category bar on mobile */
             header { padding-right: 0; } /* Remove right padding on mobile */
-            .mobile-hidden { display: none !important; }
+            /* Removed .mobile-hidden { display: none !important; } from here to allow view toggles */
         }
         
         /* NEW: Mobile-like Toast Styling & Transitions */
@@ -183,8 +183,8 @@
             <!-- Nút Mở Sidebar Admin (NEW) -->
             <button onclick="window.toggleAdminSidebar()" id="admin-sidebar-toggle" class="p-2 rounded-xl text-primary hover:bg-slate-100 dark:hover:bg-slate-800 transition hidden"><i data-lucide="settings-2" class="w-5 h-5"></i></button>
 
-            <!-- Desktop View Mode Toggles (Hidden on mobile) -->
-            <div class="mobile-hidden flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+            <!-- View Mode Toggles (Now visible on mobile) -->
+            <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
                 <button onclick="window.setView('grid')" id="view-grid-btn" class="p-1.5 rounded-md transition-all shadow-sm bg-white dark:bg-slate-700"><i data-lucide="layout-grid" class="w-4 h-4"></i></button>
                 <button onclick="window.setView('list')" id="view-list-btn" class="p-1.5 rounded-md transition-all"><i data-lucide="list" class="w-4 h-4"></i></button>
             </div>
@@ -329,12 +329,21 @@
                                 <i data-lucide="globe" class="w-5 h-5 text-primary"></i>
                                 <span id="current-lang-text" class="text-xs font-bold">Ngôn ngữ: VI</span>
                             </button>
+                            <!-- Notification Permission Toggle (NEW) -->
+                            <button onclick="window.requestNotificationPermission()" id="profile-notification-toggle" class="flex items-center gap-3 p-4 bg-slate-100 dark:bg-slate-800 rounded-xl shadow-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                                <i data-lucide="bell-ring" class="w-5 h-5 text-primary"></i>
+                                <span class="text-xs font-bold">Bật Thông báo Trình duyệt</span>
+                            </button>
                         </div>
                         
-                        <a href="chat.html" target="_blank" class="w-full py-3 bg-secondary text-white rounded-xl font-bold text-xs uppercase shadow-lg hover:opacity-90 transition flex items-center justify-center gap-2">
-                            <i data-lucide="life-buoy" class="w-4 h-4"></i> TRỢ GIÚP & HỖ TRỢ
-                        </a>
-
+                        <div class="grid grid-cols-2 gap-4">
+                            <a href="#" onclick="window.logoutConfirm()" class="w-full py-3 bg-red-500 text-white rounded-xl font-bold text-xs uppercase shadow-lg hover:opacity-90 transition flex items-center justify-center gap-2">
+                                <i data-lucide="log-out" class="w-4 h-4"></i> ĐĂNG XUẤT
+                            </a>
+                            <a href="chat.html" target="_blank" class="w-full py-3 bg-secondary text-white rounded-xl font-bold text-xs uppercase shadow-lg hover:opacity-90 transition flex items-center justify-center gap-2">
+                                <i data-lucide="life-buoy" class="w-4 h-4"></i> TRỢ GIÚP & HỖ TRỢ
+                            </a>
+                        </div>
                     </div>
 
                 </div>
@@ -537,7 +546,7 @@
     </div>
     
     <!-- Footer (Desktop Only) -->
-    <footer class="mobile-hidden w-full z-50 bg-white dark:bg-slate-900 border-t dark:border-white/10 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
+    <footer class="mobile-hidden fixed bottom-0 left-0 w-full z-50 bg-white dark:bg-slate-900 border-t dark:border-white/10 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
         <div class="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center text-sm">
             <div class="text-slate-500 dark:text-slate-400">
                 © 2024 Vĩnh Trạch Đông. All rights reserved.
@@ -706,6 +715,24 @@
         </div>
     </div>
 </div>
+
+<!-- Custom Modal for Long Loading Timeout (NEW) -->
+<div id="modal-long-load" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[950] hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-sm shadow-2xl overflow-hidden">
+        <div class="p-6 border-b dark:border-white/5 flex justify-between items-center">
+            <h3 class="font-bold uppercase text-sm tracking-widest text-secondary">Tải Trang Quá Lâu</h3>
+            <button onclick="window.closeModal('modal-long-load')" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="p-8 space-y-6 text-center">
+            <i data-lucide="loader-2" class="w-12 h-12 text-secondary mx-auto animate-spin"></i>
+            <p class="text-sm text-slate-700 dark:text-slate-300">Quá trình tải dữ liệu đã kéo dài hơn 30 giây. Vui lòng chọn hành động tiếp theo:</p>
+            <div class="flex justify-center gap-3">
+                <button onclick="window.forceReload()" class="px-5 py-3 rounded-xl font-bold text-xs uppercase bg-primary text-white shadow-lg hover:bg-indigo-600 transition">TẢI LẠI TOÀN BỘ TRANG</button>
+                <button onclick="window.closeModal('modal-long-load')" class="px-5 py-3 rounded-xl font-bold text-xs uppercase bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 transition">ĐỢI TIẾP</button>
+            </div>
+        </div>
+    </div>
+</div>
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -747,14 +774,31 @@
         let toastTimeout = null; // NEW: Toast timer
         let toastTouchStartY = 0; // NEW: Toast swipe detection
         let catToDeleteId = null; // NEW: For category migrate logic
+        let loadingTimeoutTimer = null; // NEW: Timer for long load
+        let currentGlobalLoading = false; // NEW: Status for long load
 
-        // --- GLOBAL LOADING EFFECT ---
+
+        // --- GLOBAL LOADING EFFECT (MODIFIED for Timeout) ---
         window.showGlobalLoading = () => {
+             currentGlobalLoading = true;
              document.getElementById('global-loading-overlay').classList.remove('opacity-0', 'pointer-events-none');
+             
+             // NEW: Start 30 second timer
+             clearTimeout(loadingTimeoutTimer);
+             loadingTimeoutTimer = setTimeout(() => {
+                 if (currentGlobalLoading) {
+                     window.openModal('modal-long-load');
+                 }
+             }, 30000); // 30 seconds
         };
         window.hideGlobalLoading = () => {
+             currentGlobalLoading = false;
+             clearTimeout(loadingTimeoutTimer);
+             document.getElementById('modal-long-load')?.classList.add('hidden'); // Close modal if open
              document.getElementById('global-loading-overlay').classList.add('opacity-0', 'pointer-events-none');
         };
+        
+        window.forceReload = () => { location.reload(); };
         
         // --- LANGUAGE LOGIC ---
         window.setLang = (lang, initial = false) => {
@@ -787,7 +831,7 @@
          * @param {string} confirmText Text for the confirm button.
          */
         window.showConfirm = (title, message, callback, confirmText = 'XÁC NHẬN') => {
-            if (!isAdmin) return; 
+            if (currentUser === null && title !== 'Xác nhận Đăng xuất') return; // Allow guest for logout confirm
             document.getElementById('confirm-modal-title').innerText = title;
             document.getElementById('confirm-modal-message').innerText = message;
             document.getElementById('confirm-modal-btn').innerText = confirmText;
@@ -889,10 +933,7 @@
                 document.getElementById('admin-sidebar-toggle').classList.toggle('hidden', !isAdmin); 
                 
                 checkMaintenanceMode(); 
-                if (window.innerWidth <= 768) { viewMode = 'list'; } else { viewMode = 'grid'; }
-                renderApps();
-                renderDeputyList();
-                renderAnnouncementControls();
+                // Removed forced viewMode setting on initial load (now allows user preference)
                 
                 if (window.innerWidth <= 768) { 
                     window.switchMobileTab('app', false);
@@ -930,7 +971,7 @@
                         <button onclick="window.openUserProfileModal()" class="flex items-center w-full px-3 py-2 text-sm font-medium rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
                             <i data-lucide="user-circle" class="w-4 h-4 mr-2"></i> Tài khoản
                         </button>
-                        <button onclick="window.logout()" class="flex items-center w-full px-3 py-2 text-sm font-medium text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-slate-700/50">
+                        <button onclick="window.logoutConfirm()" class="flex items-center w-full px-3 py-2 text-sm font-medium text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-slate-700/50">
                             <i data-lucide="log-out" class="w-4 h-4 mr-2"></i> Đăng xuất
                         </button>
                     </div>
@@ -1002,6 +1043,17 @@
         };
 
         window.login = () => { window.showGlobalLoading(); signInWithPopup(auth, provider).catch(() => window.hideGlobalLoading()); };
+        
+        window.logoutConfirm = () => {
+             window.closeUserMenu(); // Close desktop dropdown if open
+             window.showConfirm(
+                'Xác nhận Đăng xuất',
+                'Bạn có chắc chắn muốn đăng xuất khỏi tài khoản này?',
+                () => window.logout(),
+                'ĐĂNG XUẤT'
+             );
+        };
+        
         window.logout = () => { window.showGlobalLoading(); signOut(auth).then(() => location.reload()).catch(() => window.hideGlobalLoading()); };
 
         // NEW: Sidebar Toggle (Unchanged)
@@ -1022,6 +1074,7 @@
             currentMobileTab = tabId;
             const tabContents = ['tab-app-content', 'tab-notify-content', 'tab-discover-content', 'tab-profile-content'];
             const tabButtons = ['tab-app-btn', 'tab-contact-btn', 'tab-notify-btn', 'tab-profile-btn'];
+            const viewToggles = document.getElementById('view-grid-btn')?.parentElement;
             
             window.showGlobalLoading(); 
 
@@ -1053,19 +1106,19 @@
                     }
                     document.getElementById('tab-app-btn').classList.remove('text-slate-400');
                     document.getElementById('tab-app-btn').classList.add('text-primary');
-                    document.getElementById('view-grid-btn')?.parentElement.classList.remove('mobile-hidden');
+                    if(viewToggles) viewToggles.classList.remove('hidden'); // SHOW view toggles
                 } else if (tabId === 'contact') {
                     window.setFilter('contact_filter', false, false); 
                     document.getElementById('tab-contact-btn').classList.remove('text-slate-400');
                     document.getElementById('tab-contact-btn').classList.add('text-primary');
-                    document.getElementById('view-grid-btn')?.parentElement.classList.add('mobile-hidden');
+                    if(viewToggles) viewToggles.classList.add('hidden'); // HIDE view toggles
                 }
 
             } else {
                 // Hide search/stats for other tabs
                 document.getElementById('search-container').classList.add('hidden');
                 document.getElementById('visit-stats-container').classList.add('hidden');
-                document.getElementById('view-grid-btn')?.parentElement.classList.add('mobile-hidden');
+                if(viewToggles) viewToggles.classList.add('hidden');
 
                 tabContents.forEach(id => document.getElementById(id).classList.add('hidden'));
                 
@@ -1093,6 +1146,7 @@
                 document.getElementById('tab-profile-content').classList.add('hidden');
                 document.getElementById('search-container').classList.remove('hidden');
                 document.getElementById('visit-stats-container').classList.remove('hidden');
+                if(viewToggles) viewToggles.classList.remove('hidden'); // SHOW view toggles on desktop
             }
             
             lucide.createIcons();
@@ -1200,6 +1254,39 @@
 
         // --- NEW: NOTIFICATION FEED LOGIC ---
         
+        // --- BROWSER NOTIFICATION LOGIC (NEW) ---
+        async function requestNotificationPermission() {
+            if (!("Notification" in window)) { 
+                showToast("Trình duyệt không hỗ trợ thông báo!", true);
+                return; 
+            }
+            window.showGlobalLoading();
+            if (Notification.permission !== "granted") {
+                const permission = await Notification.requestPermission();
+                if (permission === "granted") {
+                    showToast("Thông báo trình duyệt đã được BẬT!");
+                } else if (permission === "denied") {
+                    showToast("Đã từ chối cấp quyền thông báo!", true);
+                }
+            } else {
+                 showToast("Thông báo đã được bật trước đó rồi.");
+            }
+            window.hideGlobalLoading();
+        }
+
+        function pushBrowserNotification(title, body) {
+             if (Notification.permission === "granted") {
+                new Notification(title, { 
+                    body: body, 
+                    icon: 'https://hdd.io.vn/img/bmassloadings.png', 
+                    vibrate: [200, 100, 200]
+                });
+             }
+        }
+        
+        window.requestNotificationPermission = requestNotificationPermission; 
+
+
         function updateUnreadCount() {
             if (!currentUser) {
                 unreadCount = 0;
@@ -1699,8 +1786,7 @@
             }
             loading.classList.add('hidden');
 
-            const isMobile = window.innerWidth <= 768;
-            const effectiveViewMode = isMobile ? 'list' : viewMode; 
+            const effectiveViewMode = currentMobileTab === 'contact' ? 'list' : viewMode; // FIX: Only force list mode for contact tab
             const phoneCat = categories.find(c => c.name === "Số điện thoại");
 
             const filtered = apps.filter(a => {
@@ -1801,7 +1887,7 @@
             }
             lucide.createIcons();
             // Only allow sorting on non-mobile desktop mode in list view
-            if(isAdmin && effectiveViewMode === 'list' && !isMobile) new Sortable(container, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(container.children).forEach((el, i) => { if(el.dataset.id) updateDoc(doc(db, "apps", el.dataset.id), { order: i }); logActivity('APP_ORDER_UPDATED', 'bulk', 'Sắp xếp ứng dụng'); }); }});
+            if(isAdmin && effectiveViewMode === 'list' && window.innerWidth > 768) new Sortable(container, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(container.children).forEach((el, i) => { if(el.dataset.id) updateDoc(doc(db, "apps", el.dataset.id), { order: i }); logActivity('APP_ORDER_UPDATED', 'bulk', 'Sắp xếp ứng dụng'); }); }});
         }
 
         // --- ADMIN UTILS ---
@@ -2348,6 +2434,13 @@
             } else {
                  icon.setAttribute('data-lucide', 'check-circle');
                  icon.classList.add('text-green-500');
+                 
+                 // NEW: Push to browser notification (only for non-error, non-long toasts)
+                 if (!isLong && Notification.permission === "granted") { 
+                     const plainMsg = msg.replace(/\*\*(.*?)\*\*/g, '$1').replace(/<br>/g, ' ');
+                     const title = msg.includes('thành công') ? 'HUB PORTAL - Thành công' : 'HUB PORTAL - Thông báo';
+                     pushBrowserNotification(title, plainMsg);
+                 }
             }
             
             lucide.createIcons();
@@ -2399,9 +2492,9 @@
 
         if(localStorage.theme === 'dark') document.documentElement.classList.add('dark');
         lucide.createIcons();
-        // Initial view mode based on screen size
+        // Initial view mode based on screen size (Removed forced 'list' on mobile, leaving default 'grid')
         if (window.innerWidth <= 768) {
-            window.setView('list'); 
+            window.setView('list'); // Default to list on mobile, but allow grid if user changes
         } else {
             window.setView('grid');
         }
