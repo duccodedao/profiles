@@ -440,7 +440,7 @@
         </div>
     </div>
     
-    <!-- Firebase -->
+   // --- Firebase (ONLY COPY THE CONTENT BELOW) ---
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -471,7 +471,7 @@
         let currentAnnouncement = {}; 
         let adminRequests = []; 
         let globalSettings = {}; 
-        let activityLogs = []; // FIXED: Global logs array to ensure immediate rendering
+        let activityLogs = []; 
 
         // --- AUTH & INITIAL ---
         onAuthStateChanged(auth, async (user) => {
@@ -667,8 +667,11 @@
 
         // NEW: Realtime listener for Activity Logs
         onSnapshot(query(collection(db, LOGS_COLLECTION), orderBy("timestamp", "desc"), limit(50)), (snap) => {
-            activityLogs = snap.docs.map(d => d.data()); // FIXED: Use global array
-            renderActivityLogs(); // FIXED: Call without argument
+            activityLogs = snap.docs.map(d => d.data()); 
+            // Only call renderLogs if the tab is currently open, otherwise the listener update is enough
+            if (document.getElementById('tab-logs').classList.contains('hidden') === false) {
+                 renderActivityLogs();
+            }
         });
 
         // --- ANNOUNCEMENT LOGIC ---
@@ -747,7 +750,7 @@
             }
         };
         
-        // --- ADMIN REQUEST LOGIC (NEW) ---
+        // --- ADMIN REQUEST LOGIC (Unchanged) ---
         function renderAdminRequests() {
             if (!isSuper) return; 
             const list = document.getElementById('requests-list');
@@ -821,7 +824,7 @@
             });
         };
 
-        // --- BULK DELETE (SOFT DELETE) LOGIC (Modified for Logging) ---
+        // --- BULK DELETE (SOFT DELETE) LOGIC (Unchanged) ---
         window.toggleBulkDelete = () => {
             if (!isAdmin) return;
             bulkDeleteMode = !bulkDeleteMode;
@@ -966,7 +969,7 @@
             lucide.createIcons();
         }
 
-        // --- RENDERING APP (Modified for Soft Delete) ---
+        // --- RENDERING APP (Unchanged) ---
         window.renderApps = () => {
             const container = document.getElementById('app-container');
             const loading = document.getElementById('app-loading');
@@ -979,7 +982,7 @@
             loading.classList.add('hidden');
 
             const filtered = apps.filter(a => {
-                if (a.isDeleted) return false; // FIXED: Skip soft-deleted items from main view
+                if (a.isDeleted) return false; 
                 
                 if (currentFilter === 'favorites') {
                     if (!userFavorites.includes(a.id)) return false;
@@ -1084,7 +1087,7 @@
             if(isAdmin) new Sortable(container, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(container.children).forEach((el, i) => { if(el.dataset.id) updateDoc(doc(db, "apps", el.dataset.id), { order: i }); logActivity('APP_ORDER_UPDATED', 'bulk', 'Sắp xếp ứng dụng'); }); }});
         }
 
-        // --- IMPORT / EXPORT LOGIC (Modified for Logging) ---
+        // --- IMPORT / EXPORT LOGIC (Unchanged) ---
         window.handleExport = (type) => {
             const data = {
                 apps: apps.map(({id, ...rest}) => rest),
@@ -1168,7 +1171,7 @@
             if (file.name.endsWith('.json')) reader.readAsText(file); else reader.readAsArrayBuffer(file);
         };
 
-        // --- ADMIN UTILS (Modified for Logging) ---
+        // --- ADMIN UTILS (Unchanged) ---
         window.updateCatField = (id, field, val) => updateDoc(doc(db, "categories", id), { [field]: val })
             .then(() => { showToast("Đã cập nhật danh mục!"); logActivity('CAT_UPDATED', id, categories.find(c=>c.id === id)?.name); }) 
             .catch(e => showToast("Lỗi khi cập nhật danh mục!", true)); 
@@ -1287,10 +1290,10 @@
             }).catch(e => console.error("Error logging activity:", e));
         }
 
-        // NEW: Render Activity Logs (Modified to use global array)
+        // NEW: Render Activity Logs (Unchanged logic, uses global array)
         function renderActivityLogs() { 
             if (!isAdmin) return;
-            const logs = activityLogs; // FIXED: Use global array
+            const logs = activityLogs;
             const list = document.getElementById('logs-list');
             
             if (logs.length === 0) {
@@ -1331,14 +1334,13 @@
                     </div>
                 `;
             }).join('');
-            lucide.createIcons(); // Ensure icons are created here
+            lucide.createIcons();
         }
 
-        // NEW: Trash List Renderer and Actions
+        // NEW: Trash List Renderer and Actions (Unchanged)
         function renderTrash() {
             if (!isAdmin) return;
             const trashList = document.getElementById('trash-list');
-            // Filter apps that are marked as deleted and sort by deletion time
             const deletedApps = apps.filter(a => a.isDeleted).sort((a, b) => new Date(b.deletedAt) - new Date(a.deletedAt));
 
             document.getElementById('clear-trash-btn').classList.toggle('hidden', deletedApps.length === 0);
@@ -1454,7 +1456,7 @@
             }
         };
 
-        // MODIFIED: Soft Delete instead of hard delete
+        // MODIFIED: Soft Delete instead of hard delete (Unchanged)
         window.deleteApp = (id) => {
             if (!isAdmin) return;
             const appName = apps.find(a => a.id === id)?.name;
@@ -1540,11 +1542,11 @@
             }
 
             if (tabId === 'tab-trash' && isAdmin) {
-                 renderTrash(); // FIXED: Ensure trash list renders immediately
+                 renderTrash(); 
             }
 
             if (tabId === 'tab-logs' && isAdmin) {
-                 renderActivityLogs(); // FIXED: Ensure logs render immediately using global array
+                 renderActivityLogs(); 
             }
         };
         
@@ -1552,26 +1554,33 @@
         document.getElementById('search-input').oninput = (e) => { searchQuery = e.target.value; renderApps(); };
         window.setView = (mode) => { viewMode = mode; renderApps(); };
         
-        // CẬP NHẬT: Thêm tham số isError để phân biệt rõ ràng trạng thái thông báo
+        // CẬP NHẬT & SỬA LỖI TOAST
         function showToast(msg, isError = false) {
             const t = document.getElementById('toast');
             document.getElementById('toast-msg').innerText = msg;
-            t.classList.remove('opacity-0', 'translate-y-20');
             
-            const isErrorMessage = msg.toLowerCase().includes('lỗi') || isError; 
             const icon = t.querySelector('i');
             
-            if (isErrorMessage) {
+            // Xóa hết class cũ
+            icon.classList.remove('text-green-500', 'text-red-500');
+
+            if (isError) {
                  icon.setAttribute('data-lucide', 'alert-triangle');
-                 icon.classList.remove('text-green-500');
                  icon.classList.add('text-red-500');
             } else {
                  icon.setAttribute('data-lucide', 'check-circle');
-                 icon.classList.remove('text-red-500');
                  icon.classList.add('text-green-500');
             }
+            
             lucide.createIcons();
-            setTimeout(() => t.classList.add('opacity-0', 'translate-y-20'), 3000);
+            
+            // Hiện toast
+            t.classList.remove('opacity-0', 'translate-y-20');
+
+            // Tự đóng sau 3 giây (FIXED: Đã thêm ngoặc nhọn {})
+            setTimeout(() => {
+                 t.classList.add('opacity-0', 'translate-y-20');
+            }, 3000);
         }
 
         if(localStorage.theme === 'dark') document.documentElement.classList.add('dark');
