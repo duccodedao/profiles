@@ -389,7 +389,8 @@
                     <button onclick="window.switchTab('tab-trash')" id="btn-tab-trash" class="pb-1 uppercase">THÙNG RÁC</button>
                     <button onclick="window.switchTab('tab-announcement')" id="btn-tab-announcement" class="pb-1 uppercase">THÔNG BÁO</button>
                     <button onclick="window.switchTab('tab-deputy')" id="btn-tab-deputy" class="pb-1 uppercase">PHÓ ADMIN</button>
-                    <button onclick="window.switchTab('tab-request')" id="btn-tab-request" class="pb-1 uppercase flex items-center gap-1">YÊU CẦU ADM <span id="request-count" class="text-red-500">(0)</span></button>
+                    <!-- MODIFIED: Changed tab to Users -->
+                    <button onclick="window.switchTab('tab-users')" id="btn-tab-users" class="pb-1 uppercase flex items-center gap-1">NGƯỜI DÙNG <span id="user-count" class="text-red-500">(0)</span></button>
                     <button onclick="window.switchTab('tab-logs')" id="btn-tab-logs" class="pb-1 uppercase">NHẬT KÝ</button>
                     <button onclick="window.switchTab('tab-data')" id="btn-tab-data" class="pb-1 uppercase">DỮ LIỆU</button>
                 </div>
@@ -481,14 +482,21 @@
                         <div id="deputy-list" class="space-y-2"></div>
                     </div>
                 </div>
-                
-                <!-- Tab Admin Requests (NEW) -->
-                <div id="tab-request" class="hidden space-y-6">
-                    <h4 class="text-sm font-bold uppercase tracking-widest text-slate-500">Yêu Cầu Cấp Quyền</h4>
-                    <div id="requests-list" class="space-y-2">
-                        <div class="p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center text-slate-400">Không có yêu cầu mới.</div>
+
+                <!-- NEW: Tab Users -->
+                <div id="tab-users" class="hidden space-y-6">
+                    <h4 class="text-sm font-bold uppercase tracking-widest text-slate-500">Danh sách Người dùng</h4>
+                    <div id="users-list" class="space-y-2 max-h-[50vh] overflow-y-auto">
+                        <div class="p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center text-slate-400">Tính năng này cần API Admin hoặc Collection User riêng.</div>
+                    </div>
+                    <div id="user-request-info" class="p-4 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-200 rounded-xl text-xs font-bold">
+                        (*) Chỉ hiển thị nếu có collection "users" hoặc "adminRequests" (danh sách yêu cầu cũ).
+                        <p id="old-request-list" class="mt-2 space-y-1"></p>
                     </div>
                 </div>
+                
+                <!-- Tab Admin Requests (OLD - Removed in logic, retained as placeholder) -->
+                <!-- <div id="tab-request" class="hidden space-y-6"></div> -->
                 <!-- End Tab Admin Requests -->
 
                 <!-- Tab Activity Logs (NEW) -->
@@ -725,6 +733,7 @@
         };
         const LOGS_COLLECTION = "activityLogs"; 
         const NOTIFY_COLLECTION = "notifications"; 
+        const USERS_COLLECTION = "users"; // NEW: For potential user listing
 
         const fbApp = initializeApp(firebaseConfig);
         const auth = getAuth(fbApp);
@@ -741,6 +750,7 @@
         let activityLogs = []; 
         let discoverApps = []; 
         let notifications = []; 
+        let allUsers = []; // NEW: Array for all users
         let unreadCount = 0; 
         let confirmActionCallback = () => {}; 
         let currentMobileTab = 'app'; 
@@ -1219,10 +1229,10 @@
             renderAnnouncementControls();
         });
         
-        // Realtime listener for Admin Requests 
+        // Realtime listener for Admin Requests (Kept for User tab to list unapproved requests)
         onSnapshot(collection(db, "adminRequests"), (snap) => {
             adminRequests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            renderAdminRequests();
+            if (isAdmin) renderUserList(); // Update user list when requests change
         });
         
         // Realtime listener for global settings 
@@ -1259,6 +1269,13 @@
             }
             updateUnreadCount();
         });
+
+        // NEW: Realtime listener for all users (Admin purpose - assumes a `users` collection exists)
+        onSnapshot(query(collection(db, USERS_COLLECTION), orderBy("lastLogin", "desc")), (snap) => {
+            allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            if (isAdmin) renderUserList();
+        });
+
 
         // NEW: Render Discover Content (Unchanged)
         function renderDiscoverContent() {
@@ -1550,26 +1567,10 @@
         
         // --- ADMIN REQUEST LOGIC (Unchanged) ---
         function renderAdminRequests() {
+            // This function is still here but no longer called directly from the tab switch.
+            // It's used in renderUserList for non-approved requests.
             if (!isSuper) return; 
-            const list = document.getElementById('requests-list');
-            document.getElementById('request-count').innerText = `(${adminRequests.length})`;
-            
-            if (adminRequests.length === 0) {
-                 list.innerHTML = `<div class="p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center text-slate-400">Không có yêu cầu mới.</div>`;
-                 return;
-            }
-
-            list.innerHTML = adminRequests.map(req => `
-                <div class="p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border dark:border-white/5 space-y-2">
-                    <p class="text-sm font-bold">${req.name} <span class="text-xs text-slate-500">(${req.email})</span></p>
-                    <p class="text-xs italic text-slate-600 dark:text-slate-400">Lý do: ${req.reason}</p>
-                    <div class="flex gap-2 pt-2 border-t dark:border-white/5 mt-2">
-                        <button onclick="window.requestApproveConfirm('${req.uid}', '${req.email}')" class="flex-1 bg-green-500 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase">DUYỆT</button>
-                        <button onclick="window.requestRejectConfirm('${req.uid}')" class="flex-1 bg-red-500 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase">TỪ CHỐI</button>
-                    </div>
-                </div>
-            `).join('');
-            lucide.createIcons();
+            // The rest of the old logic for rendering requests has been moved/integrated into renderUserList for the combined 'NGƯỜI DÙNG' tab.
         }
         
         window.requestApproveConfirm = (uid, email) => {
@@ -1623,6 +1624,56 @@
                 window.hideGlobalLoading();
             }
         };
+
+        // --- USER LIST LOGIC (NEW) ---
+        function renderUserList() {
+            if (!isAdmin) return; 
+            
+            // 1. Render Admin Requests (using the existing adminRequests array)
+            const oldRequestList = document.getElementById('old-request-list');
+            document.getElementById('user-count').innerText = `(${adminRequests.length})`; // Show count of pending requests
+            
+            if (adminRequests.length === 0) {
+                 oldRequestList.innerHTML = `<div class="text-sm font-medium text-blue-700 dark:text-blue-200">Không có yêu cầu cấp quyền nào đang chờ duyệt.</div>`;
+            } else {
+                 oldRequestList.innerHTML = `<h5 class="text-base font-bold text-red-500 mb-2 border-b dark:border-white/10 pb-1">(${adminRequests.length}) YÊU CẦU CẤP QUYỀN CHỜ DUYỆT:</h5>` + adminRequests.map(req => `
+                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm border dark:border-white/5 space-y-2">
+                        <p class="text-sm font-bold">${req.name} <span class="text-xs text-slate-500">(${req.email})</span></p>
+                        <p class="text-xs italic text-slate-600 dark:text-slate-400">Lý do: ${req.reason}</p>
+                        <div class="flex gap-2 pt-2 border-t dark:border-white/5 mt-2">
+                            <button onclick="window.requestApproveConfirm('${req.uid}', '${req.email}')" class="flex-1 bg-green-500 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase">DUYỆT</button>
+                            <button onclick="window.requestRejectConfirm('${req.uid}')" class="flex-1 bg-red-500 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase">TỪ CHỐI</button>
+                        </div>
+                    </div>
+                 `).join('');
+            }
+
+            // 2. Render Full User List (if available in `users` collection)
+            const list = document.getElementById('users-list');
+            if (allUsers.length === 0) {
+                 list.innerHTML = `<div class="p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center text-slate-400">Không có người dùng nào trong collection 'users'.</div>`;
+                 return;
+            }
+
+            list.innerHTML = `<h4 class="text-sm font-bold uppercase tracking-widest text-primary border-b pb-2">Danh sách Người dùng Đã Ghi nhận (${allUsers.length})</h4>` + allUsers.map(u => {
+                const isDeputy = deputies.includes(u.email);
+                const role = u.uid === auth.currentUser.uid ? 'TÔI' : (isDeputy ? 'PHÓ ADMIN' : 'USER');
+                const roleClass = u.uid === auth.currentUser.uid ? 'bg-indigo-500' : (isDeputy ? 'bg-green-500' : 'bg-slate-500');
+                const lastLogin = u.lastLogin ? new Date(u.lastLogin).toLocaleString('vi-VN') : 'N/A';
+
+                return `
+                    <div class="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm border dark:border-white/5">
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-sm font-bold truncate">${u.name}</h4>
+                            <p class="text-[10px] text-slate-500 truncate">${u.email}</p>
+                            <p class="text-[9px] font-bold text-slate-400 uppercase">Đăng nhập cuối: ${lastLogin}</p>
+                        </div>
+                        <span class="px-3 py-1 text-[9px] font-black uppercase text-white ${roleClass} rounded-full flex-shrink-0">${role}</span>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
 
         // --- BULK DELETE (SOFT DELETE) LOGIC (Unchanged) ---
         window.executeBulkDelete = () => {
@@ -2362,14 +2413,18 @@
         window.openModal = (id) => document.getElementById(id).classList.remove('hidden');
         window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
         window.switchTab = (tabId) => {
-            const tabs = ['tab-cat', 'tab-announcement', 'tab-deputy', 'tab-request', 'tab-data', 'tab-trash', 'tab-logs']; 
-            const buttons = ['btn-tab-cat', 'btn-tab-announcement', 'btn-tab-deputy', 'btn-tab-request', 'btn-tab-data', 'btn-tab-trash', 'btn-tab-logs']; 
+            const tabs = ['tab-cat', 'tab-announcement', 'tab-deputy', 'tab-users', 'tab-data', 'tab-trash', 'tab-logs']; 
+            const buttons = ['btn-tab-cat', 'btn-tab-announcement', 'btn-tab-deputy', 'btn-tab-users', 'btn-tab-data', 'btn-tab-trash', 'btn-tab-logs']; 
 
             tabs.forEach(id => document.getElementById(id).classList.add('hidden'));
-            buttons.forEach(id => document.getElementById(id).classList.remove('text-primary', 'border-b-2', 'border-primary'));
+            buttons.forEach(id => {
+                const btn = document.getElementById(id);
+                if(btn) btn.classList.remove('text-primary', 'border-b-2', 'border-primary');
+            });
             
             document.getElementById(tabId).classList.remove('hidden');
-            document.getElementById('btn-' + tabId).classList.add('text-primary', 'border-b-2', 'border-primary');
+            const targetBtn = document.getElementById('btn-' + tabId);
+            if(targetBtn) targetBtn.classList.add('text-primary', 'border-b-2', 'border-primary');
             
             if (tabId === 'tab-announcement' && isAdmin) {
                  document.getElementById('announcement-content').value = currentAnnouncement.content || '';
@@ -2383,8 +2438,8 @@
                  renderDeputyList();
             }
             
-            if (tabId === 'tab-request' && isAdmin) {
-                 renderAdminRequests();
+            if (tabId === 'tab-users' && isAdmin) {
+                 renderUserList();
             }
 
             if (tabId === 'tab-trash' && isAdmin) {
@@ -2438,6 +2493,10 @@
         // CẬP NHẬT & SỬA LỖI TOAST (FIXED & IMPROVED UX)
         function showToast(msg, isError = false, isLong = false) {
             const t = document.getElementById('toast');
+            const toastContent = t.querySelector('div'); // SỬA LỖI: Chọn phần tử div bên trong toast
+            
+            if (!toastContent) return; // Nếu toast chưa được render hoàn toàn, thoát
+
             // Support markdown bold in toast
             document.getElementById('toast-msg').innerHTML = msg.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
             
