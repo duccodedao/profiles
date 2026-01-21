@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="vi" class="light">
 <head>
@@ -116,7 +117,7 @@
             #main-content-wrapper { padding-bottom: 10px; } /* Reduce padding at the bottom of main content */
             #category-bar { display: none !important; } /* Hide desktop category bar on mobile */
             header { padding-right: 0; } /* Remove right padding on mobile */
-            .mobile-hidden { display: none !important; }
+            /* REMOVED: .mobile-hidden { display: none !important; } to allow view toggle */
         }
         
         /* NEW: Mobile-like Toast Styling & Transitions */
@@ -143,8 +144,12 @@
 <body class="min-h-screen pb-24">
     
     <!-- NEW: Global Loading Overlay -->
+    <!-- MODIFIED: Added content for timeout -->
     <div id="global-loading-overlay" class="fixed inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm z-[900] flex items-center justify-center transition-opacity duration-300 opacity-0 pointer-events-none">
-        <img src="https://hdd.io.vn/img/bmassloadings.png" class="logo-loader w-12 h-12" alt="Loading Logo">
+        <div id="loading-content" class="flex flex-col items-center justify-center">
+            <img src="https://hdd.io.vn/img/bmassloadings.png" class="logo-loader w-12 h-12" alt="Loading Logo">
+            <span id="loading-text" class="text-slate-600 dark:text-white mt-4 font-medium">Đang tải dữ liệu...</span>
+        </div>
     </div>
     
     <!-- NEW: Maintenance Mode Overlay -->
@@ -183,8 +188,8 @@
             <!-- Nút Mở Sidebar Admin (NEW) -->
             <button onclick="window.toggleAdminSidebar()" id="admin-sidebar-toggle" class="p-2 rounded-xl text-primary hover:bg-slate-100 dark:hover:bg-slate-800 transition hidden"><i data-lucide="settings-2" class="w-5 h-5"></i></button>
 
-            <!-- Desktop View Mode Toggles (Hidden on mobile) -->
-            <div class="mobile-hidden flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+            <!-- Desktop View Mode Toggles (Now visible on mobile, remove mobile-hidden) -->
+            <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
                 <button onclick="window.setView('grid')" id="view-grid-btn" class="p-1.5 rounded-md transition-all shadow-sm bg-white dark:bg-slate-700"><i data-lucide="layout-grid" class="w-4 h-4"></i></button>
                 <button onclick="window.setView('list')" id="view-list-btn" class="p-1.5 rounded-md transition-all"><i data-lucide="list" class="w-4 h-4"></i></button>
             </div>
@@ -330,11 +335,21 @@
                                 <span id="current-lang-text" class="text-xs font-bold">Ngôn ngữ: VI</span>
                             </button>
                         </div>
-                        
-                        <a href="chat.html" target="_blank" class="w-full py-3 bg-secondary text-white rounded-xl font-bold text-xs uppercase shadow-lg hover:opacity-90 transition flex items-center justify-center gap-2">
-                            <i data-lucide="life-buoy" class="w-4 h-4"></i> TRỢ GIÚP & HỖ TRỢ
-                        </a>
 
+                        <!-- NEW: Notification Permission Toggle (Placeholder/Instruction) -->
+                        <button onclick="window.requestNotificationPermission()" class="w-full py-3 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white rounded-xl font-bold text-xs uppercase shadow-sm hover:bg-slate-300 transition flex items-center justify-center gap-2">
+                            <i data-lucide="bell" class="w-4 h-4"></i> XIN PHÉP THÔNG BÁO TRÌNH DUYỆT
+                        </button>
+                        
+                        <!-- NEW: Symmetrical Logout and Help Buttons -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <a href="#" onclick="window.logout()" class="w-full py-3 bg-red-500 text-white rounded-xl font-bold text-xs uppercase shadow-lg hover:bg-red-600 transition flex items-center justify-center gap-2">
+                                <i data-lucide="log-out" class="w-4 h-4"></i> ĐĂNG XUẤT
+                            </a>
+                            <a href="chat.html" target="_blank" class="w-full py-3 bg-secondary text-white rounded-xl font-bold text-xs uppercase shadow-lg hover:opacity-90 transition flex items-center justify-center gap-2">
+                                <i data-lucide="life-buoy" class="w-4 h-4"></i> TRỢ GIÚP & HỖ TRỢ
+                            </a>
+                        </div>
                     </div>
 
                 </div>
@@ -537,7 +552,8 @@
     </div>
     
     <!-- Footer (Desktop Only) -->
-    <footer class="mobile-hidden w-full z-50 bg-white dark:bg-slate-900 border-t dark:border-white/10 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
+    <!-- MODIFIED: Changed class to fixed bottom footer -->
+    <footer class="mobile-hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-900 border-t dark:border-white/10 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
         <div class="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center text-sm">
             <div class="text-slate-500 dark:text-slate-400">
                 © 2024 Vĩnh Trạch Đông. All rights reserved.
@@ -747,15 +763,98 @@
         let toastTimeout = null; // NEW: Toast timer
         let toastTouchStartY = 0; // NEW: Toast swipe detection
         let catToDeleteId = null; // NEW: For category migrate logic
+        let loadingTimeout = null; // NEW: Loading timeout timer
 
-        // --- GLOBAL LOADING EFFECT ---
+        // --- GLOBAL LOADING EFFECT (MODIFIED for timeout) ---
         window.showGlobalLoading = () => {
              document.getElementById('global-loading-overlay').classList.remove('opacity-0', 'pointer-events-none');
-        };
-        window.hideGlobalLoading = () => {
-             document.getElementById('global-loading-overlay').classList.add('opacity-0', 'pointer-events-none');
+             document.getElementById('loading-text').innerText = 'Đang tải dữ liệu...';
+             document.getElementById('loading-content').innerHTML = `
+                 <img src="https://hdd.io.vn/img/bmassloadings.png" class="logo-loader w-12 h-12" alt="Loading Logo">
+                 <span id="loading-text" class="text-slate-600 dark:text-white mt-4 font-medium">Đang tải dữ liệu...</span>
+             `;
+
+             // Start 30 second timer
+             clearTimeout(loadingTimeout);
+             loadingTimeout = setTimeout(() => {
+                 const contentDiv = document.getElementById('loading-content');
+                 contentDiv.innerHTML = `
+                     <i data-lucide="clock" class="w-12 h-12 text-yellow-500 mb-4"></i>
+                     <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">Tải quá lâu!</h3>
+                     <p class="text-sm text-slate-600 dark:text-slate-300 mb-6 text-center">Đã mất hơn 30 giây. Bạn muốn làm gì tiếp theo?</p>
+                     <div class="flex gap-4">
+                         <button onclick="window.location.reload()" class="bg-primary text-white px-6 py-3 rounded-xl font-bold text-xs uppercase shadow-lg hover:bg-indigo-600 transition">TẢI LẠI TRANG</button>
+                         <button onclick="window.continueWaiting()" class="bg-slate-500 text-white px-6 py-3 rounded-xl font-bold text-xs uppercase shadow-lg hover:bg-slate-600 transition">ĐỢI TIẾP</button>
+                     </div>
+                 `;
+                 lucide.createIcons();
+             }, 30000); // 30 seconds
         };
         
+        window.hideGlobalLoading = () => {
+             clearTimeout(loadingTimeout);
+             document.getElementById('global-loading-overlay').classList.add('opacity-0', 'pointer-events-none');
+        };
+
+        window.continueWaiting = () => {
+            // Simply update the loading text and let the original process continue (if it ever resolves)
+            const contentDiv = document.getElementById('loading-content');
+            contentDiv.innerHTML = `
+                 <img src="https://hdd.io.vn/img/bmassloadings.png" class="logo-loader w-12 h-12" alt="Loading Logo">
+                 <span id="loading-text" class="text-slate-600 dark:text-white mt-4 font-medium">Vẫn đang tải...</span>
+            `;
+            // Restart a longer timer (e.g., 60 more seconds) if needed, but for simplicity, let's just clear the prompt.
+            clearTimeout(loadingTimeout);
+            loadingTimeout = setTimeout(() => {
+                const contentDiv = document.getElementById('loading-content');
+                contentDiv.innerHTML = `
+                    <i data-lucide="clock" class="w-12 h-12 text-yellow-500 mb-4"></i>
+                    <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">Vẫn chưa tải xong!</h3>
+                    <p class="text-sm text-slate-600 dark:text-slate-300 mb-6 text-center">Vui lòng tải lại trang nếu vẫn không có kết quả.</p>
+                    <button onclick="window.location.reload()" class="bg-primary text-white px-6 py-3 rounded-xl font-bold text-xs uppercase shadow-lg hover:bg-indigo-600 transition">TẢI LẠI TRANG</button>
+                `;
+                lucide.createIcons();
+            }, 60000); // 60 more seconds
+        };
+        
+        // --- BROWSER NOTIFICATION LOGIC (NEW) ---
+        window.requestNotificationPermission = () => {
+            if (!("Notification" in window)) {
+                showToast("Trình duyệt này không hỗ trợ thông báo.", true);
+                return;
+            }
+
+            if (Notification.permission === "granted") {
+                showToast("Bạn đã cấp quyền thông báo!", false);
+                return;
+            }
+
+            if (Notification.permission !== "denied") {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        showToast("Đã cấp quyền thông báo thành công!", false);
+                        window.sendBrowserNotification('Hub Portal Vĩnh Trạch Đông', 'Thông báo trình duyệt đã được kích hoạt.');
+                    } else {
+                        showToast("Bạn đã từ chối cấp quyền thông báo.", true);
+                    }
+                });
+            } else {
+                showToast("Bạn đã chặn thông báo. Vui lòng bật lại trong cài đặt trình duyệt.", true);
+            }
+        };
+
+        window.sendBrowserNotification = (title, body) => {
+            if (Notification.permission === "granted") {
+                const options = {
+                    body: body,
+                    icon: 'https://hdd.io.vn/img/bmassloadings.png',
+                    vibrate: [200, 100, 200]
+                };
+                new Notification(title, options);
+            }
+        };
+
+
         // --- LANGUAGE LOGIC ---
         window.setLang = (lang, initial = false) => {
              currentLang = lang;
@@ -889,7 +988,14 @@
                 document.getElementById('admin-sidebar-toggle').classList.toggle('hidden', !isAdmin); 
                 
                 checkMaintenanceMode(); 
-                if (window.innerWidth <= 768) { viewMode = 'list'; } else { viewMode = 'grid'; }
+                // REMOVED mobile specific viewMode set
+                if (window.innerWidth <= 768) { 
+                    viewMode = localStorage.getItem('viewModeMobile') || 'list';
+                } else { 
+                    viewMode = localStorage.getItem('viewModeDesktop') || 'grid';
+                }
+
+                window.setView(viewMode, true); // Force set view to update buttons
                 renderApps();
                 renderDeputyList();
                 renderAnnouncementControls();
@@ -1053,19 +1159,19 @@
                     }
                     document.getElementById('tab-app-btn').classList.remove('text-slate-400');
                     document.getElementById('tab-app-btn').classList.add('text-primary');
-                    document.getElementById('view-grid-btn')?.parentElement.classList.remove('mobile-hidden');
+                    // Removed mobile-hidden check for view buttons
                 } else if (tabId === 'contact') {
                     window.setFilter('contact_filter', false, false); 
                     document.getElementById('tab-contact-btn').classList.remove('text-slate-400');
                     document.getElementById('tab-contact-btn').classList.add('text-primary');
-                    document.getElementById('view-grid-btn')?.parentElement.classList.add('mobile-hidden');
+                    // Removed mobile-hidden check for view buttons
                 }
 
             } else {
                 // Hide search/stats for other tabs
                 document.getElementById('search-container').classList.add('hidden');
                 document.getElementById('visit-stats-container').classList.add('hidden');
-                document.getElementById('view-grid-btn')?.parentElement.classList.add('mobile-hidden');
+                // Removed mobile-hidden check for view buttons
 
                 tabContents.forEach(id => document.getElementById(id).classList.add('hidden'));
                 
@@ -1275,8 +1381,9 @@
             if (currentUser) {
                  markAsRead(id);
             }
-            // MODIFIED: Use toast for display
-            showToast(`📣 **${title}**\n\n${content}`, false, true); // Added isLong=true for better display of multi-line content
+            // MODIFIED: Use toast for display and trigger browser notification
+            showToast(`📣 **${title}**\n\n${content}`, false, true); 
+            window.sendBrowserNotification(title, content.substring(0, 100) + '...');
         };
 
         window.publishNotification = async () => {
@@ -1307,6 +1414,7 @@
                 document.getElementById('notify-icon').value = '';
 
                 showToast("Đã đăng thông báo mới thành công!");
+                window.sendBrowserNotification(`📣 THÔNG BÁO MỚI: ${title}`, content.substring(0, 100) + '...');
                 logActivity('NOTIFICATION_PUBLISHED', docRef.id, title); 
             } catch (e) {
                 console.error("Error publishing notification:", e);
@@ -1687,7 +1795,7 @@
             lucide.createIcons();
         }
 
-        // --- RENDERING APP (Modified for Mobile List View) (Unchanged) ---
+        // --- RENDERING APP (Modified for Mobile List View) ---
         window.renderApps = () => {
             const container = document.getElementById('app-container');
             const loading = document.getElementById('app-loading');
@@ -1699,8 +1807,10 @@
             }
             loading.classList.add('hidden');
 
-            const isMobile = window.innerWidth <= 768;
-            const effectiveViewMode = isMobile ? 'list' : viewMode; 
+            // REMOVED: const isMobile = window.innerWidth <= 768;
+            // REMOVED: const effectiveViewMode = isMobile ? 'list' : viewMode; 
+            const effectiveViewMode = viewMode; // Use global viewMode regardless of screen size
+
             const phoneCat = categories.find(c => c.name === "Số điện thoại");
 
             const filtered = apps.filter(a => {
@@ -1800,8 +1910,8 @@
                 }).join('');
             }
             lucide.createIcons();
-            // Only allow sorting on non-mobile desktop mode in list view
-            if(isAdmin && effectiveViewMode === 'list' && !isMobile) new Sortable(container, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(container.children).forEach((el, i) => { if(el.dataset.id) updateDoc(doc(db, "apps", el.dataset.id), { order: i }); logActivity('APP_ORDER_UPDATED', 'bulk', 'Sắp xếp ứng dụng'); }); }});
+            // Only allow sorting on admin list view
+            if(isAdmin && effectiveViewMode === 'list') new Sortable(container, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(container.children).forEach((el, i) => { if(el.dataset.id) updateDoc(doc(db, "apps", el.dataset.id), { order: i }); logActivity('APP_ORDER_UPDATED', 'bulk', 'Sắp xếp ứng dụng'); }); }});
         }
 
         // --- ADMIN UTILS ---
@@ -1813,7 +1923,7 @@
             .finally(window.hideGlobalLoading);
         }
             
-        // MODIFIED: Category Delete Logic
+        // MODIFIED: Category Delete Logic (Logic confirmed correct per user request)
         window.deleteCatConfirm = (id, name) => {
             catToDeleteId = id;
             const appsInCategory = apps.filter(a => a.categoryId === id && !a.isDeleted);
@@ -2319,9 +2429,17 @@
         };
 
         document.getElementById('search-input').oninput = (e) => { searchQuery = e.target.value; renderApps(); };
-        window.setView = (mode) => { 
+        window.setView = (mode, initial = false) => { 
             viewMode = mode; 
-            // Update desktop view button styles
+
+            // Save preference locally
+            if (window.innerWidth <= 768) {
+                localStorage.setItem('viewModeMobile', mode);
+            } else {
+                 localStorage.setItem('viewModeDesktop', mode);
+            }
+            
+            // Update desktop/mobile view button styles
             document.getElementById('view-grid-btn')?.classList.remove('bg-white', 'dark:bg-slate-700', 'shadow-sm');
             document.getElementById('view-list-btn')?.classList.remove('bg-white', 'dark:bg-slate-700', 'shadow-sm');
             if(mode === 'grid') {
@@ -2329,7 +2447,8 @@
             } else {
                  document.getElementById('view-list-btn')?.classList.add('bg-white', 'dark:bg-slate-700', 'shadow-sm');
             }
-            renderApps(); 
+
+            if (!initial) renderApps(); 
         };
         
         // CẬP NHẬT & SỬA LỖI TOAST (FIXED & IMPROVED UX)
@@ -2348,6 +2467,15 @@
             } else {
                  icon.setAttribute('data-lucide', 'check-circle');
                  icon.classList.add('text-green-500');
+
+                 // Trigger Browser Notification
+                 if (Notification.permission === "granted") {
+                     // Extract title/body from msg for browser notification
+                     const lines = msg.split('\n');
+                     const browserTitle = lines[0].replace(/\*\*(.*?)\*\*/g, '$1').trim();
+                     const browserBody = lines.length > 1 ? lines.slice(1).join('\n').replace(/\*\*(.*?)\*\*/g, '$1').trim() : "Thông báo mới từ Hub Portal";
+                     window.sendBrowserNotification(browserTitle, browserBody.substring(0, 100) + '...');
+                 }
             }
             
             lucide.createIcons();
@@ -2360,7 +2488,7 @@
             t.classList.add('visible');
 
             // Set timeout for auto-close (3s for normal, 5s for long content)
-            const duration = isLong ? 5000 : 3000;
+            const duration = isLong ? 7000 : 3000; // Increased long duration for better readability
             toastTimeout = setTimeout(() => {
                  window.closeToast();
             }, duration);
@@ -2399,11 +2527,12 @@
 
         if(localStorage.theme === 'dark') document.documentElement.classList.add('dark');
         lucide.createIcons();
-        // Initial view mode based on screen size
+        
+        // Initial view mode based on stored preference or screen size default
         if (window.innerWidth <= 768) {
-            window.setView('list'); 
+            window.setView(localStorage.getItem('viewModeMobile') || 'list', true); 
         } else {
-            window.setView('grid');
+            window.setView(localStorage.getItem('viewModeDesktop') || 'grid', true);
         }
         
         trackVisit();
