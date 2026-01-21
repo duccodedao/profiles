@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="vi" class="light">
 <head>
@@ -316,10 +317,12 @@
                                 <i data-lucide="shield-check" class="w-5 h-5 text-primary"></i>
                                 <span class="text-xs font-bold">Tài khoản & Bảo mật (2FA Sắp ra mắt)</span>
                             </a>
-                             <a href="#" target="_blank" class="flex items-center gap-3 p-4 bg-slate-100 dark:bg-slate-800 rounded-xl shadow-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                            <!-- BỔ SUNG: Thay thế link Quyền riêng tư bằng nút mở Modal -->
+                             <button onclick="window.openPrivacyModal()" class="flex items-center gap-3 p-4 bg-slate-100 dark:bg-slate-800 rounded-xl shadow-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition text-left">
                                 <i data-lucide="lock" class="w-5 h-5 text-primary"></i>
                                 <span class="text-xs font-bold">Quyền riêng tư</span>
-                            </a>
+                            </button>
+                            <!-- END BỔ SUNG -->
                         </div>
                         
                         <div class="grid grid-cols-2 gap-4">
@@ -738,6 +741,26 @@
         </div>
     </div>
 </div>
+
+<!-- NEW: Modal Quyền Riêng Tư -->
+<div id="modal-privacy-settings" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[210] hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-2xl shadow-2xl overflow-hidden">
+        <div class="p-6 border-b dark:border-white/5 flex justify-between items-center">
+            <h3 class="font-bold uppercase text-sm tracking-widest text-primary">CÀI ĐẶT QUYỀN RIÊNG TƯ</h3>
+            <button onclick="window.closeModal('modal-privacy-settings')" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="p-8 max-h-[70vh] overflow-y-auto space-y-6">
+             <p class="text-sm text-yellow-800 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-xl">
+                <i data-lucide="alert-triangle" class="w-4 h-4 inline-block align-text-top mr-1"></i>
+                LƯU Ý: Các công tắc này CHỈ mô phỏng lại các cài đặt thường thấy trong trình duyệt (Chrome/Edge) và **KHÔNG** ảnh hưởng đến quyền truy cập thực tế của ứng dụng này. Vui lòng kiểm tra cài đặt quyền trong trình duyệt của bạn.
+            </p>
+            <div id="privacy-settings-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Settings will be rendered here by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+<!-- END NEW: Modal Quyền Riêng Tư -->
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -782,6 +805,77 @@
         let toastTouchStartY = 0; // NEW: Toast swipe detection
         let catToDeleteId = null; // NEW: For category migrate logic
         let loadingTimeout = null; // NEW: Loading timeout timer
+
+        // BỔ SUNG: Dữ liệu mô phỏng Cài đặt Quyền riêng tư của Trình duyệt (Issue #1)
+        const PRIVACY_SETTINGS = [
+            { key: 'location', name: 'Vị trí', icon: 'map-pin' },
+            { key: 'camera', name: 'Camera', icon: 'camera' },
+            { key: 'microphone', name: 'Micrô', icon: 'mic' },
+            { key: 'motion_sensors', name: 'Cảm biến chuyển động', icon: 'move' },
+            { key: 'notifications', name: 'Thông báo', icon: 'bell' },
+            { key: 'javascript', name: 'JavaScript', icon: 'code' },
+            { key: 'images', name: 'Hình ảnh', icon: 'image' },
+            { key: 'popups_redirects', name: 'Cửa sổ bật lên/Chuyển hướng', icon: 'arrow-right' },
+            { key: 'intrusive_ads', name: 'Quảng cáo xâm nhập', icon: 'alert-circle' },
+            { key: 'background_sync', name: 'Đồng bộ hoá trong nền', icon: 'refresh-cw' },
+            { key: 'sound', name: 'Âm thanh', icon: 'volume-2' },
+            { key: 'auto_downloads', name: 'Tự động tải xuống', icon: 'download-cloud' },
+            { key: 'midi', name: 'Lập trình lại/Điều khiển MIDI', icon: 'sliders' },
+            { key: 'usb_devices', name: 'Thiết bị USB', icon: 'usb' },
+            { key: 'serial_ports', name: 'Cổng nối tiếp', icon: 'hard-drive' },
+            { key: 'file_editing', name: 'Chỉnh sửa tệp', icon: 'file-text' },
+            { key: 'hid_devices', name: 'Thiết bị HID', icon: 'mouse-pointer' },
+            { key: 'content_identifiers', name: 'Giá trị nhận dạng nội dung', icon: 'fingerprint' },
+            { key: 'clipboard', name: 'Bảng nhớ tạm', icon: 'clipboard' },
+            { key: 'payment_handlers', name: 'Trình xử lý thanh toán', icon: 'credit-card' },
+            { key: 'insecure_content', name: 'Nội dung không an toàn (HTTP)', icon: 'globe-off' },
+            { key: 'js_security', name: 'Tối ưu hoá & Bảo mật JS', icon: 'shield-half' },
+            { key: 'third_party_login', name: 'Đăng nhập qua bên thứ ba', icon: 'key' },
+            { key: 'ar_vr', name: 'Thực tế tăng cường/ảo (AR/VR)', icon: 'vr' },
+            { key: 'hand_tracking', name: 'Theo dõi cử chỉ tay', icon: 'hand-metal' },
+            { key: 'device_usage', name: 'Hoạt động dùng thiết bị', icon: 'activity' },
+            { key: 'window_management', name: 'Quản lý cửa sổ', icon: 'layout' },
+            { key: 'fonts', name: 'Phông chữ', icon: 'type' },
+            { key: 'auto_pip', name: 'Chế độ Hình trong hình tự động', icon: 'square-gantt' },
+            { key: 'scroll_zoom', name: 'Cuộn và thu phóng thẻ chia sẻ', icon: 'mouse-scroll' },
+            { key: 'web_app_installs', name: 'Lượt cài đặt ứng dụng web', icon: 'package' },
+            { key: 'local_network', name: 'Quyền truy cập mạng cục bộ', icon: 'router' },
+        ];
+
+        window.renderPrivacySettings = () => {
+            const listContainer = document.getElementById('privacy-settings-list');
+            listContainer.innerHTML = PRIVACY_SETTINGS.map(setting => {
+                const isEnabled = localStorage.getItem(`privacy_${setting.key}`) !== 'false'; // Default to true if not set
+                const iconClass = isEnabled ? 'text-primary' : 'text-slate-400';
+                
+                return `
+                    <div class="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border dark:border-white/5">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="${setting.icon}" class="w-5 h-5 ${iconClass}"></i>
+                            <span class="text-sm font-bold">${setting.name}</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" value="" class="sr-only peer" ${isEnabled ? 'checked' : ''} onchange="window.togglePrivacySetting('${setting.key}', this.checked)">
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 dark:peer-focus:ring-primary rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-primary"></div>
+                        </label>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        };
+
+        window.togglePrivacySetting = (key, isEnabled) => {
+             localStorage.setItem(`privacy_${key}`, isEnabled);
+             const settingName = PRIVACY_SETTINGS.find(s => s.key === key)?.name || key;
+             const status = isEnabled ? 'CHO PHÉP' : 'CHẶN';
+             showToast(`Đã thay đổi mô phỏng quyền **${settingName}** thành **${status}**.`);
+             window.renderPrivacySettings(); // Re-render to update icon color
+        };
+
+        window.openPrivacyModal = () => {
+             window.renderPrivacySettings();
+             window.openModal('modal-privacy-settings');
+        };
 
         // --- GLOBAL LOADING EFFECT (MODIFIED for timeout) ---
         window.showGlobalLoading = () => {
