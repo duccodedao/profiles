@@ -728,7 +728,15 @@
         // MODIFIED: Added arrayRemove and getDocs (for notification cleanup)
         import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc, arrayUnion, arrayRemove, writeBatch, increment, runTransaction, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // --- NEW/MODIFIED: Hardcoded Super Admin UID & Email ---
+        // ⚠️ CẢNH BÁO: Việc hardcode UID/Email Super Admin là rủi ro bảo mật lớn.
+        // Vui lòng thay thế các giá trị placeholder bằng thông tin THỰC TẾ của bạn.
+        const SUPER_ADMIN_UID = "PLACEHOLDER_SUPER_ADMIN_UID_0000"; // THAY THẾ BẰNG UID THỰC TẾ
+        const SUPER_ADMIN_EMAIL = "superadmin@vtdong.gov.vn"; // THAY THẾ BẰNG EMAIL THỰC TẾ
+        // --------------------------------------------------------
+
         const firebaseConfig = {
+            // Vui lòng thay thế cấu hình Firebase thực tế của bạn
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
             projectId: "profile-d1214",
@@ -882,9 +890,10 @@
                 if (user) {
                     const snap = await getDoc(doc(db, "settings", "admins"));
                     const adminData = snap.data() || {};
-                    const superUidFromDB = adminData.super_uid; 
+                    // const superUidFromDB = adminData.super_uid; // Dòng này đã bị loại bỏ
                     
-                    isSuper = user.uid === superUidFromDB; 
+                    // --- ĐÃ SỬA: Kiểm tra Super Admin bằng mã cứng (hardcode) ---
+                    isSuper = user.uid === SUPER_ADMIN_UID; 
                     deputies = adminData.deputy_emails || []; 
                     
                     isAdmin = isSuper || deputies.includes(user.email);
@@ -1136,7 +1145,8 @@
             const viewToggles = document.getElementById('view-grid-btn')?.parentElement;
             const searchContainer = document.getElementById('search-container');
             const statsContainer = document.getElementById('visit-stats-container');
-            
+            const mobileNavBar = document.getElementById('mobile-nav-bar'); // Sửa lỗi
+
             window.showGlobalLoading(); 
 
             // 1. Reset Mobile Tab Buttons (chỉ trên mobile)
@@ -1213,9 +1223,9 @@
             
             // Desktop Mode Adjustments (Chắc chắn ẩn mobile nav bar trên desktop)
             if (window.innerWidth > 768) {
-                 document.getElementById('mobile-nav-bar')?.classList.add('hidden');
+                 mobileNavBar?.classList.add('hidden');
             } else {
-                 document.getElementById('mobile-nav-bar')?.classList.remove('hidden');
+                 mobileNavBar?.classList.remove('hidden');
             }
             
             lucide.createIcons();
@@ -2655,7 +2665,7 @@
             document.documentElement.classList.toggle('dark'); 
             localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light'; 
             
-            // NEW: Update Profile Theme Toggle Icon/Text
+            // NEW: Update Profile Theme Toggle Icon/Text (FIXED)
             const isDark = document.documentElement.classList.contains('dark');
             const themeIconElement = document.getElementById('profile-theme-toggle')?.querySelector('i');
             if(themeIconElement) {
@@ -2683,7 +2693,7 @@
         // CẬP NHẬT & SỬA LỖI TOAST (FIXED & IMPROVED UX)
         function showToast(msg, isError = false, isLong = false) {
             const t = document.getElementById('toast');
-            // Support markdown bold in toast
+            // MODIFIED: Support markdown bold and newline in toast message
             document.getElementById('toast-msg').innerHTML = msg.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
             
             const icon = t.querySelector('i');
