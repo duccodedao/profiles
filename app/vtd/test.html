@@ -1118,17 +1118,18 @@
         
         window.logout = () => { window.showGlobalLoading(); signOut(auth).then(() => location.reload()).catch(() => window.hideGlobalLoading()); };
 
-        // NEW: Sidebar Toggle (Unchanged)
+        // NEW: Sidebar Toggle (FIXED: Close Category Sidebar on Mobile)
         window.toggleAdminSidebar = () => {
              document.getElementById('admin-sidebar').classList.toggle('open');
              if(window.innerWidth <= 768) {
-                document.getElementById('mobile-category-sidebar').classList.remove('open'); // Close mobile category sidebar when opening admin
+                document.getElementById('mobile-category-sidebar').classList.remove('open'); // FIX: Close mobile category sidebar when opening admin
              }
         };
         
-        // NEW: Mobile Category Sidebar Toggle
+        // NEW: Mobile Category Sidebar Toggle (FIXED: Close Admin Sidebar)
         window.toggleMobileCategorySidebar = () => {
              document.getElementById('mobile-category-sidebar').classList.toggle('open');
+             document.getElementById('admin-sidebar')?.classList.remove('open'); // FIX: Close admin sidebar when opening mobile category
         };
 
         // --- MOBILE TAB NAVIGATION LOGIC (FIXED: Search and Sidebar issue) ---
@@ -2089,7 +2090,11 @@
                      // Add imported apps
                      importedData.apps.forEach(app => {
                          const { id, ...data } = app;
-                         batch.set(doc(db, "apps", id), data);
+                         // FIX: Check for valid ID and auto-generate if missing/empty
+                         const docRef = (id && id.trim() !== '') 
+                            ? doc(db, "apps", id) 
+                            : doc(collection(db, "apps")); 
+                         batch.set(docRef, data);
                      });
                  }
 
@@ -2100,7 +2105,11 @@
                      
                      importedData.categories.forEach(cat => {
                          const { id, ...data } = cat;
-                         batch.set(doc(db, "categories", id), data);
+                         // FIX: Check for valid ID and auto-generate if missing/empty
+                         const docRef = (id && id.trim() !== '') 
+                            ? doc(db, "categories", id) 
+                            : doc(collection(db, "categories")); 
+                         batch.set(docRef, data);
                      });
                  }
                  
@@ -2597,7 +2606,7 @@
             renderApps();
             // Closing logic only happens explicitly via toggleMobileCategorySidebar()
             if (!isDesktop && id !== 'contact_filter' && closeSidebar) {
-                 window.toggleMobileCategorySidebar();
+                 // window.toggleMobileCategorySidebar(); // Removed automatic closing here (logic moved to the button's explicit onclick handler for category selection)
             }
             
             // Ensure desktop view resets to App Tab (Fix for desktop profile view context)
@@ -2724,7 +2733,7 @@
              clearTimeout(toastTimeout);
         };
 
-        // NEW: Toast swipe detection (Mobile UX)
+        // NEW: Toast swipe detection (Mobile UX) (FIXED: Swipe Down to close)
         window.handleToastTouchStart = (e) => {
             if (e.touches.length === 1) {
                 toastTouchStartY = e.touches[0].clientY;
@@ -2734,7 +2743,7 @@
         window.handleToastTouchMove = (e) => {
             if (e.touches.length === 1) {
                 const deltaY = e.touches[0].clientY - toastTouchStartY;
-                if (deltaY < -30) { // Swipe up threshold
+                if (deltaY > 30) { // FIX: Swipe Down to close (Toast is at bottom)
                     window.closeToast();
                 }
             }
@@ -2747,15 +2756,12 @@
 
         if(localStorage.theme === 'dark') document.documentElement.classList.add('dark');
         lucide.createIcons();
-        // Initial view mode based on screen size (Removed forced 'list' on mobile, leaving default 'grid')
-        if (window.innerWidth <= 768) {
-            window.setView('list'); // Default to list on mobile, but allow grid if user changes
-        } else {
-            window.setView('grid');
-        }
+        
+        // Removed redundant setView/setLang calls as they are handled in onAuthStateChanged
         
         trackVisit();
     </script>
 
 </body>
 </html>
+
