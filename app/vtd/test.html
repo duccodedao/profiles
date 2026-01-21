@@ -946,11 +946,7 @@
             window.closeUserMenu(); // Close the dropdown menu
             // Use the existing mobile switch logic but force it to behave like a desktop switch
             window.switchMobileTab('profile', true); 
-            // Force-hide search/stats when showing profile on desktop
-            document.getElementById('search-container').classList.add('hidden');
-            document.getElementById('visit-stats-container').classList.add('hidden');
-            // Force-hide view toggles on desktop when showing profile
-            document.getElementById('view-grid-btn')?.parentElement.classList.add('hidden');
+            // FIX: Removed manual hidden logic as it's now handled by switchMobileTab for all tabs
         };
         
         // NEW: Auth UI Render Fix (For desktop login/user dropdown) (MODIFIED: To call openDesktopProfileView)
@@ -1138,6 +1134,8 @@
             const tabContents = ['tab-app-content', 'tab-notify-content', 'tab-discover-content', 'tab-profile-content'];
             const tabButtons = ['tab-app-btn', 'tab-contact-btn', 'tab-notify-btn', 'tab-profile-btn'];
             const viewToggles = document.getElementById('view-grid-btn')?.parentElement;
+            const searchContainer = document.getElementById('search-container');
+            const statsContainer = document.getElementById('visit-stats-container');
             
             window.showGlobalLoading(); 
 
@@ -1163,9 +1161,9 @@
             if (tabId === 'app' || tabId === 'contact') {
                 document.getElementById('tab-app-content').classList.remove('hidden');
                 
-                // Show search/stats for App/Contact tabs
-                document.getElementById('search-container').classList.remove('hidden');
-                document.getElementById('visit-stats-container').classList.remove('hidden');
+                // FIX: Luôn hiển thị search/stats cho App/Contact tabs
+                searchContainer?.classList.remove('hidden');
+                statsContainer?.classList.remove('hidden');
 
                 if (tabId === 'app') {
                     // FIX: Prevent re-setting filter/re-rendering if already on app/all
@@ -1176,7 +1174,7 @@
                         document.getElementById('tab-app-btn').classList.remove('text-slate-400');
                         document.getElementById('tab-app-btn').classList.add('text-primary');
                     }
-                    if(viewToggles) viewToggles.classList.remove('hidden'); // Show view toggles on App tab
+                    if(viewToggles) viewToggles.classList.remove('hidden'); // FIX: Show view toggles on App tab
 
                 } else if (tabId === 'contact') {
                     window.setFilter('contact_filter', isDesktop, false); 
@@ -1188,9 +1186,9 @@
                 }
 
             } else {
-                // Hide search/stats for other tabs
-                document.getElementById('search-container').classList.add('hidden');
-                document.getElementById('visit-stats-container').classList.add('hidden');
+                // FIX: Ẩn search/stats cho các tabs khác
+                searchContainer?.classList.add('hidden');
+                statsContainer?.classList.add('hidden');
                 if(viewToggles) viewToggles.classList.add('hidden');
 
                 const contentId = tabId === 'notify' ? 'tab-notify-content' : `tab-${tabId}-content`;
@@ -1225,7 +1223,7 @@
         };
 
 
-        // --- DATA REALTIME ---
+        // --- DATA REALTIME (Không thay đổi) ---
         onSnapshot(query(collection(db, "categories"), orderBy("order", "asc")), (snap) => {
             categories = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             renderCategories();
@@ -1323,7 +1321,7 @@
             lucide.createIcons();
         }
 
-        // --- NEW: NOTIFICATION FEED LOGIC ---
+        // --- NEW: NOTIFICATION FEED LOGIC (Không thay đổi) ---
         
         // --- BROWSER NOTIFICATION LOGIC (NEW) ---
         async function requestNotificationPermission() {
@@ -1535,7 +1533,7 @@
         };
 
 
-        // --- ANNOUNCEMENT LOGIC ---
+        // --- ANNOUNCEMENT LOGIC (Không thay đổi) ---
         function renderAnnouncementBar() {
             const bar = document.getElementById('announcement-bar');
             const textDiv = document.getElementById('announcement-text');
@@ -1624,7 +1622,7 @@
             }
         };
         
-        // --- ADMIN REQUEST LOGIC (Unchanged) ---
+        // --- ADMIN REQUEST LOGIC (Không thay đổi) ---
         function renderAdminRequests() {
             if (!isSuper) return; 
             const list = document.getElementById('requests-list');
@@ -1701,7 +1699,7 @@
             }
         };
 
-        // --- BULK DELETE (SOFT DELETE) LOGIC (Unchanged) ---
+        // --- BULK DELETE (SOFT DELETE) LOGIC (Không thay đổi) ---
         window.executeBulkDelete = () => {
             if (!isAdmin || selectedAppsForDelete.size === 0) return;
             
@@ -1773,7 +1771,7 @@
             document.getElementById('bulk-delete-dock').classList.toggle('hidden', !bulkDeleteMode || count === 0);
         }
         
-        // --- VISIT STATS LOGIC (Unchanged) ---
+        // --- VISIT STATS LOGIC (Không thay đổi) ---
         function getDateString(date = new Date()) {
             const y = date.getFullYear();
             const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -1856,7 +1854,7 @@
             lucide.createIcons();
         }
 
-        // --- RENDERING APP (Modified for Mobile List View) (Unchanged) ---
+        // --- RENDERING APP (Không thay đổi) ---
         window.renderApps = () => {
             const container = document.getElementById('app-container');
             const loading = document.getElementById('app-loading');
@@ -1972,7 +1970,7 @@
             if(isAdmin && effectiveViewMode === 'list' && window.innerWidth > 768) new Sortable(container, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(container.children).forEach((el, i) => { if(el.dataset.id) updateDoc(doc(db, "apps", el.dataset.id), { order: i }); logActivity('APP_ORDER_UPDATED', 'bulk', 'Sắp xếp ứng dụng'); }); }});
         }
         
-        // --- DATA IMPORT/EXPORT LOGIC (IMPLEMENTED) ---
+        // --- DATA IMPORT/EXPORT LOGIC (FIXED: ID Generation) ---
         
         window.handleExport = async (type) => {
              if (!isAdmin) return;
@@ -2147,7 +2145,7 @@
              }
          }
         
-        // --- ADMIN UTILS ---
+        // --- ADMIN UTILS (Không thay đổi) ---
         window.updateCatField = (id, field, val) => {
             window.showGlobalLoading();
             updateDoc(doc(db, "categories", id), { [field]: val })
@@ -2156,7 +2154,7 @@
             .finally(window.hideGlobalLoading);
         }
             
-        // MODIFIED: Category Delete Logic
+        // MODIFIED: Category Delete Logic (Không thay đổi)
         window.deleteCatConfirm = (id, name) => {
             catToDeleteId = id;
             const appsInCategory = apps.filter(a => a.categoryId === id && !a.isDeleted);
@@ -2298,7 +2296,7 @@
             }
         };
         
-        // NEW: Maintenance Mode Logic (MODIFIED: Use Custom Confirm)
+        // NEW: Maintenance Mode Logic (MODIFIED: Use Custom Confirm) (Không thay đổi)
         window.toggleMaintenanceMode = () => {
             if (!isAdmin) return;
             const newState = !globalSettings.maintenanceMode;
@@ -2337,7 +2335,7 @@
             }).catch(e => console.error("Error logging activity:", e));
         }
 
-        // NEW: Render Activity Logs (FIXED: The listener should fetch data)
+        // NEW: Render Activity Logs (FIXED: The listener should fetch data) (Không thay đổi)
         function renderActivityLogs() { 
             if (!isAdmin) return;
             const logs = activityLogs;
