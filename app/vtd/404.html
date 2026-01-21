@@ -456,7 +456,7 @@
             measurementId: "G-C587M69LZW"
         };
         const SUPER_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1";
-        const LOGS_COLLECTION = "activityLogs"; // NEW: Constant for log collection
+        const LOGS_COLLECTION = "activityLogs"; 
 
         const fbApp = initializeApp(firebaseConfig);
         const auth = getAuth(fbApp);
@@ -470,7 +470,8 @@
         let selectedAppsForDelete = new Set(); 
         let currentAnnouncement = {}; 
         let adminRequests = []; 
-        let globalSettings = {}; // NEW: For maintenance mode
+        let globalSettings = {}; 
+        let activityLogs = []; // FIXED: Global logs array to ensure immediate rendering
 
         // --- AUTH & INITIAL ---
         onAuthStateChanged(auth, async (user) => {
@@ -522,7 +523,7 @@
             document.getElementById('role-status').innerText = isSuper ? 'SUPER' : (isAdmin ? 'DEPUTY' : 'GUEST');
             document.getElementById('admin-sidebar-toggle').classList.toggle('hidden', !isAdmin); 
             
-            checkMaintenanceMode(); // NEW: Check maintenance mode on auth change
+            checkMaintenanceMode(); 
             renderApps();
             renderDeputyList();
             renderAnnouncementControls(); 
@@ -636,7 +637,7 @@
             apps = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             appsLoaded = true; 
             renderApps();
-            renderTrash(); // NEW: Update trash list when apps change
+            renderTrash(); 
         });
         
         onSnapshot(doc(db, "settings", "visits_stats"), (snap) => {
@@ -646,7 +647,7 @@
         
         // NEW: Realtime listener for Announcement
         onSnapshot(doc(db, "settings", "announcement"), (snap) => {
-            currentAnnouncement = snap.data() || { content: '', active: false, startTime: null, endTime: null }; // ADD startTime, endTime
+            currentAnnouncement = snap.data() || { content: '', active: false, startTime: null, endTime: null }; 
             renderAnnouncementBar();
             renderAnnouncementControls();
         });
@@ -666,8 +667,8 @@
 
         // NEW: Realtime listener for Activity Logs
         onSnapshot(query(collection(db, LOGS_COLLECTION), orderBy("timestamp", "desc"), limit(50)), (snap) => {
-            const logs = snap.docs.map(d => d.data());
-            renderActivityLogs(logs);
+            activityLogs = snap.docs.map(d => d.data()); // FIXED: Use global array
+            renderActivityLogs(); // FIXED: Call without argument
         });
 
         // --- ANNOUNCEMENT LOGIC ---
@@ -678,7 +679,7 @@
             const start = currentAnnouncement.startTime ? new Date(currentAnnouncement.startTime).getTime() : 0;
             const end = currentAnnouncement.endTime ? new Date(currentAnnouncement.endTime).getTime() : Infinity;
             
-            const isScheduledActive = start <= now && now <= end; // NEW: Check current time
+            const isScheduledActive = start <= now && now <= end; 
             
             if (currentAnnouncement.active && currentAnnouncement.content && currentAnnouncement.content.trim() !== '' && isScheduledActive) {
                 textDiv.innerText = currentAnnouncement.content.trim().toUpperCase() + " • "; 
@@ -710,8 +711,8 @@
         window.saveAnnouncementContent = async () => {
             if (!isAdmin) return;
             const content = document.getElementById('announcement-content').value.trim();
-            const startTime = document.getElementById('announcement-start').value || null; // NEW: Get start time
-            const endTime = document.getElementById('announcement-end').value || null; // NEW: Get end time
+            const startTime = document.getElementById('announcement-start').value || null; 
+            const endTime = document.getElementById('announcement-end').value || null; 
             
             if (content.length < 5) {
                 showToast("Nội dung thông báo phải dài hơn 5 ký tự!");
@@ -719,12 +720,12 @@
             }
             try {
                 await setDoc(doc(db, "settings", "announcement"), { 
-                    content: content,
-                    startTime: startTime, // NEW: Save start time
-                    endTime: endTime // NEW: Save end time
+                    content: content, 
+                    startTime: startTime, 
+                    endTime: endTime 
                 }, { merge: true });
                 showToast("Đã lưu nội dung thông báo và hẹn giờ!");
-                logActivity('ANNOUNCEMENT_UPDATED', 'system', 'Thông báo Marquee'); // NEW: Log activity
+                logActivity('ANNOUNCEMENT_UPDATED', 'system', 'Thông báo Marquee'); 
             } catch (e) {
                 showToast("Lỗi khi lưu nội dung thông báo!", true); 
             }
@@ -740,7 +741,7 @@
             try {
                 await setDoc(doc(db, "settings", "announcement"), { active: newState }, { merge: true });
                 showToast(newState ? "Đã BẬT thông báo!" : "Đã TẮT thông báo!");
-                logActivity(newState ? 'ANNOUNCEMENT_ENABLED' : 'ANNOUNCEMENT_DISABLED', 'system', 'Thông báo Marquee'); // NEW: Log activity
+                logActivity(newState ? 'ANNOUNCEMENT_ENABLED' : 'ANNOUNCEMENT_DISABLED', 'system', 'Thông báo Marquee'); 
             } catch (e) {
                 showToast("Lỗi khi thay đổi trạng thái thông báo!", true); 
             }
@@ -778,7 +779,7 @@
                 await deleteDoc(doc(db, "adminRequests", uid));
                 
                 showToast(`Đã duyệt yêu cầu và cấp quyền cho ${email}! Đang tải lại...`);
-                logActivity('DEPUTY_ADDED', uid, email); // NEW: Log activity
+                logActivity('DEPUTY_ADDED', uid, email); 
                 setTimeout(() => location.reload(), 500);
             } catch (e) {
                  console.error("Error approving request:", e);
@@ -792,14 +793,14 @@
             try {
                 await deleteDoc(doc(db, "adminRequests", uid));
                 showToast("Đã từ chối yêu cầu!");
-                logActivity('ADMIN_REQUEST_REJECTED', uid, 'Yêu cầu'); // NEW: Log activity
+                logActivity('ADMIN_REQUEST_REJECTED', uid, 'Yêu cầu'); 
             } catch (e) {
                  console.error("Error rejecting request:", e);
                  showToast("Lỗi khi từ chối yêu cầu!", true); 
             }
         };
 
-        // --- FAVORITES LOGIC ---
+        // --- FAVORITES LOGIC (Unchanged) ---
         window.toggleFavorite = (appId, event) => {
             event.stopPropagation();
             if (!currentUser) {
@@ -820,7 +821,7 @@
             });
         };
 
-        // --- BULK DELETE (SOFT DELETE) LOGIC ---
+        // --- BULK DELETE (SOFT DELETE) LOGIC (Modified for Logging) ---
         window.toggleBulkDelete = () => {
             if (!isAdmin) return;
             bulkDeleteMode = !bulkDeleteMode;
@@ -867,10 +868,10 @@
 
             const batch = writeBatch(db);
             selectedAppsForDelete.forEach(appId => {
-                batch.update(doc(db, "apps", appId), { isDeleted: true, deletedAt: new Date().toISOString() }); // MODIFIED: Soft Delete
+                batch.update(doc(db, "apps", appId), { isDeleted: true, deletedAt: new Date().toISOString() }); 
             });
             
-            logActivity('APP_SOFT_DELETED', 'bulk', `${selectedAppsForDelete.size} mục`); // NEW: Log activity
+            logActivity('APP_SOFT_DELETED', 'bulk', `${selectedAppsForDelete.size} mục`); 
 
             try {
                 await batch.commit();
@@ -978,7 +979,7 @@
             loading.classList.add('hidden');
 
             const filtered = apps.filter(a => {
-                if (a.isDeleted) return false; // NEW: Skip soft-deleted items
+                if (a.isDeleted) return false; // FIXED: Skip soft-deleted items from main view
                 
                 if (currentFilter === 'favorites') {
                     if (!userFavorites.includes(a.id)) return false;
@@ -1083,14 +1084,13 @@
             if(isAdmin) new Sortable(container, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(container.children).forEach((el, i) => { if(el.dataset.id) updateDoc(doc(db, "apps", el.dataset.id), { order: i }); logActivity('APP_ORDER_UPDATED', 'bulk', 'Sắp xếp ứng dụng'); }); }});
         }
 
-        // --- IMPORT / EXPORT LOGIC ---
+        // --- IMPORT / EXPORT LOGIC (Modified for Logging) ---
         window.handleExport = (type) => {
-            // ... (unchanged export logic) ...
             const data = {
                 apps: apps.map(({id, ...rest}) => rest),
                 categories: categories.map(({id, ...rest}) => rest),
                 exportedAt: new Date().toISOString(),
-                version: "2.1" // Updated version
+                version: "2.1"
             };
 
             if (type === 'json') {
@@ -1112,7 +1112,7 @@
                 XLSX.writeFile(wb, `hub-portal-data-${new Date().toLocaleDateString()}.xlsx`);
             }
             showToast("Đã xuất dữ liệu thành công!");
-            logActivity('DATA_EXPORTED', 'system', `Xuất dữ liệu ${type}`); // NEW: Log activity
+            logActivity('DATA_EXPORTED', 'system', `Xuất dữ liệu ${type}`); 
         };
 
         window.handleImport = async (event) => {
@@ -1157,7 +1157,7 @@
                     }
 
                     showToast("Khôi phục dữ liệu thành công!");
-                    logActivity('DATA_IMPORTED', 'system', `Nhập dữ liệu từ ${file.name}`); // NEW: Log activity
+                    logActivity('DATA_IMPORTED', 'system', `Nhập dữ liệu từ ${file.name}`); 
                     event.target.value = ''; 
                 } catch (error) {
                     console.error(error);
@@ -1168,16 +1168,16 @@
             if (file.name.endsWith('.json')) reader.readAsText(file); else reader.readAsArrayBuffer(file);
         };
 
-        // --- ADMIN UTILS ---
+        // --- ADMIN UTILS (Modified for Logging) ---
         window.updateCatField = (id, field, val) => updateDoc(doc(db, "categories", id), { [field]: val })
-            .then(() => { showToast("Đã cập nhật danh mục!"); logActivity('CAT_UPDATED', id, categories.find(c=>c.id === id)?.name); }) // NEW: Log activity
+            .then(() => { showToast("Đã cập nhật danh mục!"); logActivity('CAT_UPDATED', id, categories.find(c=>c.id === id)?.name); }) 
             .catch(e => showToast("Lỗi khi cập nhật danh mục!", true)); 
             
         window.deleteCat = (id) => {
             const catName = categories.find(c=>c.id === id)?.name;
             if (confirm(`Xóa danh mục "${catName}"?`)) {
                 deleteDoc(doc(db, "categories", id))
-                    .then(() => { showToast("Đã xóa danh mục!"); logActivity('CAT_DELETED', id, catName); }) // NEW: Log activity
+                    .then(() => { showToast("Đã xóa danh mục!"); logActivity('CAT_DELETED', id, catName); }) 
                     .catch(e => showToast("Lỗi khi xóa danh mục!", true)); 
             }
         };
@@ -1191,7 +1191,7 @@
                     document.getElementById('new-cat-name').value = '';
                     document.getElementById('new-cat-icon').value = '';
                     showToast("Đã thêm danh mục mới!");
-                    logActivity('CAT_ADDED', docRef.id, name); // NEW: Log activity
+                    logActivity('CAT_ADDED', docRef.id, name); 
                 })
                 .catch(e => showToast("Lỗi khi thêm danh mục.", true)); 
         };
@@ -1214,7 +1214,7 @@
                 await setDoc(doc(db, "settings", "admins"), { deputy_emails: arrayUnion(email) }, { merge: true });
                 document.getElementById('new-deputy-email').value = '';
                 showToast(`Đã cấp quyền cho ${email}. Đang tải lại...`);
-                logActivity('DEPUTY_ADDED', email, email); // NEW: Log activity
+                logActivity('DEPUTY_ADDED', email, email); 
                 setTimeout(() => location.reload(), 500);
             } catch (e) { showToast("Lỗi khi cấp quyền Phó Admin.", true); } 
         };
@@ -1224,12 +1224,12 @@
             try {
                 await setDoc(doc(db, "settings", "admins"), { deputy_emails: arrayRemove(email) }, { merge: true });
                 showToast(`Đã xóa quyền của ${email}. Đang tải lại...`);
-                logActivity('DEPUTY_REMOVED', email, email); // NEW: Log activity
+                logActivity('DEPUTY_REMOVED', email, email); 
                 setTimeout(() => location.reload(), 500);
             } catch (e) { showToast("Lỗi khi xóa quyền Phó Admin.", true); } 
         };
         
-        // NEW: Maintenance Mode Logic
+        // NEW: Maintenance Mode Logic (Unchanged)
         function checkMaintenanceMode() {
             const isMaintenance = globalSettings.maintenanceMode;
             const overlay = document.getElementById('maintenance-overlay');
@@ -1267,29 +1267,30 @@
             try {
                 await setDoc(doc(db, "settings", "global"), { maintenanceMode: newState }, { merge: true });
                 showToast(`Đã ${newState ? 'BẬT' : 'TẮT'} Chế độ Bảo trì!`);
-                logActivity(newState ? 'ENABLED_MAINTENANCE' : 'DISABLED_MAINTENANCE', 'system', 'Chế độ Bảo trì'); // NEW: Log activity
+                logActivity(newState ? 'ENABLED_MAINTENANCE' : 'DISABLED_MAINTENANCE', 'system', 'Chế độ Bảo trì'); 
             } catch (e) {
                 showToast("Lỗi khi thay đổi Chế độ Bảo trì!", true);
             }
         };
 
-        // NEW: Activity Logging Utility
+        // NEW: Activity Logging Utility (Unchanged)
         function logActivity(type, itemId, itemName, details = '') {
             if (!isAdmin || !currentUser) return; 
             addDoc(collection(db, LOGS_COLLECTION), {
                 timestamp: new Date().toISOString(),
                 adminUid: currentUser.uid,
                 adminEmail: currentUser.email,
-                type: type, // e.g., 'APP_ADDED', 'APP_UPDATED', 'APP_SOFT_DELETED', 'CAT_UPDATED', 'APP_RESTORED'
+                type: type, 
                 itemId: itemId,
                 itemName: itemName,
                 details: details 
             }).catch(e => console.error("Error logging activity:", e));
         }
 
-        // NEW: Render Activity Logs
-        function renderActivityLogs(logs) {
+        // NEW: Render Activity Logs (Modified to use global array)
+        function renderActivityLogs() { 
             if (!isAdmin) return;
+            const logs = activityLogs; // FIXED: Use global array
             const list = document.getElementById('logs-list');
             
             if (logs.length === 0) {
@@ -1318,7 +1319,8 @@
                     'DATA_EXPORTED': 'Xuất dữ liệu',
                     'DATA_IMPORTED': 'Nhập dữ liệu',
                     'ADMIN_REQUEST_REJECTED': 'Từ chối yêu cầu Admin',
-                    'APP_ORDER_UPDATED': 'Sắp xếp ứng dụng'
+                    'APP_ORDER_UPDATED': 'Sắp xếp ứng dụng',
+                    'CAT_ORDER_UPDATED': 'Sắp xếp danh mục'
                 };
                 const action = actionMap[log.type] || log.type;
                 
@@ -1329,12 +1331,14 @@
                     </div>
                 `;
             }).join('');
+            lucide.createIcons(); // Ensure icons are created here
         }
 
         // NEW: Trash List Renderer and Actions
         function renderTrash() {
             if (!isAdmin) return;
             const trashList = document.getElementById('trash-list');
+            // Filter apps that are marked as deleted and sort by deletion time
             const deletedApps = apps.filter(a => a.isDeleted).sort((a, b) => new Date(b.deletedAt) - new Date(a.deletedAt));
 
             document.getElementById('clear-trash-btn').classList.toggle('hidden', deletedApps.length === 0);
@@ -1345,7 +1349,7 @@
             }
 
             trashList.innerHTML = deletedApps.map(a => {
-                const deletedDate = new Date(a.deletedAt).toLocaleDateString('vi-VN');
+                const deletedDate = a.deletedAt ? new Date(a.deletedAt).toLocaleDateString('vi-VN') : 'N/A';
                 return `
                     <div class="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border dark:border-white/5">
                         <div class="flex-1 min-w-0">
@@ -1361,7 +1365,7 @@
             }).join('');
         }
         
-        // NEW: Restore App
+        // NEW: Restore App (Unchanged)
         window.restoreApp = async (id, name) => {
             if (!isAdmin) return;
             if (!confirm(`Khôi phục ứng dụng "${name}"?`)) return;
@@ -1374,7 +1378,7 @@
             }
         };
 
-        // NEW: Permanent Delete App / Clear All Trash
+        // NEW: Permanent Delete App / Clear All Trash (Unchanged)
         window.clearTrash = async (clearAll = false, id = null, name = '') => {
             if (!isAdmin) return;
             
@@ -1437,11 +1441,11 @@
                 if (id) {
                     await updateDoc(doc(db, "apps", id), data);
                     showToast("Đã cập nhật ứng dụng!");
-                    logActivity('APP_UPDATED', id, data.name); // NEW: Log activity
+                    logActivity('APP_UPDATED', id, data.name); 
                 } else {
                     const docRef = await addDoc(collection(db, "apps"), data);
                     showToast("Đã thêm ứng dụng mới!");
-                    logActivity('APP_ADDED', docRef.id, data.name); // NEW: Log activity
+                    logActivity('APP_ADDED', docRef.id, data.name); 
                 }
                 window.closeModal('modal-app');
             } catch (e) {
@@ -1458,7 +1462,7 @@
                 updateDoc(doc(db, "apps", id), { isDeleted: true, deletedAt: new Date().toISOString() })
                     .then(() => {
                         showToast("Đã chuyển ứng dụng vào Thùng rác!");
-                        logActivity('APP_SOFT_DELETED', id, appName); // NEW: Log activity
+                        logActivity('APP_SOFT_DELETED', id, appName); 
                     })
                     .catch(e => showToast("Lỗi khi chuyển vào thùng rác!", true)); 
             }
@@ -1469,7 +1473,7 @@
             const app = apps.find(a => a.id === id);
             if (!app) return;
             updateDoc(doc(db, "apps", id), { visible: !app.visible })
-                .then(() => { showToast(`Đã ${!app.visible ? 'BẬT' : 'TẮT'} hiển thị.`); logActivity('APP_VISIBILITY_TOGGLED', id, app.name); }) // NEW: Log activity
+                .then(() => { showToast(`Đã ${!app.visible ? 'BẬT' : 'TẮT'} hiển thị.`); logActivity('APP_VISIBILITY_TOGGLED', id, app.name); }) 
                 .catch(e => showToast("Lỗi cập nhật hiển thị!", true)); 
         };
 
@@ -1511,8 +1515,8 @@
         window.openModal = (id) => document.getElementById(id).classList.remove('hidden');
         window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
         window.switchTab = (tabId) => {
-            const tabs = ['tab-cat', 'tab-announcement', 'tab-deputy', 'tab-request', 'tab-data', 'tab-trash', 'tab-logs']; // ADD tab-trash, tab-logs
-            const buttons = ['btn-tab-cat', 'btn-tab-announcement', 'btn-tab-deputy', 'btn-tab-request', 'btn-tab-data', 'btn-tab-trash', 'btn-tab-logs']; // ADD btn-tab-trash, btn-tab-logs
+            const tabs = ['tab-cat', 'tab-announcement', 'tab-deputy', 'tab-request', 'tab-data', 'tab-trash', 'tab-logs']; 
+            const buttons = ['btn-tab-cat', 'btn-tab-announcement', 'btn-tab-deputy', 'btn-tab-request', 'btn-tab-data', 'btn-tab-trash', 'btn-tab-logs']; 
 
             tabs.forEach(id => document.getElementById(id).classList.add('hidden'));
             buttons.forEach(id => document.getElementById(id).classList.remove('text-primary', 'border-b-2', 'border-primary'));
@@ -1522,8 +1526,8 @@
             
             if (tabId === 'tab-announcement' && isAdmin) {
                  document.getElementById('announcement-content').value = currentAnnouncement.content || '';
-                 document.getElementById('announcement-start').value = currentAnnouncement.startTime || ''; // NEW: Populate time
-                 document.getElementById('announcement-end').value = currentAnnouncement.endTime || ''; // NEW: Populate time
+                 document.getElementById('announcement-start').value = currentAnnouncement.startTime || ''; 
+                 document.getElementById('announcement-end').value = currentAnnouncement.endTime || ''; 
                  renderAnnouncementControls();
             }
             
@@ -1536,12 +1540,11 @@
             }
 
             if (tabId === 'tab-trash' && isAdmin) {
-                 renderTrash(); // NEW: Render trash
+                 renderTrash(); // FIXED: Ensure trash list renders immediately
             }
 
             if (tabId === 'tab-logs' && isAdmin) {
-                 // The logs listener handles rendering on data change, but we ensure one call here.
-                 // The listener above handles the query.
+                 renderActivityLogs(); // FIXED: Ensure logs render immediately using global array
             }
         };
         
