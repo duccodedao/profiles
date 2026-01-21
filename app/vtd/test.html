@@ -54,6 +54,17 @@
         @media (max-width: 768px) {
             .admin-sidebar.open { width: 100%; }
         }
+        
+        /* NEW: Mobile Category Sidebar */
+        .mobile-category-sidebar { 
+            width: 0; 
+            transition: width 0.3s ease-in-out;
+            overflow-x: hidden;
+        }
+        .mobile-category-sidebar.open {
+            width: 75%;
+            max-width: 300px;
+        }
         /* END ADDED */
         
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; transition: background 0.3s; padding-bottom: 100px; } 
@@ -64,7 +75,6 @@
         .drag-ghost { opacity: 0.3; background: #4f46e5 !important; border-radius: 1rem; }
         .tab-active { color: #4f46e5; border-bottom: 2px solid #4f46e5; }
         .dark .tab-active { color: #818cf8; border-bottom: 2px solid #818cf8; }
-        /* .is-favorite .star-icon { fill: #facc15; } *//* REMOVED: Favorites Style */
         .app-item.selected-for-delete { box-shadow: 0 0 0 3px #f43f5e; border-radius: 1rem; }
         /* Thêm padding top khi có thông báo để không che header */
         #announcement-bar:not(.hidden) ~ header { top: 32px; }
@@ -91,6 +101,15 @@
                 transform: scale(1); /* Thu nhỏ lại */
             }
         }
+        
+        /* NEW: Mobile Footer Height & Padding Correction */
+        @media (max-width: 768px) {
+            body { padding-bottom: 80px; } /* Footer height approx 60px + padding */
+            #main-content-wrapper { padding-bottom: 10px; } /* Reduce padding at the bottom of main content */
+            #category-bar { display: none !important; } /* Hide desktop category bar on mobile */
+            header { padding-right: 0; } /* Remove right padding on mobile */
+            .mobile-hidden { display: none !important; }
+        }
     </style>
 </head>
 <body class="min-h-screen pb-24">
@@ -115,11 +134,12 @@
     <!-- Header -->
     <header class="sticky top-0 z-[100] glass px-6 py-3 flex justify-between items-center transition-all duration-300">
         <div class="flex items-center gap-3">
-            <!-- START MODIFIED: Thay thế icon database bằng logo và xóa nền màu để trong suốt -->
+            <!-- NEW: Mobile Category Toggle (Only visible on mobile) -->
+            <button onclick="window.toggleMobileCategorySidebar()" id="mobile-category-toggle" class="p-2 rounded-xl text-slate-600 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition md:hidden"><i data-lucide="menu" class="w-5 h-5"></i></button>
+
             <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg p-1">
                 <img src="https://hdd.io.vn/img/bmassloadings.png" alt="Hub Logo" class="w-full h-full object-contain rounded-lg">
             </div>
-            <!-- END MODIFIED -->
             <div>
                 <h1 class="text-xs font-black tracking-tighter uppercase leading-none">Hub Portal</h1>
                 <span id="role-status" class="text-[9px] font-bold text-slate-400">GUEST</span>
@@ -130,7 +150,8 @@
             <!-- Nút Mở Sidebar Admin (NEW) -->
             <button onclick="window.toggleAdminSidebar()" id="admin-sidebar-toggle" class="p-2 rounded-xl text-primary hover:bg-slate-100 dark:hover:bg-slate-800 transition hidden"><i data-lucide="settings-2" class="w-5 h-5"></i></button>
 
-            <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+            <!-- Desktop View Mode Toggles (Hidden on mobile) -->
+            <div class="mobile-hidden flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
                 <button onclick="window.setView('grid')" id="view-grid-btn" class="p-1.5 rounded-md transition-all shadow-sm bg-white dark:bg-slate-700"><i data-lucide="layout-grid" class="w-4 h-4"></i></button>
                 <button onclick="window.setView('list')" id="view-list-btn" class="p-1.5 rounded-md transition-all"><i data-lucide="list" class="w-4 h-4"></i></button>
             </div>
@@ -142,8 +163,19 @@
         </div>
     </header>
 
+    <!-- NEW: Mobile Category Sidebar (Slide-in from left) -->
+    <div id="mobile-category-sidebar" class="mobile-category-sidebar fixed top-0 left-0 bottom-0 bg-white dark:bg-slate-900 border-r dark:border-white/10 shadow-2xl z-[150] flex flex-col pt-16 md:hidden">
+        <div class="p-6 border-b dark:border-white/5 flex items-center justify-between">
+            <h3 class="text-lg font-black uppercase tracking-widest text-primary dark:text-white">DANH MỤC</h3>
+            <button onclick="window.toggleMobileCategorySidebar()" class="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div id="category-bar-mobile" class="flex-1 overflow-y-auto p-6 space-y-2">
+            <!-- Categories will be rendered here -->
+        </div>
+    </div>
+
     <!-- Main Content and Admin Sidebar Wrapper -->
-    <div class="flex max-w-7xl mx-auto">
+    <div id="main-content-wrapper" class="flex max-w-7xl mx-auto">
         <!-- Main Content -->
         <main class="flex-1 p-6 space-y-8 min-w-0">
             <!-- Search -->
@@ -170,17 +202,42 @@
                 </form>
             </div>
             
-            <!-- Categories -->
-            <div id="category-bar" class="flex flex-wrap gap-2"></div>
+            <!-- Categories (Desktop Only) -->
+            <div id="category-bar" class="mobile-hidden flex flex-wrap gap-2"></div>
             
-            <!-- App Loading State (UPDATED: Logo Loading) -->
-            <div id="app-loading" class="text-center p-16 text-slate-400 text-sm font-medium hidden">
-                <img src="/img/bmassloadings.png" class="logo-loader w-6 h-6 mx-auto mb-2" alt="Loading Logo">
-                Đang tải ứng dụng...
-            </div>
+            <!-- Main Content Tabs -->
+            <div id="main-tabs-content">
+                <!-- Tab: App (Home) / Danh bạ (Contacts) Content -->
+                <div id="tab-app-content">
+                    <!-- App Loading State (UPDATED: Logo Loading) -->
+                    <div id="app-loading" class="text-center p-16 text-slate-400 text-sm font-medium hidden">
+                        <img src="/img/bmassloadings.png" class="logo-loader w-6 h-6 mx-auto mb-2" alt="Loading Logo">
+                        Đang tải ứng dụng...
+                    </div>
 
-            <!-- Main Content App -->
-            <div id="app-container"></div>
+                    <!-- Main Content App -->
+                    <div id="app-container"></div>
+                </div>
+
+                <!-- Tab: Discover Content (NEW) -->
+                <div id="tab-discover-content" class="hidden p-16 text-center">
+                    <i data-lucide="compass" class="w-12 h-12 text-primary mx-auto mb-4"></i>
+                    <h3 class="text-xl font-black text-primary dark:text-white mb-2">KHÁM PHÁ</h3>
+                    <p class="text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                        Các tính năng mới và tiện ích mở rộng đang được phát triển. Vui lòng quay lại sau!
+                    </p>
+                </div>
+
+                <!-- Tab: Profile Content (NEW) -->
+                <div id="tab-profile-content" class="hidden max-w-lg mx-auto p-4">
+                    <h3 class="text-xl font-black text-primary dark:text-white mb-6 border-b pb-2">THÔNG TIN CÁ NHÂN</h3>
+                    <div id="profile-content-details" class="space-y-4">
+                        <p class="text-slate-500 dark:text-slate-400">Vui lòng đăng nhập để xem thông tin cá nhân.</p>
+                        <!-- Populated by JS on load/login -->
+                    </div>
+                </div>
+
+            </div>
             
             <!-- Bulk Delete Floating Dock -->
             <div id="bulk-delete-dock" class="hidden fixed bottom-28 left-1/2 -translate-x-1/2 z-[110]">
@@ -356,8 +413,8 @@
         </div>
     </div>
     
-    <!-- Footer -->
-    <footer class="fixed bottom-0 w-full z-50 bg-white dark:bg-slate-900 border-t dark:border-white/10 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
+    <!-- Footer (Desktop Only) -->
+    <footer class="mobile-hidden fixed bottom-0 w-full z-50 bg-white dark:bg-slate-900 border-t dark:border-white/10 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
         <div class="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center text-sm">
             <div class="text-slate-500 dark:text-slate-400">
                 © 2024 Vĩnh Trạch Đông. All rights reserved.
@@ -370,6 +427,29 @@
             </div>
         </div>
     </footer>
+
+    <!-- NEW: Mobile Tab Bar (Fixed Bottom Navigation) -->
+    <nav id="mobile-nav-bar" class="fixed bottom-0 left-0 w-full z-100 bg-white dark:bg-slate-900 border-t dark:border-white/10 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] md:hidden">
+        <div class="flex justify-around items-center h-16">
+            <button onclick="window.switchMobileTab('app')" id="tab-app-btn" class="flex flex-col items-center justify-center w-full h-full text-primary">
+                <i data-lucide="layout-grid" class="w-5 h-5"></i>
+                <span class="text-[9px] font-bold mt-1">Ứng Dụng</span>
+            </button>
+            <button onclick="window.switchMobileTab('contact')" id="tab-contact-btn" class="flex flex-col items-center justify-center w-full h-full text-slate-400">
+                <i data-lucide="users" class="w-5 h-5"></i>
+                <span class="text-[9px] font-bold mt-1">Danh Bạ</span>
+            </button>
+            <button onclick="window.switchMobileTab('discover')" id="tab-discover-btn" class="flex flex-col items-center justify-center w-full h-full text-slate-400">
+                <i data-lucide="zap" class="w-5 h-5"></i>
+                <span class="text-[9px] font-bold mt-1">Khám Phá</span>
+            </button>
+            <button onclick="window.switchMobileTab('profile')" id="tab-profile-btn" class="flex flex-col items-center justify-center w-full h-full text-slate-400">
+                <i data-lucide="user-circle" class="w-5 h-5"></i>
+                <span class="text-[9px] font-bold mt-1">Cá Nhân</span>
+            </button>
+        </div>
+    </nav>
+    <!-- End Mobile Tab Bar -->
 
 
     <!-- App Modal (No Changes) -->
@@ -410,7 +490,7 @@
         </div>
     </div>
 
-    <!-- User Profile Modal (NEW) -->
+    <!-- User Profile Modal (No Changes) -->
     <div id="modal-user-profile" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[210] hidden flex items-center justify-center p-4">
         <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden">
             <div class="p-6 border-b dark:border-white/5 flex justify-between items-center">
@@ -507,7 +587,8 @@
         let adminRequests = []; 
         let globalSettings = {}; 
         let activityLogs = []; 
-        let confirmActionCallback = () => {}; // NEW: Global callback for confirmation modal
+        let confirmActionCallback = () => {}; 
+        let currentMobileTab = 'app'; // NEW: State for mobile navigation
 
         // --- CUSTOM CONFIRMATION MODAL LOGIC (NEW) ---
         /**
@@ -534,6 +615,44 @@
 
             window.openModal('modal-confirm');
         };
+        
+        // --- MAINTENANCE MODE FIX (Hide Main Content) ---
+        function checkMaintenanceMode() {
+            const maintenanceActive = globalSettings.maintenanceMode;
+            const overlay = document.getElementById('maintenance-overlay');
+            const adminInfo = document.getElementById('maintenance-admin-info');
+            const mainContentWrapper = document.getElementById('main-content-wrapper');
+            const mobileNavBar = document.getElementById('mobile-nav-bar');
+
+            if (maintenanceActive && !isAdmin) {
+                overlay.classList.remove('hidden');
+                mainContentWrapper.classList.add('hidden'); // FIX: Hide main content
+                mobileNavBar.classList.add('hidden'); // FIX: Hide mobile nav bar
+            } else {
+                overlay.classList.add('hidden');
+                mainContentWrapper.classList.remove('hidden'); // FIX: Show main content
+                if (window.innerWidth <= 768) mobileNavBar.classList.remove('hidden'); // FIX: Show mobile nav bar on small screens
+            }
+            adminInfo.classList.toggle('hidden', !maintenanceActive || !isAdmin);
+        }
+
+        function renderMaintenanceControls() {
+            if (!isAdmin) return;
+            const statusSpan = document.getElementById('maintenance-status');
+            const toggleBtn = document.getElementById('maintenance-toggle-btn');
+            
+            if (globalSettings.maintenanceMode) {
+                statusSpan.innerText = "Trạng thái: Bật";
+                toggleBtn.innerText = "TẮT CHẾ ĐỘ";
+                toggleBtn.classList.remove('bg-slate-500');
+                toggleBtn.classList.add('bg-red-500');
+            } else {
+                statusSpan.innerText = "Trạng thái: Tắt";
+                toggleBtn.innerText = "BẬT CHẾ ĐỘ";
+                toggleBtn.classList.remove('bg-red-500');
+                toggleBtn.classList.add('bg-slate-500');
+            }
+        }
 
 
         // --- AUTH & INITIAL ---
@@ -558,6 +677,7 @@
                 // REMOVED: Fetching user favorites
                 
                 renderAuthUI();
+                renderProfileContent(); // NEW: Populate profile tab
                 
                 // REMOVED: Realtime listener for user favorites
                 
@@ -589,12 +709,51 @@
             document.getElementById('admin-sidebar-toggle').classList.toggle('hidden', !isAdmin); 
             
             checkMaintenanceMode(); 
+            // Force viewMode to 'list' on mobile
+            if (window.innerWidth <= 768) { viewMode = 'list'; } else { viewMode = 'grid'; }
             renderApps();
             renderDeputyList();
-            renderAnnouncementControls(); 
+            renderAnnouncementControls();
+            
+            // NEW: Initial Mobile Tab Setup (if on mobile)
+            if (window.innerWidth <= 768) { 
+                window.switchMobileTab('app', false);
+            } else {
+                window.switchMobileTab('app', true); //Desktop always shows app tab
+            }
         });
         
-        // NEW: Handle Admin Request Submission
+        // NEW: User Profile Content Renderer
+        function renderProfileContent() {
+            const container = document.getElementById('profile-content-details');
+            if (!currentUser) {
+                container.innerHTML = '<p class="text-slate-500 dark:text-slate-400">Vui lòng <button onclick="window.login()" class="text-primary font-bold">đăng nhập</button> để xem thông tin cá nhân.</p>';
+                return;
+            }
+
+            const role = isSuper ? 'SUPER ADMIN' : (isAdmin ? 'PHÓ ADMIN' : 'KHÁCH (GUEST)');
+
+            container.innerHTML = `
+                <div class="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-xl shadow-sm border dark:border-white/5">
+                    <img src="${currentUser.photoURL}" class="w-12 h-12 rounded-full border-2 border-primary/50" alt="Avatar">
+                    <div>
+                        <p class="font-bold">${currentUser.displayName || 'Chưa đặt tên'}</p>
+                        <p class="text-xs text-slate-500">${currentUser.email}</p>
+                    </div>
+                </div>
+                <div class="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl shadow-sm border dark:border-white/5">
+                    <p class="text-xs font-bold text-slate-400 uppercase">Trạng thái</p>
+                    <p class="text-sm font-black text-primary">${role}</p>
+                </div>
+                <button onclick="window.openUserProfileModal()" class="w-full py-3 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white rounded-xl font-bold shadow-sm uppercase text-xs flex items-center justify-center gap-2 hover:bg-slate-300 transition">
+                    <i data-lucide="external-link" class="w-4 h-4"></i> Xem Chi Tiết Tài Khoản
+                </button>
+                <button onclick="window.logout()" class="w-full py-3 bg-red-500 text-white rounded-xl font-bold shadow-lg uppercase text-xs">Đăng Xuất</button>
+            `;
+            lucide.createIcons();
+        }
+        
+        // NEW: Handle Admin Request Submission (Unchanged)
         document.getElementById('request-admin-form').onsubmit = async (e) => {
             e.preventDefault();
             if (!currentUser) return;
@@ -621,78 +780,81 @@
         window.login = () => signInWithPopup(auth, provider);
         window.logout = () => signOut(auth).then(() => location.reload());
 
-        // NEW: User Menu Dropdown Logic
-        window.toggleUserMenu = (event) => {
-            event.stopPropagation();
-            const menu = document.getElementById('user-menu');
-            menu?.classList.toggle('hidden');
-            lucide.createIcons();
-        };
-        
-        window.closeUserMenu = () => {
-             document.getElementById('user-menu')?.classList.add('hidden');
-        };
-
-        // Close menu if user clicks anywhere else
-        document.addEventListener('click', (e) => {
-             const menu = document.getElementById('user-menu');
-             const btn = document.getElementById('user-avatar-btn');
-             const confirmModal = document.getElementById('modal-confirm');
-             if (menu && !menu.contains(e.target) && btn && !btn.contains(e.target)) {
-                 window.closeUserMenu();
-             }
-             // FIXED: Close confirm modal with Escape key or click outside (handled by general closeModal logic)
-        });
-
-        // NEW: User Profile Modal Logic
-        window.openUserProfileModal = () => {
-            if (!currentUser) return;
-            window.closeUserMenu(); 
-
-            // REMOVED: favoritesCount calculation
-            const role = isSuper ? 'SUPER ADMIN' : (isAdmin ? 'PHÓ ADMIN' : 'KHÁCH (GUEST)');
-            
-            // Populate Modal
-            document.getElementById('profile-name').value = currentUser.displayName || 'Chưa đặt tên';
-            document.getElementById('profile-email').value = currentUser.email;
-            document.getElementById('profile-uid').innerText = currentUser.uid;
-            document.getElementById('profile-role').innerText = role;
-            // REMOVED: profile-fav-count population
-            document.getElementById('profile-photo').src = currentUser.photoURL;
-
-            window.openModal('modal-user-profile');
-            lucide.createIcons();
-        };
-
-        // CẬP NHẬT: Thay đổi hàm renderAuthUI để sử dụng Dropdown Menu
-        function renderAuthUI() {
-            document.getElementById('auth-section').innerHTML = `
-                <div class="relative">
-                    <button onclick="window.toggleUserMenu(event)" id="user-avatar-btn" class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 pr-3 rounded-lg border dark:border-white/10">
-                        <img src="${currentUser.photoURL}" class="w-7 h-7 rounded-md">
-                        <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i>
-                    </button>
-                    <!-- Dropdown Menu -->
-                    <div id="user-menu" class="absolute right-0 top-full mt-3 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-2xl z-20 hidden ring-1 ring-black/5 dark:ring-white/10 p-2 transform origin-top-right">
-                        <div class="px-3 py-2 text-sm font-bold truncate">${currentUser.displayName}</div>
-                        <div class="px-3 py-1 text-xs text-slate-500 truncate">${currentUser.email}</div>
-                        <div class="h-px bg-slate-100 dark:bg-slate-700 my-2"></div>
-                        <button onclick="window.openUserProfileModal()" class="flex items-center w-full px-3 py-2 text-sm font-medium rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
-                            <i data-lucide="user-circle" class="w-4 h-4 mr-2"></i> Tài khoản
-                        </button>
-                        <button onclick="window.logout()" class="flex items-center w-full px-3 py-2 text-sm font-medium text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-slate-700/50">
-                            <i data-lucide="log-out" class="w-4 h-4 mr-2"></i> Đăng xuất
-                        </button>
-                    </div>
-                </div>
-            `;
-            lucide.createIcons();
-        }
-        
-        // NEW: Sidebar Toggle
+        // NEW: Sidebar Toggle (Unchanged)
         window.toggleAdminSidebar = () => {
              document.getElementById('admin-sidebar').classList.toggle('open');
         };
+        
+        // NEW: Mobile Category Sidebar Toggle
+        window.toggleMobileCategorySidebar = () => {
+             document.getElementById('mobile-category-sidebar').classList.toggle('open');
+        };
+
+        // --- MOBILE TAB NAVIGATION LOGIC (NEW) ---
+        window.switchMobileTab = (tabId, isDesktop = false) => {
+            currentMobileTab = tabId;
+            const tabContents = ['tab-app-content', 'tab-discover-content', 'tab-profile-content'];
+            const tabButtons = ['tab-app-btn', 'tab-contact-btn', 'tab-discover-btn', 'tab-profile-btn'];
+            
+            // Update UI/State
+            tabButtons.forEach(btnId => {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    btn.classList.remove('text-primary');
+                    btn.classList.add('text-slate-400');
+                }
+            });
+
+            if (tabId === 'app' || tabId === 'contact') {
+                tabContents.forEach(id => document.getElementById(id).classList.add('hidden'));
+                document.getElementById('tab-app-content').classList.remove('hidden');
+                
+                // Update filtering based on tab
+                if (tabId === 'app') {
+                    if (currentFilter === 'contact_filter') {
+                       window.setFilter('all');
+                    }
+                    document.getElementById('tab-app-btn').classList.remove('text-slate-400');
+                    document.getElementById('tab-app-btn').classList.add('text-primary');
+                } else if (tabId === 'contact') {
+                    // Filter specifically for the 'Số điện thoại' category
+                    window.setFilter('contact_filter'); 
+                    document.getElementById('tab-contact-btn').classList.remove('text-slate-400');
+                    document.getElementById('tab-contact-btn').classList.add('text-primary');
+                }
+                document.getElementById('visit-stats-container').classList.remove('hidden');
+
+            } else {
+                tabContents.forEach(id => document.getElementById(id).classList.add('hidden'));
+                document.getElementById(`tab-${tabId}-content`).classList.remove('hidden');
+                document.getElementById(`tab-${tabId}-btn`).classList.remove('text-slate-400');
+                document.getElementById(`tab-${tabId}-btn`).classList.add('text-primary');
+                
+                // Special handling for content visibility
+                document.getElementById('search-input').classList.add('hidden');
+                document.getElementById('visit-stats-container').classList.add('hidden');
+                
+                if (tabId === 'profile') {
+                    renderProfileContent();
+                }
+            }
+            
+            // Re-show search/stats if needed
+            if (tabId === 'app' || tabId === 'contact') {
+                 document.getElementById('search-input').classList.remove('hidden');
+                 document.getElementById('visit-stats-container').classList.remove('hidden');
+            }
+            
+            // Desktop mode always resets mobile tab UI
+            if (isDesktop && window.innerWidth > 768) {
+                document.getElementById('tab-app-content').classList.remove('hidden');
+                document.getElementById('tab-discover-content').classList.add('hidden');
+                document.getElementById('tab-profile-content').classList.add('hidden');
+            }
+            
+            lucide.createIcons();
+        };
+
 
         // --- DATA REALTIME (Unchanged) ---
         onSnapshot(query(collection(db, "categories"), orderBy("order", "asc")), (snap) => {
@@ -712,14 +874,14 @@
             renderStats();
         });
         
-        // NEW: Realtime listener for Announcement
+        // NEW: Realtime listener for Announcement (Unchanged)
         onSnapshot(doc(db, "settings", "announcement"), (snap) => {
             currentAnnouncement = snap.data() || { content: '', active: false, startTime: null, endTime: null }; 
             renderAnnouncementBar();
             renderAnnouncementControls();
         });
         
-        // NEW: Realtime listener for Admin Requests
+        // NEW: Realtime listener for Admin Requests (Unchanged)
         onSnapshot(collection(db, "adminRequests"), (snap) => {
             adminRequests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             renderAdminRequests();
@@ -732,7 +894,7 @@
             renderMaintenanceControls();
         });
 
-        // NEW: Realtime listener for Activity Logs
+        // NEW: Realtime listener for Activity Logs (Unchanged)
         onSnapshot(query(collection(db, LOGS_COLLECTION), orderBy("timestamp", "desc"), limit(50)), (snap) => {
             activityLogs = snap.docs.map(d => d.data()); 
             if (document.getElementById('tab-logs').classList.contains('hidden') === false) {
@@ -816,7 +978,7 @@
             }
         };
         
-        // --- ADMIN REQUEST LOGIC (MODIFIED: Use Custom Confirm) ---
+        // --- ADMIN REQUEST LOGIC (Unchanged) ---
         function renderAdminRequests() {
             if (!isSuper) return; 
             const list = document.getElementById('requests-list');
@@ -886,31 +1048,7 @@
             }
         };
 
-        // --- FAVORITES LOGIC (REMOVED) ---
-        /*
-        window.toggleFavorite = (appId, event) => {
-            event.stopPropagation();
-            if (!currentUser) {
-                showToast("Vui lòng đăng nhập để lưu mục yêu thích!");
-                return;
-            }
-
-            const isFavorite = userFavorites.includes(appId);
-            const userDocRef = doc(db, "users", currentUser.uid);
-            
-            updateDoc(userDocRef, {
-                favorites: isFavorite ? arrayRemove(appId) : arrayUnion(appId)
-            }).then(() => {
-                showToast(isFavorite ? "Đã gỡ khỏi mục yêu thích" : "Đã thêm vào mục yêu thích!");
-                renderApps(); 
-            }).catch(error => {
-                console.error("Error toggling favorite: ", error);
-                showToast("Lỗi khi cập nhật mục yêu thích!", true); 
-            });
-        };
-        */
-
-        // --- BULK DELETE (SOFT DELETE) LOGIC (MODIFIED: Use Custom Confirm) ---
+        // --- BULK DELETE (SOFT DELETE) LOGIC (Unchanged) ---
         window.executeBulkDelete = () => {
             if (!isAdmin || selectedAppsForDelete.size === 0) return;
             
@@ -1062,7 +1200,7 @@
             lucide.createIcons();
         }
 
-        // --- RENDERING APP (Modified for Favorites removal) ---
+        // --- RENDERING APP (Modified for Mobile List View) ---
         window.renderApps = () => {
             const container = document.getElementById('app-container');
             const loading = document.getElementById('app-loading');
@@ -1074,13 +1212,34 @@
             }
             loading.classList.add('hidden');
 
+            const isMobile = window.innerWidth <= 768;
+            const effectiveViewMode = isMobile ? 'list' : viewMode; 
+            const phoneCat = categories.find(c => c.name === "Số điện thoại");
+
             const filtered = apps.filter(a => {
                 if (a.isDeleted) return false; 
-                
-                // Reworked filtering without favorites:
                 const cat = categories.find(c => c.id === a.categoryId);
-                if (currentFilter !== 'all' && a.categoryId !== currentFilter) { return false; }
-                if (currentFilter === 'all' && cat?.name === "Số điện thoại") { return false; }
+                
+                // NEW: Logic for Mobile Tab filtering
+                if (currentMobileTab === 'contact') {
+                    if (cat?.name !== "Số điện thoại") return false;
+                } else if (currentMobileTab === 'app' && !isMobile) {
+                    // Desktop (or Mobile App tab filtering): Filter by category bar
+                    if (currentFilter !== 'all' && a.categoryId !== currentFilter) { return false; }
+                    // Hide phone numbers on "all" unless explicitly filtered by desktop category button
+                    if (currentFilter === 'all' && cat?.name === "Số điện thoại" && !isMobile) { return false; }
+                } 
+                
+                // Allow all apps in App tab on mobile (filters via setFilter/Category sidebar)
+                // If on mobile app tab, and filtering by category sidebar
+                if (isMobile && currentMobileTab === 'app' && currentFilter !== 'all' && currentFilter !== 'contact_filter' && a.categoryId !== currentFilter) {
+                    return false;
+                }
+                
+                // If filtering by 'contact_filter' (mobile contact tab selected)
+                if (currentFilter === 'contact_filter' && cat?.name !== "Số điện thoại") {
+                    return false;
+                }
 
                 const matchSearch = a.name.toLowerCase().includes(searchQuery.toLowerCase()) || (a.position && a.position.toLowerCase().includes(searchQuery.toLowerCase()));
                 return matchSearch && (isAdmin || a.visible);
@@ -1088,18 +1247,17 @@
 
             if (filtered.length === 0) {
                  container.className = "flex justify-center items-center h-40 text-slate-400";
-                 container.innerHTML = `<i data-lucide="folder-search" class="w-6 h-6 mr-2"></i>Không tìm thấy ứng dụng nào.`;
+                 container.innerHTML = `<i data-lucide="folder-search" class="w-6 h-6 mr-2"></i>Không tìm thấy ${currentMobileTab === 'contact' ? 'danh bạ' : 'ứng dụng'} nào.`;
                  lucide.createIcons();
                  return;
             }
 
-            if (viewMode === 'grid') {
+            if (effectiveViewMode === 'grid') {
                 container.className = "grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-x-4 gap-y-8";
                 container.innerHTML = filtered.map(a => {
                     const isAppPhone = categories.find(c => c.id === a.categoryId)?.name === "Số điện thoại";
                     const domain = a.url.startsWith('http') ? new URL(a.url).hostname : '';
                     const icon = a.iconUrl || (isAppPhone ? 'https://cdn-icons-png.flaticon.com/512/3059/3059502.png' : `https://unavatar.io/${domain}?fallback=https://www.google.com/s2/favicons?domain=${domain}&sz=128`);
-                    // REMOVED: isFav logic
                     const isSelected = selectedAppsForDelete.has(a.id) ? 'selected-for-delete' : '';
                     const opacity = a.visible ? '' : 'opacity-40';
                     
@@ -1124,7 +1282,6 @@
                         ${a.position ? `<span class="text-[8px] text-slate-400 font-bold truncate w-full text-center uppercase ${opacity}">${a.position}</span>` : ''}
                         
                         <div class="absolute -top-1 -right-1 flex flex-col gap-1 transition-all scale-90 z-10 ${isAdmin ? 'opacity-0 group-hover:opacity-100' : 'hidden'}">
-                            <!-- REMOVED: Favorite button -->
                             ${isAdmin ? `
                                 <button onclick="window.toggleAppVisibility('${a.id}')" class="p-2 ${a.visible ? 'bg-green-500' : 'bg-slate-500'} text-white rounded-full shadow-lg">
                                     <i data-lucide="${a.visible ? 'eye' : 'eye-off'}" class="w-3 h-3"></i>
@@ -1139,26 +1296,25 @@
                         </div>
                     </div>`;
                 }).join('');
-            } else {
+            } else { // List View (Vertical for mobile & desktop list mode)
                 container.className = "flex flex-col max-w-4xl mx-auto space-y-1";
                 container.innerHTML = filtered.map((a, idx) => {
                     const isAppPhone = categories.find(c => c.id === a.categoryId)?.name === "Số điện thoại";
                     const domain = a.url.startsWith('http') ? new URL(a.url).hostname : '';
                     const icon = a.iconUrl || (isAppPhone ? 'https://cdn-icons-png.flaticon.com/512/3059/3059502.png' : `https://unavatar.io/${domain}?fallback=https://www.google.com/s2/favicons?domain=${domain}&sz=128`);
-                    // REMOVED: isFav logic
                     const isSelected = selectedAppsForDelete.has(a.id) ? 'selected-for-delete' : '';
                     const opacity = a.visible ? '' : 'opacity-40';
+                    const listIndex = a.order + 1;
 
                     const bulkSelectControl = bulkDeleteMode ? 
                         `<input type="checkbox" class="w-5 h-5 accent-red-500 pointer-events-none" ${isSelected ? 'checked' : ''}>` : '';
 
-                    return `<div class="flex items-center gap-4 bg-white dark:bg-slate-900 p-3 rounded-xl border dark:border-white/5 group shadow-sm ${isSelected} ${opacity}" data-id="${a.id}" onclick="${bulkDeleteMode ? `window.toggleAppSelection('${a.id}', event)` : ''}">
+                    return `<div class="app-item flex items-center gap-4 bg-white dark:bg-slate-900 p-3 rounded-xl border dark:border-white/5 group shadow-sm ${isSelected} ${opacity}" data-id="${a.id}" onclick="${bulkDeleteMode ? `window.toggleAppSelection('${a.id}', event)` : ''}">
                         ${bulkSelectControl}
-                        <span class="text-[9px] font-black text-slate-300 w-4">${idx+1}</span>
+                        <span class="text-[9px] font-black text-slate-300 w-4">${listIndex}</span>
                         <img src="${icon}" class="w-8 h-8 rounded-lg object-contain">
                         <div class="flex-1 min-w-0"><h4 class="text-xs font-bold truncate">${a.name}</h4><p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${a.position || (isAppPhone ? a.url : 'Web App')}</p></div>
                         <div class="flex items-center gap-2">
-                            <!-- REMOVED: Favorite button -->
                             <a href="${isAppPhone ? 'tel:' + a.url : a.url}" target="_blank" class="p-2 text-primary hover:bg-primary hover:text-white rounded-lg transition"><i data-lucide="${isAppPhone ? 'phone' : 'external-link'}" class="w-4 h-4"></i></a>
                             ${isAdmin ? `
                                 <button onclick="window.toggleAppVisibility('${a.id}')" class="p-2 ${a.visible ? 'text-green-500 hover:bg-green-100' : 'text-slate-500 hover:bg-slate-100'} rounded-lg"><i data-lucide="${a.visible ? 'eye' : 'eye-off'}" class="w-4 h-4"></i></button>
@@ -1169,97 +1325,9 @@
                 }).join('');
             }
             lucide.createIcons();
-            if(isAdmin) new Sortable(container, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(container.children).forEach((el, i) => { if(el.dataset.id) updateDoc(doc(db, "apps", el.dataset.id), { order: i }); logActivity('APP_ORDER_UPDATED', 'bulk', 'Sắp xếp ứng dụng'); }); }});
+            // Only allow sorting on non-mobile desktop mode in list view
+            if(isAdmin && effectiveViewMode === 'list' && !isMobile) new Sortable(container, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(container.children).forEach((el, i) => { if(el.dataset.id) updateDoc(doc(db, "apps", el.dataset.id), { order: i }); logActivity('APP_ORDER_UPDATED', 'bulk', 'Sắp xếp ứng dụng'); }); }});
         }
-
-        // --- IMPORT / EXPORT LOGIC (Unchanged) ---
-        window.handleExport = (type) => {
-            const data = {
-                apps: apps.map(({id, ...rest}) => rest),
-                categories: categories.map(({id, ...rest}) => rest),
-                exportedAt: new Date().toISOString(),
-                version: "2.1"
-            };
-
-            if (type === 'json') {
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `hub-portal-backup-${new Date().toLocaleDateString()}.json`;
-                a.click();
-            } else if (type === 'excel') {
-                const wb = XLSX.utils.book_new();
-                const wsApps = XLSX.utils.json_to_sheet(apps.map(a => {
-                    const cat = categories.find(c => c.id === a.categoryId);
-                    return { 'Tên': a.name, 'URL/SĐT': a.url, 'Chức vụ': a.position || '', 'Danh mục': cat ? cat.name : '', 'Icon URL': a.iconUrl || '', 'Hiển thị': a.visible ? 'Bật' : 'Tắt', 'Thứ tự': a.order }
-                }));
-                XLSX.utils.book_append_sheet(wb, wsApps, "Apps");
-                const wsCats = XLSX.utils.json_to_sheet(categories.map(c => ({ 'Tên danh mục': c.name, 'Icon Logo': c.icon || '', 'Thứ tự': c.order })));
-                XLSX.utils.book_append_sheet(wb, wsCats, "Categories");
-                XLSX.writeFile(wb, `hub-portal-data-${new Date().toLocaleDateString()}.xlsx`);
-            }
-            showToast("Đã xuất dữ liệu thành công!");
-            logActivity('DATA_EXPORTED', 'system', `Xuất dữ liệu ${type}`); 
-        };
-
-        window.handleImport = async (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            window.showConfirm(
-                'Xác nhận Nhập Dữ liệu',
-                `Bạn có chắc chắn muốn thêm dữ liệu từ file "${file.name}" vào site hiện tại?`,
-                async () => {
-                    const reader = new FileReader();
-                    reader.onload = async (e) => {
-                        try {
-                            let importedData = { categories: [], apps: [] };
-                            if (file.name.endsWith('.json')) {
-                                importedData = JSON.parse(e.target.result);
-                            } else if (file.name.endsWith('.xlsx')) {
-                                const data = new Uint8Array(e.target.result);
-                                const workbook = XLSX.read(data, { type: 'array' });
-                                const catSheet = workbook.Sheets["Categories"];
-                                if (catSheet) {
-                                    importedData.categories = XLSX.utils.sheet_to_json(catSheet).map(c => ({ name: c['Tên danh mục'], icon: c['Icon Logo'] || '', order: parseInt(c['Thứ tự']) || 0 }));
-                                }
-                                const appSheet = workbook.Sheets["Apps"];
-                                if (appSheet) {
-                                    importedData.apps = XLSX.utils.sheet_to_json(appSheet).map(a => ({ name: a['Tên'], url: a['URL/SĐT'], position: a['Chức vụ'] || '', categoryName: a['Danh mục'], iconUrl: a['Icon URL'] || '', visible: a['Hiển thị'] === 'Bật', order: parseInt(a['Thứ tự']) || 0 }));
-                                }
-                            }
-
-                            const categoryIdMap = {}; 
-                            for (const cat of importedData.categories) {
-                                const existing = categories.find(c => c.name === cat.name);
-                                if (existing) {
-                                    categoryIdMap[cat.name] = existing.id;
-                                } else {
-                                    const docRef = await addDoc(collection(db, "categories"), cat);
-                                    categoryIdMap[cat.name] = docRef.id;
-                                }
-                            }
-
-                            for (const appData of importedData.apps) {
-                                const { categoryName, ...rest } = appData;
-                                const finalAppData = { ...rest, categoryId: categoryIdMap[categoryName] || '' };
-                                await addDoc(collection(db, "apps"), finalAppData);
-                            }
-
-                            showToast("Khôi phục dữ liệu thành công!");
-                            logActivity('DATA_IMPORTED', 'system', `Nhập dữ liệu từ ${file.name}`); 
-                            event.target.value = ''; 
-                        } catch (error) {
-                            console.error(error);
-                            showToast("Lỗi phân tích file. Vui lòng kiểm tra lại định dạng.", true); 
-                        }
-                    };
-                    if (file.name.endsWith('.json')) reader.readAsText(file); else reader.readAsArrayBuffer(file);
-                },
-                'NHẬP DỮ LIỆU'
-            );
-        };
 
         // --- ADMIN UTILS (MODIFIED: Use Custom Confirm) ---
         window.updateCatField = (id, field, val) => updateDoc(doc(db, "categories", id), { [field]: val })
@@ -1420,7 +1488,7 @@
             lucide.createIcons();
         }
 
-        // NEW: Trash List Renderer and Actions (MODIFIED: Use Custom Confirm)
+        // NEW: Trash List Renderer and Actions (Unchanged)
         function renderTrash() {
             if (!isAdmin) return;
             const trashList = document.getElementById('trash-list');
@@ -1590,24 +1658,27 @@
 
         window.renderCategories = renderCategories; 
         function renderCategories() {
-            const bar = document.getElementById('category-bar');
-            let html = `<button onclick="window.setFilter('all')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all ${currentFilter === 'all' ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">TẤT CẢ</button>`;
+            const barDesktop = document.getElementById('category-bar');
+            const barMobile = document.getElementById('category-bar-mobile');
             
-            // REMOVED: Favorites button logic
-            /*
-            if (currentUser) {
-                html += `<button onclick="window.setFilter('favorites')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center gap-2 ${currentFilter === 'favorites' ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">
-                    <i data-lucide="star" class="w-3 h-3 ${currentFilter === 'favorites' ? 'fill-white' : ''}"></i> ƯA THÍCH
-                </button>`;
-            }
-            */
+            let html = `<button onclick="window.setFilter('all')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all w-full text-left ${currentFilter === 'all' ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">TẤT CẢ</button>`;
             
             categories.forEach(c => {
-                html += `<button onclick="window.setFilter('${c.id}')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center gap-2 ${currentFilter === c.id ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">
+                const buttonClass = `px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center gap-2 w-full text-left ${currentFilter === c.id ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}`;
+                html += `<button onclick="window.setFilter('${c.id}')" class="${buttonClass}">
                     ${c.icon ? `<img src="${c.icon}" class="w-3 h-3 object-contain">` : ''} ${c.name.toUpperCase()}
                 </button>`;
             });
-            bar.innerHTML = html;
+            
+            // Render to Desktop Bar
+            barDesktop.innerHTML = `<button onclick="window.setFilter('all')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all ${currentFilter === 'all' ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">TẤT CẢ</button>` + categories.map(c => {
+                return `<button onclick="window.setFilter('${c.id}')" class="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center gap-2 ${currentFilter === c.id ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-500'}">
+                    ${c.icon ? `<img src="${c.icon}" class="w-3 h-3 object-contain">` : ''} ${c.name.toUpperCase()}
+                </button>`;
+            }).join('');
+            
+            // Render to Mobile Sidebar (Use list style)
+            barMobile.innerHTML = `<div class="space-y-2">${html}</div>`;
 
             const list = document.getElementById('cat-list-admin');
             list.innerHTML = categories.map(c => `<li class="flex flex-col gap-2 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border dark:border-white/5" data-id="${c.id}"><div class="flex items-center gap-3"><i data-lucide="grip-vertical" class="text-slate-300 cursor-move"></i><input type="text" value="${c.name}" onblur="window.updateCatField('${c.id}', 'name', this.value)" class="flex-1 bg-transparent border-none font-bold text-sm outline-none"><button onclick="window.deleteCatConfirm('${c.id}', '${c.name}')" class="text-red-500 p-2"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div><input type="text" value="${c.icon || ''}" onblur="window.updateCatField('${c.id}', 'icon', this.value)" placeholder="Icon URL" class="text-[10px] bg-white dark:bg-black/20 px-4 py-2 rounded-lg outline-none w-full border-none shadow-inner"></li>`).join('');
@@ -1617,16 +1688,13 @@
         }
 
         window.setFilter = (id) => { 
-            // REMOVED: Favorites check
-            /*
-            if (id === 'favorites' && !currentUser) {
-                 showToast("Vui lòng đăng nhập để xem mục yêu thích!");
-                 return;
-            }
-            */
             currentFilter = id; 
             renderCategories(); 
-            renderApps(); 
+            renderApps();
+            // NEW: Auto close sidebar after selecting category on mobile
+            if (window.innerWidth <= 768) {
+                window.toggleMobileCategorySidebar();
+            }
         };
 
         window.openModal = (id) => document.getElementById(id).classList.remove('hidden');
@@ -1708,7 +1776,12 @@
 
         if(localStorage.theme === 'dark') document.documentElement.classList.add('dark');
         lucide.createIcons();
-        window.setView('grid');
+        // Initial view mode based on screen size
+        if (window.innerWidth <= 768) {
+            window.setView('list'); 
+        } else {
+            window.setView('grid');
+        }
         
         trackVisit();
     </script>
