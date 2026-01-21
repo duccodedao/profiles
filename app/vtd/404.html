@@ -7,7 +7,7 @@
     <title>Menu app - Vĩnh Trạch Đông</title>
     <link rel="icon" href="https://bmass.vercel.app/img/bmasslogo.png" type="image/png">
     
-
+    <!-- SEO & PWA Meta Tags -->
     <meta name="description" content="Hub Portal tổng hợp các ứng dụng và danh bạ liên hệ của Vĩnh Trạch Đông.">
     <link rel="icon" href="https://bmass.vercel.app/img/bmasslogo.png" type="image/png">
     <link rel="apple-touch-icon" href="https://bmass.vercel.app/img/bmasslogo.png">
@@ -72,6 +72,18 @@
         .marquee { overflow: hidden; white-space: nowrap; box-sizing: border-box; }
         .marquee > div { display: inline-block; padding-left: 100%; animation: marquee 15s linear infinite; }
         @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
+        /* Custom Logo Loader - Vòng xoay */
+        .logo-loader {
+            width: 24px;
+            height: 24px;
+            animation: rotate-logo 1.5s linear infinite;
+        }
+
+        @keyframes rotate-logo {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
 <body class="min-h-screen pb-24">
@@ -152,9 +164,9 @@
             <!-- Categories -->
             <div id="category-bar" class="flex flex-wrap gap-2"></div>
             
-            <!-- App Loading State -->
+            <!-- App Loading State (UPDATED: Logo Loading) -->
             <div id="app-loading" class="text-center p-16 text-slate-400 text-sm font-medium hidden">
-                <i data-lucide="loader" class="w-6 h-6 animate-spin mx-auto mb-2"></i>
+                <img src="https://bmass.vercel.app/img/bmasslogo.png" class="logo-loader w-6 h-6 mx-auto mb-2" alt="Loading Logo">
                 Đang tải ứng dụng...
             </div>
 
@@ -439,7 +451,8 @@
             <span id="toast-msg" class="text-sm font-bold tracking-tight">Thành công!</span>
         </div>
     </div>
-
+    
+    <!-- Firebase -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -490,9 +503,13 @@
                 
                 renderAuthUI();
                 
+                // FIXED: Re-attach listener on auth change to update favorites dynamically
                 onSnapshot(doc(db, "users", user.uid), (snap) => {
                     userFavorites = snap.data()?.favorites || [];
                     if (currentFilter === 'favorites') renderApps();
+                    // FIXED: Update favorite count in profile modal if open
+                    const profileFavCount = document.getElementById('profile-fav-count');
+                    if (profileFavCount) profileFavCount.innerText = userFavorites.length; 
                 });
                 
                 requestSection.classList.toggle('hidden', isAdmin);
@@ -667,7 +684,6 @@
         // NEW: Realtime listener for Activity Logs
         onSnapshot(query(collection(db, LOGS_COLLECTION), orderBy("timestamp", "desc"), limit(50)), (snap) => {
             activityLogs = snap.docs.map(d => d.data()); 
-            // Only call renderLogs if the tab is currently open, otherwise the listener update is enough
             if (document.getElementById('tab-logs').classList.contains('hidden') === false) {
                  renderActivityLogs();
             }
@@ -802,7 +818,7 @@
             }
         };
 
-        // --- FAVORITES LOGIC (Unchanged) ---
+        // --- FAVORITES LOGIC (FIXED) ---
         window.toggleFavorite = (appId, event) => {
             event.stopPropagation();
             if (!currentUser) {
@@ -817,6 +833,7 @@
                 favorites: isFavorite ? arrayRemove(appId) : arrayUnion(appId)
             }).then(() => {
                 showToast(isFavorite ? "Đã gỡ khỏi mục yêu thích" : "Đã thêm vào mục yêu thích!");
+                renderApps(); // FIXED: Re-render apps to instantly update the star icon
             }).catch(error => {
                 console.error("Error toggling favorite: ", error);
                 showToast("Lỗi khi cập nhật mục yêu thích!", true); 
@@ -1553,14 +1570,14 @@
         document.getElementById('search-input').oninput = (e) => { searchQuery = e.target.value; renderApps(); };
         window.setView = (mode) => { viewMode = mode; renderApps(); };
         
-        // CẬP NHẬT & SỬA LỖI TOAST
+        // CẬP NHẬT & SỬA LỖI TOAST (FIXED: Lỗi không hiển thị và không tự đóng)
         function showToast(msg, isError = false) {
             const t = document.getElementById('toast');
             document.getElementById('toast-msg').innerText = msg;
             
             const icon = t.querySelector('i');
             
-            // Đảm bảo icon có thể được vẽ lại
+            // Xóa hết class cũ
             icon.classList.remove('text-green-500', 'text-red-500');
 
             if (isError) {
@@ -1573,16 +1590,18 @@
             
             lucide.createIcons();
             
-            // Hiện toast (FIXED: Đảm bảo class hidden không tồn tại)
-            t.classList.remove('hidden', 'opacity-0', 'translate-y-20');
+            // Hiện toast (SỬA LỖI: Xóa hidden và reset vị trí/độ mờ)
+            t.classList.remove('hidden');
             
-            // Cần một frame để trình duyệt nhận ra sự thay đổi class trước khi thêm class chuyển đổi
-            // Dùng setTimeout(..., 0) là cách phổ biến để đẩy logic vào frame tiếp theo
-            setTimeout(() => {
-                 // Đảm bảo nó hiện lên
-                 t.classList.remove('opacity-0', 'translate-y-20');
-            }, 0);
-
+            // Đảm bảo toast đang ở trạng thái ẩn (opacity: 0, translate-y: 20) trước khi bật hiệu ứng chuyển tiếp
+            // Để reset animation/transition, chúng ta tạm thời thêm và xóa một class không có transition.
+            t.classList.add('no-transition');
+            t.classList.add('opacity-0', 'translate-y-20');
+            t.offsetHeight; // Lực lượng trình duyệt render lại (Reflow)
+            t.classList.remove('no-transition');
+            
+            // Kích hoạt chuyển đổi để hiển thị
+            t.classList.remove('opacity-0', 'translate-y-20');
 
             // Tự đóng sau 3 giây 
             setTimeout(() => {
