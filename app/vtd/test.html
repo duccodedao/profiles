@@ -721,6 +721,7 @@
     </div>
 </div>
 
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -940,7 +941,16 @@
             }
         });
         
-        // NEW: Auth UI Render Fix (For desktop login/user dropdown)
+        // NEW: Function to open the full profile view on desktop (Fixes Issue #2)
+        window.openDesktopProfileView = () => {
+            window.closeUserMenu(); // Close the dropdown menu
+            // Use the existing mobile switch logic but force it to behave like a desktop switch
+            window.switchMobileTab('profile', true); 
+            // Force-hide view toggles on desktop when showing profile
+            document.getElementById('view-grid-btn')?.parentElement.classList.add('hidden');
+        };
+        
+        // NEW: Auth UI Render Fix (For desktop login/user dropdown) (MODIFIED: To call openDesktopProfileView)
         function renderAuthUI() {
             if (!currentUser) {
                 document.getElementById('auth-section').innerHTML = `<button onclick="window.login()" class="bg-primary text-white px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-widest">Login</button>`;
@@ -958,7 +968,8 @@
                         <div class="px-3 py-2 text-sm font-bold truncate">${currentUser.displayName}</div>
                         <div class="px-3 py-1 text-xs text-slate-500 truncate">${currentUser.email}</div>
                         <div class="h-px bg-slate-100 dark:bg-slate-700 my-2"></div>
-                        <button onclick="window.openUserProfileModal()" class="flex items-center w-full px-3 py-2 text-sm font-medium rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
+                        <!-- MODIFIED: Call openDesktopProfileView for full profile content -->
+                        <button onclick="window.openDesktopProfileView()" class="flex items-center w-full px-3 py-2 text-sm font-medium rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
                             <i data-lucide="user-circle" class="w-4 h-4 mr-2"></i> Tài khoản
                         </button>
                         <button onclick="window.logoutConfirm()" class="flex items-center w-full px-3 py-2 text-sm font-medium text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-slate-700/50">
@@ -1174,8 +1185,12 @@
                 const contentId = tabId === 'notify' ? 'tab-notify-content' : `tab-${tabId}-content`;
 
                 document.getElementById(contentId).classList.remove('hidden');
-                document.getElementById(`tab-${tabId}-btn`).classList.remove('text-slate-400');
-                document.getElementById(`tab-${tabId}-btn`).classList.add('text-primary');
+                
+                // Only change mobile buttons on mobile, not for desktop profile view
+                if (!isDesktop) {
+                    document.getElementById(`tab-${tabId}-btn`).classList.remove('text-slate-400');
+                    document.getElementById(`tab-${tabId}-btn`).classList.add('text-primary');
+                }
                 
                 
                 if (tabId === 'profile') {
@@ -1187,15 +1202,20 @@
                 }
             }
             
-            // Desktop mode always resets mobile tab UI
+            // Desktop mode always resets mobile tab UI (and hides mobile tab bar)
             if (isDesktop && window.innerWidth > 768) {
-                document.getElementById('tab-app-content').classList.remove('hidden');
+                // Keep the content visibility as set above
+                document.getElementById('tab-app-content').classList.add('hidden');
                 document.getElementById('tab-notify-content').classList.add('hidden');
                 document.getElementById('tab-discover-content').classList.add('hidden');
                 document.getElementById('tab-profile-content').classList.add('hidden');
-                document.getElementById('search-container').classList.remove('hidden');
-                document.getElementById('visit-stats-container').classList.remove('hidden');
-                if(viewToggles) viewToggles.classList.remove('hidden'); // SHOW view toggles on desktop
+                
+                document.getElementById(tabId === 'app' ? 'tab-app-content' : contentId).classList.remove('hidden');
+
+                document.getElementById('search-container').classList.toggle('hidden', tabId !== 'app' && tabId !== 'contact');
+                document.getElementById('visit-stats-container').classList.toggle('hidden', tabId !== 'app' && tabId !== 'contact');
+                
+                if(viewToggles) viewToggles.classList.toggle('hidden', tabId !== 'app'); 
             }
             
             lucide.createIcons();
@@ -2577,6 +2597,11 @@
             // Closing logic only happens explicitly via toggleMobileCategorySidebar()
             if (!isDesktop && id !== 'contact_filter' && closeSidebar) {
                  window.toggleMobileCategorySidebar();
+            }
+            
+            // Ensure desktop view resets to App Tab (Fix for desktop profile view context)
+            if (isDesktop) {
+                 window.switchMobileTab('app', true);
             }
         };
 
