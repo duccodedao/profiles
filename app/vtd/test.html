@@ -946,6 +946,9 @@
             window.closeUserMenu(); // Close the dropdown menu
             // Use the existing mobile switch logic but force it to behave like a desktop switch
             window.switchMobileTab('profile', true); 
+            // Force-hide search/stats when showing profile on desktop
+            document.getElementById('search-container').classList.add('hidden');
+            document.getElementById('visit-stats-container').classList.add('hidden');
             // Force-hide view toggles on desktop when showing profile
             document.getElementById('view-grid-btn')?.parentElement.classList.add('hidden');
         };
@@ -1137,21 +1140,26 @@
             
             window.showGlobalLoading(); 
 
-            tabButtons.forEach(btnId => {
-                const btn = document.getElementById(btnId);
-                if (btn) {
-                    btn.classList.remove('text-primary');
-                    btn.classList.add('text-slate-400');
-                }
-            });
+            // 1. Reset Mobile Tab Buttons (chỉ trên mobile)
+            if (!isDesktop || window.innerWidth <= 768) {
+                 tabButtons.forEach(btnId => {
+                     const btn = document.getElementById(btnId);
+                     if (btn) {
+                         btn.classList.remove('text-primary');
+                         btn.classList.add('text-slate-400');
+                     }
+                 });
+            }
 
             // Close mobile sidebars to avoid overlay conflict
             document.getElementById('mobile-category-sidebar')?.classList.remove('open');
             document.getElementById('admin-sidebar')?.classList.remove('open');
             
-            // Logic to manage filter and content visibility
+            // 2. Hide all content tabs first
+            tabContents.forEach(id => document.getElementById(id).classList.add('hidden'));
+
+            // 3. Logic to manage filter and content visibility
             if (tabId === 'app' || tabId === 'contact') {
-                tabContents.forEach(id => document.getElementById(id).classList.add('hidden'));
                 document.getElementById('tab-app-content').classList.remove('hidden');
                 
                 // Show search/stats for App/Contact tabs
@@ -1161,16 +1169,20 @@
                 if (tabId === 'app') {
                     // FIX: Prevent re-setting filter/re-rendering if already on app/all
                     if (currentFilter === 'contact_filter') {
-                       window.setFilter('all', false, false); // Only set filter, do not auto-close sidebar, do not force app/contact switch
+                       window.setFilter('all', isDesktop, false); // Only set filter, do not auto-close sidebar, do not force app/contact switch
                     }
-                    document.getElementById('tab-app-btn').classList.remove('text-slate-400');
-                    document.getElementById('tab-app-btn').classList.add('text-primary');
-                    if(viewToggles && window.innerWidth > 768) viewToggles.classList.remove('hidden'); 
-                    if(viewToggles && window.innerWidth <= 768) viewToggles.classList.remove('hidden'); // Show view toggles on mobile App tab
+                    if (!isDesktop || window.innerWidth <= 768) {
+                        document.getElementById('tab-app-btn').classList.remove('text-slate-400');
+                        document.getElementById('tab-app-btn').classList.add('text-primary');
+                    }
+                    if(viewToggles) viewToggles.classList.remove('hidden'); // Show view toggles on App tab
+
                 } else if (tabId === 'contact') {
-                    window.setFilter('contact_filter', false, false); 
-                    document.getElementById('tab-contact-btn').classList.remove('text-slate-400');
-                    document.getElementById('tab-contact-btn').classList.add('text-primary');
+                    window.setFilter('contact_filter', isDesktop, false); 
+                     if (!isDesktop || window.innerWidth <= 768) {
+                        document.getElementById('tab-contact-btn').classList.remove('text-slate-400');
+                        document.getElementById('tab-contact-btn').classList.add('text-primary');
+                     }
                     if(viewToggles) viewToggles.classList.add('hidden'); // HIDE view toggles on Contact tab
                 }
 
@@ -1180,14 +1192,12 @@
                 document.getElementById('visit-stats-container').classList.add('hidden');
                 if(viewToggles) viewToggles.classList.add('hidden');
 
-                tabContents.forEach(id => document.getElementById(id).classList.add('hidden'));
-                
                 const contentId = tabId === 'notify' ? 'tab-notify-content' : `tab-${tabId}-content`;
 
                 document.getElementById(contentId).classList.remove('hidden');
                 
                 // Only change mobile buttons on mobile, not for desktop profile view
-                if (!isDesktop) {
+                if (!isDesktop || window.innerWidth <= 768) {
                     document.getElementById(`tab-${tabId}-btn`).classList.remove('text-slate-400');
                     document.getElementById(`tab-${tabId}-btn`).classList.add('text-primary');
                 }
@@ -1202,20 +1212,11 @@
                 }
             }
             
-            // Desktop mode always resets mobile tab UI (and hides mobile tab bar)
-            if (isDesktop && window.innerWidth > 768) {
-                // Keep the content visibility as set above
-                document.getElementById('tab-app-content').classList.add('hidden');
-                document.getElementById('tab-notify-content').classList.add('hidden');
-                document.getElementById('tab-discover-content').classList.add('hidden');
-                document.getElementById('tab-profile-content').classList.add('hidden');
-                
-                document.getElementById(tabId === 'app' ? 'tab-app-content' : contentId).classList.remove('hidden');
-
-                document.getElementById('search-container').classList.toggle('hidden', tabId !== 'app' && tabId !== 'contact');
-                document.getElementById('visit-stats-container').classList.toggle('hidden', tabId !== 'app' && tabId !== 'contact');
-                
-                if(viewToggles) viewToggles.classList.toggle('hidden', tabId !== 'app'); 
+            // Desktop Mode Adjustments (Chắc chắn ẩn mobile nav bar trên desktop)
+            if (window.innerWidth > 768) {
+                 document.getElementById('mobile-nav-bar')?.classList.add('hidden');
+            } else {
+                 document.getElementById('mobile-nav-bar')?.classList.remove('hidden');
             }
             
             lucide.createIcons();
@@ -2600,7 +2601,7 @@
             }
             
             // Ensure desktop view resets to App Tab (Fix for desktop profile view context)
-            if (isDesktop) {
+            if (isDesktop && currentMobileTab !== 'app' && currentMobileTab !== 'contact') {
                  window.switchMobileTab('app', true);
             }
         };
