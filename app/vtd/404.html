@@ -451,8 +451,26 @@
             <span id="toast-msg" class="text-sm font-bold tracking-tight">Thành công!</span>
         </div>
     </div>
+
+
+
+    <!-- Custom Confirmation Modal (NEW) -->
+<div id="modal-confirm" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[220] hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-sm shadow-2xl overflow-hidden">
+        <div class="p-6 border-b dark:border-white/5 flex justify-between items-center">
+            <h3 id="confirm-modal-title" class="font-bold uppercase text-sm tracking-widest text-red-500">Xác nhận Thao tác</h3>
+            <button onclick="window.closeModal('modal-confirm')" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="p-8 space-y-6">
+            <p id="confirm-modal-message" class="text-sm text-slate-700 dark:text-slate-300">Bạn có chắc chắn muốn thực hiện thao tác này?</p>
+            <div class="flex justify-end gap-3">
+                <button onclick="window.closeModal('modal-confirm')" class="px-5 py-3 rounded-xl font-bold text-xs uppercase bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 transition">Hủy</button>
+                <button id="confirm-modal-btn" class="px-5 py-3 rounded-xl font-bold text-xs uppercase bg-red-500 text-white shadow-lg hover:bg-red-600 transition">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+</div>
     
-    <!-- Firebase -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -484,6 +502,34 @@
         let adminRequests = []; 
         let globalSettings = {}; 
         let activityLogs = []; 
+        let confirmActionCallback = () => {}; // NEW: Global callback for confirmation modal
+
+        // --- CUSTOM CONFIRMATION MODAL LOGIC (NEW) ---
+        /**
+         * Shows a custom confirmation modal.
+         * @param {string} title The modal title.
+         * @param {string} message The confirmation message.
+         * @param {function} callback The function to execute if confirmed.
+         * @param {string} confirmText Text for the confirm button.
+         */
+        window.showConfirm = (title, message, callback, confirmText = 'XÁC NHẬN') => {
+            if (!isAdmin) return; // Only Admin can trigger Admin confirmation
+
+            document.getElementById('confirm-modal-title').innerText = title;
+            document.getElementById('confirm-modal-message').innerText = message;
+            document.getElementById('confirm-modal-btn').innerText = confirmText;
+            
+            confirmActionCallback = callback; // Set the callback function
+            
+            // Re-bind click listener to confirm button to use the new callback
+            document.getElementById('confirm-modal-btn').onclick = () => {
+                window.closeModal('modal-confirm');
+                confirmActionCallback(); // Execute the stored callback
+            };
+
+            window.openModal('modal-confirm');
+        };
+
 
         // --- AUTH & INITIAL ---
         onAuthStateChanged(auth, async (user) => {
@@ -503,11 +549,9 @@
                 
                 renderAuthUI();
                 
-                // FIXED: Re-attach listener on auth change to update favorites dynamically
                 onSnapshot(doc(db, "users", user.uid), (snap) => {
                     userFavorites = snap.data()?.favorites || [];
                     if (currentFilter === 'favorites') renderApps();
-                    // FIXED: Update favorite count in profile modal if open
                     const profileFavCount = document.getElementById('profile-fav-count');
                     if (profileFavCount) profileFavCount.innerText = userFavorites.length; 
                 });
@@ -588,9 +632,11 @@
         document.addEventListener('click', (e) => {
              const menu = document.getElementById('user-menu');
              const btn = document.getElementById('user-avatar-btn');
+             const confirmModal = document.getElementById('modal-confirm');
              if (menu && !menu.contains(e.target) && btn && !btn.contains(e.target)) {
                  window.closeUserMenu();
              }
+             // FIXED: Close confirm modal with Escape key or click outside (handled by general closeModal logic)
         });
 
         // NEW: User Profile Modal Logic
@@ -643,7 +689,7 @@
              document.getElementById('admin-sidebar').classList.toggle('open');
         };
 
-        // --- DATA REALTIME ---
+        // --- DATA REALTIME (Unchanged) ---
         onSnapshot(query(collection(db, "categories"), orderBy("order", "asc")), (snap) => {
             categories = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             renderCategories();
@@ -689,7 +735,7 @@
             }
         });
 
-        // --- ANNOUNCEMENT LOGIC ---
+        // --- ANNOUNCEMENT LOGIC (Unchanged) ---
         function renderAnnouncementBar() {
             const bar = document.getElementById('announcement-bar');
             const textDiv = document.getElementById('announcement-text');
@@ -765,7 +811,7 @@
             }
         };
         
-        // --- ADMIN REQUEST LOGIC (Unchanged) ---
+        // --- ADMIN REQUEST LOGIC (MODIFIED: Use Custom Confirm) ---
         function renderAdminRequests() {
             if (!isSuper) return; 
             const list = document.getElementById('requests-list');
@@ -781,17 +827,35 @@
                     <p class="text-sm font-bold">${req.name} <span class="text-xs text-slate-500">(${req.email})</span></p>
                     <p class="text-xs italic text-slate-600 dark:text-slate-400">Lý do: ${req.reason}</p>
                     <div class="flex gap-2 pt-2 border-t dark:border-white/5 mt-2">
-                        <button onclick="window.approveAdminRequest('${req.uid}', '${req.email}')" class="flex-1 bg-green-500 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase">DUYỆT</button>
-                        <button onclick="window.rejectAdminRequest('${req.uid}')" class="flex-1 bg-red-500 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase">TỪ CHỐI</button>
+                        <button onclick="window.requestApproveConfirm('${req.uid}', '${req.email}')" class="flex-1 bg-green-500 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase">DUYỆT</button>
+                        <button onclick="window.requestRejectConfirm('${req.uid}')" class="flex-1 bg-red-500 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase">TỪ CHỐI</button>
                     </div>
                 </div>
             `).join('');
             lucide.createIcons();
         }
+        
+        window.requestApproveConfirm = (uid, email) => {
+            window.showConfirm(
+                'Xác nhận Duyệt Yêu cầu',
+                `Bạn có chắc chắn muốn duyệt yêu cầu của ${email} và cấp quyền Phó Admin không?`,
+                () => window.approveAdminRequest(uid, email),
+                'DUYỆT VÀ CẤP QUYỀN'
+            );
+        };
+        
+        window.requestRejectConfirm = (uid) => {
+            window.showConfirm(
+                'Xác nhận Từ chối',
+                'Bạn có chắc chắn muốn từ chối yêu cầu này không?',
+                () => window.rejectAdminRequest(uid),
+                'TỪ CHỐI'
+            );
+        };
+        
 
         window.approveAdminRequest = async (uid, email) => {
-            if (!isSuper || !confirm(`Duyệt yêu cầu của ${email} và cấp quyền Phó Admin?`)) return;
-            
+            if (!isSuper) return;
             try {
                 await setDoc(doc(db, "settings", "admins"), { deputy_emails: arrayUnion(email) }, { merge: true });
                 await deleteDoc(doc(db, "adminRequests", uid));
@@ -806,8 +870,7 @@
         };
 
         window.rejectAdminRequest = async (uid) => {
-            if (!isSuper || !confirm("Bạn có chắc chắn muốn từ chối yêu cầu này?")) return;
-            
+            if (!isSuper) return;
             try {
                 await deleteDoc(doc(db, "adminRequests", uid));
                 showToast("Đã từ chối yêu cầu!");
@@ -818,7 +881,7 @@
             }
         };
 
-        // --- FAVORITES LOGIC (FIXED) ---
+        // --- FAVORITES LOGIC (Unchanged) ---
         window.toggleFavorite = (appId, event) => {
             event.stopPropagation();
             if (!currentUser) {
@@ -833,14 +896,43 @@
                 favorites: isFavorite ? arrayRemove(appId) : arrayUnion(appId)
             }).then(() => {
                 showToast(isFavorite ? "Đã gỡ khỏi mục yêu thích" : "Đã thêm vào mục yêu thích!");
-                renderApps(); // FIXED: Re-render apps to instantly update the star icon
+                renderApps(); 
             }).catch(error => {
                 console.error("Error toggling favorite: ", error);
                 showToast("Lỗi khi cập nhật mục yêu thích!", true); 
             });
         };
 
-        // --- BULK DELETE (SOFT DELETE) LOGIC (Unchanged) ---
+        // --- BULK DELETE (SOFT DELETE) LOGIC (MODIFIED: Use Custom Confirm) ---
+        window.executeBulkDelete = () => {
+            if (!isAdmin || selectedAppsForDelete.size === 0) return;
+            
+            const count = selectedAppsForDelete.size;
+
+            window.showConfirm(
+                'Xác nhận Chuyển vào Thùng rác',
+                `Bạn có chắc chắn muốn chuyển ${count} mục đã chọn vào Thùng rác? Bạn có thể khôi phục sau.`,
+                async () => {
+                    const batch = writeBatch(db);
+                    selectedAppsForDelete.forEach(appId => {
+                        batch.update(doc(db, "apps", appId), { isDeleted: true, deletedAt: new Date().toISOString() }); 
+                    });
+                    
+                    logActivity('APP_SOFT_DELETED', 'bulk', `${count} mục`); 
+
+                    try {
+                        await batch.commit();
+                        showToast(`Đã chuyển thành công ${count} mục vào Thùng rác!`);
+                        window.toggleBulkDelete(); 
+                    } catch (error) {
+                        console.error("Error batch soft-deleting apps: ", error);
+                        showToast("Lỗi: Không thể chuyển hàng loạt vào Thùng rác.", true); 
+                    }
+                },
+                `CHUYỂN ${count} MỤC VÀO THÙNG RÁC`
+            );
+        };
+        
         window.toggleBulkDelete = () => {
             if (!isAdmin) return;
             bulkDeleteMode = !bulkDeleteMode;
@@ -879,29 +971,7 @@
             document.getElementById('selected-count').innerText = count;
             document.getElementById('bulk-delete-dock').classList.toggle('hidden', !bulkDeleteMode || count === 0);
         }
-
-        window.executeBulkDelete = async () => {
-            if (!isAdmin || selectedAppsForDelete.size === 0) return;
-            
-            if (!confirm(`Bạn có chắc chắn muốn chuyển ${selectedAppsForDelete.size} mục đã chọn vào Thùng rác?`)) return;
-
-            const batch = writeBatch(db);
-            selectedAppsForDelete.forEach(appId => {
-                batch.update(doc(db, "apps", appId), { isDeleted: true, deletedAt: new Date().toISOString() }); 
-            });
-            
-            logActivity('APP_SOFT_DELETED', 'bulk', `${selectedAppsForDelete.size} mục`); 
-
-            try {
-                await batch.commit();
-                showToast(`Đã chuyển thành công ${selectedAppsForDelete.size} mục vào Thùng rác!`);
-                window.toggleBulkDelete(); 
-            } catch (error) {
-                console.error("Error batch soft-deleting apps: ", error);
-                showToast("Lỗi: Không thể chuyển hàng loạt vào Thùng rác.", true); 
-            }
-        };
-
+        
         // --- VISIT STATS LOGIC (Unchanged) ---
         function getDateString(date = new Date()) {
             const y = date.getFullYear();
@@ -1054,13 +1124,13 @@
                                 <i data-lucide="star" class="w-3 h-3 star-icon ${isFav ? 'fill-current' : ''}"></i>
                             </button>
                             ${isAdmin ? `
-                                <button onclick="window.toggleAppVisibility('${a.id}')" class="${a.visible ? 'bg-green-500' : 'bg-slate-500'} text-white p-2 rounded-full shadow-lg">
+                                <button onclick="window.toggleAppVisibility('${a.id}')" class="p-2 ${a.visible ? 'bg-green-500' : 'bg-slate-500'} text-white rounded-full shadow-lg">
                                     <i data-lucide="${a.visible ? 'eye' : 'eye-off'}" class="w-3 h-3"></i>
                                 </button>
                                 <button onclick="window.editApp('${a.id}')" class="bg-indigo-500 text-white p-2 rounded-full shadow-lg">
                                     <i data-lucide="edit-2" class="w-3 h-3"></i>
                                 </button>
-                                <button onclick="window.deleteApp('${a.id}')" class="bg-red-500 text-white p-2 rounded-full shadow-lg">
+                                <button onclick="window.deleteAppConfirm('${a.id}', '${a.name}')" class="bg-red-500 text-white p-2 rounded-full shadow-lg">
                                     <i data-lucide="trash" class="w-3 h-3"></i>
                                 </button>
                             ` : ''}
@@ -1137,68 +1207,79 @@
         window.handleImport = async (event) => {
             const file = event.target.files[0];
             if (!file) return;
-            if (!confirm("Hành động này sẽ thêm dữ liệu từ file vào site hiện tại. Tiếp tục?")) return;
+            
+            window.showConfirm(
+                'Xác nhận Nhập Dữ liệu',
+                `Bạn có chắc chắn muốn thêm dữ liệu từ file "${file.name}" vào site hiện tại?`,
+                async () => {
+                    const reader = new FileReader();
+                    reader.onload = async (e) => {
+                        try {
+                            let importedData = { categories: [], apps: [] };
+                            if (file.name.endsWith('.json')) {
+                                importedData = JSON.parse(e.target.result);
+                            } else if (file.name.endsWith('.xlsx')) {
+                                const data = new Uint8Array(e.target.result);
+                                const workbook = XLSX.read(data, { type: 'array' });
+                                const catSheet = workbook.Sheets["Categories"];
+                                if (catSheet) {
+                                    importedData.categories = XLSX.utils.sheet_to_json(catSheet).map(c => ({ name: c['Tên danh mục'], icon: c['Icon Logo'] || '', order: parseInt(c['Thứ tự']) || 0 }));
+                                }
+                                const appSheet = workbook.Sheets["Apps"];
+                                if (appSheet) {
+                                    importedData.apps = XLSX.utils.sheet_to_json(appSheet).map(a => ({ name: a['Tên'], url: a['URL/SĐT'], position: a['Chức vụ'] || '', categoryName: a['Danh mục'], iconUrl: a['Icon URL'] || '', visible: a['Hiển thị'] === 'Bật', order: parseInt(a['Thứ tự']) || 0 }));
+                                }
+                            }
 
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    let importedData = { categories: [], apps: [] };
-                    if (file.name.endsWith('.json')) {
-                        importedData = JSON.parse(e.target.result);
-                    } else if (file.name.endsWith('.xlsx')) {
-                        const data = new Uint8Array(e.target.result);
-                        const workbook = XLSX.read(data, { type: 'array' });
-                        const catSheet = workbook.Sheets["Categories"];
-                        if (catSheet) {
-                            importedData.categories = XLSX.utils.sheet_to_json(catSheet).map(c => ({ name: c['Tên danh mục'], icon: c['Icon Logo'] || '', order: parseInt(c['Thứ tự']) || 0 }));
+                            const categoryIdMap = {}; 
+                            for (const cat of importedData.categories) {
+                                const existing = categories.find(c => c.name === cat.name);
+                                if (existing) {
+                                    categoryIdMap[cat.name] = existing.id;
+                                } else {
+                                    const docRef = await addDoc(collection(db, "categories"), cat);
+                                    categoryIdMap[cat.name] = docRef.id;
+                                }
+                            }
+
+                            for (const appData of importedData.apps) {
+                                const { categoryName, ...rest } = appData;
+                                const finalAppData = { ...rest, categoryId: categoryIdMap[categoryName] || '' };
+                                await addDoc(collection(db, "apps"), finalAppData);
+                            }
+
+                            showToast("Khôi phục dữ liệu thành công!");
+                            logActivity('DATA_IMPORTED', 'system', `Nhập dữ liệu từ ${file.name}`); 
+                            event.target.value = ''; 
+                        } catch (error) {
+                            console.error(error);
+                            showToast("Lỗi phân tích file. Vui lòng kiểm tra lại định dạng.", true); 
                         }
-                        const appSheet = workbook.Sheets["Apps"];
-                        if (appSheet) {
-                            importedData.apps = XLSX.utils.sheet_to_json(appSheet).map(a => ({ name: a['Tên'], url: a['URL/SĐT'], position: a['Chức vụ'] || '', categoryName: a['Danh mục'], iconUrl: a['Icon URL'] || '', visible: a['Hiển thị'] === 'Bật', order: parseInt(a['Thứ tự']) || 0 }));
-                        }
-                    }
-
-                    const categoryIdMap = {}; 
-                    for (const cat of importedData.categories) {
-                        const existing = categories.find(c => c.name === cat.name);
-                        if (existing) {
-                            categoryIdMap[cat.name] = existing.id;
-                        } else {
-                            const docRef = await addDoc(collection(db, "categories"), cat);
-                            categoryIdMap[cat.name] = docRef.id;
-                        }
-                    }
-
-                    for (const appData of importedData.apps) {
-                        const { categoryName, ...rest } = appData;
-                        const finalAppData = { ...rest, categoryId: categoryIdMap[categoryName] || '' };
-                        await addDoc(collection(db, "apps"), finalAppData);
-                    }
-
-                    showToast("Khôi phục dữ liệu thành công!");
-                    logActivity('DATA_IMPORTED', 'system', `Nhập dữ liệu từ ${file.name}`); 
-                    event.target.value = ''; 
-                } catch (error) {
-                    console.error(error);
-                    alert("Lỗi phân tích file. Vui lòng kiểm tra lại định dạng.");
-                    showToast("Lỗi phân tích file. Vui lòng kiểm tra lại định dạng.", true); 
-                }
-            };
-            if (file.name.endsWith('.json')) reader.readAsText(file); else reader.readAsArrayBuffer(file);
+                    };
+                    if (file.name.endsWith('.json')) reader.readAsText(file); else reader.readAsArrayBuffer(file);
+                },
+                'NHẬP DỮ LIỆU'
+            );
         };
 
-        // --- ADMIN UTILS (Unchanged) ---
+        // --- ADMIN UTILS (MODIFIED: Use Custom Confirm) ---
         window.updateCatField = (id, field, val) => updateDoc(doc(db, "categories", id), { [field]: val })
             .then(() => { showToast("Đã cập nhật danh mục!"); logActivity('CAT_UPDATED', id, categories.find(c=>c.id === id)?.name); }) 
             .catch(e => showToast("Lỗi khi cập nhật danh mục!", true)); 
             
-        window.deleteCat = (id) => {
-            const catName = categories.find(c=>c.id === id)?.name;
-            if (confirm(`Xóa danh mục "${catName}"?`)) {
-                deleteDoc(doc(db, "categories", id))
-                    .then(() => { showToast("Đã xóa danh mục!"); logActivity('CAT_DELETED', id, catName); }) 
-                    .catch(e => showToast("Lỗi khi xóa danh mục!", true)); 
-            }
+        window.deleteCatConfirm = (id, name) => {
+            window.showConfirm(
+                'Xác nhận Xóa Danh mục',
+                `Bạn có chắc chắn muốn xóa vĩnh viễn danh mục "${name}" không?`,
+                () => window.deleteCat(id, name),
+                'XÓA VĨNH VIỄN'
+            );
+        };
+        
+        window.deleteCat = (id, name) => {
+            deleteDoc(doc(db, "categories", id))
+                .then(() => { showToast(`Đã xóa danh mục "${name}"!`); logActivity('CAT_DELETED', id, name); }) 
+                .catch(e => showToast("Lỗi khi xóa danh mục!", true)); 
         };
         
         window.addCategory = async () => {
@@ -1217,7 +1298,7 @@
 
         window.renderDeputyList = () => {
             const list = document.getElementById('deputy-list');
-            list.innerHTML = deputies.map(email => `<div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-xl border dark:border-white/5"><span class="text-sm font-bold">${email}</span>${isSuper ? `<button onclick="window.removeDeputy('${email}')" class="text-red-500 p-2"><i data-lucide="user-minus" class="w-4 h-4"></i></button>` : ''}</div>`).join('');
+            list.innerHTML = deputies.map(email => `<div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-xl border dark:border-white/5"><span class="text-sm font-bold">${email}</span>${isSuper ? `<button onclick="window.removeDeputyConfirm('${email}')" class="text-red-500 p-2"><i data-lucide="user-minus" class="w-4 h-4"></i></button>` : ''}</div>`).join('');
             
             document.getElementById('deputy-guard').classList.toggle('hidden', isSuper);
             document.getElementById('deputy-ui').classList.toggle('hidden', !isSuper);
@@ -1237,9 +1318,18 @@
                 setTimeout(() => location.reload(), 500);
             } catch (e) { showToast("Lỗi khi cấp quyền Phó Admin.", true); } 
         };
+        
+        window.removeDeputyConfirm = (email) => {
+            window.showConfirm(
+                'Xác nhận Thu hồi quyền',
+                `Bạn có chắc chắn muốn thu hồi quyền Phó Admin của ${email}? Họ sẽ không thể truy cập Sidebar Admin nữa.`,
+                () => window.removeDeputy(email),
+                'THU HỒI QUYỀN'
+            );
+        };
 
         window.removeDeputy = async (email) => {
-            if(!confirm(`Xóa quyền Phó Admin cho ${email}?`) || !isSuper) return;
+            if (!isSuper) return;
             try {
                 await setDoc(doc(db, "settings", "admins"), { deputy_emails: arrayRemove(email) }, { merge: true });
                 showToast(`Đã xóa quyền của ${email}. Đang tải lại...`);
@@ -1248,50 +1338,28 @@
             } catch (e) { showToast("Lỗi khi xóa quyền Phó Admin.", true); } 
         };
         
-        // NEW: Maintenance Mode Logic (Unchanged)
-        function checkMaintenanceMode() {
-            const isMaintenance = globalSettings.maintenanceMode;
-            const overlay = document.getElementById('maintenance-overlay');
-            
-            if (isMaintenance && !isAdmin) {
-                overlay.classList.remove('hidden');
-            } else {
-                overlay.classList.add('hidden');
-            }
-            
-            if (isMaintenance && isAdmin) {
-                document.getElementById('maintenance-admin-info').classList.remove('hidden');
-            } else {
-                document.getElementById('maintenance-admin-info').classList.add('hidden');
-            }
-        }
-
-        function renderMaintenanceControls() {
-            if (!isAdmin) return;
-            const btn = document.getElementById('maintenance-toggle-btn');
-            const status = document.getElementById('maintenance-status');
-            const isMaintenance = globalSettings.maintenanceMode;
-            
-            status.innerText = `Trạng thái: ${isMaintenance ? 'BẬT' : 'Tắt'}`;
-            btn.innerText = isMaintenance ? 'TẮT CHẾ ĐỘ' : 'BẬT CHẾ ĐỘ';
-            btn.classList.toggle('bg-red-600', isMaintenance);
-            btn.classList.toggle('bg-slate-500', !isMaintenance);
-        }
-
-        window.toggleMaintenanceMode = async () => {
+        // NEW: Maintenance Mode Logic (MODIFIED: Use Custom Confirm)
+        window.toggleMaintenanceMode = () => {
             if (!isAdmin) return;
             const newState = !globalSettings.maintenanceMode;
-            if (!confirm(`Bạn có chắc chắn muốn ${newState ? 'BẬT' : 'TẮT'} Chế độ Bảo trì?`)) return;
+            const action = newState ? 'BẬT' : 'TẮT';
 
-            try {
-                await setDoc(doc(db, "settings", "global"), { maintenanceMode: newState }, { merge: true });
-                showToast(`Đã ${newState ? 'BẬT' : 'TẮT'} Chế độ Bảo trì!`);
-                logActivity(newState ? 'ENABLED_MAINTENANCE' : 'DISABLED_MAINTENANCE', 'system', 'Chế độ Bảo trì'); 
-            } catch (e) {
-                showToast("Lỗi khi thay đổi Chế độ Bảo trì!", true);
-            }
+            window.showConfirm(
+                `Xác nhận ${action} Chế độ Bảo trì`,
+                `Bạn có chắc chắn muốn ${action} Chế độ Bảo trì không? Khi bật, tất cả Khách (Guest) sẽ không thể xem nội dung.`,
+                async () => {
+                    try {
+                        await setDoc(doc(db, "settings", "global"), { maintenanceMode: newState }, { merge: true });
+                        showToast(`Đã ${action} Chế độ Bảo trì!`);
+                        logActivity(newState ? 'ENABLED_MAINTENANCE' : 'DISABLED_MAINTENANCE', 'system', 'Chế độ Bảo trì'); 
+                    } catch (e) {
+                        showToast("Lỗi khi thay đổi Chế độ Bảo trì!", true);
+                    }
+                },
+                action
+            );
         };
-
+        
         // NEW: Activity Logging Utility (Unchanged)
         function logActivity(type, itemId, itemName, details = '') {
             if (!isAdmin || !currentUser) return; 
@@ -1353,7 +1421,7 @@
             lucide.createIcons();
         }
 
-        // NEW: Trash List Renderer and Actions (Unchanged)
+        // NEW: Trash List Renderer and Actions (MODIFIED: Use Custom Confirm)
         function renderTrash() {
             if (!isAdmin) return;
             const trashList = document.getElementById('trash-list');
@@ -1375,18 +1443,26 @@
                             <p class="text-[10px] text-slate-500">Xóa ngày: ${deletedDate}</p>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="window.restoreApp('${a.id}', '${a.name}')" class="bg-primary text-white px-3 py-1 rounded-lg text-xs font-bold uppercase hover:opacity-90">KHÔI PHỤC</button>
-                            <button onclick="window.clearTrash(false, '${a.id}', '${a.name}')" class="bg-red-500 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase hover:opacity-90">XÓA VĨNH VIỄN</button>
+                            <button onclick="window.restoreAppConfirm('${a.id}', '${a.name}')" class="bg-primary text-white px-3 py-1 rounded-lg text-xs font-bold uppercase hover:opacity-90">KHÔI PHỤC</button>
+                            <button onclick="window.clearTrashConfirm(false, '${a.id}', '${a.name}')" class="bg-red-500 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase hover:opacity-90">XÓA VĨNH VIỄN</button>
                         </div>
                     </div>
                 `;
             }).join('');
         }
         
-        // NEW: Restore App (Unchanged)
+        window.restoreAppConfirm = (id, name) => {
+            window.showConfirm(
+                'Xác nhận Khôi phục',
+                `Bạn có chắc chắn muốn khôi phục ứng dụng "${name}" về trang chủ không?`,
+                () => window.restoreApp(id, name),
+                'KHÔI PHỤC'
+            );
+        };
+        
+        // NEW: Restore App
         window.restoreApp = async (id, name) => {
             if (!isAdmin) return;
-            if (!confirm(`Khôi phục ứng dụng "${name}"?`)) return;
             try {
                 await updateDoc(doc(db, "apps", id), { isDeleted: false, deletedAt: null });
                 showToast(`Đã khôi phục ứng dụng "${name}"!`);
@@ -1396,15 +1472,28 @@
             }
         };
 
-        // NEW: Permanent Delete App / Clear All Trash (Unchanged)
+        window.clearTrashConfirm = (clearAll = false, id = null, name = '') => {
+            const isAll = clearAll;
+            const title = isAll ? 'XÓA VĨNH VIỄN TẤT CẢ' : 'XÓA VĨNH VIỄN MỤC NÀY';
+            const message = isAll 
+                ? "BẠN CÓ CHẮC CHẮN MUỐN XÓA VĨNH VIỄN TẤT CẢ mục trong Thùng rác? Hành động này không thể hoàn tác."
+                : `XÓA VĨNH VIỄN ứng dụng "${name}"? Hành động này không thể hoàn tác.`;
+
+            window.showConfirm(
+                title,
+                message,
+                () => window.clearTrash(clearAll, id, name),
+                title
+            );
+        };
+
+        // NEW: Permanent Delete App / Clear All Trash 
         window.clearTrash = async (clearAll = false, id = null, name = '') => {
             if (!isAdmin) return;
             
             if (clearAll) {
-                if (!confirm("BẠN CÓ CHẮC CHẮN MUỐN XÓA VĨNH VIỄN TẤT CẢ mục trong Thùng rác? Hành động này không thể hoàn tác.")) return;
-                
-                const batch = writeBatch(db);
                 const deletedApps = apps.filter(a => a.isDeleted);
+                const batch = writeBatch(db);
                 deletedApps.forEach(a => batch.delete(doc(db, "apps", a.id)));
                 
                 logActivity('APP_PERM_DELETED', 'bulk', `Tất cả ${deletedApps.length} mục`);
@@ -1417,7 +1506,6 @@
                 }
                 
             } else if (id) {
-                if (!confirm(`XÓA VĨNH VIỄN ứng dụng "${name}"?`)) return;
                 try {
                     await deleteDoc(doc(db, "apps", id));
                     showToast(`Đã xóa vĩnh viễn ứng dụng "${name}"!`);
@@ -1471,19 +1559,25 @@
                 showToast("Lỗi khi lưu ứng dụng!", true); 
             }
         };
+        
+        window.deleteAppConfirm = (id, name) => {
+             window.showConfirm(
+                'Xác nhận Chuyển vào Thùng rác',
+                `Bạn có chắc chắn muốn chuyển ứng dụng "${name}" vào Thùng rác không? Bạn có thể khôi phục sau.`,
+                () => window.deleteApp(id, name),
+                'CHUYỂN VÀO THÙNG RÁC'
+            );
+        };
 
-        // MODIFIED: Soft Delete instead of hard delete (Unchanged)
-        window.deleteApp = (id) => {
+        // MODIFIED: Soft Delete instead of hard delete (Unchanged logic, now only called by confirm)
+        window.deleteApp = (id, appName) => {
             if (!isAdmin) return;
-            const appName = apps.find(a => a.id === id)?.name;
-            if (confirm(`Chuyển ứng dụng "${appName}" vào thùng rác?`)) {
-                updateDoc(doc(db, "apps", id), { isDeleted: true, deletedAt: new Date().toISOString() })
-                    .then(() => {
-                        showToast("Đã chuyển ứng dụng vào Thùng rác!");
-                        logActivity('APP_SOFT_DELETED', id, appName); 
-                    })
-                    .catch(e => showToast("Lỗi khi chuyển vào thùng rác!", true)); 
-            }
+            updateDoc(doc(db, "apps", id), { isDeleted: true, deletedAt: new Date().toISOString() })
+                .then(() => {
+                    showToast(`Đã chuyển ứng dụng "${appName}" vào Thùng rác!`);
+                    logActivity('APP_SOFT_DELETED', id, appName); 
+                })
+                .catch(e => showToast("Lỗi khi chuyển vào thùng rác!", true)); 
         };
 
         window.toggleAppVisibility = (id) => {
@@ -1514,7 +1608,7 @@
             bar.innerHTML = html;
 
             const list = document.getElementById('cat-list-admin');
-            list.innerHTML = categories.map(c => `<li class="flex flex-col gap-2 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border dark:border-white/5" data-id="${c.id}"><div class="flex items-center gap-3"><i data-lucide="grip-vertical" class="text-slate-300 cursor-move"></i><input type="text" value="${c.name}" onblur="window.updateCatField('${c.id}', 'name', this.value)" class="flex-1 bg-transparent border-none font-bold text-sm outline-none"><button onclick="window.deleteCat('${c.id}')" class="text-red-500 p-2"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div><input type="text" value="${c.icon || ''}" onblur="window.updateCatField('${c.id}', 'icon', this.value)" placeholder="Icon URL" class="text-[10px] bg-white dark:bg-black/20 px-4 py-2 rounded-lg outline-none w-full border-none shadow-inner"></li>`).join('');
+            list.innerHTML = categories.map(c => `<li class="flex flex-col gap-2 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border dark:border-white/5" data-id="${c.id}"><div class="flex items-center gap-3"><i data-lucide="grip-vertical" class="text-slate-300 cursor-move"></i><input type="text" value="${c.name}" onblur="window.updateCatField('${c.id}', 'name', this.value)" class="flex-1 bg-transparent border-none font-bold text-sm outline-none"><button onclick="window.deleteCatConfirm('${c.id}', '${c.name}')" class="text-red-500 p-2"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div><input type="text" value="${c.icon || ''}" onblur="window.updateCatField('${c.id}', 'icon', this.value)" placeholder="Icon URL" class="text-[10px] bg-white dark:bg-black/20 px-4 py-2 rounded-lg outline-none w-full border-none shadow-inner"></li>`).join('');
             lucide.createIcons();
             if(isAdmin) new Sortable(list, { animation: 150, handle: '.cursor-move', onEnd: () => { Array.from(list.children).forEach((el, i) => updateDoc(doc(db, "categories", el.dataset.id), { order: i })); logActivity('CAT_ORDER_UPDATED', 'bulk', 'Sắp xếp danh mục'); }});
             document.getElementById('app-category').innerHTML = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
@@ -1570,14 +1664,13 @@
         document.getElementById('search-input').oninput = (e) => { searchQuery = e.target.value; renderApps(); };
         window.setView = (mode) => { viewMode = mode; renderApps(); };
         
-        // CẬP NHẬT & SỬA LỖI TOAST (FIXED: Lỗi không hiển thị và không tự đóng)
+        // CẬP NHẬT & SỬA LỖI TOAST (FIXED)
         function showToast(msg, isError = false) {
             const t = document.getElementById('toast');
             document.getElementById('toast-msg').innerText = msg;
             
             const icon = t.querySelector('i');
             
-            // Xóa hết class cũ
             icon.classList.remove('text-green-500', 'text-red-500');
 
             if (isError) {
@@ -1594,10 +1687,9 @@
             t.classList.remove('hidden');
             
             // Đảm bảo toast đang ở trạng thái ẩn (opacity: 0, translate-y: 20) trước khi bật hiệu ứng chuyển tiếp
-            // Để reset animation/transition, chúng ta tạm thời thêm và xóa một class không có transition.
             t.classList.add('no-transition');
             t.classList.add('opacity-0', 'translate-y-20');
-            t.offsetHeight; // Lực lượng trình duyệt render lại (Reflow)
+            t.offsetHeight; 
             t.classList.remove('no-transition');
             
             // Kích hoạt chuyển đổi để hiển thị
