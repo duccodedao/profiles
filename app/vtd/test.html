@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>HR Payment Portal</title>
     
     <!-- Bootstrap 5 -->
@@ -22,344 +22,313 @@
         :root {
             --primary: #4e54c8;
             --secondary: #8f94fb;
-            --accent: #00d2ff;
-            --glass: rgba(255, 255, 255, 0.95);
-            --glass-sidebar: rgba(255, 255, 255, 0.8);
             --text-dark: #2d3436;
+            --sidebar-width: 280px;
         }
 
         body {
             font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: #f4f7f6;
             min-height: 100vh;
             color: var(--text-dark);
             overflow-x: hidden;
         }
 
-        /* --- UI COMPONENTS --- */
+        /* --- LAYOUT & RESPONSIVE --- */
         .main-wrapper {
             display: flex;
             min-height: 100vh;
-            transition: all 0.3s;
+            position: relative;
         }
 
         /* Sidebar (Admin) */
         .sidebar {
-            width: 280px;
+            width: var(--sidebar-width);
             background: white;
-            border-right: 1px solid rgba(0,0,0,0.05);
-            padding: 20px;
-            display: none; /* Ẩn mặc định */
-            flex-direction: column;
-            box-shadow: 5px 0 30px rgba(0,0,0,0.02);
             position: fixed;
-            height: 100vh;
-            z-index: 1000;
+            top: 0; left: 0; height: 100%;
+            z-index: 1050;
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease-in-out;
+            /* Ẩn mặc định trên mọi thiết bị, sẽ hiện khi có class active hoặc admin mode */
+            transform: translateX(-100%); 
         }
 
-        .sidebar.active { display: flex; }
-
-        .sidebar-header {
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(45deg, var(--primary), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 40px;
-            padding-left: 10px;
+        /* Khi Admin Mode bật trên Desktop */
+        @media (min-width: 992px) {
+            .sidebar.admin-active { transform: translateX(0); }
+            .content-area.admin-active { margin-left: var(--sidebar-width); }
         }
 
-        .nav-item {
-            padding: 12px 20px;
-            border-radius: 12px;
-            color: #636e72;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-bottom: 8px;
-            display: flex; align-items: center; gap: 10px;
-        }
-        .nav-item:hover, .nav-item.active {
-            background: rgba(78, 84, 200, 0.1);
-            color: var(--primary);
-        }
+        /* Khi Toggle trên Mobile */
+        .sidebar.mobile-open { transform: translateX(0) !important; }
 
-        /* Main Content */
+        /* Overlay cho mobile khi mở menu */
+        .sidebar-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+            z-index: 1040; display: none;
+        }
+        .sidebar-overlay.show { display: block; }
+
+        /* Content Area */
         .content-area {
             flex-grow: 1;
-            padding: 30px;
-            margin-left: 0; /* Mặc định user thường */
-            transition: margin-left 0.3s;
-            display: flex; justify-content: center;
+            padding: 20px;
+            margin-left: 0;
+            transition: margin-left 0.3s ease-in-out;
+            width: 100%;
         }
-        .content-area.admin-mode { margin-left: 280px; display: block; }
 
-        /* User Card */
+        /* Toggle Button (Mobile Admin) */
+        .btn-toggle-sidebar {
+            position: fixed; top: 15px; left: 15px; z-index: 1060;
+            background: white; border: none; padding: 10px;
+            border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            display: none; /* Chỉ hiện khi là admin */
+        }
+
+        /* --- CARDS & FORMS --- */
         .user-card-container {
             max-width: 600px;
+            margin: 40px auto;
             width: 100%;
-            margin-top: 20px;
         }
         
         .modern-card {
             background: white;
-            border-radius: 24px;
-            padding: 40px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.08);
-            border: 1px solid rgba(0,0,0,0.02);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.05);
         }
 
-        /* Custom Inputs */
-        .form-floating > .form-control {
+        .form-control, .form-select {
             border-radius: 12px;
-            border: 1px solid #dfe6e9;
-            background: #fdfdfd;
+            padding: 12px 15px;
+            border: 1px solid #eee;
+            background: #fbfbfb;
         }
-        .form-floating > .form-control:focus {
+        .form-control:focus {
+            background: #fff;
             border-color: var(--primary);
             box-shadow: 0 0 0 4px rgba(78, 84, 200, 0.1);
         }
 
-        /* Buttons */
         .btn-modern {
-            background: linear-gradient(45deg, var(--primary), var(--secondary));
-            border: none;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-weight: 600;
-            transition: transform 0.2s;
-            box-shadow: 0 10px 20px rgba(78, 84, 200, 0.3);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none; color: white;
+            padding: 12px; border-radius: 12px;
+            font-weight: 600; width: 100%;
+            box-shadow: 0 5px 15px rgba(78, 84, 200, 0.3);
+            transition: 0.2s;
         }
         .btn-modern:hover { transform: translateY(-2px); color: white; }
 
-        /* Admin Table */
-        .admin-table {
-            background: white;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-        }
-        .admin-table thead { background: #f8f9fa; }
-        .admin-table th {
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #b2bec3;
-            padding: 20px;
-            border: none;
-        }
-        .admin-table td {
-            padding: 20px;
-            vertical-align: middle;
-            border-bottom: 1px solid #f1f2f6;
-        }
-        .avatar-circle {
-            width: 40px; height: 40px;
-            background: var(--primary);
-            color: white;
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold;
-            font-size: 1.2rem;
+        /* --- ADMIN DASHBOARD --- */
+        .stat-card {
+            background: white; border-radius: 16px; padding: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.03);
+            height: 100%; border-bottom: 4px solid var(--primary);
         }
 
-        /* Bank Badges */
-        .bank-tag {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            background: #f1f2f6;
-            color: #2d3436;
+        /* Table Responsive Fix */
+        .table-responsive {
+            background: white; border-radius: 16px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.03);
+            overflow-x: auto; /* Cuộn ngang trên mobile */
         }
-        .bank-tag img { height: 16px; width: auto; }
+        .table th {
+            white-space: nowrap; /* Không xuống dòng tiêu đề */
+            background: #f8f9fa; color: #888;
+            font-size: 0.85rem; padding: 15px; border: none;
+        }
+        .table td { padding: 15px; vertical-align: middle; border-bottom: 1px solid #f0f0f0; }
+
+        /* Sidebar Items */
+        .nav-item {
+            padding: 12px 15px; margin-bottom: 5px; border-radius: 10px;
+            cursor: pointer; color: #555; font-weight: 500; display: flex; align-items: center; gap: 10px;
+        }
+        .nav-item:hover, .nav-item.active { background: #eff3ff; color: var(--primary); }
 
         /* Loading */
         #loading {
             position: fixed; inset: 0; background: rgba(255,255,255,0.9);
             z-index: 9999; display: none; align-items: center; justify-content: center;
         }
-
-        /* Floating Admin Button */
-        .admin-float-btn {
-            position: fixed; bottom: 30px; right: 30px;
-            background: white; color: var(--text-dark);
-            width: 50px; height: 50px; border-radius: 50%;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; z-index: 100; transition: all 0.3s;
-        }
-        .admin-float-btn:hover { transform: scale(1.1); }
     </style>
 </head>
 <body>
 
-    <!-- Loading -->
+    <!-- Loading Screen -->
     <div id="loading">
-        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 fw-bold text-muted small">Đang xử lý...</p>
+        </div>
     </div>
+
+    <!-- Mobile Sidebar Toggle -->
+    <button class="btn-toggle-sidebar" id="sidebarToggle">
+        <i class="fas fa-bars fa-lg"></i>
+    </button>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <div class="main-wrapper">
         
-        <!-- SIDEBAR (Only visible to Admin) -->
-        <div class="sidebar" id="adminSidebar">
-            <div class="sidebar-header"><i class="fas fa-bolt me-2"></i>Admin Panel</div>
+        <!-- SIDEBAR -->
+        <div class="sidebar" id="sidebar">
+            <div class="d-flex align-items-center mb-5 px-2">
+                <div class="bg-primary text-white rounded-circle p-2 me-2"><i class="fas fa-shield-alt"></i></div>
+                <h5 class="fw-bold m-0 text-primary">Admin Panel</h5>
+            </div>
             
-            <div class="nav-item active" onclick="switchView('dashboard')">
-                <i class="fas fa-th-large"></i> Tổng quan
+            <div class="nav-item active" onclick="switchTab('dashboard')">
+                <i class="fas fa-chart-pie"></i> Tổng quan
             </div>
             <div class="nav-item" onclick="document.getElementById('fileExcel').click()">
-                <i class="fas fa-file-import"></i> Import Excel
+                <i class="fas fa-file-excel"></i> Import Excel
                 <input type="file" id="fileExcel" class="d-none" accept=".xlsx" onchange="handleImport()">
             </div>
-            <div class="nav-item" onclick="downloadSampleExcel()">
+            <div class="nav-item" onclick="downloadSample()">
                 <i class="fas fa-download"></i> Tải mẫu Excel
             </div>
-            <div class="nav-item" onclick="exportFullExcel()">
-                <i class="fas fa-file-export"></i> Xuất dữ liệu
+            <div class="nav-item" onclick="exportExcel()">
+                <i class="fas fa-file-export"></i> Xuất Báo cáo
             </div>
-            
-            <div class="mt-auto">
-                <div class="p-3 bg-light rounded-3 mb-3">
-                    <small class="text-muted d-block mb-1">Đang đăng nhập:</small>
-                    <div class="fw-bold text-truncate" id="adminNameDisplay">Admin</div>
+
+            <div class="mt-auto pt-4 border-top">
+                <div class="d-flex align-items-center mb-3">
+                    <img src="https://ui-avatars.com/api/?name=Admin&background=random" class="rounded-circle me-2" width="32">
+                    <small class="fw-bold text-truncate" id="adminName">Admin</small>
                 </div>
-                <div class="nav-item text-danger" id="btnLogout">
+                <div class="nav-item text-danger bg-light" id="btnLogout">
                     <i class="fas fa-sign-out-alt"></i> Đăng xuất
                 </div>
             </div>
         </div>
 
-        <!-- MAIN CONTENT AREA -->
-        <div class="content-area" id="mainArea">
+        <!-- CONTENT -->
+        <div class="content-area" id="contentArea">
             
-            <!-- VIEW 1: USER FORM (Default) -->
-            <div id="userView" class="user-card-container animate__animated animate__fadeIn">
-                <div class="d-flex justify-content-between align-items-center mb-4 px-2">
-                    <h3 class="fw-bold m-0 text-dark">Cổng Thông Tin</h3>
-                    <button class="btn btn-sm btn-light rounded-pill px-3" id="btnLoginUser">
-                        <i class="fab fa-google me-2"></i>Admin Login
-                    </button>
-                </div>
+            <!-- 1. USER INTERFACE -->
+            <div id="userView" class="animate__animated animate__fadeIn">
+                <div class="user-card-container">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="fw-bold m-0">Cổng Thông Tin</h4>
+                        <button class="btn btn-sm btn-white border rounded-pill shadow-sm" id="btnLoginUser">
+                            <i class="fab fa-google me-1 text-danger"></i> Admin Login
+                        </button>
+                    </div>
 
-                <div class="modern-card">
-                    <form id="userForm">
-                        <div class="mb-4">
-                            <label class="form-label fw-bold small text-muted text-uppercase ls-1">Chọn hồ sơ của bạn</label>
-                            <select id="userSelect" class="form-select form-select-lg border-0 bg-light py-3" required>
-                                <option value="" selected disabled>Đang tải danh sách...</option>
-                            </select>
-                        </div>
+                    <div class="modern-card">
+                        <form id="userForm">
+                            <div class="mb-4">
+                                <label class="fw-bold small text-muted text-uppercase mb-2">Chọn hồ sơ của bạn</label>
+                                <select id="userSelect" class="form-select form-select-lg" required>
+                                    <option value="" selected disabled>Đang tải dữ liệu...</option>
+                                </select>
+                            </div>
 
-                        <div id="formContent" style="opacity: 0.5; pointer-events: none; transition: 0.3s;">
-                            <!-- Info -->
-                            <div class="row g-3 mb-4">
-                                <div class="col-md-12 text-end">
-                                    <span class="badge bg-light text-dark cursor-pointer border" onclick="viewHistory()">
-                                        <i class="fas fa-clock me-1"></i> Lịch sử chỉnh sửa
+                            <div id="formContent" style="opacity: 0.5; pointer-events: none; transition: 0.3s;">
+                                <div class="text-end mb-3">
+                                    <span class="badge bg-light text-dark border cursor-pointer" onclick="viewHistory()">
+                                        <i class="fas fa-history me-1"></i> Lịch sử
                                     </span>
                                 </div>
-                                <div class="col-md-12">
-                                    <div class="form-floating">
-                                        <input type="text" class="form-control" id="inpName" placeholder="Tên" disabled>
-                                        <label>Họ và Tên</label>
+
+                                <div class="row g-3 mb-4">
+                                    <div class="col-12">
+                                        <label class="small text-muted">Họ và Tên</label>
+                                        <div class="input-group">
+                                            <input type="text" id="inpName" class="form-control" disabled>
+                                            <span class="input-group-text bg-white"><i class="fas fa-pen small text-muted" onclick="toggleEdit('inpName')"></i></span>
+                                        </div>
                                     </div>
-                                    <div class="text-end mt-1"><i class="fas fa-pen text-muted small" style="cursor:pointer" onclick="toggleEdit('inpName')"></i></div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="form-floating">
-                                        <input type="text" class="form-control" id="inpCccd" placeholder="CCCD" disabled readonly>
-                                        <label>CCCD</label>
+                                    <div class="col-6">
+                                        <label class="small text-muted">CCCD</label>
+                                        <input type="text" id="inpCccd" class="form-control" disabled readonly>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="small text-muted">Ngày sinh</label>
+                                        <div class="input-group">
+                                            <input type="text" id="inpDob" class="form-control" disabled>
+                                            <span class="input-group-text bg-white"><i class="fas fa-pen small text-muted" onclick="toggleEdit('inpDob')"></i></span>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="col-6">
-                                    <div class="form-floating">
-                                        <input type="text" class="form-control" id="inpDob" placeholder="Dob" disabled>
-                                        <label>Ngày sinh</label>
+
+                                <div class="bg-light p-3 rounded-4 mb-4">
+                                    <h6 class="fw-bold mb-3 text-primary"><i class="fas fa-university me-2"></i>Tài khoản ngân hàng</h6>
+                                    
+                                    <div class="mb-3">
+                                        <label class="small fw-bold">Agribank <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white border-end-0"><img id="logoAgri" src="" height="20"></span>
+                                            <input type="number" id="inpAgri" class="form-control border-start-0" placeholder="Số tài khoản..." required>
+                                        </div>
                                     </div>
-                                    <div class="text-end mt-1"><i class="fas fa-pen text-muted small" style="cursor:pointer" onclick="toggleEdit('inpDob')"></i></div>
+                                    
+                                    <div>
+                                        <label class="small fw-bold">Vietcombank</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white border-end-0"><img id="logoVcb" src="" height="20"></span>
+                                            <input type="number" id="inpVcb" class="form-control border-start-0" placeholder="Số tài khoản...">
+                                        </div>
+                                    </div>
                                 </div>
+
+                                <button type="submit" class="btn btn-modern">Xác nhận thông tin</button>
                             </div>
-
-                            <!-- Banks -->
-                            <div class="p-4 bg-light rounded-4 mb-4">
-                                <h6 class="fw-bold mb-3"><i class="fas fa-university me-2 text-primary"></i>Tài khoản nhận lương</h6>
-                                
-                                <div class="mb-3">
-                                    <label class="small fw-bold mb-1">Agribank <span class="text-danger">*</span></label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-white border-end-0"><img id="logoAgri" src="" height="20"></span>
-                                        <input type="number" id="inpAgri" class="form-control border-start-0" placeholder="Số tài khoản..." required>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label class="small fw-bold mb-1">Vietcombank</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-white border-end-0"><img id="logoVcb" src="" height="20"></span>
-                                        <input type="number" id="inpVcb" class="form-control border-start-0" placeholder="Số tài khoản...">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button type="submit" class="btn btn-modern w-100">
-                                Xác nhận thông tin <i class="fas fa-arrow-right ms-2"></i>
-                            </button>
-                        </div>
-                    </form>
+                        </form>
+                    </div>
                 </div>
             </div>
 
-            <!-- VIEW 2: ADMIN DASHBOARD -->
-            <div id="adminView" class="w-100 animate__animated animate__fadeIn d-none">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <h2 class="fw-bold m-0">Quản lý nhân sự</h2>
-                        <p class="text-muted m-0">Theo dõi và cập nhật thông tin tài khoản</p>
+            <!-- 2. ADMIN INTERFACE -->
+            <div id="adminView" class="d-none animate__animated animate__fadeIn">
+                <div class="container-fluid p-0">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                        <div>
+                            <h3 class="fw-bold m-0">Quản lý nhân sự</h3>
+                            <p class="text-muted small m-0">Hệ thống quản lý thông tin tập trung</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <input type="text" id="adminSearch" class="form-control" placeholder="Tìm kiếm..." style="width: 200px;">
+                            <button class="btn btn-dark" onclick="openAdminModal()"><i class="fas fa-plus"></i></button>
+                        </div>
                     </div>
-                    <button class="btn btn-dark rounded-pill" onclick="openAdminEditModal()">
-                        <i class="fas fa-plus me-2"></i>Thêm mới
-                    </button>
-                </div>
 
-                <!-- Stats -->
-                <div class="row g-4 mb-4">
-                    <div class="col-md-4">
-                        <div class="bg-white p-4 rounded-4 shadow-sm h-100 border-start border-4 border-primary">
-                            <div class="text-muted small text-uppercase fw-bold">Tổng số hồ sơ</div>
-                            <div class="display-5 fw-bold text-dark mt-2" id="statTotal">0</div>
+                    <!-- Stats -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-6 col-md-3">
+                            <div class="stat-card">
+                                <small class="text-muted fw-bold">TỔNG SỐ</small>
+                                <h2 class="fw-bold text-primary mb-0" id="statTotal">0</h2>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="stat-card" style="border-color: #00b894;">
+                                <small class="text-muted fw-bold">ĐÃ NHẬP</small>
+                                <h2 class="fw-bold text-success mb-0" id="statDone">0</h2>
+                            </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="bg-white p-4 rounded-4 shadow-sm h-100 border-start border-4 border-success">
-                            <div class="text-muted small text-uppercase fw-bold">Đã nhập tài khoản</div>
-                            <div class="display-5 fw-bold text-dark mt-2" id="statDone">0</div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="bg-white p-4 rounded-4 shadow-sm h-100 d-flex align-items-center">
-                            <input type="text" id="adminSearch" class="form-control form-control-lg border-0 bg-light" placeholder="🔍 Tìm kiếm nhanh...">
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Table -->
-                <div class="admin-table">
+                    <!-- Table -->
                     <div class="table-responsive">
-                        <table class="table mb-0">
+                        <table class="table table-hover mb-0">
                             <thead>
                                 <tr>
-                                    <th>Nhân viên</th>
-                                    <th>Thông tin cá nhân</th>
-                                    <th>Agribank</th>
-                                    <th>Vietcombank</th>
+                                    <th>Họ và Tên</th>
+                                    <th>CCCD / Ngày sinh</th>
+                                    <th>TK Agribank</th>
+                                    <th>TK Vietcombank</th>
                                     <th class="text-end">Hành động</th>
                                 </tr>
                             </thead>
                             <tbody id="adminTableBody">
-                                <!-- Data rendered here -->
+                                <!-- Data -->
                             </tbody>
                         </table>
                     </div>
@@ -369,18 +338,17 @@
         </div>
     </div>
 
-    <!-- MODAL: ADMIN ADD/EDIT -->
+    <!-- MODAL: ADMIN FORM -->
     <div class="modal fade" id="adminModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 rounded-4 shadow-lg">
-                <div class="modal-header border-0 pb-0">
+            <div class="modal-content border-0 rounded-4">
+                <div class="modal-header border-0">
                     <h5 class="modal-title fw-bold">Thông tin hồ sơ</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-4">
-                    <form id="adminEditForm" class="row g-3">
+                <div class="modal-body">
+                    <form id="adminForm" class="row g-3">
                         <input type="hidden" id="editMode" value="add">
-                        
                         <div class="col-12">
                             <label class="small fw-bold">Họ và Tên</label>
                             <input type="text" id="admName" class="form-control" required>
@@ -400,18 +368,13 @@
                                 <option value="Nữ">Nữ</option>
                             </select>
                         </div>
-
-                        <div class="col-12"><hr class="my-1"></div>
-                        <div class="col-12 bg-light p-3 rounded-3">
-                            <div class="d-flex align-items-center mb-2">
-                                <i class="fas fa-pen-square me-2 text-primary"></i> <small class="fw-bold">Nhập hộ tài khoản</small>
-                            </div>
-                            <input type="number" id="admAgri" class="form-control mb-2 bg-white" placeholder="TK Agribank...">
-                            <input type="number" id="admVcb" class="form-control bg-white" placeholder="TK Vietcombank...">
+                        <div class="col-12 bg-light p-3 rounded-3 mt-3">
+                            <label class="small fw-bold mb-2">Nhập hộ ngân hàng</label>
+                            <input type="number" id="admAgri" class="form-control mb-2" placeholder="Agribank">
+                            <input type="number" id="admVcb" class="form-control" placeholder="Vietcombank">
                         </div>
-
-                        <div class="col-12 mt-3">
-                            <button type="submit" class="btn btn-modern w-100">Lưu dữ liệu</button>
+                        <div class="col-12 mt-4">
+                            <button class="btn btn-primary w-100 py-2">Lưu dữ liệu</button>
                         </div>
                     </form>
                 </div>
@@ -424,23 +387,23 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 rounded-4">
                 <div class="modal-header border-0">
-                    <h5 class="modal-title fw-bold">Lịch sử thay đổi</h5>
+                    <h5 class="modal-title fw-bold">Lịch sử</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body bg-light rounded-bottom-4">
-                    <div id="historyContent" class="d-flex flex-column gap-3"></div>
+                    <div id="historyList" class="d-flex flex-column gap-2"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- JAVASCRIPT LOGIC -->
+    <!-- JAVASCRIPT -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getFirestore, collection, doc, setDoc, deleteDoc, addDoc, onSnapshot, query, where, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-        // 1. CONFIG
+        // --- 1. CONFIG ---
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
@@ -451,11 +414,8 @@
             measurementId: "G-C587M69LZW"
         };
         
-        // --- QUAN TRỌNG: DANH SÁCH UID ADMIN ĐƯỢC PHÉP ---
-        const ALLOWED_ADMINS = [
-            "VYIs9XHLR9RMStwtcdwMrOIo33w1" 
-            // Thêm các UID khác vào đây nếu cần, ví dụ: "UID_2", "UID_3"
-        ];
+        // ADMIN UIDS
+        const ALLOWED_ADMINS = ["VYIs9XHLR9RMStwtcdwMrOIo33w1"];
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -467,204 +427,206 @@
         let allUsers = [];
         let currentUser = null;
         let currentData = null;
-        let bankLogoAgri = "", bankLogoVcb = "";
 
-        // 2. FETCH ASSETS
+        // --- 2. RESPONSIVE SIDEBAR LOGIC ---
+        const sidebar = document.getElementById('sidebar');
+        const contentArea = document.getElementById('contentArea');
+        const overlay = document.getElementById('sidebarOverlay');
+        const toggleBtn = document.getElementById('sidebarToggle');
+
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('mobile-open');
+            overlay.classList.toggle('show');
+        });
+        overlay.addEventListener('click', () => {
+            sidebar.classList.remove('mobile-open');
+            overlay.classList.remove('show');
+        });
+
+        // --- 3. FETCH BANK LOGOS ---
         async function fetchLogos() {
             try {
                 const r = await fetch('https://api.vietqr.io/v2/banks');
                 const d = await r.json();
                 const agri = d.data.find(b=>b.code=="VBA");
                 const vcb = d.data.find(b=>b.code=="VCB");
-                if(agri) { bankLogoAgri = agri.logo; document.getElementById('logoAgri').src = agri.logo; }
-                if(vcb) { bankLogoVcb = vcb.logo; document.getElementById('logoVcb').src = vcb.logo; }
+                if(agri) document.getElementById('logoAgri').src = agri.logo;
+                if(vcb) document.getElementById('logoVcb').src = vcb.logo;
             } catch(e){}
         }
         fetchLogos();
-        function showLoading(s){ document.getElementById('loading').style.display=s?'flex':'none'; }
+        function showLoading(s) { document.getElementById('loading').style.display=s?'flex':'none'; }
 
-        // 3. AUTH & SECURITY
+        // --- 4. DATE HELPER (FIX SORT & IMPORT) ---
+        // Chuyển chuỗi "DD/MM/YYYY" sang Date Object để so sánh
+        function parseDate(dateStr) {
+            if(!dateStr) return new Date(0);
+            const parts = dateStr.split('/');
+            if(parts.length === 3) return new Date(parts[2], parts[1]-1, parts[0]);
+            return new Date(0);
+        }
+
+        // Chuyển Serial Excel sang DD/MM/YYYY
+        function excelDateToJS(serial) {
+            if (!serial) return "";
+            if (typeof serial === 'string' && serial.includes('/')) return serial; // Đã đúng format
+            const utc_days  = Math.floor(serial - 25569);
+            const utc_value = utc_days * 86400;
+            const date_info = new Date(utc_value * 1000);
+            const day = String(date_info.getDate()).padStart(2,'0');
+            const month = String(date_info.getMonth()+1).padStart(2,'0');
+            const year = date_info.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        // --- 5. AUTH ---
         onAuthStateChanged(auth, (user) => {
-            if (user) {
-                // Kiểm tra xem UID có trong danh sách cho phép không
-                if (ALLOWED_ADMINS.includes(user.uid)) {
-                    currentUser = user;
-                    setupAdminUI(true);
-                    document.getElementById('adminNameDisplay').textContent = user.displayName;
-                } else {
-                    // Nếu login thành công nhưng sai UID
-                    signOut(auth);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Truy cập bị từ chối',
-                        text: 'Tài khoản của bạn không có quyền Admin!',
-                        confirmButtonColor: '#4e54c8'
-                    });
-                }
+            if (user && ALLOWED_ADMINS.includes(user.uid)) {
+                currentUser = user;
+                toggleAdminMode(true);
+                document.getElementById('adminName').textContent = user.displayName;
+            } else if (user) {
+                signOut(auth);
+                Swal.fire('Lỗi', 'Bạn không có quyền Admin', 'error');
             } else {
                 currentUser = null;
-                setupAdminUI(false);
+                toggleAdminMode(false);
             }
         });
 
-        function setupAdminUI(isAdmin) {
-            const sidebar = document.getElementById('adminSidebar');
-            const mainArea = document.getElementById('mainArea');
-            const userView = document.getElementById('userView');
-            const adminView = document.getElementById('adminView');
-
+        function toggleAdminMode(isAdmin) {
             if(isAdmin) {
-                sidebar.classList.add('active');
-                mainArea.classList.add('admin-mode');
-                userView.classList.add('d-none');
-                adminView.classList.remove('d-none');
+                sidebar.classList.add('admin-active');
+                contentArea.classList.add('admin-active');
+                toggleBtn.style.display = 'block';
+                document.getElementById('userView').classList.add('d-none');
+                document.getElementById('adminView').classList.remove('d-none');
             } else {
-                sidebar.classList.remove('active');
-                mainArea.classList.remove('admin-mode');
-                userView.classList.remove('d-none');
-                adminView.classList.add('d-none');
+                sidebar.classList.remove('admin-active');
+                contentArea.classList.remove('admin-active');
+                toggleBtn.style.display = 'none';
+                document.getElementById('userView').classList.remove('d-none');
+                document.getElementById('adminView').classList.add('d-none');
             }
         }
 
-        document.getElementById('btnLoginUser').addEventListener('click', () => signInWithPopup(auth, provider));
-        document.getElementById('btnLogout').addEventListener('click', () => signOut(auth));
+        document.getElementById('btnLoginUser').onclick = () => signInWithPopup(auth, provider);
+        document.getElementById('btnLogout').onclick = () => signOut(auth);
 
-        // 4. DATA SYNC
+        // --- 6. REALTIME DATA & SORTING ---
         onSnapshot(collection(db, COLL_DATA), (snap) => {
             allUsers = [];
+            snap.forEach(doc => allUsers.push(doc.data()));
+
+            // SẮP XẾP THEO NGÀY SINH (Tăng dần)
+            allUsers.sort((a, b) => {
+                return parseDate(a.dob) - parseDate(b.dob);
+            });
+
+            // Render User Dropdown
             const select = document.getElementById('userSelect');
             select.innerHTML = '<option value="" selected disabled>-- Tìm tên của bạn --</option>';
-
-            snap.forEach(doc => {
-                const d = doc.data();
-                allUsers.push(d);
+            allUsers.forEach(u => {
                 const opt = document.createElement('option');
-                opt.value = d.cccd;
-                // --- CHỈ HIỆN TÊN ---
-                opt.textContent = d.name; 
+                opt.value = u.cccd;
+                opt.textContent = u.name; // Chỉ hiện tên
                 select.appendChild(opt);
             });
+
             renderAdminTable();
         });
 
-        // 5. USER LOGIC
-        document.getElementById('userSelect').addEventListener('change', function(){
-            const cccd = this.value;
-            currentData = allUsers.find(u=>u.cccd==cccd);
+        // --- 7. USER LOGIC ---
+        document.getElementById('userSelect').onchange = function() {
+            currentData = allUsers.find(u=>u.cccd==this.value);
             if(currentData) {
-                const div = document.getElementById('formContent');
-                div.style.opacity="1"; div.style.pointerEvents="auto";
+                const form = document.getElementById('formContent');
+                form.style.opacity="1"; form.style.pointerEvents="auto";
                 
                 ['Name','Cccd','Dob','Agri','Vcb'].forEach(k => {
-                    let field = k.toLowerCase();
-                    if(k=='Vcb') field='vietcombank';
-                    if(k=='Agri') field='agribank';
-                    document.getElementById('inp'+k).value = currentData[field] || "";
+                    let f = k.toLowerCase();
+                    if(k=='Vcb') f='vietcombank'; if(k=='Agri') f='agribank';
+                    document.getElementById('inp'+k).value = currentData[f] || "";
                 });
                 
-                // Khóa các ô
                 document.getElementById('inpName').disabled=true;
                 document.getElementById('inpDob').disabled=true;
             }
-        });
-
-        window.toggleEdit = function(id) {
-            let el = document.getElementById(id);
-            el.disabled = !el.disabled;
-            if(!el.disabled) el.focus();
         };
 
-        document.getElementById('userForm').addEventListener('submit', async(e)=>{
+        window.toggleEdit = (id) => {
+            let el = document.getElementById(id);
+            el.disabled=!el.disabled; if(!el.disabled) el.focus();
+        };
+
+        document.getElementById('userForm').onsubmit = async(e) => {
             e.preventDefault();
             const data = {
                 name: document.getElementById('inpName').value,
                 dob: document.getElementById('inpDob').value,
                 agribank: document.getElementById('inpAgri').value,
                 vietcombank: document.getElementById('inpVcb').value,
-                gender: currentData.gender || 'Nam' // Giữ nguyên giới tính
+                gender: currentData.gender || 'Nam'
             };
             await saveData(document.getElementById('inpCccd').value, data, currentData);
-        });
+        };
 
-        // 6. SAVE FUNCTION
         async function saveData(cccd, newData, oldData) {
             showLoading(true);
             const changes = [];
             const editor = currentUser ? `Admin: ${currentUser.displayName}` : "Khách";
-            
             for(let k in newData) {
                 if((oldData?.[k]||"") != (newData[k]||"")) 
                     changes.push({field:k, old:oldData?.[k]||"", new:newData[k]});
             }
-
             try {
-                await setDoc(doc(db, COLL_DATA, cccd), {...newData, cccd, last_updated:new Date().toISOString()}, {merge:true});
-                if(changes.length > 0) {
-                    await addDoc(collection(db, COLL_LOGS), {cccd_ref:cccd, editor, time:new Date().toISOString(), details:changes});
-                }
-                Swal.fire({icon:'success', title:'Đã lưu thành công!', timer:1500, showConfirmButton:false});
+                await setDoc(doc(db, COLL_DATA, cccd), {...newData, cccd, last_updated: new Date().toISOString()}, {merge:true});
+                if(changes.length>0) await addDoc(collection(db, COLL_LOGS), {cccd_ref:cccd, editor, time:new Date().toISOString(), details:changes});
+                Swal.fire({icon:'success',title:'Đã lưu!',timer:1500,showConfirmButton:false});
                 bootstrap.Modal.getInstance(document.getElementById('adminModal'))?.hide();
-            } catch(e) {
-                Swal.fire('Lỗi', e.message, 'error');
-            } finally {
-                showLoading(false);
-            }
+            } catch(e) { Swal.fire('Lỗi',e.message,'error'); }
+            finally { showLoading(false); }
         }
 
-        // 7. ADMIN DASHBOARD LOGIC
+        // --- 8. ADMIN LOGIC ---
         function renderAdminTable() {
             const tbody = document.getElementById('adminTableBody');
             const term = document.getElementById('adminSearch').value.toLowerCase();
             tbody.innerHTML = '';
-
+            
             const filtered = allUsers.filter(u => u.name?.toLowerCase().includes(term) || u.cccd?.includes(term));
             
             document.getElementById('statTotal').innerText = allUsers.length;
             document.getElementById('statDone').innerText = allUsers.filter(u=>u.agribank).length;
 
             filtered.forEach(u => {
-                const avatar = u.name.charAt(0).toUpperCase();
-                const agri = u.agribank ? `<div class="bank-tag"><img src="${bankLogoAgri}"> ${u.agribank}</div>` : '<span class="text-muted small">-</span>';
-                const vcb = u.vietcombank ? `<div class="bank-tag"><img src="${bankLogoVcb}"> ${u.vietcombank}</div>` : '<span class="text-muted small">-</span>';
-
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-circle me-3">${avatar}</div>
-                            <div>
-                                <div class="fw-bold text-dark">${u.name}</div>
-                                <div class="small text-muted">${u.gender}</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="fw-bold text-dark">${u.cccd}</div>
-                        <div class="small text-muted">${u.dob}</div>
-                    </td>
-                    <td>${agri}</td>
-                    <td>${vcb}</td>
+                    <td><div class="fw-bold">${u.name}</div><small class="text-muted">${u.gender}</small></td>
+                    <td><div>${u.cccd}</div><small class="text-muted">${u.dob}</small></td>
+                    <td>${u.agribank || '<span class="text-muted">-</span>'}</td>
+                    <td>${u.vietcombank || '<span class="text-muted">-</span>'}</td>
                     <td class="text-end">
-                        <button class="btn btn-sm btn-outline-primary border-0 rounded-circle" onclick="openEdit('${u.cccd}')"><i class="fas fa-pen"></i></button>
-                        <button class="btn btn-sm btn-outline-danger border-0 rounded-circle" onclick="delUser('${u.cccd}')"><i class="fas fa-trash"></i></button>
+                        <button class="btn btn-sm btn-light border" onclick="editUser('${u.cccd}')"><i class="fas fa-pen text-primary"></i></button>
+                        <button class="btn btn-sm btn-light border" onclick="delUser('${u.cccd}')"><i class="fas fa-trash text-danger"></i></button>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
         }
-        document.getElementById('adminSearch').addEventListener('keyup', renderAdminTable);
+        document.getElementById('adminSearch').onkeyup = renderAdminTable;
 
-        window.openAdminEditModal = function() {
-            document.getElementById('adminEditForm').reset();
+        window.openAdminModal = () => {
+            document.getElementById('adminForm').reset();
             document.getElementById('editMode').value='add';
             document.getElementById('admCccd').readOnly=false;
             new bootstrap.Modal(document.getElementById('adminModal')).show();
-        }
+        };
 
-        window.openEdit = function(cccd) {
+        window.editUser = (cccd) => {
             const u = allUsers.find(x=>x.cccd==cccd);
             document.getElementById('editMode').value='update';
-            document.getElementById('admCccd').value=u.cccd;
+            document.getElementById('admCccd').value=u.cccd; 
             document.getElementById('admCccd').readOnly=true;
             document.getElementById('admName').value=u.name;
             document.getElementById('admDob').value=u.dob;
@@ -672,9 +634,9 @@
             document.getElementById('admAgri').value=u.agribank||"";
             document.getElementById('admVcb').value=u.vietcombank||"";
             new bootstrap.Modal(document.getElementById('adminModal')).show();
-        }
+        };
 
-        document.getElementById('adminEditForm').addEventListener('submit', async(e)=>{
+        document.getElementById('adminForm').onsubmit = async(e) => {
             e.preventDefault();
             const cccd = document.getElementById('admCccd').value;
             const mode = document.getElementById('editMode').value;
@@ -689,65 +651,71 @@
                 vietcombank: document.getElementById('admVcb').value
             };
             await saveData(cccd, data, oldData);
-        });
+        };
 
-        window.delUser = async function(cccd) {
-            if((await Swal.fire({title:'Xóa?', icon:'warning', showCancelButton:true})).isConfirmed) {
+        window.delUser = async(cccd) => {
+            if((await Swal.fire({title:'Xóa?',icon:'warning',showCancelButton:true})).isConfirmed) {
                 await deleteDoc(doc(db, COLL_DATA, cccd));
                 Swal.fire('Đã xóa','','success');
             }
-        }
+        };
 
-        // 8. UTILS (Import/Export/History)
-        window.downloadSampleExcel = function() {
-            const ws = XLSX.utils.json_to_sheet([{ "Họ tên":"Nguyễn A", "CCCD":"001", "Ngày sinh":"01/01/2000", "Giới tính":"Nam" }]);
-            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Mau");
-            XLSX.writeFile(wb, "Mau_Import.xlsx");
-        }
-        window.handleImport = function() {
+        // --- 9. IMPORT/EXPORT (FIXED DATE) ---
+        window.handleImport = () => {
             const f = document.getElementById('fileExcel').files[0];
             if(!f) return;
             showLoading(true);
             const r = new FileReader();
-            r.onload = async(e)=>{
+            r.onload = async(e) => {
                 const wb = XLSX.read(e.target.result, {type:'array'});
                 const d = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
                 for(let row of d) {
-                    let cccd=row['CCCD']||row['cccd'];
+                    let cccd = row['CCCD']||row['cccd'];
                     if(cccd) {
                         cccd=String(cccd);
+                        // Fix date import
+                        let dob = row['Ngày sinh']||row['DOB']||row['ngay_sinh']||"";
+                        if(typeof dob === 'number') dob = excelDateToJS(dob);
+
                         await setDoc(doc(db, COLL_DATA, cccd), {
                             cccd, name: row['Họ tên']||row['Name'],
-                            dob: row['Ngày sinh']||'', gender: row['Giới tính']||'Nam'
+                            dob: dob, gender: row['Giới tính']||'Nam'
                         }, {merge:true});
                     }
                 }
                 showLoading(false); Swal.fire('Xong','','success'); document.getElementById('fileExcel').value='';
             };
             r.readAsArrayBuffer(f);
-        }
-        window.exportFullExcel = function() {
+        };
+
+        window.downloadSample = () => {
+            const ws = XLSX.utils.json_to_sheet([{ "Họ tên":"Nguyễn A", "CCCD":"123", "Ngày sinh":"01/01/2000", "Giới tính":"Nam" }]);
+            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Mau");
+            XLSX.writeFile(wb, "Mau_Import.xlsx");
+        };
+
+        window.exportExcel = () => {
             const d = allUsers.map(u=>({
                 "Họ tên":u.name, "CCCD":u.cccd, "Ngày sinh":u.dob, "Giới tính":u.gender,
-                "Agribank":u.agribank, "Vietcombank":u.vietcombank, "Cập nhật":u.last_updated
+                "Agribank":u.agribank, "Vietcombank":u.vietcombank
             }));
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(d), "Data");
-            XLSX.writeFile(wb, "Export_Full.xlsx");
-        }
-        window.viewHistory = async function() {
+            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(d), "Data");
+            XLSX.writeFile(wb, "Data_Export.xlsx");
+        };
+
+        window.viewHistory = async() => {
             if(!currentData) return;
             const q = query(collection(db, COLL_LOGS), where("cccd_ref","==",currentData.cccd), orderBy("time","desc"));
             const snap = await getDocs(q);
-            const div = document.getElementById('historyContent');
+            const div = document.getElementById('historyList');
             div.innerHTML = snap.empty ? "Chưa có lịch sử." : "";
             snap.forEach(d=>{
                 const l = d.data();
-                const det = l.details.map(x=>`<div><b>${x.field}</b>: <s class='text-muted'>${x.old}</s> ➝ <b class='text-success'>${x.new}</b></div>`).join('');
-                div.innerHTML += `<div class='card p-3 mb-2 shadow-sm border-0'><small class='text-muted'>${new Date(l.time).toLocaleString()} - ${l.editor}</small><div class='mt-2'>${det}</div></div>`;
+                const det = l.details.map(x=>`<div><b>${x.field}</b>: <s>${x.old}</s> ➝ <b class='text-success'>${x.new}</b></div>`).join('');
+                div.innerHTML += `<div class='bg-white p-3 rounded shadow-sm border'><small class='text-muted'>${new Date(l.time).toLocaleString()} - ${l.editor}</small><div class='mt-1'>${det}</div></div>`;
             });
             new bootstrap.Modal(document.getElementById('historyModal')).show();
-        }
+        };
 
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
