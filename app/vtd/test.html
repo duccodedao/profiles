@@ -1,1006 +1,531 @@
 <!DOCTYPE html>
-<html lang="vi" class="light">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Menu app - Vĩnh Trạch Đông</title>
-    <link rel="icon" href="https://hdd.io.vn/img/bmassloadings.png" type="image/png">
+    <title>Hệ thống Thu thập Dữ liệu & VietQR</title>
     
-    <!-- SEO & PWA Meta Tags -->
-    <meta name="description" content="Hub Portal tổng hợp các ứng dụng và danh bạ liên hệ của Vĩnh Trạch Đông.">
-    <link rel="icon" href="https://hdd.io.vn/img/bmassloadings.png" type="image/png">
-    <link rel="apple-touch-icon" href="https://hdd.io.vn/img/bmassloadings.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="apple-mobile-web-app-title" content="Hub Vĩnh Trạch Đông">
-    <link rel="manifest" href="/js/applinkicon.json">
-    <meta name="theme-color" content="#4f46e5">
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- SheetJS (Excel) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-    <!-- Social Media Meta -->
-    <meta property="og:title" content="Hub Portal - Vĩnh Trạch Đông">
-    <meta property="og:description" content="Hub Portal tổng hợp các ứng dụng và danh bạ liên hệ của Vĩnh Trạch Đông.">
-    <meta property="og:image" content="https://bmass.vercel.app/img/bmasslogo.png">
-    <meta property="og:type" content="website">
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Drag & Drop -->
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-    <!-- Excel Library (SheetJS) -->
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: { extend: { colors: { primary: '#4f46e5', secondary: '#f43f5e', dark: '#020617' } } }
-        }
-    </script>
     <style>
-        .admin-sidebar { 
-            width: 28rem; 
-            min-width: 320px; 
-            transform: translateX(100%); 
-            transition: transform 0.3s ease-in-out;
-            overflow-x: hidden;
-        }
-        .admin-sidebar.open { transform: translateX(0); }
-        @media (max-width: 768px) { .admin-sidebar { width: 100%; } }
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
+        .container { max-width: 900px; margin-top: 30px; margin-bottom: 50px; }
         
-        .mobile-category-sidebar { 
-            width: 75%;
-            max-width: 300px;
-            transform: translateX(-100%);
-            transition: transform 0.3s ease-in-out;
-            overflow-x: hidden;
-        }
-        .mobile-category-sidebar.open { transform: translateX(0); }
+        /* Card & UI */
+        .card { border: none; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+        .card-header { background: white; border-bottom: 1px solid #eee; padding: 20px; border-radius: 12px 12px 0 0 !important; }
         
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; transition: background 0.3s; padding-bottom: 100px; } 
-        .dark body { background-color: #020617; color: #e2e8f0; }
-        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); }
-        .dark .glass { background: rgba(15, 23, 42, 0.8); border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .app-item { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .drag-ghost { opacity: 0.3; background: #4f46e5 !important; border-radius: 1rem; }
-        .tab-active { color: #4f46e5; border-bottom: 2px solid #4f46e5; }
-        .dark .tab-active { color: #818cf8; border-bottom: 2px solid #818cf8; }
-        .app-item.selected-for-delete { box-shadow: 0 0 0 3px #f43f5e; border-radius: 1rem; }
+        /* Bank Logos */
+        .bank-logo-img { height: 30px; object-fit: contain; margin-right: 10px; }
         
-        header { top: 0; transition: top 0.3s; }
-        #announcement-bar:not(.hidden) ~ header { top: 32px; }
+        /* Inputs & Edit Mode */
+        .form-control:disabled { background-color: #f8f9fa; border: 1px solid #e9ecef; opacity: 1; color: #495057; }
+        .editing { border-color: #198754 !important; background-color: #fff !important; box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25); }
+        .btn-edit { cursor: pointer; z-index: 10; }
         
-        .marquee { overflow: hidden; white-space: nowrap; box-sizing: border-box; }
-        .marquee > div { display: inline-block; padding-left: 100%; animation: marquee 15s linear infinite; }
-        @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
+        /* Timeline History */
+        .timeline { border-left: 2px solid #e9ecef; padding-left: 20px; margin-left: 5px; }
+        .timeline-item { position: relative; margin-bottom: 25px; }
+        .timeline-item::before { content: ''; position: absolute; left: -26px; top: 5px; width: 10px; height: 10px; background: #0d6efd; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 2px #0d6efd; }
+        .text-old { text-decoration: line-through; color: #dc3545; font-size: 0.85em; margin-right: 5px; }
+        .text-new { color: #198754; font-weight: bold; }
         
-        .logo-loader { width: 24px; height: 24px; animation: zoom-logo 1.5s ease-in-out infinite; }
-        @keyframes zoom-logo { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
-        
-        @media (max-width: 768px) {
-            body { padding-bottom: 80px; }
-            #main-content-wrapper { padding-bottom: 10px; }
-            #category-bar { display: none !important; }
-            header { padding-right: 0; }
-        }
-        
-        #toast {
-            bottom: 20px; right: 50%; left: 50%;
-            transform: translate(-50%, 100%);
-            opacity: 0; transition: all 0.4s ease-out;
-            max-width: 90%; width: auto; min-width: 250px;
-            pointer-events: none;
-        }
-        #toast.visible { transform: translate(-50%, 0); opacity: 1; pointer-events: auto; }
+        /* Loading */
+        #loading { position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 9999; display: none; align-items: center; justify-content: center; flex-direction: column; }
     </style>
 </head>
-<body class="min-h-screen pb-24">
-    
-    <!-- Global Loading Overlay -->
-    <div id="global-loading-overlay" class="fixed inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm z-[900] flex items-center justify-center transition-opacity duration-300 opacity-0 pointer-events-none">
-        <div id="loading-content" class="flex flex-col items-center justify-center">
-            <img src="https://hdd.io.vn/img/bmassloadings.png" class="logo-loader w-12 h-12" alt="Loading Logo">
-            <span id="loading-text" class="text-slate-600 dark:text-white mt-4 font-medium">Đang tải dữ liệu...</span>
-        </div>
-    </div>
-    
-    <!-- Maintenance Mode Overlay -->
-    <div id="maintenance-overlay" class="fixed inset-0 bg-white dark:bg-slate-900 z-[500] flex flex-col items-center justify-center p-8 text-center hidden">
-        <i data-lucide="wrench" class="w-16 h-16 text-primary mb-4"></i>
-        <h2 class="text-3xl font-black text-primary dark:text-white mb-2">CHẾ ĐỘ BẢO TRÌ</h2>
-        <p class="text-slate-500 dark:text-slate-400 max-w-md">Hệ thống đang được bảo trì và nâng cấp. Khách truy cập tạm thời không thể xem nội dung.</p>
-        <p id="maintenance-admin-info" class="text-sm font-bold mt-4 text-red-500 hidden">(Admin đang thao tác)</p>
-    </div>
-    
-    <!-- Announcement Bar -->
-    <div id="announcement-bar" class="fixed top-0 left-0 w-full z-[101] bg-secondary text-white text-xs font-bold py-2 shadow-md hidden">
-        <div class="marquee"><div id="announcement-text"></div></div>
-    </div>
-    
-    <!-- Header -->
-    <header class="sticky top-0 z-[100] glass px-6 py-3 flex justify-between items-center transition-all duration-300">
-        <div class="flex items-center gap-3">
-            <button onclick="window.toggleMobileCategorySidebar()" id="mobile-category-toggle" class="p-2 rounded-xl text-slate-600 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition md:hidden"><i data-lucide="menu" class="w-5 h-5"></i></button>
+<body>
 
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg p-1">
-                <img src="https://hdd.io.vn/img/bmassloadings.png" alt="Hub Logo" class="w-full h-full object-contain rounded-lg">
-            </div>
-            <div>
-                <h1 class="text-xs font-black tracking-tighter uppercase leading-none">Hub Portal</h1>
-                <span id="role-status" class="text-[9px] font-bold text-slate-400">GUEST</span>
-            </div>
-        </div>
-
-        <div class="flex items-center gap-3">
-            <button onclick="window.toggleAdminSidebar()" id="admin-sidebar-toggle" class="p-2 rounded-xl text-primary hover:bg-slate-100 dark:hover:bg-slate-800 transition hidden"><i data-lucide="settings-2" class="w-5 h-5"></i></button>
-
-            <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg mobile-hidden">
-                <button onclick="window.setView('grid')" id="view-grid-btn" class="p-1.5 rounded-md transition-all shadow-sm bg-white dark:bg-slate-700"><i data-lucide="layout-grid" class="w-4 h-4"></i></button>
-                <button onclick="window.setView('list')" id="view-list-btn" class="p-1.5 rounded-md transition-all"><i data-lucide="list" class="w-4 h-4"></i></button>
-            </div>
-            
-            <button onclick="window.toggleTheme()" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition mobile-hidden">
-                <i data-lucide="sun" class="w-5 h-5 hidden dark:block text-amber-400"></i>
-                <i data-lucide="moon" class="w-5 h-5 dark:hidden text-slate-600"></i>
-            </button>
-            
-            <div id="auth-section"></div>
-        </div>
-    </header>
-
-    <!-- Mobile Category Sidebar -->
-    <div id="mobile-category-sidebar" class="mobile-category-sidebar fixed top-0 left-0 bottom-0 bg-white dark:bg-slate-900 border-r dark:border-white/10 shadow-2xl z-[200] flex flex-col pt-0 md:hidden">
-        <div class="p-6 border-b dark:border-white/5 flex flex-col items-start justify-between">
-            <div class="flex items-center gap-2 mb-2">
-                <div class="w-8 h-8 flex items-center justify-center p-0.5"><img src="https://hdd.io.vn/img/bmassloadings.png" class="w-full h-full object-contain rounded-lg"></div>
-                <h3 class="text-sm font-black tracking-tighter uppercase leading-none">Hub Portal</h3>
-            </div>
-            <div class="flex items-center justify-between w-full">
-                <h3 class="text-lg font-black uppercase tracking-widest text-primary dark:text-white">DANH MỤC</h3>
-                <button onclick="window.toggleMobileCategorySidebar()" class="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
-        </div>
-        <div id="category-bar-mobile" class="flex-1 overflow-y-auto p-6 space-y-2"></div>
+    <!-- Loading Screen -->
+    <div id="loading">
+        <div class="spinner-border text-primary mb-2" role="status"></div>
+        <span class="fw-bold text-primary">Đang xử lý dữ liệu...</span>
     </div>
 
-    <!-- Main Content -->
-    <div id="main-content-wrapper" class="flex max-w-7xl mx-auto">
-        <main class="flex-1 p-6 space-y-8 min-w-0">
-            <!-- Search -->
-            <div id="search-container" class="relative max-w-2xl mx-auto">
-                <i data-lucide="search" class="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
-                <input type="text" id="search-input" placeholder="Tìm kiếm..." class="w-full pl-14 pr-6 py-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-4 ring-primary/10 outline-none shadow-sm">
+    <!-- Header / Navbar -->
+    <nav class="navbar navbar-light bg-white shadow-sm mb-4 sticky-top">
+        <div class="container-fluid px-lg-5">
+            <span class="navbar-brand fw-bold text-primary"><i class="fas fa-university me-2"></i>Thu Thập Dữ Liệu</span>
+            <div class="d-flex align-items-center gap-2">
+                <span id="userInfo" class="small fw-bold text-secondary"></span>
+                <button id="btnLogin" class="btn btn-primary btn-sm rounded-pill px-3"><i class="fab fa-google me-2"></i>Admin Login</button>
+                <button id="btnLogout" class="btn btn-outline-danger btn-sm rounded-pill d-none"><i class="fas fa-sign-out-alt"></i></button>
             </div>
-
-            <!-- Stats -->
-            <div id="visit-stats-container" class="max-w-4xl mx-auto p-4 rounded-3xl bg-slate-100 dark:bg-slate-900/50">
-                <div class="flex items-center justify-center h-20 text-slate-400">Đang tải thống kê...</div>
-            </div>
-
-            <!-- Admin Request -->
-            <div id="request-admin-section" class="max-w-4xl mx-auto hidden p-6 bg-yellow-50 dark:bg-yellow-900/20 rounded-3xl border border-yellow-200 dark:border-yellow-700 space-y-4">
-                <h3 class="text-xl font-bold text-yellow-800 dark:text-yellow-200 flex items-center gap-2"><i data-lucide="key" class="w-6 h-6"></i> Xin Cấp Quyền Quản Trị</h3>
-                <p id="request-admin-status" class="text-sm font-medium text-yellow-700 dark:text-yellow-300">Bạn chưa có quyền quản trị.</p>
-                <form id="request-admin-form" class="flex gap-4">
-                    <input type="text" id="request-admin-reason" placeholder="Lý do xin cấp quyền..." required class="flex-1 px-5 py-3 bg-white dark:bg-slate-800 rounded-xl outline-none focus:ring-2 ring-yellow-500 text-sm">
-                    <button type="submit" class="bg-yellow-500 text-white px-8 py-3 rounded-xl font-bold text-xs uppercase shadow-lg hover:bg-yellow-600 transition">GỬI</button>
-                </form>
-            </div>
-            
-            <div id="category-bar" class="mobile-hidden flex flex-wrap gap-2"></div>
-            
-            <div id="main-tabs-content">
-                <!-- App Content -->
-                <div id="tab-app-content">
-                    <div id="app-loading" class="text-center p-16 text-slate-400 text-sm font-medium hidden">
-                        <img src="/img/bmassloadings.png" class="logo-loader w-6 h-6 mx-auto mb-2" alt="Loading Logo">Đang tải ứng dụng...
-                    </div>
-                    <div id="app-container"></div>
-                </div>
-
-                <!-- NEW: Personnel Content -->
-                <div id="tab-hr-content" class="hidden max-w-5xl mx-auto">
-                    <h3 class="text-xl font-black text-primary dark:text-white mb-6 border-b pb-2 px-2">NHÂN SỰ</h3>
-                    <div id="hr-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div class="p-16 text-center col-span-full">
-                             <i data-lucide="users" class="w-12 h-12 text-slate-400 mx-auto mb-4"></i>
-                             <p class="text-slate-500 dark:text-slate-400">Đang tải dữ liệu nhân sự...</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Notifications -->
-                <div id="tab-notify-content" class="hidden max-w-4xl mx-auto">
-                    <h3 class="text-xl font-black text-primary dark:text-white mb-6 border-b pb-2 px-2">THÔNG BÁO MỚI</h3>
-                    <div id="notification-content-list" class="space-y-4"></div>
-                </div>
-
-                <!-- Profile -->
-                <div id="tab-profile-content" class="hidden max-w-lg mx-auto p-4">
-                    <h3 class="mobile-hidden text-xl font-black text-primary dark:text-white mb-6 border-b pb-2">THÔNG TIN CÁ NHÂN</h3>
-                    <div id="profile-content-details" class="space-y-4"></div>
-                    <div id="profile-action-panel" class="space-y-4 mt-8">
-                        <button id="profile-admin-panel-btn" onclick="window.toggleAdminSidebar()" class="hidden w-full py-3 bg-primary text-white rounded-xl font-bold shadow-lg uppercase text-xs flex items-center justify-center gap-2 hover:bg-indigo-600 transition">
-                            <i data-lucide="settings" class="w-4 h-4"></i> ADMIN PANEL
-                        </button>
-                        <div class="grid grid-cols-2 gap-4">
-                             <a href="#" onclick="window.showToast('Bảo mật 2 yếu tố sắp ra mắt!', false)" class="flex items-center gap-3 p-4 bg-slate-100 dark:bg-slate-800 rounded-xl shadow-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition"><i data-lucide="shield-check" class="w-5 h-5 text-primary"></i><span class="text-xs font-bold">Bảo mật</span></a>
-                             <button onclick="window.openPrivacyModal()" class="flex items-center gap-3 p-4 bg-slate-100 dark:bg-slate-800 rounded-xl shadow-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition text-left"><i data-lucide="lock" class="w-5 h-5 text-primary"></i><span class="text-xs font-bold">Quyền riêng tư</span></button>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <button onclick="window.toggleTheme()" id="profile-theme-toggle" class="flex items-center gap-3 p-4 bg-slate-100 dark:bg-slate-800 rounded-xl shadow-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition"><i data-lucide="sun" class="w-5 h-5 text-primary"></i><span class="text-xs font-bold">System</span></button>
-                            <button onclick="window.setLang(currentLang === 'vi' ? 'en' : 'vi')" id="profile-lang-toggle" class="flex items-center gap-3 p-4 bg-slate-100 dark:bg-slate-800 rounded-xl shadow-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition"><i data-lucide="globe" class="w-5 h-5 text-primary"></i><span id="current-lang-text" class="text-xs font-bold">🇻🇳 Việt Nam</span></button>
-                        </div>
-                        <button onclick="window.requestNotificationPermission()" class="w-full py-3 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white rounded-xl font-bold text-xs uppercase shadow-sm hover:bg-slate-300 transition flex items-center justify-center gap-2"><i data-lucide="bell" class="w-4 h-4"></i> THÔNG BÁO</button>
-                        <div class="grid grid-cols-2 gap-4">
-                            <a href="#" onclick="window.logout()" class="w-full py-3 bg-red-500 text-white rounded-xl font-bold text-xs uppercase shadow-lg hover:bg-red-600 transition flex items-center justify-center gap-2"><i data-lucide="log-out" class="w-4 h-4"></i> ĐĂNG XUẤT</a>
-                            <a href="chat.html" target="_blank" class="w-full py-3 bg-secondary text-white rounded-xl font-bold text-xs uppercase shadow-lg hover:opacity-90 transition flex items-center justify-center gap-2"><i data-lucide="life-buoy" class="w-4 h-4"></i> TRỢ GIÚP</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="bulk-delete-dock" class="hidden fixed bottom-28 left-1/2 -translate-x-1/2 z-[110]">
-                <div class="bg-red-600 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-4">
-                    <span id="selected-count">0</span> mục chọn
-                    <button onclick="window.executeBulkDelete()" class="flex items-center gap-2 px-5 py-2.5 bg-white/20 hover:bg-white/30 text-white rounded-xl text-xs font-bold shadow-lg uppercase"><i data-lucide="trash-2" class="w-4 h-4"></i> THÙNG RÁC</button>
-                </div>
-            </div>
-        </main>
-
-        <!-- Admin Sidebar -->
-        <div id="admin-sidebar" class="admin-sidebar fixed right-0 top-0 bottom-0 bg-white dark:bg-slate-900 border-l dark:border-white/10 shadow-2xl z-[150] flex flex-col pt-16">
-            <div id="sidebar-controls" class="p-6 border-b dark:border-white/5 flex flex-col gap-3">
-                 <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-black uppercase tracking-widest text-primary dark:text-white">QUẢN TRỊ VIÊN</h3>
-                    <button onclick="window.toggleAdminSidebar()" class="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
-                 </div>
-                 <div class="flex items-center gap-3">
-                    <button onclick="window.openAppModal()" class="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary text-white rounded-xl text-xs font-bold shadow-lg"><i data-lucide="plus" class="w-4 h-4"></i> APP</button>
-                    <button onclick="window.openHRModal()" class="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-green-600 text-white rounded-xl text-xs font-bold shadow-lg"><i data-lucide="user-plus" class="w-4 h-4"></i> NHÂN SỰ</button>
-                    <button onclick="window.toggleBulkDelete()" id="bulk-delete-sidebar-toggle" class="p-3 rounded-xl text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center justify-center"><i data-lucide="scissors" class="w-5 h-5"></i></button>
-                 </div>
-            </div>
-
-            <div class="p-6 border-b dark:border-white/5">
-                <div class="flex flex-wrap gap-2 text-[10px] font-black tracking-widest text-slate-400">
-                    <button onclick="window.switchTab('tab-cat')" id="btn-tab-cat" class="text-primary border-b-2 border-primary pb-1">DANH MỤC</button>
-                    <button onclick="window.switchTab('tab-hr-admin')" id="btn-tab-hr-admin" class="pb-1 uppercase">NHÂN SỰ</button>
-                    <button onclick="window.switchTab('tab-trash')" id="btn-tab-trash" class="pb-1 uppercase">THÙNG RÁC</button>
-                    <button onclick="window.switchTab('tab-announcement')" id="btn-tab-announcement" class="pb-1 uppercase">THÔNG BÁO</button>
-                    <button onclick="window.switchTab('tab-users')" id="btn-tab-users" class="pb-1 uppercase">NGƯỜI DÙNG</button>
-                    <button onclick="window.switchTab('tab-data')" id="btn-tab-data" class="pb-1 uppercase">DỮ LIỆU</button>
-                </div>
-            </div>
-            
-            <div class="flex-1 overflow-y-auto p-6 space-y-8">
-                <!-- Tab Categories -->
-                <div id="tab-cat" class="space-y-6">
-                    <h4 class="text-sm font-bold uppercase tracking-widest text-slate-500">Quản lý Danh mục</h4>
-                    <div class="flex flex-col gap-2">
-                        <input type="text" id="new-cat-name" placeholder="Tên danh mục..." class="px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary">
-                        <div class="flex gap-2">
-                             <input type="text" id="new-cat-icon" placeholder="Link Icon..." class="flex-1 px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary">
-                             <button onclick="window.addCategory()" class="bg-primary text-white px-6 rounded-xl font-bold text-xs uppercase">Thêm</button>
-                        </div>
-                    </div>
-                    <ul id="cat-list-admin" class="space-y-2"></ul>
-                </div>
-
-                <!-- NEW: Tab HR Admin -->
-                <div id="tab-hr-admin" class="hidden space-y-6">
-                    <h4 class="text-sm font-bold uppercase tracking-widest text-slate-500">Quản lý Nhân sự</h4>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button onclick="window.downloadHRSample()" class="flex items-center justify-center gap-2 px-4 py-3 bg-white dark:bg-slate-800 border dark:border-white/5 rounded-xl text-xs font-bold hover:bg-slate-50 transition">
-                            <i data-lucide="download" class="w-4 h-4"></i> Mẫu Excel
-                        </button>
-                         <label for="import-hr-file" class="flex items-center justify-center gap-2 px-4 py-3 bg-white dark:bg-slate-800 border dark:border-white/5 rounded-xl text-xs font-bold hover:bg-slate-50 transition cursor-pointer">
-                            <i data-lucide="upload" class="w-4 h-4"></i> Import Excel
-                            <input type="file" id="import-hr-file" accept=".xlsx" onchange="window.handleHRImport(event)" class="hidden">
-                        </label>
-                    </div>
-                    <div id="hr-list-admin" class="space-y-2 text-xs">
-                         <div class="p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center text-slate-400">Danh sách quản lý hiển thị tại tab chính.</div>
-                    </div>
-                </div>
-                
-                <!-- Tab Trash -->
-                <div id="tab-trash" class="hidden space-y-6">
-                    <h4 class="text-sm font-bold uppercase tracking-widest text-slate-500">Thùng rác</h4>
-                    <div id="trash-list" class="space-y-2"></div>
-                    <button onclick="window.clearTrashConfirm(true)" id="clear-trash-btn" class="w-full py-3 bg-red-600 text-white rounded-xl font-bold shadow-lg uppercase text-xs hidden">DỌN SẠCH VĨNH VIỄN</button>
-                </div>
-                
-                <!-- Tab Announcement -->
-                <div id="tab-announcement" class="hidden space-y-8">
-                    <h4 class="text-sm font-black uppercase tracking-widest text-primary border-b pb-2">Thông báo</h4>
-                    <textarea id="announcement-content" placeholder="Nội dung thông báo (ngắn gọn, lặp lại)" rows="3" class="w-full p-5 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-secondary text-sm font-medium"></textarea>
-                    <div class="grid grid-cols-2 gap-4">
-                        <input type="datetime-local" id="announcement-start" class="w-full p-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-secondary text-sm font-medium">
-                        <input type="datetime-local" id="announcement-end" class="w-full p-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-secondary text-sm font-medium">
-                    </div>
-                    <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-xl border dark:border-white/5">
-                        <label class="text-sm font-bold opacity-60">Kích hoạt Chạy chữ</label>
-                        <div class="flex gap-2">
-                           <button onclick="window.saveAnnouncementContent(true)" class="px-5 py-2 rounded-xl font-bold text-xs uppercase transition-all bg-primary text-white">Lưu/Bật</button>
-                           <button id="toggle-announcement-btn" onclick="window.toggleAnnouncementStatus()" class="px-5 py-2 rounded-xl font-bold text-xs uppercase transition-all">Tắt</button>
-                        </div>
-                    </div>
-                    <!-- Notification Feed -->
-                    <div class="space-y-4 pt-6 border-t dark:border-white/5">
-                        <h4 class="text-sm font-black uppercase tracking-widest text-secondary border-b pb-2">Tạo Thông Báo Mới</h4>
-                        <input type="text" id="notify-title" placeholder="Tiêu đề thông báo..." class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-secondary text-sm font-bold">
-                        <textarea id="notify-content" placeholder="Nội dung chi tiết..." rows="3" class="w-full p-5 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-secondary text-sm font-medium"></textarea>
-                        <input type="text" id="notify-icon" placeholder="Icon URL" class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-secondary text-sm font-medium">
-                        <button onclick="window.publishNotification()" class="w-full py-4 bg-secondary text-white rounded-xl font-bold shadow-lg uppercase text-xs hover:bg-red-600 transition">Đăng</button>
-                    </div>
-                    <div id="admin-notify-list" class="space-y-2"></div>
-                </div>
-
-                <!-- Tab Users (Placeholder) -->
-                <div id="tab-users" class="hidden space-y-6">
-                     <h4 class="text-sm font-bold uppercase tracking-widest text-slate-500">Người dùng & Phó Admin</h4>
-                     <div class="flex gap-2">
-                            <input type="email" id="new-deputy-email" placeholder="Gmail phó admin..." class="flex-1 px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary">
-                            <button onclick="window.addDeputy()" class="bg-primary text-white px-6 rounded-xl font-bold text-xs uppercase">CẤP</button>
-                     </div>
-                     <div id="deputy-list" class="space-y-2"></div>
-                     <div id="users-list" class="space-y-2 mt-4 pt-4 border-t dark:border-white/5"></div>
-                </div>
-
-                <!-- Tab Data -->
-                <div id="tab-data" class="hidden space-y-8">
-                    <h4 class="text-sm font-bold uppercase tracking-widest text-slate-500">Xuất/Nhập Dữ Liệu & Bảo Trì</h4>
-                    <div class="grid gap-6">
-                        <div class="p-6 bg-yellow-50 dark:bg-yellow-900/20 rounded-[2rem] border border-yellow-200 dark:border-yellow-700 space-y-4">
-                            <h4 class="text-xs font-black uppercase tracking-widest text-yellow-700 dark:text-yellow-200 flex items-center gap-2"><i data-lucide="shield-alert" class="w-4 h-4"></i> CHẾ ĐỘ BẢO TRÌ</h4>
-                            <div class="flex items-center justify-between">
-                                <span id="maintenance-status" class="text-sm font-bold">Trạng thái: Tắt</span>
-                                <button onclick="window.toggleMaintenanceMode()" class="px-5 py-2 rounded-xl font-bold text-xs uppercase transition-all bg-slate-500 text-white" id="maintenance-toggle-btn">BẬT CHẾ ĐỘ</button>
-                            </div>
-                        </div>
-                        <div class="p-6 bg-slate-50 dark:bg-white/5 rounded-[2rem] border dark:border-white/5 space-y-4">
-                            <h4 class="text-xs font-black uppercase tracking-widest text-primary">Backup Dữ liệu App</h4>
-                            <button onclick="window.handleExport('json')" class="flex items-center justify-between w-full px-5 py-3 bg-white dark:bg-slate-800 rounded-xl hover:ring-2 ring-indigo-500 transition shadow-sm"><span class="text-sm font-bold">Xuất JSON</span><i data-lucide="download" class="w-4 h-4"></i></button>
-                            <div class="relative">
-                                <input type="file" id="import-file" accept=".json, .xlsx" onchange="window.handleImport(event)" class="hidden">
-                                <label for="import-file" class="flex items-center justify-center gap-3 w-full px-5 py-4 bg-slate-900 text-white dark:bg-white dark:text-slate-900 rounded-xl cursor-pointer hover:opacity-90 transition font-bold text-xs uppercase"><i data-lucide="upload-cloud" class="w-5 h-5"></i> Restore Backup</label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Mobile Tab Bar -->
-    <nav id="mobile-nav-bar" class="fixed bottom-0 left-0 w-full z-100 bg-white dark:bg-slate-900 border-t dark:border-white/10 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] md:hidden">
-        <div class="flex justify-around items-center h-16">
-            <button onclick="window.switchMobileTab('app')" id="tab-app-btn" class="flex flex-col items-center justify-center w-full h-full text-primary"><i data-lucide="layout-grid" class="w-5 h-5"></i><span class="text-[9px] font-bold mt-1">Ứng Dụng</span></button>
-            <button onclick="window.switchMobileTab('contact')" id="tab-contact-btn" class="flex flex-col items-center justify-center w-full h-full text-slate-400"><i data-lucide="users" class="w-5 h-5"></i><span class="text-[9px] font-bold mt-1">Danh Bạ</span></button>
-            <!-- NEW: HR Tab Button -->
-            <button onclick="window.switchMobileTab('hr')" id="tab-hr-btn" class="flex flex-col items-center justify-center w-full h-full text-slate-400"><i data-lucide="briefcase" class="w-5 h-5"></i><span class="text-[9px] font-bold mt-1">Nhân Sự</span></button>
-            
-            <button onclick="window.switchMobileTab('notify')" id="tab-notify-btn" class="flex flex-col items-center justify-center w-full h-full text-slate-400">
-                <div class="relative"><i data-lucide="bell" class="w-5 h-5"></i><span id="unread-count" class="absolute -top-1 -right-1 transform translate-x-1/2 -translate-y-1/2 bg-red-500 text-white text-[8px] font-black px-1.5 rounded-full hidden">0</span></div>
-                <span class="text-[9px] font-bold mt-1">Thông Báo</span>
-            </button>
-            <button onclick="window.switchMobileTab('profile')" id="tab-profile-btn" class="flex flex-col items-center justify-center w-full h-full text-slate-400"><i data-lucide="user-circle" class="w-5 h-5"></i><span class="text-[9px] font-bold mt-1">Cá Nhân</span></button>
         </div>
     </nav>
 
-    <!-- App Modal -->
-    <div id="modal-app" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[210] hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden">
-            <div class="p-6 border-b dark:border-white/5 flex justify-between items-center"><h3 id="app-modal-title" class="font-bold uppercase text-sm tracking-widest">Cấu hình App</h3><button onclick="window.closeModal('modal-app')" class="p-2 rounded-lg hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button></div>
-            <form id="app-form" class="p-8 space-y-4">
-                <input type="hidden" id="edit-id">
-                <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Danh mục</label><select id="app-category" onchange="window.toggleFormFields()" class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium"></select></div>
-                <div class="space-y-1"><label id="label-name" class="text-[10px] font-bold text-slate-400 uppercase ml-1">Tên hiển thị</label><input type="text" id="app-name" required class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium"></div>
-                <div id="field-position" class="space-y-1 hidden"><label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Chức vụ</label><input type="text" id="app-position" class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium"></div>
-                <div class="space-y-1"><label id="label-link" class="text-[10px] font-bold text-slate-400 uppercase ml-1">Link URL</label><input type="text" id="app-link" required class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium"></div>
-                <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Icon URL</label><input type="text" id="app-icon" class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium"></div>
-                <div class="flex items-center gap-3 p-2"><input type="checkbox" id="app-visible" checked class="w-5 h-5 accent-primary"><label class="text-xs font-bold opacity-60">Hiển thị công khai</label></div>
-                <button type="submit" class="w-full py-4 bg-primary text-white rounded-xl font-bold shadow-lg shadow-indigo-500/30 uppercase text-xs">Lưu ứng dụng</button>
-            </form>
-        </div>
-    </div>
-    
-    <!-- NEW: HR Modal (Thêm nhân sự) -->
-    <div id="modal-hr" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[210] hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
-            <div class="p-6 border-b dark:border-white/5 flex justify-between items-center"><h3 class="font-bold uppercase text-sm tracking-widest text-green-600">Thông tin Nhân sự</h3><button onclick="window.closeModal('modal-hr')" class="p-2 rounded-lg hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button></div>
-            <form id="hr-form" class="p-8 space-y-4">
-                <input type="hidden" id="hr-edit-id">
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Họ và tên</label><input type="text" id="hr-name" required class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium"></div>
-                    <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Chức vụ</label><input type="text" id="hr-position" class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium"></div>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Ngày sinh</label><input type="date" id="hr-dob" class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium"></div>
-                    <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Giới tính</label><select id="hr-gender" class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium"><option value="Nam">Nam</option><option value="Nữ">Nữ</option></select></div>
-                </div>
-                <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Số CCCD</label><input type="text" id="hr-cccd" class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium"></div>
-                <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Số điện thoại</label><input type="text" id="hr-phone" class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium"></div>
-                <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Ảnh (URL)</label><input type="text" id="hr-image" placeholder="Để trống để dùng Icon mặc định" class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium"></div>
-                
-                <div class="p-4 bg-slate-50 dark:bg-white/5 rounded-xl border dark:border-white/5 space-y-3">
-                    <h5 class="text-xs font-bold uppercase text-slate-500">Thông tin Ngân hàng (VietQR)</h5>
-                    <div class="space-y-1">
-                        <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Ngân hàng</label>
-                        <select id="hr-bank-select" class="w-full px-5 py-3 bg-white dark:bg-slate-800 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium"></select>
+    <div class="container">
+        
+        <!-- Main Tabs -->
+        <ul class="nav nav-pills mb-4 justify-content-center p-1 bg-white rounded-pill shadow-sm" style="width: fit-content; margin: 0 auto;">
+            <li class="nav-item">
+                <button class="nav-link active rounded-pill px-4" data-bs-toggle="pill" data-bs-target="#tab-user">
+                    <i class="fas fa-user-edit me-2"></i>Nhập Liệu
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link rounded-pill px-4" id="btnAdminTab" data-bs-toggle="pill" data-bs-target="#tab-admin">
+                    <i class="fas fa-user-shield me-2"></i>Quản Trị (Admin)
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            
+            <!-- TAB 1: USER -->
+            <div class="tab-pane fade show active" id="tab-user">
+                <div class="card">
+                    <div class="card-body p-4">
+                        <form id="userForm">
+                            <div class="mb-4 text-center">
+                                <h5 class="fw-bold mb-3">Tìm kiếm hồ sơ của bạn</h5>
+                                <select id="userSelect" class="form-select form-select-lg shadow-sm border-primary" required>
+                                    <option value="" selected disabled>-- Đang tải danh sách... --</option>
+                                </select>
+                            </div>
+
+                            <div id="formContent" style="opacity: 0.5; pointer-events: none; transition: 0.3s;">
+                                
+                                <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                                    <h6 class="text-primary fw-bold m-0">THÔNG TIN CÁ NHÂN</h6>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="viewHistory()">
+                                        <i class="fas fa-history me-1"></i> Lịch sử sửa
+                                    </button>
+                                </div>
+
+                                <div class="row g-3 mb-4">
+                                    <div class="col-md-6">
+                                        <label class="small text-muted">Họ và Tên</label>
+                                        <div class="input-group">
+                                            <input type="text" id="inpName" class="form-control" disabled>
+                                            <button type="button" class="btn btn-light border" onclick="toggleEdit('inpName')"><i class="fas fa-pen text-secondary small"></i></button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="small text-muted">Số CCCD (Cố định)</label>
+                                        <input type="text" id="inpCccd" class="form-control bg-light fw-bold text-dark" disabled readonly>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="small text-muted">Ngày sinh</label>
+                                        <div class="input-group">
+                                            <input type="text" id="inpDob" class="form-control" disabled>
+                                            <button type="button" class="btn btn-light border" onclick="toggleEdit('inpDob')"><i class="fas fa-pen text-secondary small"></i></button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="small text-muted">Giới tính</label>
+                                        <div class="input-group">
+                                            <select id="inpGender" class="form-select" disabled>
+                                                <option value="Nam">Nam</option>
+                                                <option value="Nữ">Nữ</option>
+                                            </select>
+                                            <button type="button" class="btn btn-light border" onclick="toggleEdit('inpGender')"><i class="fas fa-pen text-secondary small"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="bg-light p-3 rounded-3 mb-4">
+                                    <h6 class="text-success fw-bold mb-3"><i class="fas fa-wallet me-2"></i>THÔNG TIN THANH TOÁN</h6>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold small">Ngân hàng Agribank <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white"><img id="logoAgri" src="" class="bank-logo-img" alt="AGRI"></span>
+                                            <input type="number" id="inpAgri" class="form-control" placeholder="Nhập số tài khoản..." required>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label class="form-label fw-bold small">Ngân hàng Vietcombank</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white"><img id="logoVcb" src="" class="bank-logo-img" alt="VCB"></span>
+                                            <input type="number" id="inpVcb" class="form-control" placeholder="Nhập số tài khoản (nếu có)...">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow-sm">
+                                    <i class="fas fa-save me-2"></i> LƯU DỮ LIỆU
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                    <div class="space-y-1">
-                        <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Số tài khoản</label>
-                        <input type="text" id="hr-bank-acc" class="w-full px-5 py-3 bg-white dark:bg-slate-800 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium">
+                </div>
+            </div>
+
+            <!-- TAB 2: ADMIN -->
+            <div class="tab-pane fade" id="tab-admin">
+                <!-- Lock Screen -->
+                <div id="adminLocked" class="text-center py-5">
+                    <div class="mb-3"><i class="fas fa-lock fa-3x text-secondary"></i></div>
+                    <h5>Khu vực quản trị viên</h5>
+                    <p class="text-muted">Vui lòng đăng nhập Google để truy cập.</p>
+                </div>
+
+                <!-- Admin Content -->
+                <div id="adminContent" class="d-none">
+                    
+                    <!-- EXPORT BUTTON -->
+                    <div class="card mb-4 border-success">
+                        <div class="card-body d-flex justify-content-between align-items-center bg-success bg-opacity-10">
+                            <div>
+                                <h5 class="text-success fw-bold mb-1"><i class="fas fa-file-excel me-2"></i>Báo Cáo Tổng Hợp</h5>
+                                <p class="small text-muted mb-0">Xuất toàn bộ dữ liệu nhân viên và tài khoản ra Excel</p>
+                            </div>
+                            <button onclick="exportFullExcel()" class="btn btn-success fw-bold shadow-sm">
+                                <i class="fas fa-download me-2"></i>Tải về Excel
+                            </button>
+                        </div>
                     </div>
-                    <div id="hr-bank-logo-preview" class="hidden text-center py-2"><img id="bank-logo-img" class="h-8 mx-auto object-contain"></div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header bg-primary text-white">
+                                    <i class="fas fa-file-upload me-2"></i>Import Danh Sách
+                                </div>
+                                <div class="card-body">
+                                    <p class="small text-muted">File Excel cần các cột: <code>Họ tên, CCCD, Ngày sinh, Giới tính</code></p>
+                                    <input type="file" id="fileExcel" class="form-control mb-2" accept=".xlsx">
+                                    <button onclick="handleImport()" class="btn btn-primary w-100">Upload & Xử lý</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header bg-dark text-white">
+                                    <i class="fas fa-user-plus me-2"></i>Thêm Thủ Công
+                                </div>
+                                <div class="card-body">
+                                    <form id="adminAddForm" class="row g-2">
+                                        <div class="col-12"><input id="addName" class="form-control" placeholder="Họ và Tên" required></div>
+                                        <div class="col-12"><input id="addCccd" class="form-control" placeholder="Số CCCD (Duy nhất)" required></div>
+                                        <div class="col-6"><input id="addDob" class="form-control" placeholder="Ngày sinh"></div>
+                                        <div class="col-6">
+                                            <select id="addGender" class="form-select">
+                                                <option value="Nam">Nam</option>
+                                                <option value="Nữ">Nữ</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-12 mt-2"><button class="btn btn-dark w-100">Thêm Mới</button></div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-
-                <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Ghi chú</label><textarea id="hr-notes" rows="2" class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium"></textarea></div>
-                <button type="submit" class="w-full py-4 bg-green-600 text-white rounded-xl font-bold shadow-lg uppercase text-xs">Lưu Nhân sự</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- NEW: QR Code Display Modal -->
-    <div id="modal-qr-view" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[250] hidden flex items-center justify-center p-4" onclick="window.closeModal('modal-qr-view')">
-        <div class="bg-white rounded-[2rem] p-6 max-w-sm w-full shadow-2xl flex flex-col items-center animate-in zoom-in duration-300" onclick="event.stopPropagation()">
-            <h3 class="text-xl font-black text-slate-800 mb-4">MÃ QR NGÂN HÀNG</h3>
-            <div class="bg-white p-2 rounded-xl shadow-inner border border-slate-100">
-                <img id="qr-code-img" src="" class="w-full h-auto rounded-lg" alt="QR Code">
-            </div>
-            <p id="qr-info-text" class="mt-4 text-center text-sm font-bold text-slate-600"></p>
-            <button onclick="window.closeModal('modal-qr-view')" class="mt-6 px-6 py-2 bg-slate-100 hover:bg-slate-200 rounded-full text-xs font-bold text-slate-500">ĐÓNG</button>
-        </div>
-    </div>
-
-    <!-- Notification Detail Modal -->
-    <div id="modal-notification-detail" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[210] hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden">
-            <div class="p-6 border-b dark:border-white/5 flex justify-between items-center"><h3 id="notify-detail-title" class="font-bold uppercase text-sm tracking-widest text-primary">TIÊU ĐỀ</h3><button onclick="window.closeModal('modal-notification-detail')" class="p-2 rounded-lg hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button></div>
-            <div class="p-8 max-h-[70vh] overflow-y-auto space-y-4">
-                <div class="flex items-center gap-3"><img id="notify-detail-icon" class="w-10 h-10 rounded-full object-contain"><div><p class="text-[10px] font-bold text-slate-400 uppercase">Đăng bởi: <span id="notify-detail-sender"></span></p><p class="text-[10px] font-bold text-slate-400 uppercase">Lúc: <span id="notify-detail-timestamp"></span></p></div></div>
-                <p id="notify-detail-content" class="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap p-4 bg-slate-50 dark:bg-slate-800 rounded-xl"></p>
             </div>
         </div>
     </div>
 
-    <!-- Confirm Modal -->
-    <div id="modal-confirm" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[220] hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-sm shadow-2xl overflow-hidden">
-            <div class="p-6 border-b dark:border-white/5 flex justify-between items-center"><h3 id="confirm-modal-title" class="font-bold uppercase text-sm tracking-widest text-red-500">Xác nhận</h3><button onclick="window.closeModal('modal-confirm')" class="p-2 rounded-lg hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button></div>
-            <div class="p-8 space-y-6"><p id="confirm-modal-message" class="text-sm text-slate-700 dark:text-slate-300"></p><div class="flex justify-end gap-3"><button onclick="window.closeModal('modal-confirm')" class="px-5 py-3 rounded-xl font-bold text-xs uppercase bg-slate-200 dark:bg-slate-700">Hủy</button><button id="confirm-modal-btn" class="px-5 py-3 rounded-xl font-bold text-xs uppercase bg-red-500 text-white shadow-lg">Xác nhận</button></div></div>
-        </div>
-    </div>
-    
-    <!-- User Profile Modal -->
-    <div id="modal-user-profile" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[210] hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden">
-            <div class="p-6 border-b dark:border-white/5 flex justify-between items-center"><h3 class="font-bold uppercase text-sm tracking-widest text-primary">Thông tin Tài khoản</h3><button onclick="window.closeModal('modal-user-profile')" class="p-2 rounded-lg hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button></div>
-            <div class="p-8 space-y-6">
-                <div class="flex flex-col items-center"><img id="profile-photo" class="w-20 h-20 rounded-full mb-3 border-4 border-primary/20 p-0.5 shadow-md"><span id="profile-role" class="text-[10px] font-black uppercase tracking-widest px-3 py-1 bg-primary/10 text-primary rounded-full"></span></div>
-                <div class="space-y-4">
-                    <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Tên hiển thị</label><input type="text" id="profile-name" readonly class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none text-sm font-medium"></div>
-                    <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Email</label><input type="email" id="profile-email" readonly class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl text-slate-500 text-sm font-medium"></div>
+    <!-- Modal History -->
+    <div class="modal fade" id="historyModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-history text-primary me-2"></i>Lịch sử chỉnh sửa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <a href="https://myaccount.google.com/" target="_blank" class="w-full py-3 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white rounded-xl font-bold shadow-sm uppercase text-xs flex items-center justify-center gap-2 hover:bg-slate-300 transition"><i data-lucide="external-link" class="w-4 h-4"></i> Quản lý tài khoản Google</a>
+                <div class="modal-body bg-light">
+                    <div id="historyContent" class="timeline"></div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Privacy Modal -->
-    <div id="modal-privacy-settings" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[210] hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-2xl shadow-2xl overflow-hidden">
-             <div class="p-6 border-b dark:border-white/5 flex justify-between items-center"><h3 class="font-bold uppercase text-sm tracking-widest text-primary">CÀI ĐẶT QUYỀN RIÊNG TƯ</h3><button onclick="window.closeModal('modal-privacy-settings')" class="p-2 rounded-lg hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button></div>
-             <div class="p-8 max-h-[70vh] overflow-y-auto space-y-6">
-                <p class="text-sm text-yellow-800 bg-yellow-50 p-4 rounded-xl">LƯU Ý: Các công tắc này chỉ là mô phỏng.</p>
-                <div id="privacy-settings-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-             </div>
-        </div>
-    </div>
-    
-    <!-- Modal Cat Migrate -->
-    <div id="modal-cat-migrate" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[210] hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden">
-            <div class="p-6 border-b dark:border-white/5 flex justify-between items-center"><h3 class="font-bold uppercase text-sm tracking-widest text-red-500">Chuyển đổi trước khi Xóa</h3><button onclick="window.closeModal('modal-cat-migrate')" class="p-2 rounded-lg hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button></div>
-            <div class="p-8 space-y-4">
-                <p class="text-sm">Danh mục này có <span id="cat-migrate-count" class="font-bold">0</span> ứng dụng. Vui lòng chọn danh mục mới để chuyển đến.</p>
-                <select id="cat-migrate-select" class="w-full px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-xl outline-none focus:ring-2 ring-primary text-sm font-medium"></select>
-                <button onclick="window.executeCatDeleteAndMigrate()" class="w-full py-4 bg-red-500 text-white rounded-xl font-bold shadow-lg uppercase text-xs hover:bg-red-600 transition">XÁC NHẬN XÓA & CHUYỂN ĐỔI</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="toast" class="fixed z-[300]" onclick="window.closeToast()"><div class="bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border dark:border-white/10"><i data-lucide="check-circle" class="w-5 h-5 text-green-500"></i><span id="toast-msg" class="text-sm font-bold tracking-tight">Thành công!</span></div></div>
-
+    <!-- SCRIPT -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc, arrayUnion, arrayRemove, writeBatch, increment, runTransaction, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getFirestore, collection, doc, setDoc, addDoc, getDocs, onSnapshot, query, where, orderBy } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-        const firebaseConfig = { apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE", authDomain: "profile-d1214.firebaseapp.com", projectId: "profile-d1214", storageBucket: "profile-d1214.firebasestorage.app", messagingSenderId: "914980131889", appId: "1:914980131889:web:72f8da15c42dbee671b110", measurementId: "G-C587M69LZW" };
+        // --- CẤU HÌNH (ĐÃ CẬP NHẬT) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
+            authDomain: "profile-d1214.firebaseapp.com",
+            projectId: "profile-d1214",
+            storageBucket: "profile-d1214.firebasestorage.app",
+            messagingSenderId: "914980131889",
+            appId: "1:914980131889:web:72f8da15c42dbee671b110",
+            measurementId: "G-C587M69LZW"
+        };
+
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
         const db = getFirestore(app);
+        const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
 
-        // Variables
-        let currentUser = null, isAdmin = false, isSuper = false, apps = [], categories = [], personnel = [], deputies = [], currentFilter = 'all', searchQuery = '', viewMode = 'grid', visitStats = {};
-        let appsLoaded = false, personnelLoaded = false;
-        let bulkDeleteMode = false;
-        let selectedAppsForDelete = new Set();
-        let currentAnnouncement = {};
-        let adminRequests = [];
-        let globalSettings = {};
-        let activityLogs = [];
-        let notifications = [];
-        let unreadCount = 0;
-        let confirmActionCallback = () => {};
-        let currentMobileTab = 'app';
-        let currentLang = 'vi';
-        let toastTimeout = null;
-        let catToDeleteId = null;
-        let banksList = [];
+        const COLL_DATA = "personnel_data";
+        const COLL_LOGS = "audit_logs";
 
-        // --- AUTH ---
-        onAuthStateChanged(auth, async (user) => {
-            currentUser = user;
-            if (user) {
-                const snap = await getDoc(doc(db, "settings", "admins"));
-                const adminData = snap.data() || {};
-                isSuper = user.uid === adminData.super_uid;
-                deputies = adminData.deputy_emails || [];
-                isAdmin = isSuper || deputies.includes(user.email);
-                document.getElementById('profile-admin-panel-btn')?.classList.toggle('hidden', !isAdmin);
-                
-                if(!isAdmin) {
-                    const reqSnap = await getDoc(doc(db, "adminRequests", user.uid));
-                    document.getElementById('request-admin-status').innerText = reqSnap.exists() ? "Yêu cầu đang chờ duyệt." : "Bạn chưa có quyền quản trị.";
-                    document.getElementById('request-admin-form').classList.toggle('hidden', reqSnap.exists());
-                    document.getElementById('request-admin-section').classList.remove('hidden');
-                } else {
-                    document.getElementById('request-admin-section').classList.add('hidden');
-                }
-            } else {
-                isAdmin = isSuper = false;
-                document.getElementById('request-admin-section').classList.add('hidden');
-                document.getElementById('profile-admin-panel-btn')?.classList.add('hidden');
-            }
-            renderAuthUI();
-            renderProfileContent();
-            document.getElementById('role-status').innerText = isSuper ? 'SUPER' : (isAdmin ? 'DEPUTY' : 'GUEST');
-            document.getElementById('admin-sidebar-toggle').classList.toggle('hidden', !isAdmin);
-            checkMaintenanceMode();
-            window.setView(localStorage.getItem('viewModeDesktop') || 'grid', true);
-            
-            // Fix: Reload data dependent on role
-            renderApps();
-            renderPersonnel();
-            renderDeputyList();
-        });
+        let currentUser = null;
+        let currentData = null;
+        let localList = [];
 
-        function renderAuthUI() {
-            const container = document.getElementById('auth-section');
-            if (!currentUser) {
-                container.innerHTML = `<button onclick="window.login()" class="bg-primary text-white px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-widest">Login</button>`;
-            } else {
-                container.innerHTML = `
-                    <div class="relative">
-                        <button onclick="window.toggleUserMenu(event)" id="user-avatar-btn" class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 pr-3 rounded-lg border dark:border-white/10"><img src="${currentUser.photoURL}" class="w-7 h-7 rounded-md"><i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i></button>
-                        <div id="user-menu" class="absolute right-0 top-full mt-3 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-2xl z-20 hidden ring-1 ring-black/5 p-2"><div class="px-3 py-2 text-sm font-bold truncate">${currentUser.displayName}</div><div class="px-3 py-1 text-xs text-slate-500 truncate">${currentUser.email}</div><div class="h-px bg-slate-100 my-2"></div><button onclick="window.openUserProfileModal()" class="flex items-center w-full px-3 py-2 text-sm font-medium hover:bg-slate-100 rounded-lg"><i data-lucide="user-circle" class="w-4 h-4 mr-2"></i> Tài khoản</button><button onclick="window.logout()" class="flex items-center w-full px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-50 rounded-lg"><i data-lucide="log-out" class="w-4 h-4 mr-2"></i> Đăng xuất</button></div>
-                    </div>`;
-                lucide.createIcons();
-            }
-        }
-
-        window.toggleUserMenu = (e) => { e.stopPropagation(); document.getElementById('user-menu')?.classList.toggle('hidden'); };
-        document.addEventListener('click', (e) => { if (!document.getElementById('user-menu')?.contains(e.target) && !document.getElementById('user-avatar-btn')?.contains(e.target)) document.getElementById('user-menu')?.classList.add('hidden'); });
-
-        window.login = () => { window.showGlobalLoading(); signInWithPopup(auth, provider).catch(e => showToast("Lỗi đăng nhập", true)).finally(window.hideGlobalLoading); };
-        window.logout = () => { window.showGlobalLoading(); signOut(auth).then(() => location.reload()); };
-
-        // --- REALTIME DATA ---
-        onSnapshot(query(collection(db, "categories"), orderBy("order", "asc")), (snap) => {
-            categories = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            renderCategories();
-            document.getElementById('cat-migrate-select').innerHTML = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-        });
-
-        onSnapshot(query(collection(db, "apps"), orderBy("order", "asc")), (snap) => {
-            apps = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            appsLoaded = true;
-            renderApps();
-            renderTrash();
-        });
-
-        // NEW: Realtime Personnel
-        onSnapshot(query(collection(db, "personnel"), orderBy("createdAt", "desc")), (snap) => {
-            personnel = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            personnelLoaded = true;
-            renderPersonnel();
-        });
-
-        onSnapshot(collection(db, "notifications"), (snap) => {
-            notifications = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
-            renderNotifications();
-            if(isAdmin) renderAdminNotificationList();
-            updateUnreadCount();
-        });
-
-        onSnapshot(doc(db, "settings", "global"), (snap) => { globalSettings = snap.data() || { maintenanceMode: false }; checkMaintenanceMode(); });
-        onSnapshot(doc(db, "settings", "announcement"), (snap) => { currentAnnouncement = snap.data() || {}; renderAnnouncementBar(); });
-        
-        // --- PERSONNEL LOGIC (NHÂN SỰ) ---
-        
-        // 1. Fetch Banks
-        async function fetchBanks() {
+        // --- 1. VIETQR LOGO ---
+        async function fetchBankLogos() {
             try {
                 const res = await fetch('https://api.vietqr.io/v2/banks');
-                const data = await res.json();
-                if(data.code === "00") {
-                    banksList = data.data;
-                    const select = document.getElementById('hr-bank-select');
-                    select.innerHTML = '<option value="">-- Chọn Ngân hàng --</option>' + banksList.map(b => `<option value="${b.bin}" data-logo="${b.logo}" data-short="${b.shortName}">${b.shortName} - ${b.name}</option>`).join('');
+                const json = await res.json();
+                if(json.code == "00") {
+                    const banks = json.data;
+                    const agri = banks.find(b => b.code == "VBA"); // Agribank
+                    const vcb = banks.find(b => b.code == "VCB"); // Vietcombank
+                    if(agri) document.getElementById('logoAgri').src = agri.logo;
+                    if(vcb) document.getElementById('logoVcb').src = vcb.logo;
                 }
-            } catch(e) { console.error("Error fetching banks:", e); }
+            } catch(e) { console.log("Lỗi tải logo bank", e); }
         }
-        fetchBanks();
+        fetchBankLogos();
 
-        document.getElementById('hr-bank-select').onchange = function() {
-            const opt = this.options[this.selectedIndex];
-            const logo = opt.getAttribute('data-logo');
-            const preview = document.getElementById('hr-bank-logo-preview');
-            const img = document.getElementById('bank-logo-img');
-            if(logo) {
-                img.src = logo;
-                preview.classList.remove('hidden');
+        // --- 2. AUTHENTICATION ---
+        const btnLogin = document.getElementById('btnLogin');
+        const btnLogout = document.getElementById('btnLogout');
+        const userInfo = document.getElementById('userInfo');
+
+        btnLogin.addEventListener('click', () => signInWithPopup(auth, provider));
+        btnLogout.addEventListener('click', () => signOut(auth));
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                userInfo.textContent = user.displayName;
+                btnLogin.classList.add('d-none');
+                btnLogout.classList.remove('d-none');
+                document.getElementById('adminLocked').classList.add('d-none');
+                document.getElementById('adminContent').classList.remove('d-none');
             } else {
-                preview.classList.add('hidden');
+                userInfo.textContent = '';
+                btnLogin.classList.remove('d-none');
+                btnLogout.classList.add('d-none');
+                document.getElementById('adminLocked').classList.remove('d-none');
+                document.getElementById('adminContent').classList.add('d-none');
             }
-        };
+        });
 
-        // 2. Render Personnel
-        window.renderPersonnel = () => {
-            const container = document.getElementById('hr-container');
-            const adminList = document.getElementById('hr-list-admin');
+        // --- 3. DATA REALTIME ---
+        onSnapshot(collection(db, COLL_DATA), (snap) => {
+            const select = document.getElementById('userSelect');
+            select.innerHTML = '<option value="" selected disabled>-- Chọn tên của bạn --</option>';
+            localList = [];
             
-            if(!personnelLoaded) return;
-
-            const html = personnel.length === 0 ? 
-                `<div class="p-16 text-center col-span-full"><i data-lucide="users" class="w-12 h-12 text-slate-400 mx-auto mb-4"></i><p class="text-slate-500">Chưa có nhân sự nào.</p></div>` :
-                personnel.map(p => {
-                    const icon = p.image || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'; // Default User Icon
-                    const bankInfo = banksList.find(b => b.bin == p.bankBin);
-                    const bankLogo = bankInfo ? bankInfo.logo : '';
-                    
-                    return `
-                    <div class="flex items-center gap-4 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border dark:border-white/5 relative group hover:shadow-md transition">
-                         <div class="w-16 h-16 rounded-full bg-slate-100 p-0.5 flex-shrink-0">
-                            <img src="${icon}" class="w-full h-full object-cover rounded-full">
-                         </div>
-                         <div class="flex-1 min-w-0">
-                             <h4 class="text-base font-black truncate">${p.name}</h4>
-                             <p class="text-xs font-bold text-primary truncate">${p.position}</p>
-                             <div class="flex gap-2 mt-2">
-                                 ${p.phone ? `<a href="tel:${p.phone}" class="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200"><i data-lucide="phone" class="w-4 h-4"></i></a>` : ''}
-                                 ${(p.bankBin && p.bankAccount) ? `<button onclick="window.showQR('${p.bankBin}', '${p.bankAccount}', '${p.name}')" class="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200"><i data-lucide="qr-code" class="w-4 h-4"></i></button>` : ''}
-                                 ${p.notes ? `<button onclick="window.showToast('${p.notes.replace(/'/g, "\\'")}', false, true)" class="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200"><i data-lucide="info" class="w-4 h-4"></i></button>` : ''}
-                             </div>
-                         </div>
-                         <!-- Admin Controls Overlay -->
-                         <div class="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition ${!isAdmin ? 'hidden' : ''}">
-                             <button onclick="window.editHR('${p.id}')" class="p-1.5 bg-indigo-500 text-white rounded-lg shadow"><i data-lucide="pencil" class="w-3 h-3"></i></button>
-                             <button onclick="window.deleteHRConfirm('${p.id}', '${p.name}')" class="p-1.5 bg-red-500 text-white rounded-lg shadow"><i data-lucide="trash" class="w-3 h-3"></i></button>
-                         </div>
-                    </div>`;
-                }).join('');
-
-            container.innerHTML = html;
-            
-            // Render Admin List (Mini View)
-            if(isAdmin) {
-                adminList.innerHTML = personnel.map(p => 
-                    `<div class="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-xl border dark:border-white/5">
-                        <span class="font-bold truncate">${p.name}</span>
-                        <div class="flex gap-2">
-                            <button onclick="window.editHR('${p.id}')" class="text-indigo-500"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
-                            <button onclick="window.deleteHRConfirm('${p.id}', '${p.name}')" class="text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                        </div>
-                    </div>`
-                ).join('');
-            }
-            lucide.createIcons();
-        };
-
-        // 3. QR Code Show
-        window.showQR = (bin, acc, name) => {
-            const bank = banksList.find(b => b.bin == bin);
-            // API Format: https://img.vietqr.io/image/<BANK_BIN>-<ACCOUNT_NO>-compact.jpg
-            // Or better template: compact2 (includes name) but standard is fine.
-            // Prompt requested: https://img.vietqr.io/image/{ngân hàng}-{số tài khoảng}-compact.jpg
-            const shortName = bank ? bank.shortName : bin; 
-            const url = `https://img.vietqr.io/image/${shortName}-${acc}-compact.jpg?accountName=${encodeURIComponent(name)}`;
-            
-            document.getElementById('qr-code-img').src = url;
-            document.getElementById('qr-info-text').innerHTML = `${bank ? bank.shortName : bin} - ${acc}<br><span class="uppercase">${name}</span>`;
-            window.openModal('modal-qr-view');
-        };
-
-        // 4. Add/Edit HR
-        window.openHRModal = () => {
-            document.getElementById('hr-form').reset();
-            document.getElementById('hr-edit-id').value = '';
-            document.getElementById('hr-bank-logo-preview').classList.add('hidden');
-            window.openModal('modal-hr');
-        };
-
-        window.editHR = (id) => {
-            const p = personnel.find(x => x.id === id);
-            if(!p) return;
-            document.getElementById('hr-edit-id').value = id;
-            document.getElementById('hr-name').value = p.name;
-            document.getElementById('hr-position').value = p.position;
-            document.getElementById('hr-dob').value = p.dob;
-            document.getElementById('hr-gender').value = p.gender;
-            document.getElementById('hr-cccd').value = p.cccd;
-            document.getElementById('hr-phone').value = p.phone;
-            document.getElementById('hr-image').value = p.image;
-            document.getElementById('hr-bank-select').value = p.bankBin;
-            document.getElementById('hr-bank-acc').value = p.bankAccount;
-            document.getElementById('hr-notes').value = p.notes;
-            
-            // Trigger change to show logo
-            document.getElementById('hr-bank-select').onchange();
-            
-            window.openModal('modal-hr');
-        };
-
-        document.getElementById('hr-form').onsubmit = async (e) => {
-            e.preventDefault();
-            if(!isAdmin) return;
-            const id = document.getElementById('hr-edit-id').value;
-            const data = {
-                name: document.getElementById('hr-name').value,
-                position: document.getElementById('hr-position').value,
-                dob: document.getElementById('hr-dob').value,
-                gender: document.getElementById('hr-gender').value,
-                cccd: document.getElementById('hr-cccd').value,
-                phone: document.getElementById('hr-phone').value,
-                image: document.getElementById('hr-image').value,
-                bankBin: document.getElementById('hr-bank-select').value,
-                bankAccount: document.getElementById('hr-bank-acc').value,
-                notes: document.getElementById('hr-notes').value,
-                createdAt: new Date().toISOString()
-            };
-            
-            window.showGlobalLoading();
-            try {
-                if(id) {
-                    await updateDoc(doc(db, "personnel", id), data);
-                    showToast("Đã cập nhật nhân sự!");
-                } else {
-                    await addDoc(collection(db, "personnel"), data);
-                    showToast("Đã thêm nhân sự mới!");
-                }
-                window.closeModal('modal-hr');
-            } catch(e) {
-                showToast("Lỗi khi lưu nhân sự!", true);
-                console.error(e);
-            } finally { window.hideGlobalLoading(); }
-        };
-
-        window.deleteHRConfirm = (id, name) => {
-            window.showConfirm('Xóa Nhân sự', `Bạn có chắc muốn xóa nhân sự "${name}" không?`, () => {
-                window.showGlobalLoading();
-                deleteDoc(doc(db, "personnel", id)).then(() => showToast(`Đã xóa ${name}`)).finally(window.hideGlobalLoading);
+            snap.forEach(doc => {
+                const d = doc.data();
+                localList.push(d);
+                const opt = document.createElement('option');
+                opt.value = d.cccd;
+                opt.textContent = `${d.agribank ? '✅' : '⬜'} ${d.name} (${d.dob})`;
+                select.appendChild(opt);
             });
+        });
+
+        // Chọn User
+        document.getElementById('userSelect').addEventListener('change', function() {
+            const cccd = this.value;
+            currentData = localList.find(u => u.cccd === cccd);
+            if(currentData) {
+                document.getElementById('formContent').style.opacity = '1';
+                document.getElementById('formContent').style.pointerEvents = 'auto';
+                
+                // Fill fields
+                document.getElementById('inpName').value = currentData.name || '';
+                document.getElementById('inpCccd').value = currentData.cccd || '';
+                document.getElementById('inpDob').value = currentData.dob || '';
+                document.getElementById('inpGender').value = currentData.gender || 'Nam';
+                document.getElementById('inpAgri').value = currentData.agribank || '';
+                document.getElementById('inpVcb').value = currentData.vietcombank || '';
+
+                // Reset inputs to locked
+                ['inpName', 'inpDob', 'inpGender'].forEach(id => {
+                    document.getElementById(id).disabled = true;
+                    document.getElementById(id).classList.remove('editing');
+                });
+            }
+        });
+
+        // Toggle Edit
+        window.toggleEdit = function(id) {
+            const el = document.getElementById(id);
+            el.disabled = !el.disabled;
+            el.classList.toggle('editing');
+            if(!el.disabled) el.focus();
         };
 
-        // 5. Excel Import/Export for HR
-        window.downloadHRSample = () => {
-            const data = [
-                ["Họ và tên", "Chức vụ", "Ngày sinh", "Giới tính", "CCCD", "SĐT", "Link Ảnh", "BIN Ngân hàng", "Số tài khoản", "Ghi chú"],
-                ["Nguyễn Văn A", "Giám đốc", "1990-01-01", "Nam", "0123456789", "0987654321", "", "970436", "123456789", "Ghi chú mẫu"]
-            ];
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet(data);
-            XLSX.utils.book_append_sheet(wb, ws, "Mau_Nhan_Su");
-            XLSX.writeFile(wb, "Mau_Import_Nhan_Su.xlsx");
+        // --- 4. SUBMIT & HISTORY ---
+        document.getElementById('userForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            document.getElementById('loading').style.display = 'flex';
+
+            const newData = {
+                name: document.getElementById('inpName').value,
+                dob: document.getElementById('inpDob').value,
+                gender: document.getElementById('inpGender').value,
+                agribank: document.getElementById('inpAgri').value,
+                vietcombank: document.getElementById('inpVcb').value || ""
+            };
+
+            const cccd = document.getElementById('inpCccd').value;
+            const changes = [];
+            const editor = currentUser ? `Admin (${currentUser.email})` : "Khách/User";
+
+            // So sánh tìm thay đổi
+            for(let key in newData) {
+                const oldVal = currentData[key] || "";
+                if(oldVal !== newData[key]) {
+                    changes.push({ field: key, old: oldVal, new: newData[key] });
+                }
+            }
+
+            try {
+                // Lưu data mới
+                await setDoc(doc(db, COLL_DATA, cccd), { ...newData, cccd, last_updated: new Date().toISOString() }, { merge: true });
+
+                // Lưu lịch sử nếu có thay đổi
+                if(changes.length > 0) {
+                    await addDoc(collection(db, COLL_LOGS), {
+                        cccd_ref: cccd,
+                        editor: editor,
+                        time: new Date().toISOString(),
+                        details: changes
+                    });
+                }
+                Swal.fire('Thành công', 'Đã lưu dữ liệu!', 'success');
+            } catch(err) {
+                Swal.fire('Lỗi', err.message, 'error');
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        });
+
+        // Xem lịch sử
+        window.viewHistory = async function() {
+            if(!currentData) return;
+            const q = query(collection(db, COLL_LOGS), where("cccd_ref", "==", currentData.cccd), orderBy("time", "desc"));
+            const snap = await getDocs(q);
+            const container = document.getElementById('historyContent');
+            container.innerHTML = "";
+
+            if(snap.empty) {
+                container.innerHTML = "<p class='text-center text-muted'>Chưa có lịch sử thay đổi.</p>";
+            } else {
+                snap.forEach(doc => {
+                    const log = doc.data();
+                    let detailsHtml = "";
+                    log.details.forEach(d => {
+                        const label = {name:"Tên", dob:"Ngày sinh", gender:"Giới tính", agribank:"Agribank", vietcombank:"VCB"}[d.field] || d.field;
+                        detailsHtml += `<div><strong>${label}:</strong> <span class="text-old">${d.old||'(Trống)'}</span> <i class="fas fa-arrow-right mx-1 small"></i> <span class="text-new">${d.new}</span></div>`;
+                    });
+                    
+                    container.innerHTML += `
+                        <div class="timeline-item">
+                            <div class="small text-muted mb-1"><i class="far fa-clock"></i> ${new Date(log.time).toLocaleString('vi-VN')} - <b>${log.editor}</b></div>
+                            <div class="card p-2 border-0 shadow-sm bg-white">${detailsHtml}</div>
+                        </div>
+                    `;
+                });
+            }
+            new bootstrap.Modal(document.getElementById('historyModal')).show();
         };
 
-        window.handleHRImport = async (e) => {
-            if(!isAdmin) return;
-            const file = e.target.files[0];
-            if(!file) return;
+        // --- 5. ADMIN FEATURES ---
+        
+        // Add Manual
+        document.getElementById('adminAddForm').addEventListener('submit', async(e)=>{
+            e.preventDefault();
+            const cccd = document.getElementById('addCccd').value;
+            await setDoc(doc(db, COLL_DATA, cccd), {
+                cccd, 
+                name: document.getElementById('addName').value,
+                dob: document.getElementById('addDob').value,
+                gender: document.getElementById('addGender').value,
+                agribank:"", vietcombank:""
+            }, {merge:true});
+            Swal.fire('Đã thêm', '', 'success');
+            e.target.reset();
+        });
+
+        // Import Excel
+        window.handleImport = function() {
+            const f = document.getElementById('fileExcel').files[0];
+            if(!f) return Swal.fire('Lỗi','Chưa chọn file','warning');
             
-            window.showGlobalLoading();
             const reader = new FileReader();
-            reader.onload = async (evt) => {
-                try {
-                    const data = new Uint8Array(evt.target.result);
-                    const workbook = XLSX.read(data, {type: 'array'});
-                    const sheetName = workbook.SheetNames[0];
-                    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {header: 1});
-                    
-                    // Skip header row
-                    const batch = writeBatch(db);
-                    let count = 0;
-                    
-                    for(let i = 1; i < rows.length; i++) {
-                        const row = rows[i];
-                        if(!row[0]) continue; // Skip empty names
-                        
-                        const docRef = doc(collection(db, "personnel"));
-                        batch.set(docRef, {
-                            name: row[0] || "",
-                            position: row[1] || "",
-                            dob: row[2] || "",
-                            gender: row[3] || "Nam",
-                            cccd: row[4] || "",
-                            phone: row[5] || "",
-                            image: row[6] || "",
-                            bankBin: row[7] ? String(row[7]) : "",
-                            bankAccount: row[8] ? String(row[8]) : "",
-                            notes: row[9] || "",
-                            createdAt: new Date().toISOString()
-                        });
+            reader.onload = async(e) => {
+                const wb = XLSX.read(e.target.result, {type:'array'});
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                const data = XLSX.utils.sheet_to_json(ws);
+                let count = 0;
+                
+                document.getElementById('loading').style.display = 'flex';
+                for(let row of data) {
+                    const cccd = row['CCCD'] || row['ID'];
+                    const name = row['Họ tên'] || row['Name'];
+                    if(cccd && name) {
+                        await setDoc(doc(db, COLL_DATA, String(cccd)), {
+                            cccd: String(cccd),
+                            name: name,
+                            dob: row['Ngày sinh'] || row['DOB'] || '',
+                            gender: row['Giới tính'] || row['Gender'] || ''
+                        }, {merge: true});
                         count++;
                     }
-                    
-                    await batch.commit();
-                    showToast(`Đã import thành công ${count} nhân sự!`);
-                    e.target.value = ''; // Reset input
-                } catch(err) {
-                    console.error(err);
-                    showToast("Lỗi khi đọc file Excel!", true);
-                } finally { window.hideGlobalLoading(); }
+                }
+                document.getElementById('loading').style.display = 'none';
+                Swal.fire('Hoàn tất', `Đã import ${count} người`, 'success');
             };
-            reader.readAsArrayBuffer(file);
+            reader.readAsArrayBuffer(f);
         };
 
-        // --- GENERAL LOGIC ---
-        window.switchMobileTab = (tabId) => {
-            currentMobileTab = tabId;
-            const tabs = ['tab-app-content', 'tab-hr-content', 'tab-notify-content', 'tab-profile-content'];
-            const btns = ['tab-app-btn', 'tab-hr-btn', 'tab-notify-btn', 'tab-profile-btn']; // Removed contact btn logic reuse
-            
-            // Handle App vs Contact (Logic reuse in App Tab)
-            if(tabId === 'app' || tabId === 'contact') {
-                tabs.forEach(id => document.getElementById(id).classList.add('hidden'));
-                document.getElementById('tab-app-content').classList.remove('hidden');
+        // --- TÍNH NĂNG MỚI: XUẤT FULL EXCEL ---
+        window.exportFullExcel = async function() {
+            document.getElementById('loading').style.display = 'flex';
+            try {
+                // 1. Lấy toàn bộ dữ liệu từ Firestore
+                const querySnapshot = await getDocs(collection(db, COLL_DATA));
                 
-                // Toggle Filter logic
-                if(tabId === 'contact') window.setFilter('contact_filter', false, false);
-                else if(currentFilter === 'contact_filter') window.setFilter('all', false, false);
-                
-                document.getElementById('search-container').classList.remove('hidden');
-                document.getElementById('visit-stats-container').classList.remove('hidden');
-                
-                // Update Button Styles
-                document.getElementById('tab-app-btn').className = `flex flex-col items-center justify-center w-full h-full ${tabId === 'app' ? 'text-primary' : 'text-slate-400'}`;
-                document.getElementById('tab-contact-btn').className = `flex flex-col items-center justify-center w-full h-full ${tabId === 'contact' ? 'text-primary' : 'text-slate-400'}`;
-                document.getElementById('tab-hr-btn').className = "flex flex-col items-center justify-center w-full h-full text-slate-400";
-                document.getElementById('tab-notify-btn').className = "flex flex-col items-center justify-center w-full h-full text-slate-400";
-                document.getElementById('tab-profile-btn').className = "flex flex-col items-center justify-center w-full h-full text-slate-400";
-            } else {
-                // Other Tabs (HR, Notify, Profile)
-                tabs.forEach(id => document.getElementById(id).classList.add('hidden'));
-                document.getElementById(`tab-${tabId}-content`).classList.remove('hidden');
-                
-                document.getElementById('search-container').classList.add('hidden');
-                document.getElementById('visit-stats-container').classList.add('hidden');
-                
-                // Reset all btns to grey
-                ['tab-app-btn', 'tab-contact-btn', 'tab-hr-btn', 'tab-notify-btn', 'tab-profile-btn'].forEach(b => {
-                    document.getElementById(b).className = "flex flex-col items-center justify-center w-full h-full text-slate-400";
+                const exportData = [];
+                querySnapshot.forEach((doc) => {
+                    const d = doc.data();
+                    exportData.push({
+                        "Họ và Tên": d.name,
+                        "Số CCCD": d.cccd,
+                        "Ngày sinh": d.dob,
+                        "Giới tính": d.gender,
+                        "TK Agribank": d.agribank || "",
+                        "TK Vietcombank": d.vietcombank || "",
+                        "Cập nhật lần cuối": d.last_updated ? new Date(d.last_updated).toLocaleString('vi-VN') : ""
+                    });
                 });
-                // Set active
-                document.getElementById(`tab-${tabId}-btn`).className = "flex flex-col items-center justify-center w-full h-full text-primary";
-                
-                if(tabId === 'hr') renderPersonnel();
-                if(tabId === 'notify') renderNotifications();
-            }
-            window.toggleMobileCategorySidebar(); // Ensure sidebar closed
-        };
 
-        // --- Other Functions from original code (Shortened for context) ---
-        // (Existing functions: toggleAdminSidebar, toggleMobileCategorySidebar, setView, showGlobalLoading, hideGlobalLoading, showToast, confirm, etc.)
-        window.showGlobalLoading = () => document.getElementById('global-loading-overlay').classList.remove('opacity-0', 'pointer-events-none');
-        window.hideGlobalLoading = () => document.getElementById('global-loading-overlay').classList.add('opacity-0', 'pointer-events-none');
-        window.toggleAdminSidebar = () => document.getElementById('admin-sidebar').classList.toggle('open');
-        window.toggleMobileCategorySidebar = () => document.getElementById('mobile-category-sidebar').classList.toggle('open');
-        
-        window.setFilter = (id, isDesktop, closeSidebar=true) => {
-            currentFilter = id;
-            renderCategories();
-            renderApps();
-            if(!isDesktop && closeSidebar && id !== 'contact_filter') window.toggleMobileCategorySidebar();
-        };
+                if(exportData.length === 0) {
+                    Swal.fire('Thông báo', 'Chưa có dữ liệu nào để xuất.', 'info');
+                    return;
+                }
 
-        window.renderApps = () => {
-            const container = document.getElementById('app-container');
-            const filtered = apps.filter(a => {
-                if(a.isDeleted) return false;
-                if(currentFilter === 'contact_filter') return categories.find(c => c.id === a.categoryId)?.name === "Số điện thoại";
-                if(currentFilter !== 'all' && a.categoryId !== currentFilter) return false;
-                if(currentFilter === 'all' && categories.find(c => c.id === a.categoryId)?.name === "Số điện thoại") return false;
-                return a.name.toLowerCase().includes(searchQuery.toLowerCase());
-            });
-            // (Standard rendering logic omitted for brevity - same as original but respecting filters)
-            // ... [Giữ nguyên logic render cũ của bạn] ...
-            container.innerHTML = filtered.map(a => {
-                const icon = a.iconUrl || `https://unavatar.io/${new URL(a.url).hostname}`;
-                return `<a href="${a.url}" target="_blank" class="app-item flex flex-col items-center group"><div class="w-full aspect-square bg-white dark:bg-slate-800 rounded-2xl shadow-sm border dark:border-white/5 flex items-center justify-center p-3 mb-2"><img src="${icon}" class="w-full h-full object-contain rounded-lg"></div><span class="text-[10px] font-bold text-slate-500 text-center truncate w-full uppercase">${a.name}</span></a>`
-            }).join('');
-            if(viewMode === 'list') {
-                 container.className = "flex flex-col space-y-2";
-                 container.innerHTML = filtered.map(a => `<a href="${a.url}" class="flex items-center gap-3 bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm"><img src="${a.iconUrl}" class="w-8 h-8 rounded"><span class="font-bold text-xs">${a.name}</span></a>`).join('');
-            } else {
-                 container.className = "grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-4";
+                // 2. Tạo file Excel
+                const ws = XLSX.utils.json_to_sheet(exportData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "DanhSachNhanVien");
+
+                // 3. Tải xuống
+                XLSX.writeFile(wb, `Danh_Sach_Ngan_Hang_${new Date().toISOString().slice(0,10)}.xlsx`);
+
+            } catch (error) {
+                console.error(error);
+                Swal.fire('Lỗi', 'Không thể xuất file: ' + error.message, 'error');
+            } finally {
+                document.getElementById('loading').style.display = 'none';
             }
         };
 
-        window.renderCategories = () => {
-             const html = `<button onclick="window.setFilter('all', true)" class="${currentFilter==='all'?'bg-primary text-white':'bg-white text-slate-500'} px-4 py-2 rounded-xl text-xs font-bold shadow-sm">TẤT CẢ</button>` + 
-             categories.map(c => `<button onclick="window.setFilter('${c.id}', true)" class="${currentFilter===c.id?'bg-primary text-white':'bg-white text-slate-500'} px-4 py-2 rounded-xl text-xs font-bold shadow-sm">${c.name.toUpperCase()}</button>`).join('');
-             document.getElementById('category-bar').innerHTML = html;
-             document.getElementById('category-bar-mobile').innerHTML = html.replace(/window.setFilter\('(.*?)', true\)/g, "window.setFilter('$1', false)");
-             document.getElementById('app-category').innerHTML = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-        };
-
-        window.showConfirm = (title, msg, callback) => {
-            document.getElementById('confirm-modal-title').innerText = title;
-            document.getElementById('confirm-modal-message').innerText = msg;
-            document.getElementById('confirm-modal-btn').onclick = () => { callback(); window.closeModal('modal-confirm'); };
-            window.openModal('modal-confirm');
-        };
-
-        window.showToast = (msg, isError=false) => {
-            const t = document.getElementById('toast');
-            document.getElementById('toast-msg').innerText = msg;
-            t.classList.add('visible');
-            clearTimeout(toastTimeout);
-            toastTimeout = setTimeout(() => t.classList.remove('visible'), 3000);
-        };
-        window.closeToast = () => document.getElementById('toast').classList.remove('visible');
-        window.openModal = (id) => document.getElementById(id).classList.remove('hidden');
-        window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
-        window.switchTab = (id) => {
-             document.querySelectorAll('[id^="tab-"]').forEach(el => {
-                 if(el.parentElement.id === 'admin-sidebar' || el.parentElement.parentElement.id === 'admin-sidebar') {
-                     if(!el.id.includes('btn-')) el.classList.add('hidden');
-                 }
-             });
-             // Reset buttons
-             document.querySelectorAll('[id^="btn-tab-"]').forEach(b => b.classList.remove('text-primary', 'border-b-2', 'border-primary'));
-             document.getElementById(id).classList.remove('hidden');
-             document.getElementById('btn-'+id).classList.add('text-primary', 'border-b-2', 'border-primary');
-             
-             if(id === 'tab-hr-admin') renderPersonnel(); // Refresh list
-        };
-
-        // ... (Export/Import logic, Notifications logic, etc. retained)
-        // Ensure to include:
-        window.handleImport = (e) => { /* Logic for App backup restore */ };
-        window.handleExport = (type) => { /* Logic for App backup export */ };
-        
-        function checkMaintenanceMode() {
-             if(globalSettings.maintenanceMode && !isAdmin) {
-                 document.getElementById('maintenance-overlay').classList.remove('hidden');
-                 document.getElementById('main-content-wrapper').classList.add('hidden');
-                 document.getElementById('mobile-nav-bar').classList.add('hidden');
-             } else {
-                 document.getElementById('maintenance-overlay').classList.add('hidden');
-                 document.getElementById('main-content-wrapper').classList.remove('hidden');
-                 document.getElementById('mobile-nav-bar').classList.remove('hidden');
-             }
-        }
-        
-        if(localStorage.theme === 'dark') document.documentElement.classList.add('dark');
-        lucide.createIcons();
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
