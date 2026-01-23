@@ -20,333 +20,360 @@
 
     <style>
         :root {
-            --primary: #4e54c8;
-            --secondary: #8f94fb;
-            --text-dark: #2d3436;
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --glass-bg: rgba(255, 255, 255, 0.75);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.4);
+            --shadow-soft: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
             --sidebar-width: 280px;
+            --primary-color: #6c5ce7;
         }
 
         body {
             font-family: 'Poppins', sans-serif;
-            background: #f4f7f6;
+            background: #f0f2f5;
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+            background-attachment: fixed;
+            background-size: cover;
             min-height: 100vh;
-            color: var(--text-dark);
+            color: #2d3436;
             overflow-x: hidden;
         }
 
-        /* --- LAYOUT & RESPONSIVE --- */
-        .main-wrapper {
+        /* --- MODE SWITCHER (ADMIN ONLY) --- */
+        .mode-switcher {
+            position: fixed; top: 20px; left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(10px);
+            padding: 5px; border-radius: 50px;
+            display: none; /* JS will show */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            z-index: 1100;
+            border: 1px solid rgba(255,255,255,0.5);
+            transition: all 0.3s ease;
+        }
+
+        .mode-btn {
+            border: none; background: transparent;
+            padding: 8px 24px; border-radius: 40px;
+            font-weight: 600; font-size: 0.9rem;
+            color: #636e72; transition: all 0.3s;
+        }
+        
+        .mode-btn.active {
+            background: var(--primary-gradient);
+            color: white; box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3);
+        }
+
+        /* --- LAYOUT --- */
+        .main-layout {
             display: flex;
             min-height: 100vh;
-            position: relative;
+            transition: all 0.4s ease;
         }
 
-        /* Sidebar (Admin) */
+        /* Sidebar */
         .sidebar {
             width: var(--sidebar-width);
-            background: white;
-            position: fixed;
-            top: 0; left: 0; height: 100%;
-            z-index: 1050;
-            padding: 20px;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
-            transition: transform 0.3s ease-in-out;
-            /* Ẩn mặc định trên mọi thiết bị, sẽ hiện khi có class active hoặc admin mode */
-            transform: translateX(-100%); 
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            height: 100vh; position: fixed; top: 0; left: 0;
+            z-index: 1050; padding: 25px;
+            box-shadow: 5px 0 25px rgba(0,0,0,0.05);
+            transform: translateX(-100%);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
-
-        /* Khi Admin Mode bật trên Desktop */
-        @media (min-width: 992px) {
-            .sidebar.admin-active { transform: translateX(0); }
-            .content-area.admin-active { margin-left: var(--sidebar-width); }
-        }
-
-        /* Khi Toggle trên Mobile */
-        .sidebar.mobile-open { transform: translateX(0) !important; }
-
-        /* Overlay cho mobile khi mở menu */
-        .sidebar-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-            z-index: 1040; display: none;
-        }
-        .sidebar-overlay.show { display: block; }
+        
+        /* Sidebar active states */
+        .sidebar.open-desktop { transform: translateX(0); } /* Admin mode desktop */
+        .sidebar.open-mobile { transform: translateX(0) !important; } /* Mobile toggle */
 
         /* Content Area */
         .content-area {
-            flex-grow: 1;
-            padding: 20px;
-            margin-left: 0;
-            transition: margin-left 0.3s ease-in-out;
-            width: 100%;
-        }
-
-        /* Toggle Button (Mobile Admin) */
-        .btn-toggle-sidebar {
-            position: fixed; top: 15px; left: 15px; z-index: 1060;
-            background: white; border: none; padding: 10px;
-            border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            display: none; /* Chỉ hiện khi là admin */
-        }
-
-        /* --- CARDS & FORMS --- */
-        .user-card-container {
-            max-width: 600px;
-            margin: 40px auto;
-            width: 100%;
+            flex-grow: 1; padding: 20px;
+            margin-left: 0; width: 100%;
+            transition: margin-left 0.4s ease;
+            padding-top: 80px; /* Space for switcher */
         }
         
-        .modern-card {
-            background: white;
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+        .content-area.admin-padding { margin-left: var(--sidebar-width); }
+
+        /* Mobile Sidebar Toggle */
+        .mobile-toggle {
+            position: fixed; top: 20px; left: 20px; z-index: 1060;
+            background: white; border: none; padding: 10px;
+            border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: none; color: var(--primary-color);
         }
 
+        /* --- GLASS CARDS --- */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 24px;
+            border: var(--glass-border);
+            box-shadow: var(--shadow-soft);
+            padding: 30px;
+            transition: transform 0.3s;
+        }
+
+        /* --- FORM ELEMENTS --- */
         .form-control, .form-select {
-            border-radius: 12px;
-            padding: 12px 15px;
-            border: 1px solid #eee;
-            background: #fbfbfb;
+            border-radius: 14px;
+            padding: 12px 16px;
+            border: 1px solid rgba(0,0,0,0.1);
+            background: rgba(255,255,255,0.8);
         }
         .form-control:focus {
-            background: #fff;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(78, 84, 200, 0.1);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.15);
+            border-color: var(--primary-color);
         }
 
-        .btn-modern {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
+        /* --- BUTTONS --- */
+        .btn-gradient {
+            background: var(--primary-gradient);
             border: none; color: white;
-            padding: 12px; border-radius: 12px;
-            font-weight: 600; width: 100%;
-            box-shadow: 0 5px 15px rgba(78, 84, 200, 0.3);
-            transition: 0.2s;
+            border-radius: 14px; padding: 12px;
+            font-weight: 600; letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4);
+            transition: transform 0.2s;
         }
-        .btn-modern:hover { transform: translateY(-2px); color: white; }
+        .btn-gradient:hover { transform: translateY(-2px); color: white; }
 
-        /* --- ADMIN DASHBOARD --- */
-        .stat-card {
-            background: white; border-radius: 16px; padding: 20px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.03);
-            height: 100%; border-bottom: 4px solid var(--primary);
+        /* --- TABLE --- */
+        .table-container {
+            border-radius: 20px; overflow: hidden;
+            background: white; box-shadow: var(--shadow-soft);
+        }
+        .custom-table th {
+            background: #f8f9fa; color: #636e72;
+            font-weight: 600; text-transform: uppercase;
+            font-size: 0.8rem; padding: 18px; border: none;
+        }
+        .custom-table td { padding: 18px; vertical-align: middle; border-bottom: 1px solid #f1f2f6; }
+
+        /* --- UTILS --- */
+        .bank-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 6px 12px; border-radius: 8px;
+            background: #f1f2f6; font-size: 0.85rem; font-weight: 500;
+        }
+        .avatar {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: var(--primary-gradient); color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 1.1rem;
         }
 
-        /* Table Responsive Fix */
-        .table-responsive {
-            background: white; border-radius: 16px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.03);
-            overflow-x: auto; /* Cuộn ngang trên mobile */
-        }
-        .table th {
-            white-space: nowrap; /* Không xuống dòng tiêu đề */
-            background: #f8f9fa; color: #888;
-            font-size: 0.85rem; padding: 15px; border: none;
-        }
-        .table td { padding: 15px; vertical-align: middle; border-bottom: 1px solid #f0f0f0; }
-
-        /* Sidebar Items */
-        .nav-item {
-            padding: 12px 15px; margin-bottom: 5px; border-radius: 10px;
-            cursor: pointer; color: #555; font-weight: 500; display: flex; align-items: center; gap: 10px;
-        }
-        .nav-item:hover, .nav-item.active { background: #eff3ff; color: var(--primary); }
-
-        /* Loading */
-        #loading {
-            position: fixed; inset: 0; background: rgba(255,255,255,0.9);
-            z-index: 9999; display: none; align-items: center; justify-content: center;
+        /* Responsive */
+        @media (max-width: 991px) {
+            .content-area.admin-padding { margin-left: 0; }
+            .sidebar { transform: translateX(-100%); }
+            .mode-switcher { width: 90%; justify-content: space-between; display: flex; }
+            .mode-btn { padding: 8px 16px; width: 48%; text-align: center; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Loading Screen -->
-    <div id="loading">
-        <div class="text-center">
-            <div class="spinner-border text-primary" role="status"></div>
-            <p class="mt-2 fw-bold text-muted small">Đang xử lý...</p>
-        </div>
+    <!-- Loading -->
+    <div id="loading" style="position: fixed; inset:0; background:rgba(255,255,255,0.9); z-index:9999; display:none; align-items:center; justify-content:center;">
+        <div class="spinner-border text-primary" role="status"></div>
     </div>
 
-    <!-- Mobile Sidebar Toggle -->
-    <button class="btn-toggle-sidebar" id="sidebarToggle">
+    <!-- 1. ADMIN MODE SWITCHER (Visible only for Admin) -->
+    <div id="modeSwitcher" class="mode-switcher animate__animated animate__fadeInDown">
+        <button class="mode-btn active" id="btnSwitchAdmin" onclick="switchViewMode('admin')">
+            <i class="fas fa-shield-alt me-2"></i>Admin Dashboard
+        </button>
+        <button class="mode-btn" id="btnSwitchUser" onclick="switchViewMode('user')">
+            <i class="fas fa-user-edit me-2"></i>Nhập Liệu
+        </button>
+    </div>
+
+    <!-- Mobile Toggle (Admin Only) -->
+    <button class="mobile-toggle" id="sidebarToggle">
         <i class="fas fa-bars fa-lg"></i>
     </button>
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <div class="main-wrapper">
+    <div class="main-layout">
         
-        <!-- SIDEBAR -->
-        <div class="sidebar" id="sidebar">
-            <div class="d-flex align-items-center mb-5 px-2">
-                <div class="bg-primary text-white rounded-circle p-2 me-2"><i class="fas fa-shield-alt"></i></div>
-                <h5 class="fw-bold m-0 text-primary">Admin Panel</h5>
-            </div>
-            
-            <div class="nav-item active" onclick="switchTab('dashboard')">
-                <i class="fas fa-chart-pie"></i> Tổng quan
-            </div>
-            <div class="nav-item" onclick="document.getElementById('fileExcel').click()">
-                <i class="fas fa-file-excel"></i> Import Excel
-                <input type="file" id="fileExcel" class="d-none" accept=".xlsx" onchange="handleImport()">
-            </div>
-            <div class="nav-item" onclick="downloadSample()">
-                <i class="fas fa-download"></i> Tải mẫu Excel
-            </div>
-            <div class="nav-item" onclick="exportExcel()">
-                <i class="fas fa-file-export"></i> Xuất Báo cáo
-            </div>
-
-            <div class="mt-auto pt-4 border-top">
-                <div class="d-flex align-items-center mb-3">
-                    <img src="https://ui-avatars.com/api/?name=Admin&background=random" class="rounded-circle me-2" width="32">
-                    <small class="fw-bold text-truncate" id="adminName">Admin</small>
-                </div>
-                <div class="nav-item text-danger bg-light" id="btnLogout">
-                    <i class="fas fa-sign-out-alt"></i> Đăng xuất
+        <!-- 2. SIDEBAR (Admin Only) -->
+        <nav class="sidebar" id="sidebar">
+            <div class="d-flex align-items-center mb-5 pb-3 border-bottom">
+                <div class="avatar me-3"><i class="fas fa-bolt"></i></div>
+                <div>
+                    <h5 class="fw-bold m-0 text-dark">Quản Trị</h5>
+                    <small class="text-muted" id="adminNameDisplay">Admin</small>
                 </div>
             </div>
-        </div>
 
-        <!-- CONTENT -->
+            <div class="d-grid gap-2">
+                <button class="btn btn-light text-start py-3 fw-bold text-primary active">
+                    <i class="fas fa-chart-pie me-3"></i>Tổng quan
+                </button>
+                <button class="btn btn-light text-start py-3" onclick="document.getElementById('fileExcel').click()">
+                    <i class="fas fa-file-import me-3"></i>Import Excel
+                    <input type="file" id="fileExcel" hidden accept=".xlsx" onchange="handleImport()">
+                </button>
+                <button class="btn btn-light text-start py-3" onclick="downloadSample()">
+                    <i class="fas fa-download me-3"></i>Tải mẫu Excel
+                </button>
+                <button class="btn btn-light text-start py-3" onclick="exportExcel()">
+                    <i class="fas fa-file-export me-3"></i>Xuất báo cáo
+                </button>
+            </div>
+
+            <div class="mt-auto">
+                <button class="btn btn-danger w-100 py-2 rounded-3" id="btnLogout">
+                    <i class="fas fa-sign-out-alt me-2"></i>Đăng xuất
+                </button>
+            </div>
+        </nav>
+
+        <!-- 3. CONTENT AREA -->
         <div class="content-area" id="contentArea">
-            
-            <!-- 1. USER INTERFACE -->
-            <div id="userView" class="animate__animated animate__fadeIn">
-                <div class="user-card-container">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4 class="fw-bold m-0">Cổng Thông Tin</h4>
-                        <button class="btn btn-sm btn-white border rounded-pill shadow-sm" id="btnLoginUser">
-                            <i class="fab fa-google me-1 text-danger"></i> Admin Login
-                        </button>
-                    </div>
 
-                    <div class="modern-card">
-                        <form id="userForm">
-                            <div class="mb-4">
-                                <label class="fw-bold small text-muted text-uppercase mb-2">Chọn hồ sơ của bạn</label>
-                                <select id="userSelect" class="form-select form-select-lg" required>
-                                    <option value="" selected disabled>Đang tải dữ liệu...</option>
-                                </select>
+            <!-- A. USER VIEW (Nhập liệu) -->
+            <div id="userView" class="container" style="max-width: 600px;">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3 class="fw-bold text-white m-0 text-shadow">Cổng Thông Tin</h3>
+                    <button class="btn btn-sm btn-light rounded-pill px-3 shadow" id="btnLoginUser">
+                        <i class="fab fa-google me-2 text-danger"></i>Admin Login
+                    </button>
+                </div>
+
+                <div class="glass-card animate__animated animate__fadeInUp">
+                    <form id="userForm">
+                        <div class="mb-4">
+                            <label class="fw-bold small text-muted text-uppercase mb-2">Hồ sơ nhân sự</label>
+                            <select id="userSelect" class="form-select form-select-lg border-0 shadow-sm" required>
+                                <option value="" selected disabled>Đang tải danh sách...</option>
+                            </select>
+                        </div>
+
+                        <div id="formContent" style="opacity:0.5; pointer-events:none; transition:0.3s">
+                            <div class="text-end mb-3">
+                                <span class="badge bg-white text-dark shadow-sm cursor-pointer py-2 px-3" onclick="viewHistory()">
+                                    <i class="fas fa-history me-2 text-primary"></i>Lịch sử chỉnh sửa
+                                </span>
                             </div>
 
-                            <div id="formContent" style="opacity: 0.5; pointer-events: none; transition: 0.3s;">
-                                <div class="text-end mb-3">
-                                    <span class="badge bg-light text-dark border cursor-pointer" onclick="viewHistory()">
-                                        <i class="fas fa-history me-1"></i> Lịch sử
-                                    </span>
+                            <div class="row g-3 mb-4">
+                                <div class="col-12">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="inpName" placeholder="Tên" disabled>
+                                        <label>Họ và Tên</label>
+                                    </div>
+                                    <div class="text-end mt-1"><i class="fas fa-pen text-white small" style="cursor:pointer; text-shadow:0 1px 2px black" onclick="toggleEdit('inpName')"></i></div>
                                 </div>
-
-                                <div class="row g-3 mb-4">
-                                    <div class="col-12">
-                                        <label class="small text-muted">Họ và Tên</label>
-                                        <div class="input-group">
-                                            <input type="text" id="inpName" class="form-control" disabled>
-                                            <span class="input-group-text bg-white"><i class="fas fa-pen small text-muted" onclick="toggleEdit('inpName')"></i></span>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <label class="small text-muted">CCCD</label>
-                                        <input type="text" id="inpCccd" class="form-control" disabled readonly>
-                                    </div>
-                                    <div class="col-6">
-                                        <label class="small text-muted">Ngày sinh</label>
-                                        <div class="input-group">
-                                            <input type="text" id="inpDob" class="form-control" disabled>
-                                            <span class="input-group-text bg-white"><i class="fas fa-pen small text-muted" onclick="toggleEdit('inpDob')"></i></span>
-                                        </div>
+                                <div class="col-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="inpCccd" placeholder="CCCD" disabled readonly>
+                                        <label>CCCD</label>
                                     </div>
                                 </div>
-
-                                <div class="bg-light p-3 rounded-4 mb-4">
-                                    <h6 class="fw-bold mb-3 text-primary"><i class="fas fa-university me-2"></i>Tài khoản ngân hàng</h6>
-                                    
-                                    <div class="mb-3">
-                                        <label class="small fw-bold">Agribank <span class="text-danger">*</span></label>
-                                        <div class="input-group">
-                                            <span class="input-group-text bg-white border-end-0"><img id="logoAgri" src="" height="20"></span>
-                                            <input type="number" id="inpAgri" class="form-control border-start-0" placeholder="Số tài khoản..." required>
-                                        </div>
+                                <div class="col-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="inpDob" placeholder="Dob" disabled>
+                                        <label>Ngày sinh</label>
                                     </div>
-                                    
-                                    <div>
-                                        <label class="small fw-bold">Vietcombank</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text bg-white border-end-0"><img id="logoVcb" src="" height="20"></span>
-                                            <input type="number" id="inpVcb" class="form-control border-start-0" placeholder="Số tài khoản...">
-                                        </div>
-                                    </div>
+                                    <div class="text-end mt-1"><i class="fas fa-pen text-white small" style="cursor:pointer; text-shadow:0 1px 2px black" onclick="toggleEdit('inpDob')"></i></div>
                                 </div>
-
-                                <button type="submit" class="btn btn-modern">Xác nhận thông tin</button>
                             </div>
-                        </form>
-                    </div>
+
+                            <div class="bg-white p-4 rounded-4 shadow-sm mb-4">
+                                <h6 class="fw-bold text-primary mb-3"><i class="fas fa-university me-2"></i>Tài khoản nhận lương</h6>
+                                <div class="mb-3">
+                                    <label class="small fw-bold">Agribank <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-0"><img id="logoAgri" src="" height="20"></span>
+                                        <input type="number" id="inpAgri" class="form-control bg-light border-0" placeholder="Nhập số tài khoản..." required>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="small fw-bold">Vietcombank</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-0"><img id="logoVcb" src="" height="20"></span>
+                                        <input type="number" id="inpVcb" class="form-control bg-light border-0" placeholder="Nhập số tài khoản...">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-gradient w-100 py-3 fs-6 shadow-lg">Xác nhận thông tin</button>
+                        </div>
+                    </form>
                 </div>
             </div>
 
-            <!-- 2. ADMIN INTERFACE -->
+            <!-- B. ADMIN VIEW (Dashboard) -->
             <div id="adminView" class="d-none animate__animated animate__fadeIn">
-                <div class="container-fluid p-0">
-                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
-                        <div>
-                            <h3 class="fw-bold m-0">Quản lý nhân sự</h3>
-                            <p class="text-muted small m-0">Hệ thống quản lý thông tin tập trung</p>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <input type="text" id="adminSearch" class="form-control" placeholder="Tìm kiếm..." style="width: 200px;">
-                            <button class="btn btn-dark" onclick="openAdminModal()"><i class="fas fa-plus"></i></button>
-                        </div>
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                    <h3 class="fw-bold text-white m-0" style="text-shadow: 0 2px 10px rgba(0,0,0,0.2);">Dashboard</h3>
+                    <div class="d-flex gap-2 bg-white p-1 rounded-pill shadow-sm">
+                        <input type="text" id="adminSearch" class="form-control border-0 shadow-none bg-transparent" placeholder="Tìm kiếm..." style="width: 200px;">
+                        <button class="btn btn-dark rounded-circle" onclick="openAdminModal()"><i class="fas fa-plus"></i></button>
                     </div>
+                </div>
 
-                    <!-- Stats -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-6 col-md-3">
-                            <div class="stat-card">
-                                <small class="text-muted fw-bold">TỔNG SỐ</small>
-                                <h2 class="fw-bold text-primary mb-0" id="statTotal">0</h2>
+                <!-- Stats -->
+                <div class="row g-4 mb-4">
+                    <div class="col-md-6">
+                        <div class="glass-card d-flex align-items-center justify-content-between p-4">
+                            <div>
+                                <p class="text-muted small fw-bold text-uppercase mb-1">Tổng nhân sự</p>
+                                <h2 class="fw-bold m-0 text-dark" id="statTotal">0</h2>
                             </div>
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <div class="stat-card" style="border-color: #00b894;">
-                                <small class="text-muted fw-bold">ĐÃ NHẬP</small>
-                                <h2 class="fw-bold text-success mb-0" id="statDone">0</h2>
-                            </div>
+                            <div class="bg-primary bg-opacity-10 p-3 rounded-circle text-primary"><i class="fas fa-users fa-2x"></i></div>
                         </div>
                     </div>
+                    <div class="col-md-6">
+                        <div class="glass-card d-flex align-items-center justify-content-between p-4">
+                            <div>
+                                <p class="text-muted small fw-bold text-uppercase mb-1">Đã nhập TK</p>
+                                <h2 class="fw-bold m-0 text-success" id="statDone">0</h2>
+                            </div>
+                            <div class="bg-success bg-opacity-10 p-3 rounded-circle text-success"><i class="fas fa-check-circle fa-2x"></i></div>
+                        </div>
+                    </div>
+                </div>
 
-                    <!-- Table -->
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Họ và Tên</th>
-                                    <th>CCCD / Ngày sinh</th>
-                                    <th>TK Agribank</th>
-                                    <th>TK Vietcombank</th>
-                                    <th class="text-end">Hành động</th>
-                                </tr>
-                            </thead>
-                            <tbody id="adminTableBody">
-                                <!-- Data -->
-                            </tbody>
-                        </table>
-                    </div>
+                <!-- Table -->
+                <div class="table-container table-responsive">
+                    <table class="table custom-table mb-0 align-middle text-nowrap">
+                        <thead>
+                            <tr>
+                                <th>Nhân viên</th>
+                                <th>Thông tin</th>
+                                <th>TK Agribank</th>
+                                <th>TK Vietcombank</th>
+                                <th class="text-end">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminTableBody">
+                            <!-- JS Render -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
         </div>
     </div>
 
-    <!-- MODAL: ADMIN FORM -->
+    <!-- MODAL: Admin Edit -->
     <div class="modal fade" id="adminModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 rounded-4">
-                <div class="modal-header border-0">
-                    <h5 class="modal-title fw-bold">Thông tin hồ sơ</h5>
+            <div class="modal-content border-0 rounded-4 shadow-lg">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold">Hồ sơ nhân viên</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <form id="adminForm" class="row g-3">
                         <input type="hidden" id="editMode" value="add">
                         <div class="col-12">
@@ -368,13 +395,15 @@
                                 <option value="Nữ">Nữ</option>
                             </select>
                         </div>
-                        <div class="col-12 bg-light p-3 rounded-3 mt-3">
-                            <label class="small fw-bold mb-2">Nhập hộ ngân hàng</label>
-                            <input type="number" id="admAgri" class="form-control mb-2" placeholder="Agribank">
-                            <input type="number" id="admVcb" class="form-control" placeholder="Vietcombank">
+                        <div class="col-12 bg-light p-3 rounded-3 mt-2">
+                            <label class="small fw-bold text-muted mb-2 d-block">Nhập hộ ngân hàng</label>
+                            <div class="d-grid gap-2">
+                                <input type="number" id="admAgri" class="form-control bg-white" placeholder="Agribank">
+                                <input type="number" id="admVcb" class="form-control bg-white" placeholder="Vietcombank">
+                            </div>
                         </div>
                         <div class="col-12 mt-4">
-                            <button class="btn btn-primary w-100 py-2">Lưu dữ liệu</button>
+                            <button class="btn btn-primary w-100 py-3 rounded-3 fw-bold">Lưu thay đổi</button>
                         </div>
                     </form>
                 </div>
@@ -382,28 +411,28 @@
         </div>
     </div>
 
-    <!-- MODAL: HISTORY -->
+    <!-- MODAL: History -->
     <div class="modal fade" id="historyModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 rounded-4">
                 <div class="modal-header border-0">
-                    <h5 class="modal-title fw-bold">Lịch sử</h5>
+                    <h5 class="modal-title fw-bold">Lịch sử thay đổi</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body bg-light rounded-bottom-4">
-                    <div id="historyList" class="d-flex flex-column gap-2"></div>
+                    <div id="historyList" class="d-flex flex-column gap-3"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- JAVASCRIPT -->
+    <!-- SCRIPT -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getFirestore, collection, doc, setDoc, deleteDoc, addDoc, onSnapshot, query, where, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-        // --- 1. CONFIG ---
+        // CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
@@ -413,8 +442,6 @@
             appId: "1:914980131889:web:72f8da15c42dbee671b110",
             measurementId: "G-C587M69LZW"
         };
-        
-        // ADMIN UIDS
         const ALLOWED_ADMINS = ["VYIs9XHLR9RMStwtcdwMrOIo33w1"];
 
         const app = initializeApp(firebaseConfig);
@@ -427,136 +454,141 @@
         let allUsers = [];
         let currentUser = null;
         let currentData = null;
+        let bankLogoAgri = "", bankLogoVcb = "";
 
-        // --- 2. RESPONSIVE SIDEBAR LOGIC ---
-        const sidebar = document.getElementById('sidebar');
-        const contentArea = document.getElementById('contentArea');
-        const overlay = document.getElementById('sidebarOverlay');
-        const toggleBtn = document.getElementById('sidebarToggle');
-
-        toggleBtn.addEventListener('click', () => {
-            sidebar.classList.toggle('mobile-open');
-            overlay.classList.toggle('show');
-        });
-        overlay.addEventListener('click', () => {
-            sidebar.classList.remove('mobile-open');
-            overlay.classList.remove('show');
-        });
-
-        // --- 3. FETCH BANK LOGOS ---
+        // --- FETCH LOGOS ---
         async function fetchLogos() {
             try {
                 const r = await fetch('https://api.vietqr.io/v2/banks');
                 const d = await r.json();
                 const agri = d.data.find(b=>b.code=="VBA");
                 const vcb = d.data.find(b=>b.code=="VCB");
-                if(agri) document.getElementById('logoAgri').src = agri.logo;
-                if(vcb) document.getElementById('logoVcb').src = vcb.logo;
+                if(agri) { bankLogoAgri = agri.logo; document.getElementById('logoAgri').src = agri.logo; }
+                if(vcb) { bankLogoVcb = vcb.logo; document.getElementById('logoVcb').src = vcb.logo; }
             } catch(e){}
         }
         fetchLogos();
+
         function showLoading(s) { document.getElementById('loading').style.display=s?'flex':'none'; }
 
-        // --- 4. DATE HELPER (FIX SORT & IMPORT) ---
-        // Chuyển chuỗi "DD/MM/YYYY" sang Date Object để so sánh
-        function parseDate(dateStr) {
-            if(!dateStr) return new Date(0);
-            const parts = dateStr.split('/');
-            if(parts.length === 3) return new Date(parts[2], parts[1]-1, parts[0]);
-            return new Date(0);
+        // --- DATE HELPERS ---
+        function parseDate(d) {
+            if(!d) return new Date(0);
+            const p = d.split('/');
+            return p.length===3 ? new Date(p[2], p[1]-1, p[0]) : new Date(0);
         }
-
-        // Chuyển Serial Excel sang DD/MM/YYYY
         function excelDateToJS(serial) {
             if (!serial) return "";
-            if (typeof serial === 'string' && serial.includes('/')) return serial; // Đã đúng format
-            const utc_days  = Math.floor(serial - 25569);
-            const utc_value = utc_days * 86400;
-            const date_info = new Date(utc_value * 1000);
-            const day = String(date_info.getDate()).padStart(2,'0');
-            const month = String(date_info.getMonth()+1).padStart(2,'0');
-            const year = date_info.getFullYear();
-            return `${day}/${month}/${year}`;
+            if (typeof serial === 'string' && serial.includes('/')) return serial;
+            const date_info = new Date((Math.floor(serial - 25569) * 86400) * 1000);
+            return `${String(date_info.getDate()).padStart(2,'0')}/${String(date_info.getMonth()+1).padStart(2,'0')}/${date_info.getFullYear()}`;
         }
 
-        // --- 5. AUTH ---
+        // --- AUTH & VIEW SWITCHING ---
+        const modeSwitcher = document.getElementById('modeSwitcher');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const contentArea = document.getElementById('contentArea');
+        const userView = document.getElementById('userView');
+        const adminView = document.getElementById('adminView');
+
         onAuthStateChanged(auth, (user) => {
             if (user && ALLOWED_ADMINS.includes(user.uid)) {
                 currentUser = user;
-                toggleAdminMode(true);
-                document.getElementById('adminName').textContent = user.displayName;
+                document.getElementById('adminNameDisplay').textContent = user.displayName;
+                // Show Admin Controls
+                modeSwitcher.style.display = 'flex';
+                switchViewMode('admin'); // Default to Admin view
             } else if (user) {
                 signOut(auth);
-                Swal.fire('Lỗi', 'Bạn không có quyền Admin', 'error');
+                Swal.fire('Lỗi', 'Không có quyền Admin', 'error');
             } else {
                 currentUser = null;
-                toggleAdminMode(false);
+                // Hide Admin Controls
+                modeSwitcher.style.display = 'none';
+                sidebar.classList.remove('open-desktop', 'open-mobile');
+                sidebarToggle.style.display = 'none';
+                switchViewMode('user');
             }
         });
 
-        function toggleAdminMode(isAdmin) {
-            if(isAdmin) {
-                sidebar.classList.add('admin-active');
-                contentArea.classList.add('admin-active');
-                toggleBtn.style.display = 'block';
-                document.getElementById('userView').classList.add('d-none');
-                document.getElementById('adminView').classList.remove('d-none');
+        // Function switch tabs (New)
+        window.switchViewMode = function(mode) {
+            const btnAdmin = document.getElementById('btnSwitchAdmin');
+            const btnUser = document.getElementById('btnSwitchUser');
+
+            if(mode === 'admin') {
+                if(!currentUser) return; // Guard
+                
+                // UI State
+                btnAdmin.classList.add('active');
+                btnUser.classList.remove('active');
+                
+                userView.classList.add('d-none');
+                adminView.classList.remove('d-none');
+                
+                // Sidebar Logic
+                sidebar.classList.add('open-desktop');
+                contentArea.classList.add('admin-padding');
+                sidebarToggle.style.display = 'block';
+
             } else {
-                sidebar.classList.remove('admin-active');
-                contentArea.classList.remove('admin-active');
-                toggleBtn.style.display = 'none';
-                document.getElementById('userView').classList.remove('d-none');
-                document.getElementById('adminView').classList.add('d-none');
+                // UI State
+                btnUser.classList.add('active');
+                btnAdmin.classList.remove('active');
+
+                adminView.classList.add('d-none');
+                userView.classList.remove('d-none');
+
+                // Hide Sidebar for immersive User experience
+                sidebar.classList.remove('open-desktop');
+                contentArea.classList.remove('admin-padding');
+                sidebarToggle.style.display = 'none';
+                sidebar.classList.remove('open-mobile'); // Close mobile menu if open
             }
-        }
+        };
+
+        // Sidebar Toggle Mobile
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('open-mobile');
+        });
 
         document.getElementById('btnLoginUser').onclick = () => signInWithPopup(auth, provider);
         document.getElementById('btnLogout').onclick = () => signOut(auth);
 
-        // --- 6. REALTIME DATA & SORTING ---
+        // --- DATA SYNC ---
         onSnapshot(collection(db, COLL_DATA), (snap) => {
             allUsers = [];
             snap.forEach(doc => allUsers.push(doc.data()));
+            allUsers.sort((a,b) => parseDate(a.dob) - parseDate(b.dob));
 
-            // SẮP XẾP THEO NGÀY SINH (Tăng dần)
-            allUsers.sort((a, b) => {
-                return parseDate(a.dob) - parseDate(b.dob);
-            });
-
-            // Render User Dropdown
             const select = document.getElementById('userSelect');
-            select.innerHTML = '<option value="" selected disabled>-- Tìm tên của bạn --</option>';
+            select.innerHTML = '<option value="" selected disabled>-- Tìm tên hồ sơ --</option>';
             allUsers.forEach(u => {
                 const opt = document.createElement('option');
-                opt.value = u.cccd;
-                opt.textContent = u.name; // Chỉ hiện tên
+                opt.value = u.cccd; opt.textContent = u.name;
                 select.appendChild(opt);
             });
-
             renderAdminTable();
         });
 
-        // --- 7. USER LOGIC ---
+        // --- USER LOGIC ---
         document.getElementById('userSelect').onchange = function() {
             currentData = allUsers.find(u=>u.cccd==this.value);
             if(currentData) {
                 const form = document.getElementById('formContent');
                 form.style.opacity="1"; form.style.pointerEvents="auto";
-                
                 ['Name','Cccd','Dob','Agri','Vcb'].forEach(k => {
-                    let f = k.toLowerCase();
-                    if(k=='Vcb') f='vietcombank'; if(k=='Agri') f='agribank';
+                    let f = k.toLowerCase(); if(k=='Vcb') f='vietcombank'; if(k=='Agri') f='agribank';
                     document.getElementById('inp'+k).value = currentData[f] || "";
                 });
-                
                 document.getElementById('inpName').disabled=true;
                 document.getElementById('inpDob').disabled=true;
             }
         };
 
         window.toggleEdit = (id) => {
-            let el = document.getElementById(id);
-            el.disabled=!el.disabled; if(!el.disabled) el.focus();
+            let el=document.getElementById(id); el.disabled=!el.disabled; if(!el.disabled) el.focus();
         };
 
         document.getElementById('userForm').onsubmit = async(e) => {
@@ -576,11 +608,10 @@
             const changes = [];
             const editor = currentUser ? `Admin: ${currentUser.displayName}` : "Khách";
             for(let k in newData) {
-                if((oldData?.[k]||"") != (newData[k]||"")) 
-                    changes.push({field:k, old:oldData?.[k]||"", new:newData[k]});
+                if((oldData?.[k]||"") != (newData[k]||"")) changes.push({field:k, old:oldData?.[k]||"", new:newData[k]});
             }
             try {
-                await setDoc(doc(db, COLL_DATA, cccd), {...newData, cccd, last_updated: new Date().toISOString()}, {merge:true});
+                await setDoc(doc(db, COLL_DATA, cccd), {...newData, cccd, last_updated:new Date().toISOString()}, {merge:true});
                 if(changes.length>0) await addDoc(collection(db, COLL_LOGS), {cccd_ref:cccd, editor, time:new Date().toISOString(), details:changes});
                 Swal.fire({icon:'success',title:'Đã lưu!',timer:1500,showConfirmButton:false});
                 bootstrap.Modal.getInstance(document.getElementById('adminModal'))?.hide();
@@ -588,12 +619,11 @@
             finally { showLoading(false); }
         }
 
-        // --- 8. ADMIN LOGIC ---
+        // --- ADMIN LOGIC ---
         function renderAdminTable() {
             const tbody = document.getElementById('adminTableBody');
             const term = document.getElementById('adminSearch').value.toLowerCase();
             tbody.innerHTML = '';
-            
             const filtered = allUsers.filter(u => u.name?.toLowerCase().includes(term) || u.cccd?.includes(term));
             
             document.getElementById('statTotal').innerText = allUsers.length;
@@ -601,14 +631,26 @@
 
             filtered.forEach(u => {
                 const tr = document.createElement('tr');
+                const avatar = u.name.charAt(0).toUpperCase();
+                const agri = u.agribank ? `<div class="bank-badge"><img src="${bankLogoAgri}" height="14">${u.agribank}</div>` : '<span class="text-muted">-</span>';
+                const vcb = u.vietcombank ? `<div class="bank-badge"><img src="${bankLogoVcb}" height="14">${u.vietcombank}</div>` : '<span class="text-muted">-</span>';
+                
                 tr.innerHTML = `
-                    <td><div class="fw-bold">${u.name}</div><small class="text-muted">${u.gender}</small></td>
-                    <td><div>${u.cccd}</div><small class="text-muted">${u.dob}</small></td>
-                    <td>${u.agribank || '<span class="text-muted">-</span>'}</td>
-                    <td>${u.vietcombank || '<span class="text-muted">-</span>'}</td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="avatar me-3">${avatar}</div>
+                            <div>
+                                <div class="fw-bold">${u.name}</div>
+                                <small class="text-muted">${u.gender}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td><div class="fw-bold text-dark">${u.cccd}</div><small class="text-muted">${u.dob}</small></td>
+                    <td>${agri}</td>
+                    <td>${vcb}</td>
                     <td class="text-end">
-                        <button class="btn btn-sm btn-light border" onclick="editUser('${u.cccd}')"><i class="fas fa-pen text-primary"></i></button>
-                        <button class="btn btn-sm btn-light border" onclick="delUser('${u.cccd}')"><i class="fas fa-trash text-danger"></i></button>
+                        <button class="btn btn-sm btn-outline-primary border-0 rounded-circle" onclick="editUser('${u.cccd}')"><i class="fas fa-pen"></i></button>
+                        <button class="btn btn-sm btn-outline-danger border-0 rounded-circle" onclick="delUser('${u.cccd}')"><i class="fas fa-trash"></i></button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -626,8 +668,7 @@
         window.editUser = (cccd) => {
             const u = allUsers.find(x=>x.cccd==cccd);
             document.getElementById('editMode').value='update';
-            document.getElementById('admCccd').value=u.cccd; 
-            document.getElementById('admCccd').readOnly=true;
+            document.getElementById('admCccd').value=u.cccd; document.getElementById('admCccd').readOnly=true;
             document.getElementById('admName').value=u.name;
             document.getElementById('admDob').value=u.dob;
             document.getElementById('admGender').value=u.gender||'Nam';
@@ -639,9 +680,7 @@
         document.getElementById('adminForm').onsubmit = async(e) => {
             e.preventDefault();
             const cccd = document.getElementById('admCccd').value;
-            const mode = document.getElementById('editMode').value;
-            if(mode=='add' && allUsers.some(u=>u.cccd==cccd)) return Swal.fire('Lỗi','CCCD tồn tại','error');
-            
+            if(document.getElementById('editMode').value=='add' && allUsers.some(u=>u.cccd==cccd)) return Swal.fire('Lỗi','CCCD tồn tại','error');
             const oldData = allUsers.find(u=>u.cccd==cccd) || {};
             const data = {
                 name: document.getElementById('admName').value,
@@ -660,7 +699,6 @@
             }
         };
 
-        // --- 9. IMPORT/EXPORT (FIXED DATE) ---
         window.handleImport = () => {
             const f = document.getElementById('fileExcel').files[0];
             if(!f) return;
@@ -670,13 +708,11 @@
                 const wb = XLSX.read(e.target.result, {type:'array'});
                 const d = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
                 for(let row of d) {
-                    let cccd = row['CCCD']||row['cccd'];
+                    let cccd=row['CCCD']||row['cccd'];
                     if(cccd) {
                         cccd=String(cccd);
-                        // Fix date import
-                        let dob = row['Ngày sinh']||row['DOB']||row['ngay_sinh']||"";
-                        if(typeof dob === 'number') dob = excelDateToJS(dob);
-
+                        let dob = row['Ngày sinh']||row['DOB']||"";
+                        if(typeof dob==='number') dob=excelDateToJS(dob);
                         await setDoc(doc(db, COLL_DATA, cccd), {
                             cccd, name: row['Họ tên']||row['Name'],
                             dob: dob, gender: row['Giới tính']||'Nam'
@@ -716,7 +752,6 @@
             });
             new bootstrap.Modal(document.getElementById('historyModal')).show();
         };
-
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
