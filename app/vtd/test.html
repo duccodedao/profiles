@@ -34,7 +34,7 @@
             background-image: linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%);
             min-height: 100vh;
             color: #2d3436;
-            overflow-x: hidden;
+            overflow-x: hidden; /* Chỉ ẩn scroll ngang của body chính */
         }
 
         /* --- LAYOUT STRUCTURE --- */
@@ -44,7 +44,7 @@
             transition: all 0.3s ease;
         }
 
-        /* --- SIDEBAR (Fixed Mobile Issue) --- */
+        /* --- SIDEBAR --- */
         .sidebar {
             width: var(--sidebar-width);
             background: rgba(255, 255, 255, 0.98);
@@ -54,16 +54,12 @@
             z-index: 1060;
             padding: 25px;
             box-shadow: 5px 0 25px rgba(0,0,0,0.05);
-            /* Mặc định ẩn trên mobile */
             transform: translateX(-100%); 
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex; flex-direction: column;
         }
 
-        /* Class kích hoạt hiện sidebar */
-        .sidebar.active {
-            transform: translateX(0) !important;
-        }
+        .sidebar.active { transform: translateX(0) !important; }
 
         /* --- CONTENT AREA --- */
         .content-area {
@@ -71,11 +67,10 @@
             padding: 20px;
             width: 100%;
             transition: margin-left 0.3s ease;
-            /* Mặc định full width */
             margin-left: 0; 
+            overflow-x: hidden; /* Ngăn content bị tràn layout */
         }
 
-        /* --- OVERLAY & TOGGLE --- */
         .sidebar-overlay {
             position: fixed; inset: 0; background: rgba(0,0,0,0.5);
             z-index: 1050; display: none; backdrop-filter: blur(2px);
@@ -87,7 +82,7 @@
             background: white; border: none; padding: 10px 14px;
             border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
             color: var(--primary-color); 
-            display: none; /* JS sẽ bật khi ở admin mode */
+            display: none; 
             transition: transform 0.2s;
         }
         .mobile-toggle:active { transform: scale(0.95); }
@@ -119,19 +114,32 @@
         }
         .btn-gradient:hover { transform: translateY(-2px); color: white; }
 
-        /* --- TABLE --- */
-        .table-container {
-            border-radius: 16px; overflow: hidden;
-            background: white; box-shadow: var(--shadow-soft);
+        /* --- TABLE FIX FOR MOBILE --- */
+        .table-responsive {
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+            border-radius: 16px;
+            background: white; 
+            box-shadow: var(--shadow-soft);
         }
+        
+        .custom-table {
+            min-width: 800px; /* Đảm bảo bảng có độ rộng tối thiểu để kích hoạt scroll ngang */
+            margin-bottom: 0;
+        }
+
         .custom-table th {
             background: #f8f9fa; color: #636e72; font-weight: 600;
             font-size: 0.8rem; padding: 15px; border: none; white-space: nowrap;
+            position: sticky; top: 0; z-index: 10;
         }
-        .custom-table td { padding: 15px; vertical-align: middle; border-bottom: 1px solid #f1f2f6; }
+        .custom-table td { 
+            padding: 15px; vertical-align: middle; 
+            border-bottom: 1px solid #f1f2f6; 
+            white-space: nowrap; /* Giữ nội dung trên 1 dòng */
+        }
 
         /* --- SWAL CUSTOM --- */
-        /* Custom class cho SweetAlert để làm đẹp */
         .glass-popup {
             background: rgba(255, 255, 255, 0.95) !important;
             backdrop-filter: blur(10px) !important;
@@ -139,16 +147,24 @@
             border: 1px solid rgba(255,255,255,0.5);
             box-shadow: 0 15px 40px rgba(0,0,0,0.1) !important;
         }
+        
+        /* Hiệu ứng lịch sử */
+        .history-item {
+            border-left: 3px solid #6c5ce7;
+            transition: all 0.2s;
+        }
+        .history-item:hover {
+            transform: translateX(5px);
+            background: white !important;
+        }
 
         /* --- RESPONSIVE LOGIC --- */
-        /* Desktop: Khi có class admin-layout, sidebar hiện, content bị đẩy */
         @media (min-width: 992px) {
             .sidebar.desktop-visible { transform: translateX(0); }
             .content-area.desktop-shifted { margin-left: var(--sidebar-width); }
-            .mobile-toggle { display: none !important; } /* Desktop không cần nút toggle nếu luôn hiện */
+            .mobile-toggle { display: none !important; } 
         }
         
-        /* Mobile: Sidebar luôn ẩn, chỉ hiện khi active. Content không bao giờ shift */
         @media (max-width: 991px) {
             .sidebar { transform: translateX(-100%); }
             .content-area { margin-left: 0 !important; }
@@ -197,7 +213,6 @@
                     <i class="fas fa-file-export me-3"></i>Xuất báo cáo
                 </button>
 
-                <!-- NÚT CHUYỂN VỀ USER VIEW (Nằm trong sidebar) -->
                 <div class="border-top my-2"></div>
                 <button class="btn btn-outline-secondary text-start py-2" onclick="switchViewMode('user')">
                     <i class="fas fa-arrow-left me-3"></i>Về trang nhập liệu
@@ -218,7 +233,7 @@
             <div id="userView" class="container pt-4" style="max-width: 600px;">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h4 class="fw-bold text-dark m-0">HR Portal</h4>
-                    <!-- Nút vào Admin (Chỉ hiện khi đã login admin) -->
+                    <!-- Nút vào Admin -->
                     <button class="btn btn-sm btn-dark rounded-pill px-3 shadow animate__animated animate__fadeIn" id="btnToAdmin" style="display: none;" onclick="switchViewMode('admin')">
                         Dashboard <i class="fas fa-arrow-right ms-2"></i>
                     </button>
@@ -238,12 +253,8 @@
                         </div>
 
                         <div id="formContent" style="opacity:0.5; pointer-events:none; transition:0.3s">
-                            <div class="text-end mb-3">
-                                <span class="badge bg-white text-dark shadow-sm cursor-pointer py-2 px-3 border" onclick="viewHistory()">
-                                    <i class="fas fa-history me-2 text-primary"></i>Lịch sử
-                                </span>
-                            </div>
-
+                            
+                            <!-- EDIT: Đổi tất cả thành col-12 để mỗi thông tin 1 dòng -->
                             <div class="row g-3 mb-4">
                                 <div class="col-12">
                                     <div class="form-floating">
@@ -252,18 +263,29 @@
                                     </div>
                                     <div class="text-end mt-1"><i class="fas fa-pen text-secondary small cursor-pointer" onclick="toggleEdit('inpName')"></i></div>
                                 </div>
-                                <div class="col-6">
+                                <div class="col-12">
                                     <div class="form-floating">
                                         <input type="text" class="form-control" id="inpCccd" placeholder="CCCD" disabled readonly>
-                                        <label>CCCD</label>
+                                        <label>CCCD (Không thể sửa)</label>
                                     </div>
                                 </div>
-                                <div class="col-6">
+                                <div class="col-12">
                                     <div class="form-floating">
                                         <input type="text" class="form-control" id="inpDob" placeholder="Dob" disabled>
                                         <label>Ngày sinh</label>
                                     </div>
                                     <div class="text-end mt-1"><i class="fas fa-pen text-secondary small cursor-pointer" onclick="toggleEdit('inpDob')"></i></div>
+                                </div>
+                                <!-- Thêm Giới tính -->
+                                <div class="col-12">
+                                    <div class="form-floating">
+                                        <select class="form-select" id="inpGender" disabled>
+                                            <option value="Nam">Nam</option>
+                                            <option value="Nữ">Nữ</option>
+                                        </select>
+                                        <label>Giới tính</label>
+                                    </div>
+                                    <div class="text-end mt-1"><i class="fas fa-pen text-secondary small cursor-pointer" onclick="toggleEdit('inpGender')"></i></div>
                                 </div>
                             </div>
 
@@ -324,8 +346,8 @@
                 </div>
 
                 <!-- Table -->
-                <div class="table-container table-responsive">
-                    <table class="table custom-table mb-0 align-middle text-nowrap">
+                <div class="table-responsive">
+                    <table class="table custom-table mb-0 align-middle">
                         <thead>
                             <tr>
                                 <th>Nhân viên</th>
@@ -396,10 +418,10 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 rounded-4 glass-popup">
                 <div class="modal-header border-0">
-                    <h5 class="modal-title fw-bold">Lịch sử thay đổi</h5>
+                    <h5 class="modal-title fw-bold"><i class="fas fa-history text-primary me-2"></i>Lịch sử chỉnh sửa</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body bg-light rounded-bottom-4">
+                <div class="modal-body bg-light rounded-bottom-4" style="max-height: 60vh; overflow-y: auto;">
                     <div id="historyList" class="d-flex flex-column gap-3"></div>
                 </div>
             </div>
@@ -422,7 +444,7 @@
             appId: "1:914980131889:web:72f8da15c42dbee671b110",
             measurementId: "G-C587M69LZW"
         };
-        const ALLOWED_ADMINS = ["VYIs9XHLR9RMStwtcdwMrOIo33w1"];
+        const ALLOWED_ADMINS = ["ZQKPUtks4FgJUmllWytScYONuqF3"];
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -504,15 +526,13 @@
                 userView.classList.add('d-none');
                 adminView.classList.remove('d-none');
                 
-                // Desktop: Show sidebar
                 sidebar.classList.add('desktop-visible');
                 contentArea.classList.add('desktop-shifted');
-                sidebarToggle.style.display = 'block'; // Show on mobile only (css handles hide on desktop)
+                sidebarToggle.style.display = 'block'; 
             } else {
                 adminView.classList.add('d-none');
                 userView.classList.remove('d-none');
                 
-                // Hide Sidebar
                 sidebar.classList.remove('desktop-visible');
                 contentArea.classList.remove('desktop-shifted');
                 sidebarToggle.style.display = 'none';
@@ -525,7 +545,7 @@
                 currentUser = user;
                 document.getElementById('adminNameDisplay').textContent = user.displayName;
                 btnLoginUser.style.display = 'none';
-                btnToAdmin.style.display = 'block'; // Hiện nút Dashboard
+                btnToAdmin.style.display = 'block'; 
                 switchViewMode('admin');
             } else if (user) {
                 signOut(auth);
@@ -567,36 +587,61 @@
                     let f = k.toLowerCase(); if(k=='Vcb') f='vietcombank'; if(k=='Agri') f='agribank';
                     document.getElementById('inp'+k).value = currentData[f] || "";
                 });
+                document.getElementById('inpGender').value = currentData.gender || 'Nam';
+                
                 document.getElementById('inpName').disabled=true;
                 document.getElementById('inpDob').disabled=true;
+                document.getElementById('inpGender').disabled=true;
             }
         };
         window.toggleEdit = (id) => {
             let el=document.getElementById(id); el.disabled=!el.disabled; if(!el.disabled) el.focus();
         };
+        
+        // --- SAVE DATA WITH LOGS ---
         document.getElementById('userForm').onsubmit = async(e) => {
             e.preventDefault();
             const data = {
                 name: document.getElementById('inpName').value,
                 dob: document.getElementById('inpDob').value,
+                gender: document.getElementById('inpGender').value,
                 agribank: document.getElementById('inpAgri').value,
-                vietcombank: document.getElementById('inpVcb').value,
-                gender: currentData.gender || 'Nam'
+                vietcombank: document.getElementById('inpVcb').value
             };
             await saveData(document.getElementById('inpCccd').value, data, currentData);
         };
 
-        // --- SAVE ---
         async function saveData(cccd, newData, oldData) {
             showLoading(true);
             const changes = [];
+            // Xác định người sửa: Nếu đã login thì lấy tên Admin, nếu không thì là Khách/User
             const editor = currentUser ? `Admin: ${currentUser.displayName}` : "Khách";
+            
+            // Map tên trường tiếng Việt cho dễ hiểu trong log
+            const fieldMap = {
+                'name': 'Họ tên', 'dob': 'Ngày sinh', 'gender': 'Giới tính',
+                'agribank': 'TK Agribank', 'vietcombank': 'TK Vietcombank'
+            };
+
             for(let k in newData) {
-                if((oldData?.[k]||"") != (newData[k]||"")) changes.push({field:k, old:oldData?.[k]||"", new:newData[k]});
+                if((oldData?.[k]||"") != (newData[k]||"")) {
+                    changes.push({
+                        field: fieldMap[k] || k, 
+                        old: oldData?.[k]||"(Trống)", 
+                        new: newData[k]
+                    });
+                }
             }
             try {
                 await setDoc(doc(db, COLL_DATA, cccd), {...newData, cccd, last_updated:new Date().toISOString()}, {merge:true});
-                if(changes.length>0) await addDoc(collection(db, COLL_LOGS), {cccd_ref:cccd, editor, time:new Date().toISOString(), details:changes});
+                if(changes.length>0) {
+                    await addDoc(collection(db, COLL_LOGS), {
+                        cccd_ref: cccd, 
+                        editor: editor, 
+                        time: new Date().toISOString(), 
+                        details: changes
+                    });
+                }
                 showToast('Lưu thành công!');
                 bootstrap.Modal.getInstance(document.getElementById('adminModal'))?.hide();
             } catch(e) { showToast(e.message, 'error'); }
@@ -622,10 +667,10 @@
                 tr.innerHTML = `
                     <td>
                         <div class="d-flex align-items-center">
-                            <div class="avatar me-3">${avatar}</div>
+                            <div class="avatar me-3" style="width:35px;height:35px;background:#6c5ce7;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;">${avatar}</div>
                             <div>
                                 <div class="fw-bold">${u.name}</div>
-                                <small class="text-muted">${u.gender}</small>
+                                <small class="text-muted">${u.gender || 'Nam'}</small>
                             </div>
                         </div>
                     </td>
@@ -633,8 +678,9 @@
                     <td>${agri}</td>
                     <td>${vcb}</td>
                     <td class="text-end">
-                        <button class="btn btn-sm btn-outline-primary border-0 rounded-circle" onclick="editUser('${u.cccd}')"><i class="fas fa-pen"></i></button>
-                        <button class="btn btn-sm btn-outline-danger border-0 rounded-circle" onclick="delUser('${u.cccd}')"><i class="fas fa-trash"></i></button>
+                        <button class="btn btn-sm btn-outline-info border-0 rounded-circle" title="Lịch sử" onclick="viewHistoryByCccd('${u.cccd}')"><i class="fas fa-history"></i></button>
+                        <button class="btn btn-sm btn-outline-primary border-0 rounded-circle" title="Sửa" onclick="editUser('${u.cccd}')"><i class="fas fa-pen"></i></button>
+                        <button class="btn btn-sm btn-outline-danger border-0 rounded-circle" title="Xóa" onclick="delUser('${u.cccd}')"><i class="fas fa-trash"></i></button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -708,12 +754,6 @@
             r.readAsArrayBuffer(f);
         };
         
-        window.downloadSample = () => {
-            const ws = XLSX.utils.json_to_sheet([{ "Họ tên":"Nguyễn A", "CCCD":"123", "Ngày sinh":"01/01/2000", "Giới tính":"Nam" }]);
-            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Mau");
-            XLSX.writeFile(wb, "Mau_Import.xlsx");
-        };
-
         window.exportExcel = () => {
             const d = allUsers.map(u=>({
                 "Họ tên":u.name, "CCCD":u.cccd, "Ngày sinh":u.dob, "Giới tính":u.gender,
@@ -723,19 +763,43 @@
             XLSX.writeFile(wb, "Data_Export.xlsx");
         };
 
-        window.viewHistory = async() => {
-            if(!currentData) return;
-            const q = query(collection(db, COLL_LOGS), where("cccd_ref","==",currentData.cccd), orderBy("time","desc"));
+        // Hàm xem lịch sử chung
+        async function fetchAndShowHistory(cccd) {
+            const q = query(collection(db, COLL_LOGS), where("cccd_ref","==",cccd), orderBy("time","desc"));
             const snap = await getDocs(q);
             const div = document.getElementById('historyList');
-            div.innerHTML = snap.empty ? "Chưa có lịch sử." : "";
+            div.innerHTML = snap.empty ? "<p class='text-center text-muted my-3'>Chưa có lịch sử thay đổi nào.</p>" : "";
+            
             snap.forEach(d=>{
                 const l = d.data();
-                const det = l.details.map(x=>`<div><b>${x.field}</b>: <s>${x.old}</s> ➝ <b class='text-success'>${x.new}</b></div>`).join('');
-                div.innerHTML += `<div class='bg-white p-3 rounded shadow-sm border'><small class='text-muted'>${new Date(l.time).toLocaleString()} - ${l.editor}</small><div class='mt-1'>${det}</div></div>`;
+                const det = l.details.map(x=>`
+                    <div class="d-flex align-items-center justify-content-between border-bottom py-2">
+                        <span class="fw-bold text-dark small">${x.field}</span>
+                        <div class="text-end small">
+                            <span class="text-muted text-decoration-line-through me-2">${x.old}</span>
+                            <i class="fas fa-arrow-right text-secondary small me-2"></i>
+                            <span class="text-success fw-bold">${x.new}</span>
+                        </div>
+                    </div>
+                `).join('');
+                
+                div.innerHTML += `
+                    <div class='history-item bg-white p-3 rounded shadow-sm'>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="badge bg-primary bg-opacity-10 text-primary">${l.editor}</span>
+                            <small class="text-muted">${new Date(l.time).toLocaleString()}</small>
+                        </div>
+                        <div class='bg-light rounded p-2'>${det}</div>
+                    </div>`;
             });
             new bootstrap.Modal(document.getElementById('historyModal')).show();
-        };
+        }
+
+        // Gọi từ User View (nút Lịch sử)
+        window.viewHistory = () => { if(currentData) fetchAndShowHistory(currentData.cccd); };
+        // Gọi từ Admin View (nút trong bảng)
+        window.viewHistoryByCccd = (cccd) => { fetchAndShowHistory(cccd); };
+
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
