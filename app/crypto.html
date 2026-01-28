@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crypto Elite Academy - Premium</title>
+    <title>Crypto Elite Academy & Profile</title>
     
     <!-- 1. THƯ VIỆN UI -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -20,6 +20,7 @@
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
                     colors: {
+                        dark: { bg: '#050505', card: 'rgba(20, 20, 30, 0.6)' },
                         brand: { primary: '#6366f1', secondary: '#ec4899', accent: '#14b8a6', gold: '#fbbf24' }
                     },
                     animation: { 'blob': 'blob 7s infinite', 'spin-slow': 'spin 12s linear infinite' },
@@ -44,28 +45,22 @@
                         radial-gradient(circle at 85% 30%, rgba(236, 72, 153, 0.15) 0%, transparent 25%);
         }
         .glass-panel { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
-        
-        /* Horizontal Scroll for Courses */
-        .scrolling-wrapper {
-            display: flex;
-            overflow-x: auto;
-            scroll-behavior: smooth;
-            -webkit-overflow-scrolling: touch;
-            padding-bottom: 20px;
-            gap: 20px;
+        .glass-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+            backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); transition: all 0.3s ease;
         }
-        .scrolling-wrapper::-webkit-scrollbar { height: 8px; }
-        .scrolling-wrapper::-webkit-scrollbar-track { background: #050505; }
-        .scrolling-wrapper::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        .glass-card:hover { transform: translateY(-5px); border-color: rgba(99, 102, 241, 0.3); }
         
-        .card-item { flex: 0 0 85%; max-width: 400px; } 
-        @media (min-width: 768px) { .card-item { flex: 0 0 45%; } }
+        /* Custom Scrollbar for Horizontal Courses */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* Loading Spinner */
-        .loader { width: 48px; height: 48px; border: 5px solid #FFF; border-bottom-color: #6366f1; border-radius: 50%; animation: rotation 1s linear infinite; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #050505; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        
+        .loader { width: 48px; height: 48px; border: 5px solid #FFF; border-bottom-color: #6366f1; border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite; }
         @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        .verified-badge { color: #3b82f6; background: white; border-radius: 50%; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; }
     </style>
 </head>
 <body class="antialiased">
@@ -74,162 +69,136 @@
     <!-- Moving Blobs -->
     <div class="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
         <div class="absolute top-0 -left-4 w-72 h-72 bg-brand-primary rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-        <div class="absolute bottom-0 -right-4 w-72 h-72 bg-brand-secondary rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+        <div class="absolute top-0 -right-4 w-72 h-72 bg-brand-secondary rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
     </div>
 
     <!-- === HEADER === -->
-    <nav class="fixed top-0 w-full z-50 backdrop-blur-md border-b border-white/5 bg-black/50">
-        <div class="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
-            <a href="#" class="font-display font-bold text-2xl flex items-center gap-2">
-                <i class="fa-brands fa-bitcoin text-brand-gold text-3xl"></i>
-                <span class="text-white hidden sm:block">CRYPTO<span class="text-brand-primary">HUB</span></span>
+    <nav class="fixed top-0 w-full z-50 transition-all duration-300 backdrop-blur-md border-b border-white/5">
+        <div class="max-w-6xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between">
+            <a href="#" class="font-display font-bold text-xl md:text-2xl flex items-center gap-2">
+                <i class="fa-brands fa-bitcoin text-brand-gold text-2xl md:text-3xl"></i>
+                <span class="text-white">CRYPTO<span class="text-brand-primary">HUB</span></span>
             </a>
 
-            <div class="flex items-center gap-4">
-                <div id="userSection" class="hidden flex items-center gap-3 bg-white/5 px-3 py-1.5 rounded-full border border-white/10 cursor-pointer" onclick="openMyCourses()">
-                    <img id="imgUser" src="" class="w-8 h-8 rounded-full object-cover">
-                    <span id="userNameDisplay" class="text-sm font-medium hidden sm:block"></span>
-                    <span class="text-xs bg-brand-primary px-2 py-0.5 rounded text-white ml-1">My Courses</span>
+            <div class="flex items-center gap-3">
+                <div id="userSection" class="hidden flex items-center gap-3 bg-white/5 px-2 py-1.5 md:px-3 rounded-full border border-white/10">
+                    <img id="imgUser" src="" class="w-7 h-7 md:w-8 md:h-8 rounded-full object-cover">
+                    <button onclick="openMyOrders()" class="text-xs md:text-sm font-medium hover:text-brand-primary transition px-1">Khoá học của tôi</button>
+                    <button id="btnLogout" class="text-xs md:text-sm text-red-400 hover:text-white px-1"><i class="fa-solid fa-power-off"></i></button>
                 </div>
                 
-                <button id="btnLogin" class="px-5 py-2 text-sm font-bold text-white bg-white/10 border border-white/10 rounded-full hover:bg-brand-primary transition">
-                    <i class="fa-solid fa-wallet mr-2"></i> <span id="authText">Login</span>
+                <button id="btnLogin" class="hidden px-5 py-2 font-bold text-sm text-white bg-white/5 border border-white/10 rounded-full hover:bg-brand-primary transition">
+                    Đăng nhập
                 </button>
             </div>
         </div>
     </nav>
 
     <!-- === MAIN CONTENT === -->
-    <main class="relative z-10 pt-32 pb-20 px-4 max-w-6xl mx-auto space-y-24">
+    <main class="relative z-10 pt-32 pb-20 px-4 max-w-5xl mx-auto space-y-20">
 
-        <!-- 1. PROFILE -->
-        <section id="profileSection" class="text-center relative" data-aos="fade-up">
-            <div id="profileLoader" class="loader mt-10 mx-auto"></div>
+        <!-- PROFILE SECTION -->
+        <section id="profileSection" class="text-center" data-aos="fade-up">
+            <div id="profileLoader" class="loader mt-10"></div>
             <div id="profileContent" class="hidden">
                 <div class="relative w-32 h-32 md:w-40 md:h-40 mx-auto mb-6">
-                    <img id="pAvatar" src="" class="w-full h-full rounded-full object-cover border-4 border-dark-bg p-1 bg-gradient-to-tr from-brand-primary to-brand-secondary">
-                    <div id="pVerified" class="absolute bottom-2 right-2 bg-white text-blue-600 rounded-full w-8 h-8 flex items-center justify-center border-4 border-[#050505] hidden">
-                        <i class="fa-solid fa-check"></i>
-                    </div>
+                    <img id="pAvatar" src="" class="w-full h-full rounded-full object-cover border-4 border-dark-bg">
+                    <!-- Updated Verify Icon -->
+                    <i id="pVerified" class="hidden fa-solid fa-circle-check text-blue-500 text-2xl absolute bottom-2 right-2 bg-white rounded-full border-2 border-dark-bg z-20"></i>
                 </div>
-                <h1 class="font-display text-4xl md:text-5xl font-bold mb-4"><span id="pName" class="text-white"></span></h1>
-                <p id="pBio" class="text-gray-400 text-lg max-w-2xl mx-auto font-light"></p>
+                <h1 class="font-display text-4xl md:text-6xl font-bold mb-4"><span id="pName" class="text-white"></span></h1>
+                <p id="pBio" class="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto font-light"></p>
             </div>
         </section>
 
-        <!-- 2. SOCIALS -->
-        <section id="socialSection" class="flex flex-wrap justify-center gap-4" data-aos="fade-up"></section>
+        <!-- SOCIAL LINKS -->
+        <section id="socialSection" class="flex flex-wrap justify-center gap-4" data-aos="fade-up" data-aos-delay="100"></section>
 
-        <!-- 3. COURSES (Horizontal Scroll) -->
-        <section>
-            <div class="flex items-center gap-4 mb-8" data-aos="fade-right">
-                <div class="h-8 w-1 bg-brand-primary rounded-full"></div>
-                <h2 class="font-display text-2xl md:text-3xl font-bold text-white">KHÓA HỌC CHUYÊN SÂU</h2>
+        <!-- COURSES (HORIZONTAL SCROLL) -->
+        <section class="relative">
+            <div class="flex items-center gap-4 mb-8">
+                <h2 class="font-display text-2xl md:text-3xl font-bold text-white">🔥 KHÓA HỌC PREMIUM</h2>
+                <div class="h-px bg-white/10 flex-1"></div>
             </div>
-
-            <!-- Scroll Container -->
-            <div id="coursesList" class="scrolling-wrapper pb-10">
+            
+            <!-- Horizontal Scroll Container -->
+            <div id="coursesList" class="flex overflow-x-auto gap-6 pb-8 hide-scrollbar snap-x snap-mandatory">
                 <!-- Courses injected via JS -->
             </div>
         </section>
 
-        <!-- 4. PARTNERS -->
+        <!-- PARTNERS -->
         <section>
-            <div class="text-center mb-10" data-aos="fade-up">
+            <div class="text-center mb-10">
                 <h2 class="font-display text-2xl font-bold text-brand-accent">ĐỐI TÁC SÀN GIAO DỊCH</h2>
-                <p class="text-gray-500 text-sm mt-2">Đăng ký qua link để nhận hoàn phí giao dịch trọn đời</p>
             </div>
-            <div id="exchangeList" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+            <div id="exchangeList" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
         </section>
 
     </main>
 
     <!-- === FOOTER === -->
-    <footer class="border-t border-white/5 py-10 bg-black/50 backdrop-blur-lg text-center text-gray-500 text-sm">
-        <p>&copy; 2026 Crypto Elite Academy. All rights reserved.</p>
+    <footer class="border-t border-white/5 py-10 bg-black/50 text-center">
+        <p class="font-display font-bold text-xl text-white">CRYPTO HUB</p>
+        <p class="text-gray-600 text-sm">© 2024 Elite Academy</p>
     </footer>
 
     <!-- === MODALS === -->
 
-    <!-- 1. BUY MODAL (Registration Flow) -->
-    <div id="buyModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm transition-opacity">
-        <div class="glass-panel w-full max-w-lg rounded-2xl p-0 overflow-hidden relative transform transition-all scale-100">
-            <!-- Header -->
-            <div class="p-5 border-b border-white/10 flex justify-between items-center bg-white/5">
-                <h3 class="font-display text-lg font-bold text-white">Xác nhận đăng ký</h3>
-                <button onclick="closeModal('buyModal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark fa-xl"></i></button>
+    <!-- 1. CHECKOUT MODAL (Thanh toán) -->
+    <div id="checkoutModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="glass-panel w-full max-w-2xl rounded-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh] overflow-y-auto">
+            <!-- Left: Info -->
+            <div class="p-6 md:w-1/2 bg-white/5 border-r border-white/5">
+                <h3 class="text-xl font-bold text-white mb-4">Thông tin đăng ký</h3>
+                <div class="space-y-4 text-sm">
+                    <div><span class="text-gray-400">Học viên:</span> <span id="chkUser" class="text-white font-bold block"></span></div>
+                    <div><span class="text-gray-400">Email:</span> <span id="chkEmail" class="text-white block"></span></div>
+                    <div><span class="text-gray-400">Khóa học:</span> <span id="chkCourse" class="text-brand-primary font-bold block"></span></div>
+                    <div><span class="text-gray-400">Giá trị:</span> <span id="chkPrice" class="text-brand-gold font-bold text-xl block"></span></div>
+                </div>
+                <hr class="border-white/10 my-6">
+                <p class="text-gray-400 text-xs mb-2">Phương thức thanh toán:</p>
+                <div class="flex gap-2">
+                    <button onclick="selectPayment('BANK')" id="btnMethodBank" class="flex-1 py-2 rounded border border-brand-primary bg-brand-primary/20 text-white font-bold text-xs">Ngân hàng (QR)</button>
+                    <button onclick="selectPayment('CRYPTO')" id="btnMethodCrypto" class="flex-1 py-2 rounded border border-white/10 hover:bg-white/5 text-gray-400 font-bold text-xs">Ví Crypto</button>
+                </div>
             </div>
             
-            <div class="p-6 max-h-[80vh] overflow-y-auto" id="buyModalContent">
-                <!-- Step 1: Info -->
-                <div class="mb-6">
-                    <p class="text-gray-400 text-sm">Khóa học:</p>
-                    <h4 id="buyCourseName" class="text-xl font-bold text-brand-primary"></h4>
-                    <p id="buyCoursePrice" class="text-white font-bold text-lg mt-1"></p>
+            <!-- Right: Payment Action -->
+            <div class="p-6 md:w-1/2 flex flex-col relative">
+                <button onclick="closeCheckout()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark fa-lg"></i></button>
+                
+                <!-- BANK VIEW -->
+                <div id="payViewBank" class="space-y-4 text-center">
+                    <p class="text-sm text-gray-300">Quét mã QR để thanh toán:</p>
+                    <div class="bg-white p-2 rounded-xl inline-block mx-auto">
+                        <img id="qrImage" src="" class="w-40 h-40 object-contain">
+                    </div>
+                    <div class="text-xs text-gray-400">Hệ thống tự động điền nội dung.<br>Vui lòng không sửa nội dung chuyển khoản.</div>
                 </div>
 
-                <!-- Step 2: Payment Method -->
-                <div class="space-y-4 mb-6">
-                    <label class="text-sm text-gray-400 uppercase font-bold">Phương thức thanh toán</label>
-                    <div class="grid grid-cols-2 gap-3">
-                        <button onclick="selectPayment('bank')" id="btnPayBank" class="p-3 rounded-xl border border-white/10 bg-white/5 hover:border-brand-primary transition text-left">
-                            <i class="fa-solid fa-building-columns text-green-400 mb-2"></i>
-                            <div class="font-bold text-sm">Ngân hàng</div>
-                            <div class="text-xs text-gray-500">Quét mã QR</div>
-                        </button>
-                        <button onclick="selectPayment('crypto')" id="btnPayCrypto" class="p-3 rounded-xl border border-white/10 bg-white/5 hover:border-brand-primary transition text-left">
-                            <i class="fa-brands fa-bitcoin text-brand-gold mb-2"></i>
-                            <div class="font-bold text-sm">Tiền điện tử</div>
-                            <div class="text-xs text-gray-500">USDT (BEP20)</div>
-                        </button>
+                <!-- CRYPTO VIEW -->
+                <div id="payViewCrypto" class="hidden space-y-4">
+                    <p class="text-sm text-gray-300">Chuyển USDT (BEP20) vào ví:</p>
+                    <div class="bg-black/50 p-3 rounded border border-white/10 flex items-center justify-between cursor-pointer" onclick="copyToClipboard('walletAddress')">
+                        <div class="truncate text-xs font-mono text-brand-gold w-full mr-2" id="walletAddress">...</div>
+                        <i class="fa-regular fa-copy"></i>
                     </div>
+                    <p class="text-xs text-red-400">*Vui lòng kiểm tra kỹ mạng BEP20 (BSC)</p>
                 </div>
 
-                <!-- Step 3: Dynamic Content (QR or Wallet) -->
-                <div id="paymentDetails" class="hidden mb-6 bg-black/40 p-4 rounded-xl border border-white/10">
-                    <!-- Bank QR -->
-                    <div id="bankInfoArea" class="hidden text-center">
-                        <p class="text-sm text-yellow-400 mb-2 font-bold"><i class="fa-solid fa-triangle-exclamation"></i> Vui lòng chuyển khoản đúng nội dung bên dưới</p>
-                        <img id="vietQrImg" src="" class="w-48 mx-auto rounded-lg mb-3 border-4 border-white">
-                        <div class="text-left bg-white/5 p-3 rounded text-sm space-y-2">
-                            <div class="flex justify-between"><span>Ngân hàng:</span> <span id="dispBankName" class="font-bold"></span></div>
-                            <div class="flex justify-between"><span>Số TK:</span> <span id="dispBankNum" class="font-mono"></span></div>
-                            <div class="flex justify-between"><span>Chủ TK:</span> <span id="dispBankOwner" class="font-bold"></span></div>
-                            <div class="flex justify-between items-center pt-2 border-t border-white/10">
-                                <span>Nội dung CK:</span> 
-                                <span id="dispContent" class="font-mono text-brand-primary font-bold"></span>
-                                <i class="fa-regular fa-copy cursor-pointer ml-2" onclick="copyText('dispContent')"></i>
-                            </div>
-                        </div>
+                <!-- UPLOAD BILL -->
+                <div class="mt-auto pt-6 border-t border-white/10">
+                    <label class="block text-sm font-bold text-white mb-2">Xác thực thanh toán</label>
+                    <div class="relative">
+                        <input type="file" id="billFile" accept="image/*" class="hidden" onchange="previewBill()">
+                        <label for="billFile" class="flex items-center justify-center w-full h-12 border border-dashed border-gray-500 rounded-lg cursor-pointer hover:border-brand-primary hover:text-brand-primary transition text-gray-400 text-sm">
+                            <i class="fa-solid fa-cloud-arrow-up mr-2"></i> <span id="fileName">Tải ảnh bill chuyển khoản</span>
+                        </label>
                     </div>
-
-                    <!-- Crypto Wallet -->
-                    <div id="cryptoInfoArea" class="hidden">
-                        <div class="mb-3">
-                            <label class="text-xs text-gray-400">Địa chỉ ví (USDT BEP20)</label>
-                            <div class="flex items-center gap-2 mt-1">
-                                <input id="dispWallet" readonly class="w-full bg-black border border-gray-700 p-2 rounded text-xs text-white font-mono">
-                                <button onclick="copyText('dispWallet')" class="bg-gray-700 p-2 rounded text-white"><i class="fa-regular fa-copy"></i></button>
-                            </div>
-                        </div>
-                        <p class="text-xs text-red-400">*Vui lòng chuyển đúng mạng BEP20 (BNB Smart Chain)</p>
-                    </div>
-                </div>
-
-                <!-- Step 4: Verification -->
-                <div id="verifyStep" class="hidden space-y-4 border-t border-white/10 pt-4">
-                    <label class="text-sm font-bold text-white">Xác thực thanh toán (Bắt buộc)</label>
-                    <p class="text-xs text-gray-400">Tải lên ảnh chụp màn hình giao dịch thành công.</p>
-                    
-                    <input type="file" id="billFile" accept="image/*" class="hidden" onchange="previewBill()">
-                    <label for="billFile" class="block w-full h-32 border-2 border-dashed border-gray-600 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-brand-primary transition bg-white/5">
-                        <i class="fa-solid fa-cloud-arrow-up text-2xl mb-2 text-gray-400"></i>
-                        <span class="text-xs text-gray-400">Nhấn để chọn ảnh</span>
-                        <img id="billPreview" class="hidden h-full w-full object-contain rounded-xl absolute inset-0 bg-black">
-                    </label>
-
-                    <button onclick="submitOrder()" id="btnSubmitOrder" class="w-full bg-brand-primary hover:bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-500/30 transition flex justify-center items-center gap-2">
-                        <span>Hoàn tất đăng ký</span> <i class="fa-solid fa-check"></i>
+                    <button id="btnConfirmOrder" onclick="submitOrder()" class="w-full mt-4 bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                        Xác nhận đã chuyển
                     </button>
                 </div>
             </div>
@@ -237,147 +206,141 @@
     </div>
 
     <!-- 2. MY COURSES MODAL -->
-    <div id="myCoursesModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
-        <div class="glass-panel w-full max-w-2xl rounded-2xl p-6 relative h-[80vh] flex flex-col">
+    <div id="myOrdersModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
+        <div class="glass-panel w-full max-w-3xl rounded-2xl p-6 h-[80vh] flex flex-col">
             <div class="flex justify-between items-center mb-6">
-                <h3 class="font-display text-2xl font-bold text-white">Khóa học của tôi</h3>
-                <button onclick="closeModal('myCoursesModal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                <h3 class="text-2xl font-bold text-white">Khóa học của tôi</h3>
+                <button onclick="document.getElementById('myOrdersModal').classList.add('hidden')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark fa-xl"></i></button>
             </div>
-            <div id="myCoursesList" class="flex-1 overflow-y-auto space-y-4">
+            <div id="myOrdersList" class="flex-1 overflow-y-auto space-y-3 pr-2">
                 <!-- Orders injected here -->
-                <p class="text-gray-500 text-center mt-10">Đang tải dữ liệu...</p>
             </div>
         </div>
     </div>
 
     <!-- 3. ADMIN PANEL -->
-    <button id="btnOpenAdmin" class="hidden fixed bottom-6 right-6 w-14 h-14 bg-red-600 text-white rounded-full shadow-lg z-40 hover:scale-110 transition flex items-center justify-center">
-        <i class="fa-solid fa-shield-halved fa-xl"></i>
+    <button id="btnOpenAdmin" class="hidden fixed bottom-6 right-6 w-12 h-12 bg-red-600 text-white rounded-full shadow-lg z-40 hover:scale-110 transition flex items-center justify-center">
+        <i class="fa-solid fa-gear animate-spin-slow"></i>
     </button>
 
-    <div id="adminPanel" class="fixed inset-0 z-[70] hidden bg-[#0a0a0a] overflow-y-auto transition-transform duration-300 translate-y-full">
-        <div class="max-w-7xl mx-auto p-4 md:p-8">
-            <!-- Admin Header -->
-            <div class="flex justify-between items-center mb-8 sticky top-0 bg-[#0a0a0a] py-4 z-10 border-b border-white/10">
-                <h2 class="text-2xl font-bold text-white flex items-center gap-2"><i class="fa-solid fa-user-secret text-red-500"></i> Admin Panel</h2>
-                <div class="flex gap-3">
-                     <button onclick="saveGithubConfig()" class="text-xs bg-gray-800 px-3 py-2 rounded text-blue-400 border border-blue-900">Config Github</button>
-                    <button onclick="toggleAdmin()" class="bg-gray-800 text-white px-4 py-2 rounded border border-gray-700">Close</button>
-                </div>
+    <div id="adminPanel" class="fixed inset-0 z-[70] hidden bg-black/95 backdrop-blur-xl transition-all duration-300 overflow-y-auto">
+        <div class="max-w-7xl mx-auto p-4 md:p-8 min-h-screen">
+            <div class="flex justify-between items-center mb-8 border-b border-gray-800 pb-4">
+                <h2 class="text-2xl font-display font-bold text-white">Admin Dashboard</h2>
+                <button onclick="toggleAdminPanel()" class="text-gray-400 hover:text-white">Thoát</button>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
                 <!-- Sidebar -->
-                <div class="lg:col-span-1 space-y-2">
-                    <button onclick="showTab('adminOrders')" class="w-full text-left p-3 rounded-lg bg-white/5 text-white border border-brand-primary hover:bg-white/10">Đơn hàng <span id="badgeOrders" class="ml-2 bg-red-500 text-xs px-1.5 rounded-full">0</span></button>
-                    <button onclick="showTab('adminCourses')" class="w-full text-left p-3 rounded-lg text-gray-400 hover:bg-white/5">Khóa học</button>
-                    <button onclick="showTab('adminConfig')" class="w-full text-left p-3 rounded-lg text-gray-400 hover:bg-white/5">Cấu hình Website</button>
+                <div class="lg:col-span-1 space-y-1">
+                    <button onclick="switchTab('tab-orders')" class="adm-btn w-full text-left px-4 py-3 rounded bg-brand-primary text-white font-bold"><i class="fa-solid fa-cart-shopping mr-2"></i> Đơn hàng</button>
+                    <button onclick="switchTab('tab-courses')" class="adm-btn w-full text-left px-4 py-3 rounded text-gray-400 hover:bg-white/5"><i class="fa-solid fa-graduation-cap mr-2"></i> Khóa học</button>
+                    <button onclick="switchTab('tab-exchanges')" class="adm-btn w-full text-left px-4 py-3 rounded text-gray-400 hover:bg-white/5"><i class="fa-solid fa-coins mr-2"></i> Đối tác</button>
+                    <button onclick="switchTab('tab-profile')" class="adm-btn w-full text-left px-4 py-3 rounded text-gray-400 hover:bg-white/5"><i class="fa-solid fa-user mr-2"></i> Profile</button>
+                    <button onclick="switchTab('tab-config')" class="adm-btn w-full text-left px-4 py-3 rounded text-gray-400 hover:bg-white/5"><i class="fa-solid fa-sliders mr-2"></i> Cấu hình</button>
                 </div>
 
                 <!-- Content -->
-                <div class="lg:col-span-4 glass-panel rounded-xl p-6 min-h-[60vh]">
+                <div class="lg:col-span-4 glass-panel rounded-xl p-6">
                     
-                    <!-- TAB: ORDERS -->
-                    <div id="adminOrders" class="admin-tab">
-                        <h3 class="text-xl font-bold mb-4">Quản lý Đơn hàng</h3>
+                    <!-- ORDER TAB -->
+                    <div id="tab-orders" class="adm-sec">
+                        <h3 class="text-xl font-bold mb-4 text-green-400">Quản lý Đơn hàng</h3>
                         <div class="overflow-x-auto">
-                            <table class="w-full text-sm text-left text-gray-400">
-                                <thead class="text-xs uppercase bg-white/5 text-gray-200">
+                            <table class="w-full text-left text-sm text-gray-400">
+                                <thead class="bg-white/5 text-white uppercase text-xs">
                                     <tr>
-                                        <th class="px-4 py-3">Time</th>
-                                        <th class="px-4 py-3">User</th>
-                                        <th class="px-4 py-3">Khóa học</th>
-                                        <th class="px-4 py-3">Bill</th>
-                                        <th class="px-4 py-3">Status</th>
-                                        <th class="px-4 py-3">Action</th>
+                                        <th class="p-3">Ngày</th>
+                                        <th class="p-3">Email</th>
+                                        <th class="p-3">Khóa học</th>
+                                        <th class="p-3">Bill</th>
+                                        <th class="p-3">Trạng thái</th>
+                                        <th class="p-3">Thao tác</th>
                                     </tr>
                                 </thead>
-                                <tbody id="orderTableBody"></tbody>
+                                <tbody id="admOrderList" class="divide-y divide-gray-800"></tbody>
                             </table>
                         </div>
                     </div>
 
-                    <!-- TAB: COURSES -->
-                    <div id="adminCourses" class="admin-tab hidden">
-                        <h3 class="text-xl font-bold mb-4">Danh sách Khóa học</h3>
-                        <form id="courseForm" class="grid gap-4 md:grid-cols-2 mb-6 bg-white/5 p-4 rounded-lg">
+                    <!-- COURSES TAB -->
+                    <div id="tab-courses" class="adm-sec hidden">
+                        <h3 class="text-xl font-bold mb-4">Quản lý Khóa học</h3>
+                        <form id="formCourse" class="grid grid-cols-2 gap-4 mb-6 bg-white/5 p-4 rounded">
                             <input type="hidden" id="cId">
-                            <input id="cName" placeholder="Tên khóa" class="bg-black border border-gray-700 p-2 rounded text-white">
-                            <input id="cPrice" placeholder="Giá (VND/USD)" class="bg-black border border-gray-700 p-2 rounded text-white">
-                            <input id="cPriceVal" type="number" placeholder="Giá trị số (để tính QR)" class="bg-black border border-gray-700 p-2 rounded text-white">
+                            <input id="cName" placeholder="Tên khóa" class="bg-black border border-gray-700 p-2 rounded text-white col-span-2">
+                            <input id="cPrice" placeholder="Giá (500.000đ)" class="bg-black border border-gray-700 p-2 rounded text-white">
                             <input id="cGroupLink" placeholder="Link nhóm Telegram/Zalo" class="bg-black border border-gray-700 p-2 rounded text-white">
-                            <textarea id="cDesc" placeholder="Mô tả" class="bg-black border border-gray-700 p-2 rounded text-white col-span-2"></textarea>
-                            <button type="submit" class="col-span-2 bg-green-600 p-2 rounded text-white font-bold">Lưu Khóa Học</button>
+                            <textarea id="cBenefits" placeholder="Quyền lợi (cách nhau dấu phẩy)" class="bg-black border border-gray-700 p-2 rounded text-white col-span-2"></textarea>
+                            <button type="submit" class="bg-green-600 text-white p-2 rounded font-bold col-span-2">Lưu Khóa Học</button>
                         </form>
-                        <div id="adminCourseList" class="space-y-2"></div>
+                        <div id="admCourseList" class="space-y-2"></div>
                     </div>
 
-                    <!-- TAB: CONFIG -->
-                    <div id="adminConfig" class="admin-tab hidden space-y-6">
-                        <!-- Github Config -->
-                        <div class="bg-white/5 p-4 rounded-lg border border-red-900/30">
-                            <h4 class="font-bold text-red-400 mb-2"><i class="fa-brands fa-github"></i> GitHub API (Upload ảnh)</h4>
-                            <p class="text-xs text-gray-500 mb-2">Lưu ý: Token sẽ được sử dụng trực tiếp ở frontend. Hãy giới hạn quyền token.</p>
-                            <div class="grid gap-3">
-                                <input id="ghToken" type="password" placeholder="GitHub Token (ghp_...)" class="bg-black border border-gray-700 p-2 rounded text-white">
-                                <input id="ghOwner" placeholder="GitHub Username" class="bg-black border border-gray-700 p-2 rounded text-white">
-                                <input id="ghRepo" placeholder="Repository Name" class="bg-black border border-gray-700 p-2 rounded text-white">
+                    <!-- CONFIG TAB -->
+                    <div id="tab-config" class="adm-sec hidden">
+                        <h3 class="text-xl font-bold mb-4 text-brand-gold">Cấu hình Hệ thống</h3>
+                        
+                        <div class="mb-6">
+                            <h4 class="text-white font-bold mb-2 border-b border-gray-700 pb-1">1. GitHub Image Upload (API Kay)</h4>
+                            <p class="text-xs text-gray-500 mb-2">Dùng để lưu ảnh bill khách hàng tải lên.</p>
+                            <div class="grid md:grid-cols-2 gap-4">
+                                <input id="cfgGhToken" type="password" placeholder="GitHub Personal Access Token (Starts with ghp_)" class="bg-black border border-gray-700 p-2 rounded text-white w-full">
+                                <input id="cfgGhUser" placeholder="GitHub Username (Owner)" class="bg-black border border-gray-700 p-2 rounded text-white w-full">
+                                <input id="cfgGhRepo" placeholder="Repository Name" class="bg-black border border-gray-700 p-2 rounded text-white w-full">
+                                <input id="cfgGhPath" placeholder="Path (vd: bills)" class="bg-black border border-gray-700 p-2 rounded text-white w-full">
                             </div>
                         </div>
 
-                        <!-- Bank Config -->
-                        <div class="bg-white/5 p-4 rounded-lg">
-                            <h4 class="font-bold text-green-400 mb-2">Tài khoản Ngân hàng (VietQR)</h4>
-                            <div class="grid gap-3">
-                                <select id="cfgBankCode" class="bg-black border border-gray-700 p-2 rounded text-white">
-                                    <option value="MB">MB Bank</option>
-                                    <option value="VCB">Vietcombank</option>
-                                    <option value="TCB">Techcombank</option>
-                                    <option value="ICB">Vietinbank</option>
-                                    <option value="ACB">ACB</option>
-                                </select>
+                        <div class="mb-6">
+                            <h4 class="text-white font-bold mb-2 border-b border-gray-700 pb-1">2. Ngân hàng & VietQR</h4>
+                            <div class="grid md:grid-cols-2 gap-4">
+                                <input id="cfgBankCode" placeholder="Mã Ngân hàng (VD: MB, VCB)" class="bg-black border border-gray-700 p-2 rounded text-white">
                                 <input id="cfgBankNum" placeholder="Số tài khoản" class="bg-black border border-gray-700 p-2 rounded text-white">
-                                <input id="cfgBankOwner" placeholder="Tên chủ tài khoản (Viết hoa không dấu)" class="bg-black border border-gray-700 p-2 rounded text-white">
+                                <input id="cfgBankName" placeholder="Tên chủ tài khoản" class="bg-black border border-gray-700 p-2 rounded text-white">
+                                <input id="cfgBankTemplate" placeholder="Template QR (vd: compact2)" class="bg-black border border-gray-700 p-2 rounded text-white">
                             </div>
                         </div>
 
-                        <!-- Wallet Config -->
-                        <div class="bg-white/5 p-4 rounded-lg">
-                            <h4 class="font-bold text-yellow-400 mb-2">Ví Crypto (USDT)</h4>
-                            <input id="cfgWallet" placeholder="Địa chỉ ví BEP20" class="w-full bg-black border border-gray-700 p-2 rounded text-white font-mono">
+                        <div class="mb-6">
+                            <h4 class="text-white font-bold mb-2 border-b border-gray-700 pb-1">3. Ví Crypto</h4>
+                            <input id="cfgWallet" placeholder="Địa chỉ ví USDT (BEP20)" class="bg-black border border-gray-700 p-2 rounded text-white w-full font-mono">
                         </div>
 
-                        <!-- Profile Info -->
-                        <div class="bg-white/5 p-4 rounded-lg">
-                            <h4 class="font-bold text-blue-400 mb-2">Thông tin cá nhân</h4>
-                            <input id="cfgName" placeholder="Tên hiển thị" class="w-full bg-black border border-gray-700 p-2 rounded text-white mb-2">
-                            <textarea id="cfgBio" placeholder="Tiểu sử" class="w-full bg-black border border-gray-700 p-2 rounded text-white mb-2"></textarea>
-                            <div class="flex gap-2">
-                                <label class="text-white text-sm">Avatar:</label>
-                                <input type="file" id="cfgAvatarFile" class="text-xs text-gray-400">
-                            </div>
+                        <div class="mb-6">
+                            <h4 class="text-white font-bold mb-2 border-b border-gray-700 pb-1">4. Quản trị viên</h4>
+                            <textarea id="cfgAdmins" placeholder="Danh sách email admin (cách nhau dấu phẩy)" class="bg-black border border-gray-700 p-2 rounded text-white w-full h-20"></textarea>
                         </div>
 
-                        <button onclick="saveAllConfig()" class="w-full bg-brand-primary py-3 rounded font-bold text-white">Lưu Tất Cả Cấu Hình</button>
+                        <button onclick="saveConfig()" class="w-full bg-brand-primary hover:bg-indigo-600 text-white py-3 rounded font-bold shadow-lg">Lưu Toàn Bộ Cấu Hình</button>
                     </div>
 
+                    <!-- OTHER TABS (Placeholder) -->
+                    <div id="tab-exchanges" class="adm-sec hidden"><div id="admExchList"></div> <!-- Logic tương tự courses --></div>
+                    <div id="tab-profile" class="adm-sec hidden">
+                        <form id="formProfileAdm" class="space-y-4">
+                            <input id="admPName" class="w-full bg-black border border-gray-700 p-2 text-white rounded" placeholder="Tên hiển thị">
+                            <textarea id="admPBio" class="w-full bg-black border border-gray-700 p-2 text-white rounded" placeholder="Tiểu sử"></textarea>
+                            <input id="admPAvatar" class="w-full bg-black border border-gray-700 p-2 text-white rounded" placeholder="Link Avatar">
+                            <button onclick="saveProfile()" type="button" class="bg-blue-600 text-white px-4 py-2 rounded">Cập nhật Profile</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 3. JAVASCRIPT LOGIC -->
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <!-- SCRIPT -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, collection, getDocs, addDoc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, getDocs, addDoc, updateDoc, deleteDoc, query, orderBy, where } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
-        // --- FIREBASE CONFIG (Thay config của bạn vào đây) ---
         const firebaseConfig = {
-            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE", // Dùng key cũ trong file mẫu hoặc thay mới
+            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
             projectId: "profile-d1214",
             storageBucket: "profile-d1214.firebasestorage.app",
@@ -391,441 +354,423 @@
         const provider = new GoogleAuthProvider();
 
         let currentUser = null;
-        let isAdmin = false;
-        let globalConfig = {}; // Chứa thông tin config (Github, Bank...)
+        let globalConfig = {}; // Stores bank info, github tokens etc.
 
-        // --- HELPER UI ---
-        const toast = (msg, type="success") => {
-            Toastify({
-                text: msg, duration: 3000, gravity: "top", position: "right",
-                style: { background: type === "success" ? "#10b981" : "#ef4444" }
-            }).showToast();
-        };
+        // --- UTILS ---
+        const toast = (msg, type = "success") => Toastify({ text: msg, duration: 3000, style: { background: type === "success" ? "#10B981" : "#EF4444" } }).showToast();
+        const el = (id) => document.getElementById(id);
 
-        window.copyText = (id) => {
-            const text = document.getElementById(id).innerText || document.getElementById(id).value;
-            navigator.clipboard.writeText(text);
-            toast("Đã copy!");
-        };
-
-        window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
-        window.toggleAdmin = () => {
-            const el = document.getElementById('adminPanel');
-            el.classList.toggle('hidden');
-            setTimeout(() => el.classList.toggle('translate-y-full'), 10);
-            if(!el.classList.contains('hidden')) loadAdminData();
-        };
-        window.showTab = (id) => {
-            document.querySelectorAll('.admin-tab').forEach(e => e.classList.add('hidden'));
-            document.getElementById(id).classList.remove('hidden');
-        };
-
-        // --- GITHUB UPLOAD SERVICE ---
-        async function uploadToGithub(file, folder = 'uploads') {
-            if (!globalConfig.ghToken) {
-                toast("Chưa cấu hình Github Token!", "error");
-                return null;
-            }
-            const fileName = `${folder}/${Date.now()}_${file.name.replace(/\s/g, '_')}`;
-            const reader = new FileReader();
-            
-            return new Promise((resolve, reject) => {
-                reader.onload = async () => {
-                    const content = reader.result.split(',')[1]; // Base64
-                    try {
-                        const res = await fetch(`https://api.github.com/repos/${globalConfig.ghOwner}/${globalConfig.ghRepo}/contents/${fileName}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Authorization': `Bearer ${globalConfig.ghToken}`,
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({ message: `Upload ${fileName}`, content: content })
-                        });
-                        const data = await res.json();
-                        if(data.content && data.content.download_url) {
-                            // Github raw url might be cached, use jsdelivr for CDN if repo is public, or raw.githubusercontent
-                            resolve(data.content.download_url); 
-                        } else {
-                            reject("Upload failed");
-                        }
-                    } catch (e) { console.error(e); reject(e); }
-                };
-                reader.readAsDataURL(file);
-            });
-        }
-
-        // --- MAIN LOGIC ---
-
-        // 1. Auth & Initial Load
+        // --- AUTH & LOAD ---
         onAuthStateChanged(auth, async (user) => {
             currentUser = user;
             if (user) {
-                document.getElementById('authText').innerText = "Logout";
-                document.getElementById('imgUser').src = user.photoURL;
-                document.getElementById('userNameDisplay').innerText = user.displayName;
-                document.getElementById('userSection').classList.remove('hidden');
-                document.getElementById('userSection').classList.add('flex');
+                el('btnLogin').classList.add('hidden');
+                el('userSection').classList.remove('hidden');
+                el('userSection').classList.add('flex');
+                el('imgUser').src = user.photoURL;
                 
-                // Check Admin Role from Firestore
-                const roleSnap = await getDoc(doc(db, "roles", "admin_list"));
-                if(roleSnap.exists() && roleSnap.data().emails.includes(user.email)) {
-                    isAdmin = true;
-                    document.getElementById('btnOpenAdmin').classList.remove('hidden');
-                }
+                // Check Admin Access from DB
+                await checkAdmin(user.email);
             } else {
-                document.getElementById('authText').innerText = "Login";
-                document.getElementById('userSection').classList.add('hidden');
-                document.getElementById('btnOpenAdmin').classList.add('hidden');
+                el('btnLogin').classList.remove('hidden');
+                el('userSection').classList.add('hidden');
+                el('btnOpenAdmin').classList.add('hidden');
             }
         });
 
-        document.getElementById('btnLogin').addEventListener('click', () => {
-            if (currentUser) signOut(auth);
-            else signInWithPopup(auth, provider).catch(e => toast(e.message, "error"));
-        });
-        document.getElementById('btnOpenAdmin').addEventListener('click', window.toggleAdmin);
+        el('btnLogin').onclick = () => signInWithPopup(auth, provider).catch(e => toast(e.message, "error"));
+        el('btnLogout').onclick = () => signOut(auth);
 
-        // 2. Load Public Data
-        async function initData() {
-            // Load Config (Public + Private merged logic needed, but for SPA we load necessary parts)
-            const configSnap = await getDoc(doc(db, "settings", "config"));
-            if(configSnap.exists()) globalConfig = configSnap.data();
+        async function loadSite() {
+            // Load Config First
+            const cfgSnap = await getDoc(doc(db, "settings", "config"));
+            if (cfgSnap.exists()) globalConfig = cfgSnap.data();
 
-            // Profile
-            const pSnap = await getDoc(doc(db, "settings", "profile"));
-            if(pSnap.exists()) {
+            // Load Profile
+            const pSnap = await getDoc(doc(db, "site_content", "profile"));
+            el('profileLoader').classList.add('hidden');
+            el('profileContent').classList.remove('hidden');
+            if (pSnap.exists()) {
                 const d = pSnap.data();
-                document.getElementById('pName').innerText = d.name || 'Crypto Master';
-                document.getElementById('pBio').innerText = d.bio || '';
-                document.getElementById('pAvatar').src = d.avatar || 'https://via.placeholder.com/150';
-                if(d.verified) document.getElementById('pVerified').classList.remove('hidden');
+                el('pName').innerText = d.name;
+                el('pBio').innerHTML = d.bio.replace(/\n/g, "<br>");
+                el('pAvatar').src = d.avatar;
+                if(d.verified) el('pVerified').classList.remove('hidden');
+                
+                // Fill Admin Profile Form
+                el('admPName').value = d.name;
+                el('admPBio').value = d.bio;
+                el('admPAvatar').value = d.avatar;
             }
-            document.getElementById('profileLoader').classList.add('hidden');
-            document.getElementById('profileContent').classList.remove('hidden');
-            document.getElementById('profileContent').classList.add('animate-fade-in');
 
-            // Courses
-            const cSnap = await getDocs(query(collection(db, "courses"), orderBy("priceVal", "asc")));
-            const cList = document.getElementById('coursesList');
-            cList.innerHTML = '';
-            cSnap.forEach(docSnap => {
-                const c = docSnap.data();
-                cList.innerHTML += `
-                    <div class="card-item glass-panel rounded-2xl p-6 flex flex-col justify-between h-full relative group hover:border-brand-primary/50 transition duration-300">
+            // Load Courses
+            const cSnap = await getDocs(collection(db, "courses"));
+            el('coursesList').innerHTML = '';
+            cSnap.forEach(doc => {
+                const c = doc.data();
+                const isVip = c.price.includes('triệu') || c.price.includes('$');
+                el('coursesList').innerHTML += `
+                    <div class="glass-card min-w-[300px] md:min-w-[350px] rounded-3xl p-6 md:p-8 snap-center flex flex-col justify-between border ${isVip ? 'border-brand-primary/30' : 'border-white/10'}">
                         <div>
                             <div class="flex justify-between items-start mb-4">
-                                <span class="bg-brand-primary/20 text-brand-primary text-xs font-bold px-3 py-1 rounded-full uppercase">Course</span>
-                                ${c.priceVal > 1000000 ? '<i class="fa-solid fa-crown text-brand-gold text-xl"></i>' : ''}
+                                <span class="bg-white/10 text-xs font-bold px-3 py-1 rounded-full text-white">${c.name}</span>
+                                ${isVip ? '<i class="fa-solid fa-crown text-brand-gold text-xl"></i>' : ''}
                             </div>
-                            <h3 class="text-2xl font-display font-bold text-white mb-2 line-clamp-2">${c.name}</h3>
-                            <div class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 mb-4">${c.price}</div>
-                            <p class="text-gray-400 text-sm line-clamp-3 mb-6">${c.desc}</p>
+                            <div class="text-3xl font-display font-bold text-white mb-4">${c.price}</div>
+                            <ul class="space-y-2 mb-6 text-sm text-gray-400">
+                                ${(c.benefits || '').split(',').map(b => `<li><i class="fa-solid fa-check text-green-500 mr-2"></i>${b}</li>`).join('')}
+                            </ul>
                         </div>
-                        <button onclick="openBuyModal('${docSnap.id}')" class="w-full py-3 rounded-xl bg-white text-black font-bold hover:bg-brand-primary hover:text-white transition shadow-lg">
-                            Đăng ký ngay
-                        </button>
+                        <button onclick="initCheckout('${doc.id}', '${c.name}', '${c.price}')" class="w-full py-3 rounded-xl bg-gradient-to-r from-brand-primary to-blue-600 text-white font-bold hover:shadow-lg hover:shadow-blue-500/30 transition">Đăng Ký Ngay</button>
                     </div>
                 `;
             });
-            
-            // Partners
-            const exSnap = await getDocs(collection(db, "exchanges"));
-            const exDiv = document.getElementById('exchangeList');
-            exDiv.innerHTML = '';
-            exSnap.forEach(d => {
-                const e = d.data();
-                exDiv.innerHTML += `
-                    <a href="${e.link}" target="_blank" class="block p-4 rounded-xl glass-panel text-center hover:bg-white/5 transition border border-white/5">
-                        <div class="font-bold text-lg text-white mb-1">${e.name}</div>
-                        <div class="text-xs text-green-400">Ref: ${e.rate || 'VIP'}</div>
+
+            // Load Socials (Mockup for simplicity, can be fetched)
+            // ... (Code Socials tương tự version trước) ...
+
+            // Load Exchange (Partner)
+             const exSnap = await getDocs(collection(db, "exchanges"));
+             el('exchangeList').innerHTML = '';
+             exSnap.forEach(doc => {
+                 const e = doc.data();
+                 el('exchangeList').innerHTML += `
+                    <a href="${e.link}" target="_blank" class="glass-panel p-4 rounded-xl flex items-center gap-3 hover:bg-white/10 transition">
+                        <img src="${e.img || 'https://via.placeholder.com/40'}" class="w-10 h-10 object-contain bg-white rounded-lg p-1">
+                        <div>
+                            <div class="font-bold text-sm text-white">${e.name}</div>
+                            <div class="text-xs text-brand-accent">Hoàn phí ${e.rate}</div>
+                        </div>
                     </a>
-                `;
-            });
+                 `;
+             });
         }
 
-        // 3. BUY & ORDER LOGIC
-        let selectedCourse = null;
-        let selectedMethod = 'bank';
+        // --- CHECKOUT & ORDERS ---
+        let currentOrder = {};
 
-        window.openBuyModal = async (courseId) => {
-            if(!currentUser) { toast("Vui lòng đăng nhập trước!", "error"); return; }
-            const cDoc = await getDoc(doc(db, "courses", courseId));
-            selectedCourse = { id: courseId, ...cDoc.data() };
-
-            document.getElementById('buyCourseName').innerText = selectedCourse.name;
-            document.getElementById('buyCoursePrice').innerText = selectedCourse.price;
+        window.initCheckout = (id, name, price) => {
+            if (!currentUser) return toast("Vui lòng đăng nhập để đăng ký!", "error");
+            currentOrder = { id, name, price, method: 'BANK' };
             
-            // Reset UI
-            document.getElementById('paymentDetails').classList.add('hidden');
-            document.getElementById('verifyStep').classList.add('hidden');
-            document.getElementById('buyModal').classList.remove('hidden');
+            el('chkUser').innerText = currentUser.displayName;
+            el('chkEmail').innerText = currentUser.email;
+            el('chkCourse').innerText = name;
+            el('chkPrice').innerText = price;
+            
+            el('checkoutModal').classList.remove('hidden');
+            selectPayment('BANK');
         };
 
         window.selectPayment = (method) => {
-            selectedMethod = method;
-            const details = document.getElementById('paymentDetails');
-            details.classList.remove('hidden');
-            document.getElementById('verifyStep').classList.remove('hidden');
+            currentOrder.method = method;
+            const btnBank = el('btnMethodBank');
+            const btnCrypto = el('btnMethodCrypto');
+            const viewBank = el('payViewBank');
+            const viewCrypto = el('payViewCrypto');
 
-            const content = `${currentUser.email.split('@')[0]} ${selectedCourse.name.substring(0, 10)}`; // Short content
-            
-            if(method === 'bank') {
-                document.getElementById('btnPayBank').classList.add('border-brand-primary');
-                document.getElementById('btnPayCrypto').classList.remove('border-brand-primary');
-                document.getElementById('bankInfoArea').classList.remove('hidden');
-                document.getElementById('cryptoInfoArea').classList.add('hidden');
+            if (method === 'BANK') {
+                btnBank.classList.replace('border-white/10', 'border-brand-primary');
+                btnBank.classList.replace('text-gray-400', 'text-white');
+                btnBank.classList.add('bg-brand-primary/20');
+                btnCrypto.classList.remove('border-brand-primary', 'text-white', 'bg-brand-primary/20');
+                btnCrypto.classList.add('border-white/10', 'text-gray-400');
+                
+                viewBank.classList.remove('hidden');
+                viewCrypto.classList.add('hidden');
 
-                // Set Bank Info
-                document.getElementById('dispBankName').innerText = globalConfig.bankCode || 'MB';
-                document.getElementById('dispBankNum').innerText = globalConfig.bankNum || '';
-                document.getElementById('dispBankOwner').innerText = globalConfig.bankOwner || '';
-                document.getElementById('dispContent').innerText = content;
-
-                // VIETQR API
-                const qrUrl = `https://img.vietqr.io/image/${globalConfig.bankCode}-${globalConfig.bankNum}-compact.jpg?amount=${selectedCourse.priceVal}&addInfo=${encodeURIComponent(content)}&accountName=${encodeURIComponent(globalConfig.bankOwner)}`;
-                document.getElementById('vietQrImg').src = qrUrl;
+                // Generate VietQR
+                // Clean price string to number for VietQR (if needed, but text is okay for addInfo)
+                const amountClean = currentOrder.price.replace(/\D/g, ''); 
+                // Note: VietQR api usually takes amount as number. If price is text like "500 USD", we might need fixed amount or manual input. 
+                // Assuming price is VND number for QR, if USD maybe set amount=0 for manual entry.
+                const amountVal = amountClean.length > 3 ? amountClean : 0; 
+                
+                const content = `${currentUser.email.split('@')[0]} ${currentOrder.name.substring(0,10)}`;
+                const qrUrl = `https://img.vietqr.io/image/${globalConfig.bankCode}-${globalConfig.bankNum}-${globalConfig.bankTemplate || 'compact'}.jpg?amount=${amountVal}&addInfo=${encodeURIComponent(content)}&accountName=${encodeURIComponent(globalConfig.bankName)}`;
+                el('qrImage').src = qrUrl;
 
             } else {
-                document.getElementById('btnPayCrypto').classList.add('border-brand-primary');
-                document.getElementById('btnPayBank').classList.remove('border-brand-primary');
-                document.getElementById('bankInfoArea').classList.add('hidden');
-                document.getElementById('cryptoInfoArea').classList.remove('hidden');
-                document.getElementById('dispWallet').value = globalConfig.wallet || '';
+                btnCrypto.classList.replace('border-white/10', 'border-brand-primary');
+                btnCrypto.classList.replace('text-gray-400', 'text-white');
+                btnCrypto.classList.add('bg-brand-primary/20');
+                btnBank.classList.remove('border-brand-primary', 'text-white', 'bg-brand-primary/20');
+                btnBank.classList.add('border-white/10', 'text-gray-400');
+
+                viewBank.classList.add('hidden');
+                viewCrypto.classList.remove('hidden');
+                el('walletAddress').innerText = globalConfig.wallet || "Chưa cấu hình ví";
             }
         };
 
+        window.closeCheckout = () => el('checkoutModal').classList.add('hidden');
+
+        // GITHUB IMAGE UPLOAD
         window.previewBill = () => {
-            const file = document.getElementById('billFile').files[0];
-            if(file) {
-                document.getElementById('billPreview').src = URL.createObjectURL(file);
-                document.getElementById('billPreview').classList.remove('hidden');
-            }
-        };
+            const file = el('billFile').files[0];
+            if(file) el('fileName').innerText = file.name;
+        }
 
         window.submitOrder = async () => {
-            const btn = document.getElementById('btnSubmitOrder');
-            const file = document.getElementById('billFile').files[0];
-            
-            if(!file) { toast("Vui lòng tải ảnh bill!", "error"); return; }
-            
-            btn.innerText = "Đang xử lý...";
+            const file = el('billFile').files[0];
+            if (!file) return toast("Vui lòng tải ảnh bill lên!", "error");
+
+            const btn = el('btnConfirmOrder');
             btn.disabled = true;
+            btn.innerText = "Đang xử lý...";
 
             try {
-                // Upload Bill to GitHub
-                const billUrl = await uploadToGithub(file, 'bills');
-                
-                // Create Order
-                await addDoc(collection(db, "orders"), {
-                    userId: currentUser.uid,
-                    userEmail: currentUser.email,
-                    userName: currentUser.displayName,
-                    courseId: selectedCourse.id,
-                    courseName: selectedCourse.name,
-                    amount: selectedCourse.price,
-                    method: selectedMethod,
-                    billUrl: billUrl,
-                    status: 'pending', // pending, approved
-                    createdAt: serverTimestamp()
-                });
+                // 1. Upload to GitHub
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = async () => {
+                    const base64Content = reader.result.split(',')[1];
+                    const fileName = `${Date.now()}_${currentUser.uid.substring(0,5)}.jpg`;
+                    const path = globalConfig.ghPath ? `${globalConfig.ghPath}/${fileName}` : fileName;
+                    
+                    const ghRes = await fetch(`https://api.github.com/repos/${globalConfig.ghUser}/${globalConfig.ghRepo}/contents/${path}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${globalConfig.ghToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            message: `Bill upload for ${currentUser.email}`,
+                            content: base64Content
+                        })
+                    });
 
-                toast("Đăng ký thành công! Đang chờ duyệt.");
-                closeModal('buyModal');
-            } catch (e) {
-                console.error(e);
-                toast("Lỗi: " + e.message, "error");
-            } finally {
-                btn.innerText = "Hoàn tất đăng ký";
+                    if (!ghRes.ok) throw new Error("Lỗi upload ảnh (Kiểm tra Config GitHub)");
+                    const ghData = await ghRes.json();
+                    const billUrl = ghData.content.download_url; // Direct link
+
+                    // 2. Save Order to Firebase
+                    await addDoc(collection(db, "orders"), {
+                        uid: currentUser.uid,
+                        email: currentUser.email,
+                        courseName: currentOrder.name,
+                        courseId: currentOrder.id,
+                        price: currentOrder.price,
+                        billUrl: billUrl,
+                        paymentMethod: currentOrder.method,
+                        status: 'pending',
+                        createdAt: new Date().toISOString()
+                    });
+
+                    toast("Đăng ký thành công! Vui lòng chờ duyệt.");
+                    closeCheckout();
+                    btn.disabled = false;
+                    btn.innerText = "Xác nhận đã chuyển";
+                }
+            } catch (error) {
+                console.error(error);
+                toast("Lỗi: " + error.message, "error");
                 btn.disabled = false;
+                btn.innerText = "Xác nhận đã chuyển";
             }
         };
 
-        // 4. USER MY COURSES
-        window.openMyCourses = async () => {
+        // USER ORDERS
+        window.openMyOrders = async () => {
             if(!currentUser) return;
-            document.getElementById('myCoursesModal').classList.remove('hidden');
-            const q = query(collection(db, "orders"), where("userEmail", "==", currentUser.email), orderBy("createdAt", "desc"));
+            el('myOrdersModal').classList.remove('hidden');
+            const q = query(collection(db, "orders"), where("uid", "==", currentUser.uid), orderBy("createdAt", "desc"));
             const snap = await getDocs(q);
-            const list = document.getElementById('myCoursesList');
+            const list = el('myOrdersList');
             list.innerHTML = '';
             
-            if(snap.empty) { list.innerHTML = '<p class="text-center text-gray-500">Chưa có khóa học nào.</p>'; return; }
+            if(snap.empty) {
+                list.innerHTML = '<p class="text-gray-400 text-center mt-10">Bạn chưa đăng ký khóa học nào.</p>';
+                return;
+            }
 
-            for (const d of snap.docs) {
+            snap.forEach(d => {
                 const o = d.data();
-                // Get course link if approved
-                let actionBtn = `<span class="text-yellow-500 text-sm"><i class="fa-regular fa-clock"></i> Đang chờ duyệt</span>`;
-                if(o.status === 'approved') {
-                    // Fetch course link
-                    const cDoc = await getDoc(doc(db, "courses", o.courseId));
-                    const link = cDoc.exists() ? cDoc.data().groupLink : '#';
-                    actionBtn = `<a href="${link}" target="_blank" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg font-bold text-sm">Vào Nhóm Kín <i class="fa-solid fa-arrow-right"></i></a>`;
+                let statusBadge = '';
+                let actionBtn = '';
+
+                if(o.status === 'pending') {
+                    statusBadge = '<span class="text-yellow-400 bg-yellow-400/10 px-2 py-1 rounded text-xs">Đang chờ duyệt</span>';
+                    actionBtn = '<button disabled class="text-gray-500 text-sm cursor-not-allowed">Đang xử lý...</button>';
+                } else if (o.status === 'approved') {
+                    statusBadge = '<span class="text-green-400 bg-green-400/10 px-2 py-1 rounded text-xs">Đã xác thực</span>';
+                    // Fetch link group from course details if needed, or store in order when approved
+                    actionBtn = `<a href="${o.groupLink || '#'}" target="_blank" class="bg-brand-primary hover:bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-indigo-500/30">Vào Nhóm Ngay</a>`;
                 }
 
                 list.innerHTML += `
-                    <div class="glass-panel p-4 rounded-xl flex justify-between items-center mb-3">
+                    <div class="bg-white/5 p-4 rounded-xl border border-white/10 flex justify-between items-center">
                         <div>
-                            <h4 class="font-bold text-white">${o.courseName}</h4>
-                            <div class="text-xs text-gray-400">${new Date(o.createdAt?.toDate()).toLocaleString()} | ${o.amount}</div>
+                            <div class="font-bold text-white text-lg">${o.courseName}</div>
+                            <div class="text-sm text-gray-400 mt-1">${o.price} • ${new Date(o.createdAt).toLocaleDateString()}</div>
+                            <div class="mt-2">${statusBadge}</div>
                         </div>
                         <div>${actionBtn}</div>
                     </div>
                 `;
+            });
+        };
+
+        // --- ADMIN LOGIC ---
+        async function checkAdmin(email) {
+            // Check against Global Config loaded from Firestore
+            if (!globalConfig.admins) {
+                // First run fallback or wait for config load
+                const cfg = await getDoc(doc(db, "settings", "config"));
+                if(cfg.exists()) globalConfig = cfg.data();
+            }
+            
+            const adminList = globalConfig.admins ? globalConfig.admins.split(',').map(e => e.trim()) : [];
+            if (adminList.includes(email)) {
+                el('btnOpenAdmin').classList.remove('hidden');
+            }
+        }
+
+        window.toggleAdminPanel = () => {
+            const p = el('adminPanel');
+            if (p.classList.contains('hidden')) {
+                p.classList.remove('hidden');
+                loadAdminData();
+            } else {
+                p.classList.add('hidden');
             }
         };
 
-        // 5. ADMIN LOGIC
-        window.loadAdminData = async () => {
-            if(!isAdmin) return;
-
-            // Load Config Form
-            document.getElementById('ghToken').value = globalConfig.ghToken || '';
-            document.getElementById('ghOwner').value = globalConfig.ghOwner || '';
-            document.getElementById('ghRepo').value = globalConfig.ghRepo || '';
-            document.getElementById('cfgBankCode').value = globalConfig.bankCode || 'MB';
-            document.getElementById('cfgBankNum').value = globalConfig.bankNum || '';
-            document.getElementById('cfgBankOwner').value = globalConfig.bankOwner || '';
-            document.getElementById('cfgWallet').value = globalConfig.wallet || '';
+        window.switchTab = (tabId) => {
+            document.querySelectorAll('.adm-sec').forEach(d => d.classList.add('hidden'));
+            el(tabId).classList.remove('hidden');
             
-            // Load Profile Form
-            const pSnap = await getDoc(doc(db, "settings", "profile"));
-            if(pSnap.exists()){
-                document.getElementById('cfgName').value = pSnap.data().name;
-                document.getElementById('cfgBio').value = pSnap.data().bio;
-            }
+            document.querySelectorAll('.adm-btn').forEach(b => {
+                b.classList.remove('bg-brand-primary', 'text-white', 'font-bold');
+                b.classList.add('text-gray-400');
+            });
+            event.currentTarget.classList.remove('text-gray-400');
+            event.currentTarget.classList.add('bg-brand-primary', 'text-white', 'font-bold');
+        };
 
+        async function loadAdminData() {
             // Load Orders
             const oSnap = await getDocs(query(collection(db, "orders"), orderBy("createdAt", "desc")));
-            const tb = document.getElementById('orderTableBody');
-            tb.innerHTML = '';
-            let pendingCount = 0;
-
+            const oList = el('admOrderList');
+            oList.innerHTML = '';
             oSnap.forEach(d => {
                 const o = d.data();
-                if(o.status === 'pending') pendingCount++;
-                const statusHtml = o.status === 'approved' 
-                    ? `<span class="text-green-400 font-bold">Đã duyệt</span>` 
-                    : `<button onclick="approveOrder('${d.id}')" class="bg-blue-600 px-3 py-1 rounded text-white text-xs hover:bg-blue-500">Duyệt ngay</button>`;
-                
-                tb.innerHTML += `
-                    <tr class="border-b border-white/5 hover:bg-white/5">
-                        <td class="px-4 py-3">${new Date(o.createdAt?.toDate()).toLocaleDateString()}</td>
-                        <td class="px-4 py-3">
-                            <div class="font-bold text-white">${o.userName}</div>
-                            <div class="text-xs text-gray-500">${o.userEmail}</div>
+                oList.innerHTML += `
+                    <tr class="hover:bg-white/5 transition border-b border-gray-800">
+                        <td class="p-3 text-xs">${new Date(o.createdAt).toLocaleDateString()}</td>
+                        <td class="p-3 font-bold text-white">${o.email}</td>
+                        <td class="p-3 text-brand-primary">${o.courseName}</td>
+                        <td class="p-3"><a href="${o.billUrl}" target="_blank" class="text-blue-400 hover:underline text-xs">Xem Bill</a></td>
+                        <td class="p-3">
+                            <span class="${o.status === 'approved' ? 'text-green-500' : 'text-yellow-500'} font-bold text-xs uppercase">${o.status}</span>
                         </td>
-                        <td class="px-4 py-3 text-brand-primary">${o.courseName}</td>
-                        <td class="px-4 py-3"><a href="${o.billUrl}" target="_blank" class="text-blue-400 underline">Xem Bill</a></td>
-                        <td class="px-4 py-3">${statusHtml}</td>
-                        <td class="px-4 py-3"><i class="fa-solid fa-trash text-red-500 cursor-pointer" onclick="deleteOrder('${d.id}')"></i></td>
+                        <td class="p-3">
+                            ${o.status === 'pending' ? `<button onclick="approveOrder('${d.id}')" class="bg-green-600 hover:bg-green-500 text-white px-2 py-1 rounded text-xs">Duyệt</button>` : '<i class="fa-solid fa-check text-green-500"></i>'}
+                        </td>
                     </tr>
                 `;
             });
-            document.getElementById('badgeOrders').innerText = pendingCount;
+
+            // Load Config to Inputs
+            if(globalConfig) {
+                el('cfgGhToken').value = globalConfig.ghToken || '';
+                el('cfgGhUser').value = globalConfig.ghUser || '';
+                el('cfgGhRepo').value = globalConfig.ghRepo || '';
+                el('cfgGhPath').value = globalConfig.ghPath || '';
+                el('cfgBankCode').value = globalConfig.bankCode || '';
+                el('cfgBankNum').value = globalConfig.bankNum || '';
+                el('cfgBankName').value = globalConfig.bankName || '';
+                el('cfgBankTemplate').value = globalConfig.bankTemplate || '';
+                el('cfgWallet').value = globalConfig.wallet || '';
+                el('cfgAdmins').value = globalConfig.admins || '';
+            }
             
-            // Load Courses List for Admin
-            renderAdminCourses();
-        }
-
-        async function renderAdminCourses() {
-            const list = document.getElementById('adminCourseList');
-            const snap = await getDocs(collection(db, "courses"));
-            list.innerHTML = '';
-            snap.forEach(d => {
-                const c = d.data();
-                list.innerHTML += `
-                    <div class="flex justify-between items-center bg-white/5 p-3 rounded">
-                        <span class="text-white">${c.name}</span>
-                        <div class="space-x-2">
-                             <button onclick="editCourse('${d.id}')" class="text-blue-400"><i class="fa-solid fa-pen"></i></button>
-                             <button onclick="deleteDoc(doc(db, 'courses', '${d.id}')).then(()=>loadAdminData())" class="text-red-400"><i class="fa-solid fa-trash"></i></button>
-                        </div>
-                    </div>
-                `;
+            // Render Courses List (Simplified)
+            const cSnap = await getDocs(collection(db, "courses"));
+            el('admCourseList').innerHTML = '';
+            cSnap.forEach(d => {
+                el('admCourseList').innerHTML += `<div class="bg-white/5 p-2 rounded flex justify-between border border-white/10"><span class="text-white">${d.data().name}</span> <button onclick="deleteDocItem('courses','${d.id}')" class="text-red-500"><i class="fa-solid fa-trash"></i></button></div>`;
             });
         }
 
-        window.approveOrder = async (id) => {
-            if(confirm("Xác nhận duyệt đơn hàng và cho phép user vào nhóm?")) {
-                await updateDoc(doc(db, "orders", id), { status: 'approved' });
-                toast("Đã duyệt đơn hàng!");
-                loadAdminData();
-            }
-        };
-        
-        window.deleteOrder = async (id) => {
-             if(confirm("Xóa lịch sử đơn hàng này?")) {
-                await deleteDoc(doc(db, "orders", id));
-                loadAdminData();
-            }
+        window.approveOrder = async (orderId) => {
+            // Prompt for group link or get from course settings (here prompting for simplicity)
+            // Or better: fetch the course document to get the group link
+            const orderRef = doc(db, "orders", orderId);
+            const orderSnap = await getDoc(orderRef);
+            const orderData = orderSnap.data();
+            
+            // Get Course Link
+            const courseRef = doc(db, "courses", orderData.courseId);
+            const courseSnap = await getDoc(courseRef);
+            const groupLink = courseSnap.exists() ? courseSnap.data().groupLink : "#";
+
+            await updateDoc(orderRef, { status: 'approved', groupLink: groupLink });
+            toast("Đã duyệt đơn hàng!");
+            loadAdminData();
         };
 
-        // Save Config
-        window.saveAllConfig = async () => {
-            const data = {
-                ghToken: document.getElementById('ghToken').value,
-                ghOwner: document.getElementById('ghOwner').value,
-                ghRepo: document.getElementById('ghRepo').value,
-                bankCode: document.getElementById('cfgBankCode').value,
-                bankNum: document.getElementById('cfgBankNum').value,
-                bankOwner: document.getElementById('cfgBankOwner').value,
-                wallet: document.getElementById('cfgWallet').value,
+        window.saveConfig = async () => {
+            const cfg = {
+                ghToken: el('cfgGhToken').value,
+                ghUser: el('cfgGhUser').value,
+                ghRepo: el('cfgGhRepo').value,
+                ghPath: el('cfgGhPath').value,
+                bankCode: el('cfgBankCode').value,
+                bankNum: el('cfgBankNum').value,
+                bankName: el('cfgBankName').value,
+                bankTemplate: el('cfgBankTemplate').value,
+                wallet: el('cfgWallet').value,
+                admins: el('cfgAdmins').value
             };
-            await setDoc(doc(db, "settings", "config"), data);
-
-            // Upload Avatar logic (nếu có file)
-            const avaFile = document.getElementById('cfgAvatarFile').files[0];
-            let avaUrl = document.getElementById('pAvatar').src;
-            if(avaFile) {
-                try {
-                    avaUrl = await uploadToGithub(avaFile, 'avatars');
-                } catch(e) { toast("Lỗi upload avatar", "error"); }
-            }
-
-            await setDoc(doc(db, "settings", "profile"), {
-                name: document.getElementById('cfgName').value,
-                bio: document.getElementById('cfgBio').value,
-                avatar: avaUrl,
-                verified: true
-            });
-
-            toast("Cấu hình đã lưu! Reload trang để áp dụng.");
+            await setDoc(doc(db, "settings", "config"), cfg);
+            globalConfig = cfg;
+            toast("Cấu hình đã lưu! Reload để cập nhật.");
             setTimeout(() => location.reload(), 1500);
         };
+        
+        window.saveProfile = async () => {
+            await setDoc(doc(db, "site_content", "profile"), {
+                name: el('admPName').value,
+                bio: el('admPBio').value,
+                avatar: el('admPAvatar').value,
+                verified: true
+            });
+            toast("Đã cập nhật Profile");
+        }
 
-        // Course CRUD
-        document.getElementById('courseForm').addEventListener('submit', async(e) => {
+        // COURSES CRUD
+        el('formCourse').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const id = document.getElementById('cId').value;
             const data = {
-                name: document.getElementById('cName').value,
-                price: document.getElementById('cPrice').value,
-                priceVal: Number(document.getElementById('cPriceVal').value),
-                groupLink: document.getElementById('cGroupLink').value,
-                desc: document.getElementById('cDesc').value
+                name: el('cName').value,
+                price: el('cPrice').value,
+                groupLink: el('cGroupLink').value,
+                benefits: el('cBenefits').value
             };
-            if(id) await updateDoc(doc(db, "courses", id), data);
-            else await addDoc(collection(db, "courses"), data);
-            
-            document.getElementById('courseForm').reset();
-            document.getElementById('cId').value = '';
-            toast("Đã lưu khóa học");
+            await addDoc(collection(db, "courses"), data);
+            toast("Thêm khóa học thành công");
+            el('formCourse').reset();
             loadAdminData();
         });
+        
+        window.deleteDocItem = async (col, id) => {
+            if(confirm("Xóa mục này?")) {
+                await deleteDoc(doc(db, col, id));
+                loadAdminData();
+            }
+        }
 
-        window.editCourse = async (id) => {
-            const d = (await getDoc(doc(db, "courses", id))).data();
-            document.getElementById('cId').value = id;
-            document.getElementById('cName').value = d.name;
-            document.getElementById('cPrice').value = d.price;
-            document.getElementById('cPriceVal').value = d.priceVal;
-            document.getElementById('cGroupLink').value = d.groupLink;
-            document.getElementById('cDesc').value = d.desc;
-        };
-
-        // Init App
+        // INIT
         AOS.init();
-        initData();
+        loadSite();
+        
+        // Expose copy function
+        window.copyToClipboard = (id) => {
+            navigator.clipboard.writeText(el(id).innerText);
+            toast("Đã copy!");
+        }
+
     </script>
 </body>
 </html>
