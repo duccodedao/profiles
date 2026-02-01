@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ thống Định vị & Quét thông tin - Firebase</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Leaflet CSS (Bản đồ) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f0fdf4; }
+        #map { height: 350px; z-index: 1; border-radius: 0.75rem; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- KHU VỰC ĐĂNG NHẬP -->
+    <div id="login-screen" class="bg-white p-8 rounded-2xl shadow-xl text-center max-w-sm w-full">
+        <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i data-lucide="shield-check" class="w-8 h-8"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">Hệ thống Định Vị</h2>
+        <p class="text-gray-500 text-sm mb-6">Đăng nhập để phân tích thiết bị</p>
+        
+        <button id="btn-login" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all">
+            <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5 bg-white rounded-full p-0.5" alt="Google">
+            Đăng nhập bằng Google
+        </button>
+    </div>
+
+    <!-- KHU VỰC BẢNG ĐIỀU KHIỂN (Ẩn ban đầu) -->
+    <div id="dashboard" class="hidden w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
+        
+        <!-- Cột trái: Thông tin -->
+        <div class="w-full md:w-5/12 p-6 bg-slate-50 border-r border-gray-100 flex flex-col justify-between">
+            <div>
+                <!-- Info User -->
+                <div class="flex items-center gap-3 mb-6 bg-white p-3 rounded-xl shadow-sm">
+                    <img id="user-avatar" src="" class="w-12 h-12 rounded-full border-2 border-green-500">
+                    <div>
+                        <h3 id="user-name" class="font-bold text-gray-800"></h3>
+                        <p id="user-email" class="text-xs text-gray-500"></p>
+                    </div>
+                </div>
+
+                <!-- Thông số thiết bị -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3 bg-white p-4 rounded-xl shadow-sm">
+                        <i data-lucide="battery-medium" class="text-yellow-500"></i>
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase font-bold">Pin hiện tại</p>
+                            <p id="info-battery" class="font-bold text-gray-800">Đang quét...</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3 bg-white p-4 rounded-xl shadow-sm">
+                        <i data-lucide="wifi" class="text-blue-500"></i>
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase font-bold">Loại kết nối</p>
+                            <p id="info-connection" class="font-bold text-gray-800">Đang quét...</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3 bg-white p-4 rounded-xl shadow-sm">
+                        <i data-lucide="server" class="text-purple-500"></i>
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase font-bold">Nhà mạng (ISP)</p>
+                            <p id="info-isp" class="font-bold text-gray-800">Đang quét...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button id="btn-logout" class="mt-6 w-full bg-red-50 hover:bg-red-100 text-red-600 font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all">
+                <i data-lucide="log-out" class="w-4 h-4"></i> Đăng xuất
+            </button>
+        </div>
+
+        <!-- Cột phải: Bản đồ -->
+        <div class="w-full md:w-7/12 p-6 relative">
+            <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <i data-lucide="map-pin" class="text-red-500"></i> Vị trí hiện tại
+            </h3>
+            <div id="map" class="shadow-inner bg-gray-100"></div>
+            <p id="coords-text" class="mt-3 text-xs text-center text-gray-500 font-mono"></p>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- FIREBASE & LOGIC SCRIPT -->
+    <script type="module">
+        // 1. Import Firebase v10
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        // 2. Cấu hình Firebase của bạn
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
+            authDomain: "profile-d1214.firebaseapp.com",
+            projectId: "profile-d1214",
+            storageBucket: "profile-d1214.firebasestorage.app",
+            messagingSenderId: "914980131889",
+            appId: "1:914980131889:web:72f8da15c42dbee671b110",
+            measurementId: "G-C587M69LZW"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        lucide.createIcons();
+
+        // 3. Xử lý UI
+        const loginScreen = document.getElementById('login-screen');
+        const dashboard = document.getElementById('dashboard');
+
+        // Hàm Đăng nhập
+        document.getElementById('btn-login').addEventListener('click', () => {
+            signInWithPopup(auth, provider).catch(err => alert("Lỗi đăng nhập: " + err.message));
+        });
+
+        // Hàm Đăng xuất
+        document.getElementById('btn-logout').addEventListener('click', () => {
+            signOut(auth).then(() => { location.reload(); });
+        });
+
+        // 4. Theo dõi trạng thái đăng nhập
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // Hiển thị Dashboard
+                loginScreen.classList.add('hidden');
+                dashboard.classList.remove('hidden');
+                dashboard.classList.add('flex');
+
+                // Cập nhật thông tin User
+                document.getElementById('user-name').innerText = user.displayName;
+                document.getElementById('user-email').innerText = user.email;
+                document.getElementById('user-avatar').src = user.photoURL;
+
+                // Kích hoạt các hàm quét dữ liệu
+                scanDeviceData();
+                getGeoLocation();
+            }
+        });
+
+        // ============================================
+        // HÀM QUÉT THÔNG TIN THIẾT BỊ
+        // ============================================
+        function scanDeviceData() {
+            // 1. Quét Pin (Battery API)
+            if ('getBattery' in navigator) {
+                navigator.getBattery().then(battery => {
+                    updateBattery(battery);
+                    battery.addEventListener('levelchange', () => updateBattery(battery));
+                    battery.addEventListener('chargingchange', () => updateBattery(battery));
+                });
+            } else {
+                document.getElementById('info-battery').innerText = "Trình duyệt không hỗ trợ";
+            }
+
+            function updateBattery(battery) {
+                const percent = Math.round(battery.level * 100) + '%';
+                const status = battery.charging ? "⚡ Đang sạc" : "";
+                document.getElementById('info-battery').innerText = `${percent} ${status}`;
+            }
+
+            // 2. Quét Loại kết nối (Network API)
+            if ('connection' in navigator) {
+                const conn = navigator.connection;
+                const type = conn.effectiveType ? conn.effectiveType.toUpperCase() : "Không rõ";
+                document.getElementById('info-connection').innerText = type + " (Không thể lấy tên Wi-Fi vì bảo mật)";
+            }
+
+            // 3. Quét Nhà mạng (thông qua IP API)
+            fetch('https://ipapi.co/json/')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('info-isp').innerText = data.org || "Không xác định";
+                })
+                .catch(() => document.getElementById('info-isp').innerText = "Lỗi kết nối API");
+        }
+
+        // ============================================
+        // HÀM LẤY VỊ TRÍ & VẼ BẢN ĐỒ (LEAFLET.JS)
+        // ============================================
+        function getGeoLocation() {
+            if (!navigator.geolocation) {
+                alert("Trình duyệt không hỗ trợ định vị!");
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+
+                    document.getElementById('coords-text').innerText = `Tọa độ: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+                    // Khởi tạo bản đồ
+                    const map = L.map('map').setView([lat, lng], 16);
+
+                    // Thêm lớp bản đồ OpenStreetMap (Miễn phí)
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap contributors'
+                    }).addTo(map);
+
+                    // Thêm Marker (Đánh dấu)
+                    L.marker([lat, lng]).addTo(map)
+                        .bindPopup('<b>Vị trí thiết bị của bạn</b><br>Độ chính xác: ' + Math.round(position.coords.accuracy) + ' mét')
+                        .openPopup();
+                },
+                (error) => {
+                    alert("Bạn đã từ chối quyền truy cập vị trí hoặc thiết bị không có GPS.");
+                },
+                { enableHighAccuracy: true } // Yêu cầu GPS độ chính xác cao
+            );
+        }
+    </script>
+</body>
+</html>
