@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFT Chip Reader - Xác thực sản phẩm</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f172a; color: white; }
+        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .scan-anim { animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-6">
+
+    <!-- Header -->
+    <div class="text-center mb-8">
+        <div class="inline-block p-3 bg-blue-600 rounded-2xl mb-4 shadow-lg shadow-blue-500/50">
+            <i data-lucide="cpu" class="w-8 h-8 text-white"></i>
+        </div>
+        <h1 class="text-2xl font-black tracking-tight">NFT AUTHENTICATOR</h1>
+        <p class="text-slate-400 text-sm">Xác thực sản phẩm vật lý qua chip NFC</p>
+    </div>
+
+    <!-- Main Card -->
+    <div id="main-card" class="glass w-full max-w-sm rounded-[32px] p-8 text-center relative overflow-hidden">
+        
+        <!-- Status View -->
+        <div id="status-view">
+            <div class="relative flex justify-center mb-6">
+                <div class="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full"></div>
+                <div id="icon-container" class="relative w-32 h-32 glass rounded-full flex items-center justify-center border-2 border-blue-500/30">
+                    <i data-lucide="nfc" id="nfc-icon" class="w-16 h-16 text-blue-400"></i>
+                </div>
+            </div>
+
+            <h2 id="status-text" class="text-lg font-bold mb-2">Sẵn sàng quét</h2>
+            <p id="instruction-text" class="text-slate-400 text-sm mb-8">Đưa điện thoại lại gần chip NFC trên sản phẩm của bạn.</p>
+            
+            <button id="btn-scan" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold transition-all active:scale-95 shadow-lg shadow-blue-500/30">
+                BẮT ĐẦU QUÉT
+            </button>
+        </div>
+
+        <!-- Result View (Hidden by default) -->
+        <div id="result-view" class="hidden text-left">
+            <div class="bg-green-500/20 text-green-400 p-3 rounded-xl text-xs font-bold flex items-center gap-2 mb-4">
+                <i data-lucide="check-circle" class="w-4 h-4"></i> ĐÃ XÁC THỰC CHIP
+            </div>
+            
+            <img id="nft-img" src="https://via.placeholder.com/300" class="w-full h-48 object-cover rounded-2xl mb-4 shadow-xl">
+            
+            <div class="space-y-3">
+                <div>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">Tên sản phẩm</label>
+                    <p id="nft-name" class="font-bold text-lg">---</p>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-500 uppercase">Serial ID</label>
+                        <p id="nft-id" class="font-mono text-sm text-blue-400">---</p>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-500 uppercase">Trạng thái</label>
+                        <p class="text-sm font-bold text-green-500">Original</p>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="location.reload()" class="w-full mt-6 py-3 bg-slate-800 text-white rounded-xl font-bold text-xs">QUÉT LẠI</button>
+        </div>
+    </div>
+
+    <!-- Error/Notice Modal -->
+    <div id="error-notice" class="hidden mt-6 p-4 glass rounded-2xl border-red-500/50 bg-red-500/10 max-w-sm text-center">
+        <p id="error-text" class="text-red-400 text-xs font-medium"></p>
+    </div>
+
+    <script>
+        const btnScan = document.getElementById('btn-scan');
+        const statusText = document.getElementById('status-text');
+        const instructionText = document.getElementById('instruction-text');
+        const iconContainer = document.getElementById('icon-container');
+        const errorNotice = document.getElementById('error-notice');
+        const errorText = document.getElementById('error-text');
+
+        const statusView = document.getElementById('status-view');
+        const resultView = document.getElementById('result-view');
+
+        // Khởi tạo Lucide Icons
+        lucide.createIcons();
+
+        btnScan.addEventListener('click', async () => {
+            // Kiểm tra trình duyệt có hỗ trợ NFC không
+            if (!('NDEFReader' in window)) {
+                showError("Trình duyệt này không hỗ trợ Web NFC. Vui lòng dùng Chrome trên Android.");
+                return;
+            }
+
+            try {
+                const ndef = new NDEFReader();
+                await ndef.scan();
+                
+                // Cập nhật giao diện khi đang quét
+                btnScan.style.display = 'none';
+                statusText.innerText = "Đang tìm chip...";
+                instructionText.innerText = "Giữ điện thoại cố định sát chip NFC.";
+                iconContainer.classList.add('scan-anim');
+                iconContainer.style.borderColor = "#3b82f6";
+
+                ndef.addEventListener("readingerror", () => {
+                    showError("Không thể đọc chip. Vui lòng thử lại.");
+                });
+
+                ndef.addEventListener("reading", ({ message, serialNumber }) => {
+                    console.log(`Mã Serial Chip: ${serialNumber}`);
+                    
+                    // Xử lý dữ liệu đọc được
+                    for (const record of message.records) {
+                        const decoder = new TextDecoder();
+                        const data = decoder.decode(record.data);
+                        
+                        // Giả định chip chứa ID của NFT (ví dụ: NFT_VTD_001)
+                        displayResult(serialNumber, data);
+                    }
+                });
+
+            } catch (error) {
+                showError("Lỗi: " + error.message);
+            }
+        });
+
+        function displayResult(serial, data) {
+            statusView.classList.add('hidden');
+            resultView.classList.remove('hidden');
+            
+            // Ở đây bạn có thể gọi API đến Backend hoặc Smart Contract để lấy Metadata
+            // Ví dụ này ta giả lập dữ liệu:
+            document.getElementById('nft-name').innerText = "VTD Limited Hoodie";
+            document.getElementById('nft-id').innerText = serial.substring(0, 10).toUpperCase();
+            document.getElementById('nft-img').src = "https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=500&auto=format&fit=crop";
+            
+            // Cập nhật icon lucide mới
+            lucide.createIcons();
+        }
+
+        function showError(msg) {
+            errorNotice.classList.remove('hidden');
+            errorText.innerText = msg;
+            btnScan.style.display = 'block';
+            statusText.innerText = "Đã xảy ra lỗi";
+            iconContainer.classList.remove('scan-anim');
+            iconContainer.style.borderColor = "#ef4444";
+        }
+    </script>
+</body>
+</html>
