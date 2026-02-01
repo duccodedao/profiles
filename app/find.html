@@ -2,105 +2,110 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ thống Định vị & Quét thông tin - Firebase</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>iCloud - Find My Device</title>
     
-    <!-- Tailwind CSS -->
+    <!-- Tailwind & Lucide Icons -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Leaflet CSS (Bản đồ) -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
+    <!-- Leaflet Maps (Thay thế Google Maps vì không cần API Key phức tạp) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f0fdf4; }
-        #map { height: 350px; z-index: 1; border-radius: 0.75rem; }
+        @import url('https://fonts.cdnfonts.com/css/sf-pro-display');
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #f2f2f7;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .ios-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 12px;
+        }
+        #map { height: 300px; border-radius: 20px; z-index: 1; }
+        .btn-ios {
+            background-color: #007aff;
+            color: white;
+            transition: all 0.2s;
+        }
+        .btn-ios:active { transform: scale(0.95); opacity: 0.8; }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
+<body class="flex flex-col min-h-screen">
 
-    <!-- KHU VỰC ĐĂNG NHẬP -->
-    <div id="login-screen" class="bg-white p-8 rounded-2xl shadow-xl text-center max-w-sm w-full">
-        <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i data-lucide="shield-check" class="w-8 h-8"></i>
-        </div>
-        <h2 class="text-2xl font-bold text-gray-800 mb-2">Hệ thống Định Vị</h2>
-        <p class="text-gray-500 text-sm mb-6">Đăng nhập để phân tích thiết bị</p>
+    <!-- Màn hình Login -->
+    <div id="login-screen" class="flex-1 flex flex-col items-center justify-center p-6 bg-white">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg" class="w-16 mb-12" alt="Apple">
+        <h1 class="text-2xl font-semibold mb-2">Đăng nhập Apple ID</h1>
+        <p class="text-gray-500 mb-10 text-center">Sử dụng tài khoản Google để tiếp tục</p>
         
-        <button id="btn-login" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all">
-            <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5 bg-white rounded-full p-0.5" alt="Google">
-            Đăng nhập bằng Google
+        <button id="login-btn" class="w-full max-w-xs py-3 rounded-xl border border-gray-300 flex items-center justify-center gap-3 font-medium active:bg-gray-50 transition">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" class="w-5">
+            Tiếp tục với Google
         </button>
     </div>
 
-    <!-- KHU VỰC BẢNG ĐIỀU KHIỂN (Ẩn ban đầu) -->
-    <div id="dashboard" class="hidden w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
-        
-        <!-- Cột trái: Thông tin -->
-        <div class="w-full md:w-5/12 p-6 bg-slate-50 border-r border-gray-100 flex flex-col justify-between">
-            <div>
-                <!-- Info User -->
-                <div class="flex items-center gap-3 mb-6 bg-white p-3 rounded-xl shadow-sm">
-                    <img id="user-avatar" src="" class="w-12 h-12 rounded-full border-2 border-green-500">
-                    <div>
-                        <h3 id="user-name" class="font-bold text-gray-800"></h3>
-                        <p id="user-email" class="text-xs text-gray-500"></p>
-                    </div>
+    <!-- Màn hình Dashboard (Ẩn khi chưa login) -->
+    <div id="main-screen" class="hidden flex-1 flex flex-col p-4 space-y-4">
+        <!-- Header -->
+        <div class="flex justify-between items-center py-2">
+            <h1 class="text-3xl font-bold tracking-tight">Tìm</h1>
+            <img id="user-photo" src="" class="w-10 h-10 rounded-full border">
+        </div>
+
+        <!-- Map Card -->
+        <div id="map" class="shadow-lg"></div>
+
+        <!-- Device Info List -->
+        <div class="ios-card divide-y divide-gray-200 shadow-sm">
+            <!-- Vị trí -->
+            <div class="p-4 flex items-center gap-4">
+                <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white">
+                    <i data-lucide="map-pin" class="w-6 h-6"></i>
                 </div>
-
-                <!-- Thông số thiết bị -->
-                <div class="space-y-4">
-                    <div class="flex items-center gap-3 bg-white p-4 rounded-xl shadow-sm">
-                        <i data-lucide="battery-medium" class="text-yellow-500"></i>
-                        <div>
-                            <p class="text-xs text-gray-500 uppercase font-bold">Pin hiện tại</p>
-                            <p id="info-battery" class="font-bold text-gray-800">Đang quét...</p>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-3 bg-white p-4 rounded-xl shadow-sm">
-                        <i data-lucide="wifi" class="text-blue-500"></i>
-                        <div>
-                            <p class="text-xs text-gray-500 uppercase font-bold">Loại kết nối</p>
-                            <p id="info-connection" class="font-bold text-gray-800">Đang quét...</p>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-3 bg-white p-4 rounded-xl shadow-sm">
-                        <i data-lucide="server" class="text-purple-500"></i>
-                        <div>
-                            <p class="text-xs text-gray-500 uppercase font-bold">Nhà mạng (ISP)</p>
-                            <p id="info-isp" class="font-bold text-gray-800">Đang quét...</p>
-                        </div>
-                    </div>
+                <div class="flex-1">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase">Vị trí hiện tại</p>
+                    <p id="geo-status" class="text-sm font-medium">Đang lấy vị trí...</p>
                 </div>
             </div>
 
-            <button id="btn-logout" class="mt-6 w-full bg-red-50 hover:bg-red-100 text-red-600 font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all">
-                <i data-lucide="log-out" class="w-4 h-4"></i> Đăng xuất
-            </button>
+            <!-- Pin -->
+            <div class="p-4 flex items-center gap-4">
+                <div id="battery-bg" class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white">
+                    <i data-lucide="battery" class="w-6 h-6"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase">Trạng thái Pin</p>
+                    <p id="battery-level" class="text-sm font-medium">Đang quét...</p>
+                </div>
+            </div>
+
+            <!-- Nhà mạng / WiFi -->
+            <div class="p-4 flex items-center gap-4">
+                <div class="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center text-white">
+                    <i data-lucide="wifi" class="w-6 h-6"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase">Kết nối & Nhà mạng</p>
+                    <p id="network-info" class="text-sm font-medium">Đang kiểm tra...</p>
+                    <p id="carrier-info" class="text-[11px] text-blue-600 font-bold uppercase mt-1"></p>
+                </div>
+            </div>
         </div>
 
-        <!-- Cột phải: Bản đồ -->
-        <div class="w-full md:w-7/12 p-6 relative">
-            <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <i data-lucide="map-pin" class="text-red-500"></i> Vị trí hiện tại
-            </h3>
-            <div id="map" class="shadow-inner bg-gray-100"></div>
-            <p id="coords-text" class="mt-3 text-xs text-center text-gray-500 font-mono"></p>
-        </div>
+        <button id="logout-btn" class="w-full py-4 text-red-500 font-medium active:opacity-50">Đăng xuất</button>
     </div>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <!-- FIREBASE & LOGIC SCRIPT -->
+    <!-- Script xử lý -->
     <script type="module">
-        // 1. Import Firebase v10
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // 2. Cấu hình Firebase của bạn
+        // Cấu hình của bạn
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
@@ -115,112 +120,96 @@
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
 
-        lucide.createIcons();
+        let map, marker;
 
-        // 3. Xử lý UI
-        const loginScreen = document.getElementById('login-screen');
-        const dashboard = document.getElementById('dashboard');
+        // --- 1. XỬ LÝ ĐĂNG NHẬP ---
+        document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
+        document.getElementById('logout-btn').onclick = () => signOut(auth).then(() => location.reload());
 
-        // Hàm Đăng nhập
-        document.getElementById('btn-login').addEventListener('click', () => {
-            signInWithPopup(auth, provider).catch(err => alert("Lỗi đăng nhập: " + err.message));
-        });
-
-        // Hàm Đăng xuất
-        document.getElementById('btn-logout').addEventListener('click', () => {
-            signOut(auth).then(() => { location.reload(); });
-        });
-
-        // 4. Theo dõi trạng thái đăng nhập
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // Hiển thị Dashboard
-                loginScreen.classList.add('hidden');
-                dashboard.classList.remove('hidden');
-                dashboard.classList.add('flex');
-
-                // Cập nhật thông tin User
-                document.getElementById('user-name').innerText = user.displayName;
-                document.getElementById('user-email').innerText = user.email;
-                document.getElementById('user-avatar').src = user.photoURL;
-
-                // Kích hoạt các hàm quét dữ liệu
-                scanDeviceData();
-                getGeoLocation();
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('main-screen').classList.remove('hidden');
+                document.getElementById('user-photo').src = user.photoURL;
+                
+                initApp();
             }
         });
 
-        // ============================================
-        // HÀM QUÉT THÔNG TIN THIẾT BỊ
-        // ============================================
-        function scanDeviceData() {
-            // 1. Quét Pin (Battery API)
-            if ('getBattery' in navigator) {
-                navigator.getBattery().then(battery => {
-                    updateBattery(battery);
-                    battery.addEventListener('levelchange', () => updateBattery(battery));
-                    battery.addEventListener('chargingchange', () => updateBattery(battery));
-                });
-            } else {
-                document.getElementById('info-battery').innerText = "Trình duyệt không hỗ trợ";
-            }
-
-            function updateBattery(battery) {
-                const percent = Math.round(battery.level * 100) + '%';
-                const status = battery.charging ? "⚡ Đang sạc" : "";
-                document.getElementById('info-battery').innerText = `${percent} ${status}`;
-            }
-
-            // 2. Quét Loại kết nối (Network API)
-            if ('connection' in navigator) {
-                const conn = navigator.connection;
-                const type = conn.effectiveType ? conn.effectiveType.toUpperCase() : "Không rõ";
-                document.getElementById('info-connection').innerText = type + " (Không thể lấy tên Wi-Fi vì bảo mật)";
-            }
-
-            // 3. Quét Nhà mạng (thông qua IP API)
-            fetch('https://ipapi.co/json/')
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById('info-isp').innerText = data.org || "Không xác định";
-                })
-                .catch(() => document.getElementById('info-isp').innerText = "Lỗi kết nối API");
+        function initApp() {
+            lucide.createIcons();
+            initMap();
+            getBatteryInfo();
+            getNetworkData();
+            getGeoLocation();
         }
 
-        // ============================================
-        // HÀM LẤY VỊ TRÍ & VẼ BẢN ĐỒ (LEAFLET.JS)
-        // ============================================
+        // --- 2. BẢN ĐỒ ---
+        function initMap() {
+            map = L.map('map').setView([10.762622, 106.660172], 13); // Mặc định TP.HCM
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        }
+
+        // --- 3. ĐỊNH VỊ ---
         function getGeoLocation() {
-            if (!navigator.geolocation) {
-                alert("Trình duyệt không hỗ trợ định vị!");
-                return;
+            if (navigator.geolocation) {
+                navigator.geolocation.watchPosition((pos) => {
+                    const { latitude, longitude, accuracy } = pos.coords;
+                    document.getElementById('geo-status').innerText = `Tọa độ: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+                    
+                    const latlng = [latitude, longitude];
+                    map.setView(latlng, 16);
+                    
+                    if (marker) map.removeLayer(marker);
+                    marker = L.marker(latlng).addTo(map)
+                        .bindPopup("Thiết bị của bạn đang ở đây").openPopup();
+
+                }, (err) => {
+                    document.getElementById('geo-status').innerText = "Vui lòng bật định vị trong Cài đặt iOS";
+                }, { enableHighAccuracy: true });
+            }
+        }
+
+        // --- 4. QUÉT PIN ---
+        async function getBatteryInfo() {
+            if (navigator.getBattery) {
+                const battery = await navigator.getBattery();
+                const updateBattery = () => {
+                    const level = Math.round(battery.level * 100);
+                    const status = battery.charging ? "Đang sạc" : "Đang dùng pin";
+                    document.getElementById('battery-level').innerText = `${level}% (${status})`;
+                    
+                    if(level < 20) document.getElementById('battery-bg').classList.replace('bg-blue-500', 'bg-red-500');
+                };
+                updateBattery();
+                battery.onlevelchange = updateBattery;
+                battery.onchargingchange = updateBattery;
+            } else {
+                document.getElementById('battery-level').innerText = "iOS Safari giới hạn API này";
+            }
+        }
+
+        // --- 5. QUÉT NHÀ MẠNG & WIFI ---
+        async function getNetworkData() {
+            // Loại kết nối (WiFi/Cellular)
+            const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            if (conn) {
+                const type = conn.type || "N/A";
+                const downlink = conn.downlink || "0";
+                document.getElementById('network-info').innerText = `Kết nối: ${type.toUpperCase()} (~${downlink} Mbps)`;
+            } else {
+                document.getElementById('network-info').innerText = `Đang kết nối WiFi/Dữ liệu di động`;
             }
 
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const lat = position.coords.latitude;
-                    const lng = position.coords.longitude;
-
-                    document.getElementById('coords-text').innerText = `Tọa độ: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-
-                    // Khởi tạo bản đồ
-                    const map = L.map('map').setView([lat, lng], 16);
-
-                    // Thêm lớp bản đồ OpenStreetMap (Miễn phí)
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '© OpenStreetMap contributors'
-                    }).addTo(map);
-
-                    // Thêm Marker (Đánh dấu)
-                    L.marker([lat, lng]).addTo(map)
-                        .bindPopup('<b>Vị trí thiết bị của bạn</b><br>Độ chính xác: ' + Math.round(position.coords.accuracy) + ' mét')
-                        .openPopup();
-                },
-                (error) => {
-                    alert("Bạn đã từ chối quyền truy cập vị trí hoặc thiết bị không có GPS.");
-                },
-                { enableHighAccuracy: true } // Yêu cầu GPS độ chính xác cao
-            );
+            // Quét nhà mạng qua IP (Dùng API miễn phí ip-api.com)
+            try {
+                const res = await fetch('http://ip-api.com/json/');
+                const data = await res.json();
+                // data.isp sẽ cho biết nhà mạng (Viettel, VNPT, FPT...)
+                document.getElementById('carrier-info').innerText = `ISP: ${data.isp} (${data.org})`;
+            } catch (e) {
+                document.getElementById('carrier-info').innerText = "Không thể lấy thông tin nhà mạng";
+            }
         }
     </script>
 </body>
