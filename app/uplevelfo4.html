@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tính Tỷ Lệ Nâng Cấp FC Online 2.0</title>
+    <style>
+        :root {
+            --primary: #00ff88;
+            --bg-dark: #121212;
+            --bg-card: #1e1e2e;
+            --text-light: #ffffff;
+            --accent: #6a0dad;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a0b2e 0%, #000000 100%);
+            color: var(--text-light);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--bg-card);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+            width: 100%;
+            max-width: 500px;
+            border: 1px solid #333;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            font-size: 1.5rem;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #ddd;
+        }
+
+        select, input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background-color: #2a2a3e;
+            color: white;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin-top: 10px;
+            accent-color: var(--primary);
+        }
+
+        .result-box {
+            background: linear-gradient(90deg, #2c3e50, #000);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: 20px;
+            border: 2px solid var(--primary);
+        }
+
+        .result-title {
+            font-size: 1rem;
+            color: #aaa;
+        }
+
+        .result-percent {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--primary);
+            text-shadow: 0 0 15px var(--primary);
+            margin: 10px 0;
+        }
+
+        .info-table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .info-table th, .info-table td {
+            border: 1px solid #444;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .info-table th {
+            background-color: #333;
+            color: var(--primary);
+        }
+
+        .highlight {
+            color: #ffcc00;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>FC Online Upgrade 2.0</h1>
+    <p class="subtitle">Cập nhật theo bảng tỷ lệ 03.11.2025</p>
+
+    <div class="form-group">
+        <label for="targetLevel">Chọn cấp độ thẻ muốn lên:</label>
+        <select id="targetLevel" onchange="calculate()">
+            <!-- Các option sẽ được JS tạo ra -->
+        </select>
+        <div id="levelInfo" style="margin-top: 5px; font-size: 0.9rem; color: #aaa;"></div>
+    </div>
+
+    <div class="form-group">
+        <label>Số vạch (Phôi) nạp vào (Tối đa 5):</label>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <input type="number" id="barsInput" value="5" min="0" max="5" step="0.1" oninput="syncRange(this.value)" style="width: 80px;">
+            <span style="font-size: 0.9rem;">/ 5 vạch</span>
+        </div>
+        <input type="range" id="barsRange" min="0" max="5" step="0.1" value="5" oninput="syncInput(this.value)">
+    </div>
+
+    <div class="result-box">
+        <div class="result-title">Tỷ lệ thành công dự kiến</div>
+        <div class="result-percent" id="finalResult">0%</div>
+        <div id="baseRateDisplay" style="font-size: 0.9rem; color: #fff;">(Tỷ lệ gốc max vạch: 0%)</div>
+    </div>
+
+    <!-- Bảng tham khảo nhỏ -->
+    <details style="margin-top: 20px; cursor: pointer;">
+        <summary style="color: #aaa;">Xem bảng tỷ lệ gốc</summary>
+        <table class="info-table">
+            <thead>
+                <tr>
+                    <th>Cấp độ</th>
+                    <th>OVR Tăng</th>
+                    <th>Tỷ lệ Max</th>
+                </tr>
+            </thead>
+            <tbody id="rateTableBody">
+                <!-- Data -->
+            </tbody>
+        </table>
+    </details>
+</div>
+
+<script>
+    // Dữ liệu từ hình ảnh (Cấp độ đích : Tỷ lệ max %)
+    // Lưu ý: Cấp độ trong code là cấp độ ĐÍCH (Target). Ví dụ level 2 là từ 1 lên 2.
+    const upgradeData = [
+        { level: 2, ovr: 1, rate: 100 },
+        { level: 3, ovr: 1, rate: 81 },
+        { level: 4, ovr: 2, rate: 64 },
+        { level: 5, ovr: 2, rate: 50 },
+        { level: 6, ovr: 2, rate: 26 },
+        { level: 7, ovr: 3, rate: 15 },
+        { level: 8, ovr: 4, rate: 7 },
+        { level: 9, ovr: 2, rate: 5 },
+        { level: 10, ovr: 2, rate: 4 },
+        { level: 11, ovr: 2, rate: 3 },
+        { level: 12, ovr: 3, rate: 2 },
+        { level: 13, ovr: 3, rate: 1, name: "Thẻ Sao (Mạ vàng)" } // 13 đại diện cho Sao
+    ];
+
+    const select = document.getElementById('targetLevel');
+    const tableBody = document.getElementById('rateTableBody');
+
+    // Khởi tạo dữ liệu vào Select Box và Bảng
+    upgradeData.forEach(item => {
+        // Tạo option
+        const option = document.createElement('option');
+        option.value = item.rate;
+        option.setAttribute('data-ovr', item.ovr);
+        const levelName = item.name ? item.name : `Cấp ${item.level} (+${item.level-1} -> +${item.level})`;
+        option.text = levelName;
+        select.appendChild(option);
+
+        // Tạo dòng trong bảng
+        const row = `<tr>
+            <td>${item.level === 13 ? 'Sao' : item.level}</td>
+            <td>+${item.ovr}</td>
+            <td>${item.rate}%</td>
+        </tr>`;
+        tableBody.innerHTML += row;
+    });
+
+    // Đồng bộ thanh trượt và ô nhập số
+    function syncRange(val) {
+        document.getElementById('barsRange').value = val;
+        calculate();
+    }
+    function syncInput(val) {
+        document.getElementById('barsInput').value = val;
+        calculate();
+    }
+
+    // Hàm tính toán chính
+    function calculate() {
+        // Lấy tỷ lệ gốc (Max rate khi full 5 vạch)
+        const maxRate = parseFloat(select.value);
+        
+        // Lấy số vạch hiện tại
+        let bars = parseFloat(document.getElementById('barsInput').value);
+        
+        // Giới hạn vạch từ 0 đến 5
+        if (bars > 5) bars = 5;
+        if (bars < 0) bars = 0;
+
+        // Công thức: (Số vạch / 5) * Tỷ lệ Max
+        // Ví dụ: Lên +8 (Max 7%), nạp 2.5 vạch (50% thanh) -> Tỷ lệ = 3.5%
+        let finalChance = (bars / 5) * maxRate;
+
+        // Làm tròn 2 chữ số thập phân
+        finalChance = Math.round(finalChance * 100) / 100;
+
+        // Hiển thị kết quả
+        document.getElementById('finalResult').innerText = finalChance + "%";
+        document.getElementById('baseRateDisplay').innerText = `(Tỷ lệ gốc khi full 5 vạch: ${maxRate}%)`;
+        
+        // Hiển thị OVR tăng thêm
+        const selectedOption = select.options[select.selectedIndex];
+        const ovrBoost = selectedOption.getAttribute('data-ovr');
+        document.getElementById('levelInfo').innerHTML = `Thành công sẽ tăng: <span class="highlight">+${ovrBoost} OVR</span>`;
+    }
+
+    // Chạy lần đầu
+    calculate();
+</script>
+
+</body>
+</html>
