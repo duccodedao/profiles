@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TaskMaster Pro</title>
+    <meta name="theme-color" content="#4A90E2">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- CSS VARIABLES & THEME --- */
+        :root {
+            --primary: #4A90E2;
+            --primary-dark: #357ABD;
+            --accent: #FF5A5F;
+            --success: #2ECC71;
+            --warning: #F1C40F;
+            --bg-body: #F4F6F8;
+            --bg-card: #FFFFFF;
+            --text-main: #2C3E50;
+            --text-sub: #7F8C8D;
+            --border: #E1E8ED;
+            --shadow: 0 4px 12px rgba(0,0,0,0.08);
+            --radius: 12px;
+            --nav-height: 60px;
+            --font-main: 'Inter', sans-serif;
+            --ease: cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        [data-theme="dark"] {
+            --bg-body: #121212;
+            --bg-card: #1E1E1E;
+            --text-main: #E0E0E0;
+            --text-sub: #A0A0A0;
+            --border: #333333;
+            --shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        /* --- GLOBAL STYLES --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { font-family: var(--font-main); background: var(--bg-body); color: var(--text-main); height: 100vh; overflow: hidden; transition: background 0.3s, color 0.3s; }
+        
+        /* --- APP SHELL --- */
+        .app-container { height: 100%; display: flex; flex-direction: column; position: relative; }
+        
+        /* HEADER */
+        header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); box-shadow: 0 1px 0 var(--border); z-index: 10; }
+        .app-title { font-weight: 700; font-size: 1.2rem; display: flex; align-items: center; gap: 10px; }
+        .app-title i { color: var(--primary); }
+        .header-actions button { background: none; border: none; font-size: 1.2rem; color: var(--text-main); cursor: pointer; padding: 5px; transition: transform 0.2s; }
+        .header-actions button:active { transform: scale(0.9); }
+
+        /* CONTENT AREA */
+        main { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 80px; position: relative; }
+        
+        /* TAB SWITCHER */
+        .view-switcher { display: flex; background: var(--border); padding: 4px; border-radius: 10px; margin-bottom: 20px; }
+        .view-btn { flex: 1; border: none; background: transparent; padding: 8px; border-radius: 8px; font-weight: 600; color: var(--text-sub); cursor: pointer; transition: 0.2s; }
+        .view-btn.active { background: var(--bg-card); color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+        /* TASK LIST */
+        .task-list { display: flex; flex-direction: column; gap: 12px; }
+        .task-card { background: var(--bg-card); padding: 15px; border-radius: var(--radius); box-shadow: var(--shadow); display: flex; align-items: center; gap: 15px; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; animation: slideUp 0.3s var(--ease); position: relative; border-left: 4px solid transparent; }
+        .task-card:active { transform: scale(0.98); }
+        .task-card.priority-high { border-left-color: var(--accent); }
+        .task-card.priority-medium { border-left-color: var(--warning); }
+        .task-card.priority-low { border-left-color: var(--success); }
+        
+        .task-check { width: 24px; height: 24px; border: 2px solid var(--border); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s; }
+        .task-card.completed .task-check { background: var(--success); border-color: var(--success); }
+        .task-card.completed .task-check::after { content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900; color: white; font-size: 12px; }
+        .task-card.completed .task-content { text-decoration: line-through; opacity: 0.6; }
+
+        .task-content { flex: 1; }
+        .task-title { font-weight: 600; margin-bottom: 4px; }
+        .task-meta { font-size: 0.8rem; color: var(--text-sub); display: flex; align-items: center; gap: 10px; }
+        .task-actions { display: flex; gap: 10px; opacity: 0; transition: 0.2s; }
+        .task-card:hover .task-actions { opacity: 1; }
+
+        /* CALENDAR VIEW */
+        .calendar-view { display: none; }
+        .calendar-view.active { display: block; }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
+        .cal-day-name { font-weight: 600; font-size: 0.8rem; color: var(--text-sub); padding: 5px; }
+        .cal-day { padding: 10px 5px; background: var(--bg-card); border-radius: 8px; font-size: 0.9rem; cursor: pointer; min-height: 50px; position: relative; }
+        .cal-day.today { background: var(--primary); color: white; }
+        .cal-day.has-task::after { content: ''; position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; background: var(--accent); border-radius: 50%; }
+
+        /* FAB (Floating Action Button) */
+        .fab { position: fixed; bottom: 80px; right: 20px; width: 56px; height: 56px; background: var(--primary); color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; border: none; box-shadow: 0 4px 15px rgba(74, 144, 226, 0.4); cursor: pointer; z-index: 99; transition: transform 0.2s; }
+        .fab:hover { transform: scale(1.1); }
+
+        /* BOTTOM NAV */
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; height: var(--nav-height); background: var(--bg-card); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid var(--border); z-index: 100; }
+        .nav-item { border: none; background: none; color: var(--text-sub); font-size: 1.2rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; width: 50px; }
+        .nav-item span { font-size: 0.6rem; font-weight: 600; }
+        .nav-item.active { color: var(--primary); }
+
+        /* MODAL */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: none; align-items: flex-end; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+        .modal-overlay.open { display: flex; opacity: 1; }
+        .modal { background: var(--bg-card); width: 100%; max-width: 600px; border-radius: 20px 20px 0 0; padding: 25px; transform: translateY(100%); transition: transform 0.3s var(--ease); max-height: 90vh; overflow-y: auto; }
+        .modal-overlay.open .modal { transform: translateY(0); }
+        .modal-header { font-size: 1.2rem; font-weight: 700; margin-bottom: 20px; display: flex; justify-content: space-between; }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 0.85rem; color: var(--text-sub); margin-bottom: 5px; font-weight: 600; }
+        .form-control { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-body); color: var(--text-main); font-family: var(--font-main); font-size: 1rem; outline: none; transition: border-color 0.2s; }
+        .form-control:focus { border-color: var(--primary); }
+        .priority-select { display: flex; gap: 10px; }
+        .priority-opt { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 8px; text-align: center; cursor: pointer; font-size: 0.9rem; transition: 0.2s; }
+        .priority-opt.selected { background: var(--primary); color: white; border-color: var(--primary); }
+        
+        .btn-submit { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: 600; font-size: 1rem; cursor: pointer; margin-top: 10px; }
+
+        /* LOADING & TOAST */
+        .loader { border: 3px solid rgba(0,0,0,0.1); border-top: 3px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; display: none; }
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-50px); background: #333; color: white; padding: 12px 24px; border-radius: 30px; z-index: 2000; font-size: 0.9rem; transition: 0.3s var(--ease); opacity: 0; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        /* INSTALL PROMPT */
+        .install-prompt { position: fixed; bottom: 80px; left: 20px; right: 20px; background: var(--bg-card); padding: 15px; border-radius: 10px; box-shadow: var(--shadow); z-index: 999; display: none; align-items: center; justify-content: space-between; animation: slideUp 0.4s var(--ease); }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        @media (min-width: 768px) {
+            .app-container { max-width: 480px; margin: 0 auto; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+            .modal { border-radius: 12px; margin-bottom: 20px; }
+            .modal-overlay { align-items: center; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <div class="app-title"><i class="fa-solid fa-calendar-check"></i> TaskMaster</div>
+        <div class="header-actions">
+            <button id="themeToggle"><i class="fa-solid fa-moon"></i></button>
+            <button id="notifToggle"><i class="fa-regular fa-bell"></i></button>
+        </div>
+    </header>
+
+    <main>
+        <div class="view-switcher">
+            <button class="view-btn active" onclick="switchView('list')">Danh sách</button>
+            <button class="view-btn" onclick="switchView('calendar')">Lịch</button>
+        </div>
+
+        <div id="loader" class="loader"></div>
+
+        <!-- LIST VIEW -->
+        <div id="listView" class="task-list">
+            <!-- Tasks injected here -->
+        </div>
+
+        <!-- CALENDAR VIEW -->
+        <div id="calendarView" class="calendar-view">
+            <div class="calendar-header">
+                <button onclick="changeMonth(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+                <h3 id="currentMonth">Tháng 2 2026</h3>
+                <button onclick="changeMonth(1)"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+            <div class="calendar-grid" id="calendarGrid"></div>
+            <div id="selectedDateTasks" class="task-list" style="margin-top: 20px;"></div>
+        </div>
+    </main>
+
+    <button class="fab" onclick="openModal()"><i class="fa-solid fa-plus"></i></button>
+
+    <div class="bottom-nav">
+        <button class="nav-item active" onclick="switchView('list')">
+            <i class="fa-solid fa-list-ul"></i><span>Việc</span>
+        </button>
+        <button class="nav-item" onclick="switchView('calendar')">
+            <i class="fa-regular fa-calendar"></i><span>Lịch</span>
+        </button>
+        <button class="nav-item" onclick="showInstall()" id="navInstall" style="display:none">
+            <i class="fa-solid fa-download"></i><span>Cài App</span>
+        </button>
+    </div>
+</div>
+
+<!-- ADD/EDIT TASK MODAL -->
+<div class="modal-overlay" id="taskModal" onclick="closeModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <span id="modalTitle">Công việc mới</span>
+            <span onclick="closeModal()" style="cursor:pointer">&times;</span>
+        </div>
+        <form id="taskForm">
+            <input type="hidden" id="taskId">
+            <div class="form-group">
+                <label>Tiêu đề</label>
+                <input type="text" id="taskTitle" class="form-control" required placeholder="Nhập tên công việc...">
+            </div>
+            <div class="form-group">
+                <label>Thời gian</label>
+                <input type="datetime-local" id="taskDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Ghi chú</label>
+                <textarea id="taskNote" class="form-control" rows="3" placeholder="Chi tiết..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Độ ưu tiên</label>
+                <div class="priority-select">
+                    <div class="priority-opt selected" data-val="low" onclick="selectPriority('low', this)">Thấp</div>
+                    <div class="priority-opt" data-val="medium" onclick="selectPriority('medium', this)">Vừa</div>
+                    <div class="priority-opt" data-val="high" onclick="selectPriority('high', this)">Cao</div>
+                </div>
+                <input type="hidden" id="taskPriority" value="low">
+            </div>
+            <button type="submit" class="btn-submit">Lưu công việc</button>
+            <button type="button" id="btnDelete" class="btn-submit" style="background:var(--accent); margin-top:10px; display:none" onclick="deleteCurrentTask()">Xoá</button>
+        </form>
+    </div>
+</div>
+
+<div class="toast" id="toast"><i class="fa-solid fa-info-circle"></i> <span id="toastMsg">Thông báo</span></div>
+
+<div class="install-prompt" id="pwaPrompt">
+    <div>
+        <strong>Cài đặt App</strong><br>
+        <small>Thêm vào màn hình chính để dùng offline</small>
+    </div>
+    <button onclick="installPWA()" style="background:var(--primary); color:white; border:none; padding:8px 12px; border-radius:6px;">Cài đặt</button>
+</div>
+
+<!-- SCRIPTS -->
+<script type="module">
+    // --- FIREBASE CONFIG ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy, Timestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
+        authDomain: "profile-d1214.firebaseapp.com",
+        projectId: "profile-d1214",
+        storageBucket: "profile-d1214.firebasestorage.app",
+        messagingSenderId: "914980131889",
+        appId: "1:914980131889:web:72f8da15c42dbee671b110",
+        measurementId: "G-C587M69LZW"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const tasksCol = collection(db, "tasks");
+
+    // --- STATE MANAGEMENT ---
+    let tasks = [];
+    let currentView = 'list'; // 'list' or 'calendar'
+    let currentMonth = new Date();
+    let deferredPrompt;
+    
+    // User ID simulation (simple localStorage ID to keep data user-specific)
+    let userId = localStorage.getItem('app_user_id');
+    if(!userId) {
+        userId = 'user_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('app_user_id', userId);
+    }
+
+    // --- UI HELPERS ---
+    const $ = (s) => document.querySelector(s);
+    const showToast = (msg) => {
+        const t = $('#toast');
+        $('#toastMsg').innerText = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3000);
+    };
+
+    // --- FIREBASE LOGIC ---
+    function initData() {
+        $('#loader').style.display = 'block';
+        // Basic query: filter by user later in client or secure rules. 
+        // For this demo, we fetch all and filter client side or ideally use where() clause.
+        // Assuming open rules for demo.
+        const q = query(tasksCol, orderBy("date", "asc"));
+        
+        onSnapshot(q, (snapshot) => {
+            tasks = snapshot.docs
+                .map(d => ({id: d.id, ...d.data()}))
+                .filter(t => t.userId === userId); // Client side filter for demo simplicity
+            
+            renderTasks();
+            $('#loader').style.display = 'none';
+        }, (err) => {
+            console.error(err);
+            showToast("Lỗi kết nối dữ liệu!");
+        });
+    }
+
+    // --- RENDER LOGIC ---
+    function renderTasks() {
+        if(currentView === 'list') renderList();
+        else renderCalendar();
+    }
+
+    function renderList() {
+        const container = $('#listView');
+        container.innerHTML = '';
+        
+        const sorted = [...tasks].sort((a,b) => new Date(a.date) - new Date(b.date));
+        
+        sorted.forEach(t => {
+            const date = new Date(t.date);
+            const isLate = new Date() > date && !t.completed;
+            const timeStr = date.toLocaleString('vi-VN', { hour: '2-digit', minute:'2-digit', day:'2-digit', month:'2-digit' });
+            
+            const el = document.createElement('div');
+            el.className = `task-card priority-${t.priority} ${t.completed ? 'completed' : ''}`;
+            el.draggable = true; // Drag support
+            el.innerHTML = `
+                <div class="task-check" onclick="toggleComplete('${t.id}', ${!t.completed}, event)"></div>
+                <div class="task-content" onclick="openModal('${t.id}')">
+                    <div class="task-title" style="${isLate ? 'color:var(--accent)' : ''}">${t.title}</div>
+                    <div class="task-meta">
+                        <i class="fa-regular fa-clock"></i> ${timeStr} 
+                        ${isLate ? '<span style="color:var(--accent)">(Quá hạn)</span>' : ''}
+                    </div>
+                </div>
+                <div class="task-actions">
+                    <i class="fa-solid fa-grip-lines" style="color:var(--text-sub); cursor:move"></i>
+                </div>
+            `;
+            
+            // Drag Events
+            el.addEventListener('dragstart', () => el.classList.add('dragging'));
+            el.addEventListener('dragend', () => el.classList.remove('dragging'));
+            
+            container.appendChild(el);
+        });
+
+        if(sorted.length === 0) container.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-sub)">Chưa có công việc nào</div>';
+    }
+
+    function renderCalendar() {
+        const grid = $('#calendarGrid');
+        const monthLabel = $('#currentMonth');
+        grid.innerHTML = '';
+        
+        const year = currentMonth.getFullYear();
+        const month = currentMonth.getMonth();
+        
+        monthLabel.innerText = new Date(year, month).toLocaleString('vi-VN', { month: 'long', year: 'numeric' });
+
+        // Day Headers
+        ['CN','T2','T3','T4','T5','T6','T7'].forEach(d => {
+            grid.innerHTML += `<div class="cal-day-name">${d}</div>`;
+        });
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const today = new Date();
+
+        // Empty slots
+        for(let i=0; i<firstDay; i++) grid.innerHTML += `<div></div>`;
+
+        // Days
+        for(let i=1; i<=daysInMonth; i++) {
+            const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+            const hasTask = tasks.some(t => t.date.startsWith(dateStr) && !t.completed);
+            const isToday = today.getDate() === i && today.getMonth() === month && today.getFullYear() === year;
+            
+            const el = document.createElement('div');
+            el.className = `cal-day ${isToday ? 'today' : ''} ${hasTask ? 'has-task' : ''}`;
+            el.innerText = i;
+            el.onclick = () => showTasksForDate(dateStr);
+            grid.appendChild(el);
+        }
+    }
+
+    window.showTasksForDate = (dateStr) => {
+        const container = $('#selectedDateTasks');
+        const daysTasks = tasks.filter(t => t.date.startsWith(dateStr));
+        container.innerHTML = `<h4 style="margin-bottom:10px; color:var(--primary)">Việc ngày ${dateStr}</h4>`;
+        
+        if(daysTasks.length === 0) {
+            container.innerHTML += '<div style="color:var(--text-sub)">Không có việc</div>';
+            return;
+        }
+
+        daysTasks.forEach(t => {
+            const div = document.createElement('div');
+            div.className = `task-card priority-${t.priority}`;
+            div.style.padding = "10px";
+            div.innerHTML = `<div class="task-title">${t.title}</div>`;
+            div.onclick = () => openModal(t.id);
+            container.appendChild(div);
+        });
+    };
+
+    // --- ACTIONS ---
+    window.switchView = (view) => {
+        currentView = view;
+        $('.view-switcher .active').classList.remove('active');
+        $(`.view-switcher button[onclick="switchView('${view}')"]`).classList.add('active');
+        
+        if(view === 'list') {
+            $('#listView').style.display = 'flex';
+            $('#calendarView').classList.remove('active');
+        } else {
+            $('#listView').style.display = 'none';
+            $('#calendarView').classList.add('active');
+            renderCalendar();
+        }
+    };
+
+    window.changeMonth = (delta) => {
+        currentMonth.setMonth(currentMonth.getMonth() + delta);
+        renderCalendar();
+    };
+
+    window.openModal = (id = null) => {
+        const modal = $('#taskModal');
+        const form = $('#taskForm');
+        form.reset();
+        $('#taskId').value = '';
+        $('#modalTitle').innerText = 'Công việc mới';
+        $('#btnDelete').style.display = 'none';
+        
+        // Default time: now
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        $('#taskDate').value = now.toISOString().slice(0,16);
+
+        if(id) {
+            const t = tasks.find(x => x.id === id);
+            if(t) {
+                $('#taskId').value = t.id;
+                $('#taskTitle').value = t.title;
+                $('#taskDate').value = t.date;
+                $('#taskNote').value = t.note || '';
+                $('#taskPriority').value = t.priority;
+                selectPriority(t.priority);
+                $('#modalTitle').innerText = 'Sửa công việc';
+                $('#btnDelete').style.display = 'block';
+            }
+        }
+        modal.classList.add('open');
+    };
+
+    window.closeModal = (e) => {
+        if(!e || e.target.id === 'taskModal' || !e.target.closest('.modal')) {
+            $('#taskModal').classList.remove('open');
+        }
+    };
+
+    window.selectPriority = (val, el = null) => {
+        $('#taskPriority').value = val;
+        document.querySelectorAll('.priority-opt').forEach(d => d.classList.remove('selected'));
+        if(el) el.classList.add('selected');
+        else $(`.priority-opt[data-val="${val}"]`).classList.add('selected');
+    };
+
+    // --- CRUD OPERATIONS ---
+    $('#taskForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const id = $('#taskId').value;
+        const data = {
+            userId: userId,
+            title: $('#taskTitle').value,
+            date: $('#taskDate').value,
+            note: $('#taskNote').value,
+            priority: $('#taskPriority').value,
+            completed: false,
+            updatedAt: new Date().toISOString()
+        };
+
+        try {
+            if(id) {
+                delete data.userId; // don't update user
+                await updateDoc(doc(db, "tasks", id), data);
+                showToast("Đã cập nhật!");
+            } else {
+                data.createdAt = new Date().toISOString();
+                await addDoc(tasksCol, data);
+                showToast("Đã thêm mới!");
+            }
+            closeModal({target: {id: 'taskModal'}});
+        } catch(err) {
+            console.error(err);
+            showToast("Lỗi lưu dữ liệu!");
+        }
+    };
+
+    window.toggleComplete = async (id, status, e) => {
+        e.stopPropagation();
+        try {
+            await updateDoc(doc(db, "tasks", id), { completed: status });
+        } catch(err) { showToast("Lỗi cập nhật!"); }
+    };
+
+    window.deleteCurrentTask = async () => {
+        const id = $('#taskId').value;
+        if(confirm("Bạn chắc chắn muốn xoá?")) {
+            try {
+                await deleteDoc(doc(db, "tasks", id));
+                showToast("Đã xoá!");
+                closeModal({target: {id: 'taskModal'}});
+            } catch(err) { showToast("Lỗi xoá!"); }
+        }
+    };
+
+    // --- NOTIFICATIONS & REMINDERS ---
+    $('#notifToggle').onclick = () => {
+        if(Notification.permission !== "granted") {
+            Notification.requestPermission().then(p => {
+                if(p === "granted") showToast("Đã bật thông báo!");
+            });
+        } else {
+            showToast("Thông báo đang bật");
+        }
+    };
+
+    setInterval(() => {
+        const now = new Date();
+        const nowStr = now.toISOString().slice(0,16);
+        
+        tasks.forEach(t => {
+            if(!t.completed && t.date === nowStr && !t.notified) {
+                // Browser notification
+                if(Notification.permission === "granted") {
+                    new Notification("Nhắc việc: " + t.title, {
+                        body: t.note || "Đến giờ thực hiện công việc!",
+                        icon: "https://cdn-icons-png.flaticon.com/512/2693/2693507.png"
+                    });
+                }
+                // In-app toast
+                showToast("🔔 Đến giờ: " + t.title);
+                // Mark locally processed (in real app, update DB)
+                t.notified = true; 
+            }
+        });
+    }, 60000); // Check every minute
+
+    // --- THEME ---
+    $('#themeToggle').onclick = () => {
+        const isDark = document.body.getAttribute('data-theme') === 'dark';
+        document.body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+        $('#themeToggle i').className = isDark ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+        localStorage.setItem('theme', isDark ? 'light' : 'dark');
+    };
+    if(localStorage.getItem('theme') === 'dark') $('#themeToggle').click();
+
+    // --- INIT ---
+    initData();
+    renderCalendar(); // Pre-render
+
+    // --- PWA LOGIC (Install Prompt) ---
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        $('#navInstall').style.display = 'flex';
+        $('#pwaPrompt').style.display = 'flex';
+    });
+
+    window.installPWA = async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                $('#pwaPrompt').style.display = 'none';
+            }
+            deferredPrompt = null;
+        }
+    };
+    window.showInstall = () => $('#pwaPrompt').style.display = 'flex';
+
+    // Drag & Drop Logic for List
+    const listEl = document.getElementById('listView');
+    let dragSrcEl = null;
+
+    listEl.addEventListener('dragstart', function(e) {
+        dragSrcEl = e.target;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/html', e.target.innerHTML);
+        e.target.style.opacity = '0.4';
+    });
+    listEl.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        return false;
+    });
+    listEl.addEventListener('dragenter', function(e) {
+        e.target.classList.add('over');
+    });
+    listEl.addEventListener('dragleave', function(e) {
+        e.target.classList.remove('over');
+    });
+    listEl.addEventListener('drop', function(e) {
+        e.stopPropagation();
+        if (dragSrcEl !== this) {
+             // Visual swap only for this demo (real reorder needs DB index update)
+             // In a real app, calculate new indices and update Firebase
+             showToast("Đã sắp xếp lại (Demo)");
+        }
+        return false;
+    });
+    listEl.addEventListener('dragend', function(e) {
+        e.target.style.opacity = '1';
+    });
+
+</script>
+
+<!-- GENERATE MANIFEST & SW DYNAMICALLY -->
+<script>
+    // 1. Generate Manifest
+    const manifest = {
+        name: "TaskMaster Pro",
+        short_name: "TaskMaster",
+        start_url: ".",
+        display: "standalone",
+        background_color: "#F4F6F8",
+        theme_color: "#4A90E2",
+        icons: [{
+            src: "https://cdn-icons-png.flaticon.com/512/2693/2693507.png",
+            sizes: "512x512",
+            type: "image/png"
+        }]
+    };
+    const stringManifest = JSON.stringify(manifest);
+    const blobManifest = new Blob([stringManifest], {type: 'application/json'});
+    const manifestURL = URL.createObjectURL(blobManifest);
+    const link = document.createElement('link');
+    link.rel = 'manifest';
+    link.href = manifestURL;
+    document.head.appendChild(link);
+
+    // 2. Generate Service Worker
+    if ('serviceWorker' in navigator) {
+        const swCode = `
+            const CACHE_NAME = 'taskmaster-v1';
+            const urlsToCache = ['.', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css', 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'];
+
+            self.addEventListener('install', event => {
+                event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache)));
+            });
+
+            self.addEventListener('fetch', event => {
+                event.respondWith(
+                    caches.match(event.request).then(response => response || fetch(event.request))
+                );
+            });
+        `;
+        const blobSw = new Blob([swCode], {type: 'application/javascript'});
+        const swURL = URL.createObjectURL(blobSw);
+        navigator.serviceWorker.register(swURL).then(() => console.log('SW Registered'));
+    }
+</script>
+
+</body>
+</html>
