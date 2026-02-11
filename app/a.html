@@ -5,16 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TaskMaster Pro</title>
     <meta name="theme-color" content="#4A90E2">
+    <meta name="description" content="Quản lý công việc hiệu quả">
+    
+    <!-- PWA Capable -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TaskMaster">
     
-    <!-- Icons -->
+    <!-- Icons & Fonts -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        /* --- CSS VARIABLES & THEME --- */
+        /* --- THEME VARIABLES --- */
         :root {
             --primary: #4A90E2;
             --primary-dark: #357ABD;
@@ -27,8 +30,8 @@
             --text-sub: #7F8C8D;
             --border: #E1E8ED;
             --shadow: 0 4px 12px rgba(0,0,0,0.08);
-            --radius: 12px;
-            --nav-height: 60px;
+            --radius: 16px;
+            --nav-height: 70px;
             --font-main: 'Inter', sans-serif;
             --ease: cubic-bezier(0.25, 0.8, 0.25, 1);
         }
@@ -42,98 +45,104 @@
             --shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
 
-        /* --- GLOBAL STYLES --- */
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        /* --- RESET & BASE --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
         body { font-family: var(--font-main); background: var(--bg-body); color: var(--text-main); height: 100vh; overflow: hidden; transition: background 0.3s, color 0.3s; }
-        
-        /* --- APP SHELL --- */
-        .app-container { height: 100%; display: flex; flex-direction: column; position: relative; }
+        input, textarea { user-select: text; }
+
+        /* --- LAYOUT --- */
+        .app-container { height: 100%; display: flex; flex-direction: column; max-width: 500px; margin: 0 auto; background: var(--bg-body); position: relative; }
         
         /* HEADER */
-        header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); box-shadow: 0 1px 0 var(--border); z-index: 10; }
-        .app-title { font-weight: 700; font-size: 1.2rem; display: flex; align-items: center; gap: 10px; }
-        .app-title i { color: var(--primary); }
-        .header-actions button { background: none; border: none; font-size: 1.2rem; color: var(--text-main); cursor: pointer; padding: 5px; transition: transform 0.2s; }
-        .header-actions button:active { transform: scale(0.9); }
-
-        /* CONTENT AREA */
-        main { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 80px; position: relative; }
+        header { padding: 15px 20px; padding-top: max(15px, env(safe-area-inset-top)); display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); z-index: 10; position: sticky; top: 0; }
+        .app-title { font-weight: 800; font-size: 1.4rem; display: flex; align-items: center; gap: 10px; color: var(--text-main); }
+        .app-title i { color: var(--primary); background: rgba(74, 144, 226, 0.15); padding: 8px; border-radius: 10px; }
         
-        /* TAB SWITCHER */
-        .view-switcher { display: flex; background: var(--border); padding: 4px; border-radius: 10px; margin-bottom: 20px; }
-        .view-btn { flex: 1; border: none; background: transparent; padding: 8px; border-radius: 8px; font-weight: 600; color: var(--text-sub); cursor: pointer; transition: 0.2s; }
-        .view-btn.active { background: var(--bg-card); color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .header-actions { display: flex; gap: 10px; }
+        .icon-btn { background: var(--bg-body); border: none; width: 40px; height: 40px; border-radius: 50%; color: var(--text-main); font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .icon-btn:active { transform: scale(0.9); }
+
+        /* MAIN CONTENT */
+        main { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 90px; -webkit-overflow-scrolling: touch; }
+        
+        /* SEGMENTED CONTROL */
+        .view-switcher { display: flex; background: rgba(127, 140, 141, 0.1); padding: 4px; border-radius: 12px; margin-bottom: 20px; }
+        .view-btn { flex: 1; border: none; background: transparent; padding: 10px; border-radius: 10px; font-weight: 600; color: var(--text-sub); cursor: pointer; transition: 0.2s; font-size: 0.9rem; }
+        .view-btn.active { background: var(--bg-card); color: var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
 
         /* TASK LIST */
-        .task-list { display: flex; flex-direction: column; gap: 12px; }
-        .task-card { background: var(--bg-card); padding: 15px; border-radius: var(--radius); box-shadow: var(--shadow); display: flex; align-items: center; gap: 15px; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; animation: slideUp 0.3s var(--ease); position: relative; border-left: 4px solid transparent; }
-        .task-card:active { transform: scale(0.98); }
-        .task-card.priority-high { border-left-color: var(--accent); }
-        .task-card.priority-medium { border-left-color: var(--warning); }
-        .task-card.priority-low { border-left-color: var(--success); }
+        .task-list { display: flex; flex-direction: column; gap: 15px; }
+        .task-card { background: var(--bg-card); padding: 16px; border-radius: var(--radius); box-shadow: var(--shadow); display: flex; align-items: flex-start; gap: 15px; transition: transform 0.2s; cursor: pointer; animation: slideUp 0.3s var(--ease); position: relative; overflow: hidden; }
+        .task-card::before { content: ''; position: absolute; top: 0; left: 0; width: 5px; height: 100%; background: var(--border); }
+        .task-card.priority-high::before { background: var(--accent); }
+        .task-card.priority-medium::before { background: var(--warning); }
+        .task-card.priority-low::before { background: var(--success); }
         
-        .task-check { width: 24px; height: 24px; border: 2px solid var(--border); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s; }
+        .task-check { min-width: 24px; height: 24px; border: 2px solid var(--border); border-radius: 50%; margin-top: 2px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s; z-index: 2; }
         .task-card.completed .task-check { background: var(--success); border-color: var(--success); }
         .task-card.completed .task-check::after { content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900; color: white; font-size: 12px; }
-        .task-card.completed .task-content { text-decoration: line-through; opacity: 0.6; }
+        .task-card.completed .task-content { text-decoration: line-through; opacity: 0.5; }
 
         .task-content { flex: 1; }
-        .task-title { font-weight: 600; margin-bottom: 4px; }
-        .task-meta { font-size: 0.8rem; color: var(--text-sub); display: flex; align-items: center; gap: 10px; }
-        .task-actions { display: flex; gap: 10px; opacity: 0; transition: 0.2s; }
-        .task-card:hover .task-actions { opacity: 1; }
-
-        /* CALENDAR VIEW */
+        .task-title { font-weight: 600; font-size: 1.05rem; margin-bottom: 5px; line-height: 1.4; }
+        .task-meta { font-size: 0.8rem; color: var(--text-sub); display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .badge { padding: 4px 8px; border-radius: 6px; background: var(--bg-body); font-size: 0.75rem; font-weight: 600; }
+        
+        /* CALENDAR */
         .calendar-view { display: none; }
-        .calendar-view.active { display: block; }
-        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
-        .cal-day-name { font-weight: 600; font-size: 0.8rem; color: var(--text-sub); padding: 5px; }
-        .cal-day { padding: 10px 5px; background: var(--bg-card); border-radius: 8px; font-size: 0.9rem; cursor: pointer; min-height: 50px; position: relative; }
-        .cal-day.today { background: var(--primary); color: white; }
-        .cal-day.has-task::after { content: ''; position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; background: var(--accent); border-radius: 50%; }
+        .calendar-view.active { display: block; animation: fadeIn 0.3s; }
+        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-weight: 700; font-size: 1.1rem; }
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; text-align: center; }
+        .cal-day-head { font-size: 0.8rem; color: var(--text-sub); margin-bottom: 10px; }
+        .cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-size: 0.95rem; cursor: pointer; position: relative; background: var(--bg-card); border: 1px solid transparent; }
+        .cal-day.today { background: var(--primary); color: white; font-weight: 700; }
+        .cal-day.has-task::after { content: ''; position: absolute; bottom: 6px; width: 5px; height: 5px; background: var(--accent); border-radius: 50%; }
+        .cal-day:hover { border-color: var(--primary); }
 
-        /* FAB (Floating Action Button) */
-        .fab { position: fixed; bottom: 80px; right: 20px; width: 56px; height: 56px; background: var(--primary); color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; border: none; box-shadow: 0 4px 15px rgba(74, 144, 226, 0.4); cursor: pointer; z-index: 99; transition: transform 0.2s; }
-        .fab:hover { transform: scale(1.1); }
+        /* FAB */
+        .fab { position: fixed; bottom: 100px; right: 25px; width: 60px; height: 60px; background: var(--primary); color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.6rem; border: none; box-shadow: 0 8px 20px rgba(74, 144, 226, 0.4); cursor: pointer; z-index: 90; transition: transform 0.2s; }
+        .fab:hover { transform: scale(1.05); }
 
         /* BOTTOM NAV */
-        .bottom-nav { position: fixed; bottom: 0; width: 100%; height: var(--nav-height); background: var(--bg-card); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid var(--border); z-index: 100; }
-        .nav-item { border: none; background: none; color: var(--text-sub); font-size: 1.2rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; width: 50px; }
-        .nav-item span { font-size: 0.6rem; font-weight: 600; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: var(--nav-height); background: var(--bg-card); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid var(--border); z-index: 100; padding-bottom: env(safe-area-inset-bottom); box-shadow: 0 -2px 10px rgba(0,0,0,0.02); }
+        .nav-item { border: none; background: none; color: var(--text-sub); flex: 1; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; cursor: pointer; position: relative; }
+        .nav-item i { font-size: 1.3rem; transition: 0.2s; }
+        .nav-item span { font-size: 0.7rem; font-weight: 600; }
         .nav-item.active { color: var(--primary); }
+        .nav-item.active i { transform: translateY(-2px); }
 
         /* MODAL */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: none; align-items: flex-end; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; display: none; align-items: flex-end; justify-content: center; backdrop-filter: blur(2px); opacity: 0; transition: opacity 0.3s; }
         .modal-overlay.open { display: flex; opacity: 1; }
-        .modal { background: var(--bg-card); width: 100%; max-width: 600px; border-radius: 20px 20px 0 0; padding: 25px; transform: translateY(100%); transition: transform 0.3s var(--ease); max-height: 90vh; overflow-y: auto; }
+        .modal { background: var(--bg-card); width: 100%; max-width: 500px; border-radius: 24px 24px 0 0; padding: 25px; transform: translateY(100%); transition: transform 0.3s var(--ease); max-height: 85vh; overflow-y: auto; }
         .modal-overlay.open .modal { transform: translateY(0); }
-        .modal-header { font-size: 1.2rem; font-weight: 700; margin-bottom: 20px; display: flex; justify-content: space-between; }
         
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-size: 0.85rem; color: var(--text-sub); margin-bottom: 5px; font-weight: 600; }
-        .form-control { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-body); color: var(--text-main); font-family: var(--font-main); font-size: 1rem; outline: none; transition: border-color 0.2s; }
-        .form-control:focus { border-color: var(--primary); }
-        .priority-select { display: flex; gap: 10px; }
-        .priority-opt { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 8px; text-align: center; cursor: pointer; font-size: 0.9rem; transition: 0.2s; }
-        .priority-opt.selected { background: var(--primary); color: white; border-color: var(--primary); }
+        .form-label { display: block; font-size: 0.85rem; color: var(--text-sub); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-control { width: 100%; padding: 14px; border: 2px solid var(--bg-body); border-radius: 12px; background: var(--bg-body); color: var(--text-main); font-family: var(--font-main); font-size: 1rem; outline: none; transition: 0.2s; }
+        .form-control:focus { border-color: var(--primary); background: var(--bg-card); }
         
-        .btn-submit { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: 600; font-size: 1rem; cursor: pointer; margin-top: 10px; }
+        .priority-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        .p-btn { flex: 1; padding: 12px; border: 2px solid var(--border); border-radius: 12px; background: transparent; color: var(--text-sub); font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .p-btn[data-val="low"].selected { border-color: var(--success); background: rgba(46, 204, 113, 0.1); color: var(--success); }
+        .p-btn[data-val="medium"].selected { border-color: var(--warning); background: rgba(241, 196, 15, 0.1); color: var(--warning); }
+        .p-btn[data-val="high"].selected { border-color: var(--accent); background: rgba(255, 90, 95, 0.1); color: var(--accent); }
 
-        /* LOADING & TOAST */
-        .loader { border: 3px solid rgba(0,0,0,0.1); border-top: 3px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; display: none; }
-        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-50px); background: #333; color: white; padding: 12px 24px; border-radius: 30px; z-index: 2000; font-size: 0.9rem; transition: 0.3s var(--ease); opacity: 0; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .btn-primary { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 14px; font-weight: 700; font-size: 1rem; cursor: pointer; box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3); }
+        
+        /* TOAST */
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background: #333; color: white; padding: 12px 20px; border-radius: 30px; z-index: 2000; font-weight: 500; display: flex; align-items: center; gap: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); transition: 0.4s var(--ease); opacity: 0; width: max-content; max-width: 90%; }
         .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
         /* INSTALL PROMPT */
-        .install-prompt { position: fixed; bottom: 80px; left: 20px; right: 20px; background: var(--bg-card); padding: 15px; border-radius: 10px; box-shadow: var(--shadow); z-index: 999; display: none; align-items: center; justify-content: space-between; animation: slideUp 0.4s var(--ease); }
+        .install-banner { position: fixed; bottom: 85px; left: 20px; right: 20px; background: var(--text-main); color: var(--bg-card); padding: 15px; border-radius: 16px; z-index: 999; display: none; align-items: center; justify-content: space-between; box-shadow: 0 10px 25px rgba(0,0,0,0.2); animation: slideUp 0.4s; }
 
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* DESKTOP TWEAKS */
         @media (min-width: 768px) {
-            .app-container { max-width: 480px; margin: 0 auto; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
-            .modal { border-radius: 12px; margin-bottom: 20px; }
+            .app-container { border-left: 1px solid var(--border); border-right: 1px solid var(--border); height: 95vh; margin-top: 2.5vh; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.1); }
+            .modal { border-radius: 20px; margin-bottom: 20px; max-width: 460px; }
             .modal-overlay { align-items: center; }
         }
     </style>
@@ -142,104 +151,110 @@
 
 <div class="app-container">
     <header>
-        <div class="app-title"><i class="fa-solid fa-calendar-check"></i> TaskMaster</div>
+        <div class="app-title"><i class="fa-solid fa-check-double"></i> TaskMaster</div>
         <div class="header-actions">
-            <button id="themeToggle"><i class="fa-solid fa-moon"></i></button>
-            <button id="notifToggle"><i class="fa-regular fa-bell"></i></button>
+            <button class="icon-btn" id="themeToggle"><i class="fa-solid fa-moon"></i></button>
+            <button class="icon-btn" id="notifToggle"><i class="fa-regular fa-bell"></i></button>
         </div>
     </header>
 
     <main>
         <div class="view-switcher">
-            <button class="view-btn active" onclick="switchView('list')">Danh sách</button>
-            <button class="view-btn" onclick="switchView('calendar')">Lịch</button>
+            <button class="view-btn active" onclick="switchView('list')">Danh sách việc</button>
+            <button class="view-btn" onclick="switchView('calendar')">Lịch biểu</button>
         </div>
 
-        <div id="loader" class="loader"></div>
+        <div id="loader" style="text-align: center; margin-top: 50px; display: none;">
+            <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; color: var(--primary);"></i>
+        </div>
 
         <!-- LIST VIEW -->
         <div id="listView" class="task-list">
-            <!-- Tasks injected here -->
+            <!-- Dynamic Content -->
         </div>
 
         <!-- CALENDAR VIEW -->
         <div id="calendarView" class="calendar-view">
-            <div class="calendar-header">
-                <button onclick="changeMonth(-1)"><i class="fa-solid fa-chevron-left"></i></button>
-                <h3 id="currentMonth">Tháng 2 2026</h3>
-                <button onclick="changeMonth(1)"><i class="fa-solid fa-chevron-right"></i></button>
+            <div class="cal-header">
+                <button class="icon-btn" onclick="changeMonth(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+                <span id="currentMonth"></span>
+                <button class="icon-btn" onclick="changeMonth(1)"><i class="fa-solid fa-chevron-right"></i></button>
             </div>
-            <div class="calendar-grid" id="calendarGrid"></div>
-            <div id="selectedDateTasks" class="task-list" style="margin-top: 20px;"></div>
+            <div class="cal-grid" id="calendarGrid"></div>
+            <div id="selectedDateTasks" class="task-list" style="margin-top: 25px;"></div>
         </div>
     </main>
 
     <button class="fab" onclick="openModal()"><i class="fa-solid fa-plus"></i></button>
 
-    <div class="bottom-nav">
+    <nav class="bottom-nav">
         <button class="nav-item active" onclick="switchView('list')">
-            <i class="fa-solid fa-list-ul"></i><span>Việc</span>
+            <i class="fa-solid fa-list-ul"></i><span>Tasks</span>
         </button>
         <button class="nav-item" onclick="switchView('calendar')">
-            <i class="fa-regular fa-calendar"></i><span>Lịch</span>
+            <i class="fa-regular fa-calendar-days"></i><span>Lịch</span>
         </button>
-        <button class="nav-item" onclick="showInstall()" id="navInstall" style="display:none">
+        <button class="nav-item" id="btnInstall" onclick="installApp()" style="display:none">
             <i class="fa-solid fa-download"></i><span>Cài App</span>
         </button>
-    </div>
+    </nav>
 </div>
 
-<!-- ADD/EDIT TASK MODAL -->
+<!-- MODAL -->
 <div class="modal-overlay" id="taskModal" onclick="closeModal(event)">
     <div class="modal" onclick="event.stopPropagation()">
-        <div class="modal-header">
-            <span id="modalTitle">Công việc mới</span>
-            <span onclick="closeModal()" style="cursor:pointer">&times;</span>
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px; align-items:center">
+            <h2 style="font-size:1.3rem;">Công việc</h2>
+            <button onclick="closeModal()" style="background:none; border:none; font-size:1.5rem; color:var(--text-sub); cursor:pointer">&times;</button>
         </div>
         <form id="taskForm">
             <input type="hidden" id="taskId">
-            <div class="form-group">
-                <label>Tiêu đề</label>
-                <input type="text" id="taskTitle" class="form-control" required placeholder="Nhập tên công việc...">
+            <div style="margin-bottom:15px">
+                <label class="form-label">Tên công việc</label>
+                <input type="text" id="taskTitle" class="form-control" required placeholder="Nhập tiêu đề...">
             </div>
-            <div class="form-group">
-                <label>Thời gian</label>
+            <div style="margin-bottom:15px">
+                <label class="form-label">Thời gian</label>
                 <input type="datetime-local" id="taskDate" class="form-control" required>
             </div>
-            <div class="form-group">
-                <label>Ghi chú</label>
-                <textarea id="taskNote" class="form-control" rows="3" placeholder="Chi tiết..."></textarea>
-            </div>
-            <div class="form-group">
-                <label>Độ ưu tiên</label>
-                <div class="priority-select">
-                    <div class="priority-opt selected" data-val="low" onclick="selectPriority('low', this)">Thấp</div>
-                    <div class="priority-opt" data-val="medium" onclick="selectPriority('medium', this)">Vừa</div>
-                    <div class="priority-opt" data-val="high" onclick="selectPriority('high', this)">Cao</div>
+            <div style="margin-bottom:15px">
+                <label class="form-label">Mức độ ưu tiên</label>
+                <div class="priority-group">
+                    <div class="p-btn selected" data-val="low" onclick="selectPriority('low')">Thấp</div>
+                    <div class="p-btn" data-val="medium" onclick="selectPriority('medium')">Vừa</div>
+                    <div class="p-btn" data-val="high" onclick="selectPriority('high')">Cao</div>
                 </div>
                 <input type="hidden" id="taskPriority" value="low">
             </div>
-            <button type="submit" class="btn-submit">Lưu công việc</button>
-            <button type="button" id="btnDelete" class="btn-submit" style="background:var(--accent); margin-top:10px; display:none" onclick="deleteCurrentTask()">Xoá</button>
+            <div style="margin-bottom:20px">
+                <label class="form-label">Ghi chú</label>
+                <textarea id="taskNote" class="form-control" rows="3" placeholder="Chi tiết..."></textarea>
+            </div>
+            <button type="submit" class="btn-primary">Lưu công việc</button>
+            <button type="button" id="btnDelete" onclick="deleteTask()" style="width:100%; padding:15px; margin-top:10px; background:transparent; color:var(--accent); border:none; font-weight:600; cursor:pointer; display:none">Xoá công việc này</button>
         </form>
     </div>
 </div>
 
-<div class="toast" id="toast"><i class="fa-solid fa-info-circle"></i> <span id="toastMsg">Thông báo</span></div>
-
-<div class="install-prompt" id="pwaPrompt">
-    <div>
-        <strong>Cài đặt App</strong><br>
-        <small>Thêm vào màn hình chính để dùng offline</small>
-    </div>
-    <button onclick="installPWA()" style="background:var(--primary); color:white; border:none; padding:8px 12px; border-radius:6px;">Cài đặt</button>
+<!-- TOAST -->
+<div class="toast" id="toast">
+    <i class="fa-solid fa-bell"></i> <span id="toastMsg"></span>
 </div>
 
-<!-- SCRIPTS -->
+<!-- INSTALL BANNER -->
+<div class="install-banner" id="pwaBanner">
+    <div>
+        <div style="font-weight:700">Cài đặt TaskMaster</div>
+        <div style="font-size:0.8rem; opacity:0.8">Thêm vào màn hình chính để nhận thông báo</div>
+    </div>
+    <button onclick="installApp()" style="background:var(--bg-card); color:var(--text-main); border:none; padding:8px 15px; border-radius:8px; font-weight:700">Cài đặt</button>
+</div>
+
+<!-- JAVASCRIPT MODULE -->
 <script type="module">
     // --- FIREBASE CONFIG ---
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy, Timestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
@@ -251,161 +266,156 @@
         measurementId: "G-C587M69LZW"
     };
 
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const tasksCol = collection(db, "tasks");
 
-    // --- STATE MANAGEMENT ---
+    // --- STATE ---
     let tasks = [];
-    let currentView = 'list'; // 'list' or 'calendar'
+    let currentView = 'list';
     let currentMonth = new Date();
     let deferredPrompt;
     
-    // User ID simulation (simple localStorage ID to keep data user-specific)
-    let userId = localStorage.getItem('app_user_id');
+    // Simple User ID (Local Persistence)
+    let userId = localStorage.getItem('tm_uid');
     if(!userId) {
-        userId = 'user_' + Math.random().toString(36).substr(2, 9);
-        localStorage.setItem('app_user_id', userId);
+        userId = 'u_' + Date.now() + Math.random().toString(36).slice(2);
+        localStorage.setItem('tm_uid', userId);
     }
 
-    // --- UI HELPERS ---
-    const $ = (s) => document.querySelector(s);
-    const showToast = (msg) => {
+    // --- DOM HELPERS ---
+    const $ = s => document.querySelector(s);
+    const showToast = (msg, isError = false) => {
         const t = $('#toast');
         $('#toastMsg').innerText = msg;
+        t.style.background = isError ? '#FF5A5F' : '#333';
         t.classList.add('show');
-        setTimeout(() => t.classList.remove('show'), 3000);
+        setTimeout(() => t.classList.remove('show'), 3500);
     };
 
-    // --- FIREBASE LOGIC ---
-    function initData() {
+    // --- CORE LOGIC ---
+    function init() {
         $('#loader').style.display = 'block';
-        // Basic query: filter by user later in client or secure rules. 
-        // For this demo, we fetch all and filter client side or ideally use where() clause.
-        // Assuming open rules for demo.
         const q = query(tasksCol, orderBy("date", "asc"));
         
         onSnapshot(q, (snapshot) => {
-            tasks = snapshot.docs
-                .map(d => ({id: d.id, ...d.data()}))
-                .filter(t => t.userId === userId); // Client side filter for demo simplicity
-            
-            renderTasks();
+            // Client-side filtering for user
+            tasks = snapshot.docs.map(d => ({id: d.id, ...d.data()})).filter(t => t.userId === userId);
+            render();
             $('#loader').style.display = 'none';
         }, (err) => {
             console.error(err);
-            showToast("Lỗi kết nối dữ liệu!");
+            showToast('Lỗi kết nối mạng!', true);
         });
+
+        setupNotifications();
     }
 
-    // --- RENDER LOGIC ---
-    function renderTasks() {
+    function render() {
         if(currentView === 'list') renderList();
         else renderCalendar();
     }
 
     function renderList() {
-        const container = $('#listView');
-        container.innerHTML = '';
+        const list = $('#listView');
+        list.innerHTML = '';
         
         const sorted = [...tasks].sort((a,b) => new Date(a.date) - new Date(b.date));
         
+        if(sorted.length === 0) {
+            list.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-sub)">
+                <i class="fa-solid fa-clipboard-check" style="font-size:3rem; margin-bottom:15px; opacity:0.3"></i><br>
+                Sạch bách! Không có việc gì.
+            </div>`;
+            return;
+        }
+
         sorted.forEach(t => {
-            const date = new Date(t.date);
-            const isLate = new Date() > date && !t.completed;
-            const timeStr = date.toLocaleString('vi-VN', { hour: '2-digit', minute:'2-digit', day:'2-digit', month:'2-digit' });
+            const dateObj = new Date(t.date);
+            const isOverdue = new Date() > dateObj && !t.completed;
+            const timeStr = dateObj.toLocaleString('vi-VN', { hour: '2-digit', minute:'2-digit', day:'2-digit', month:'2-digit' });
             
             const el = document.createElement('div');
             el.className = `task-card priority-${t.priority} ${t.completed ? 'completed' : ''}`;
-            el.draggable = true; // Drag support
+            el.draggable = true;
             el.innerHTML = `
-                <div class="task-check" onclick="toggleComplete('${t.id}', ${!t.completed}, event)"></div>
-                <div class="task-content" onclick="openModal('${t.id}')">
-                    <div class="task-title" style="${isLate ? 'color:var(--accent)' : ''}">${t.title}</div>
+                <div class="task-check" onclick="window.toggleComplete('${t.id}', ${!t.completed}, event)"></div>
+                <div class="task-content" onclick="window.editTask('${t.id}')">
+                    <div class="task-title" style="${isOverdue ? 'color:var(--accent)' : ''}">${t.title}</div>
                     <div class="task-meta">
-                        <i class="fa-regular fa-clock"></i> ${timeStr} 
-                        ${isLate ? '<span style="color:var(--accent)">(Quá hạn)</span>' : ''}
+                        <span class="badge" style="background:${isOverdue ? 'rgba(255,90,95,0.1)' : 'var(--bg-body)'}; color:${isOverdue ? 'var(--accent)' : 'inherit'}">
+                            <i class="fa-regular fa-clock"></i> ${timeStr}
+                        </span>
+                        ${t.note ? '<i class="fa-solid fa-align-left" style="opacity:0.5"></i>' : ''}
                     </div>
                 </div>
-                <div class="task-actions">
-                    <i class="fa-solid fa-grip-lines" style="color:var(--text-sub); cursor:move"></i>
-                </div>
             `;
-            
-            // Drag Events
-            el.addEventListener('dragstart', () => el.classList.add('dragging'));
-            el.addEventListener('dragend', () => el.classList.remove('dragging'));
-            
-            container.appendChild(el);
+            // Drag Logic
+            el.addEventListener('dragstart', () => el.style.opacity = '0.5');
+            el.addEventListener('dragend', () => el.style.opacity = '1');
+            list.appendChild(el);
         });
-
-        if(sorted.length === 0) container.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-sub)">Chưa có công việc nào</div>';
     }
 
     function renderCalendar() {
         const grid = $('#calendarGrid');
-        const monthLabel = $('#currentMonth');
         grid.innerHTML = '';
         
         const year = currentMonth.getFullYear();
         const month = currentMonth.getMonth();
-        
-        monthLabel.innerText = new Date(year, month).toLocaleString('vi-VN', { month: 'long', year: 'numeric' });
+        $('#currentMonth').innerText = `Tháng ${month + 1}, ${year}`;
 
-        // Day Headers
-        ['CN','T2','T3','T4','T5','T6','T7'].forEach(d => {
-            grid.innerHTML += `<div class="cal-day-name">${d}</div>`;
-        });
+        ['CN','T2','T3','T4','T5','T6','T7'].forEach(d => grid.innerHTML += `<div class="cal-day-head">${d}</div>`);
 
         const firstDay = new Date(year, month, 1).getDay();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const today = new Date();
+        const now = new Date();
 
-        // Empty slots
         for(let i=0; i<firstDay; i++) grid.innerHTML += `<div></div>`;
 
-        // Days
         for(let i=1; i<=daysInMonth; i++) {
             const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
             const hasTask = tasks.some(t => t.date.startsWith(dateStr) && !t.completed);
-            const isToday = today.getDate() === i && today.getMonth() === month && today.getFullYear() === year;
+            const isToday = now.getDate() === i && now.getMonth() === month && now.getFullYear() === year;
             
             const el = document.createElement('div');
             el.className = `cal-day ${isToday ? 'today' : ''} ${hasTask ? 'has-task' : ''}`;
             el.innerText = i;
-            el.onclick = () => showTasksForDate(dateStr);
+            el.onclick = () => {
+                document.querySelectorAll('.cal-day').forEach(d => d.style.borderColor = 'transparent');
+                el.style.borderColor = 'var(--primary)';
+                showTasksForDate(dateStr);
+            };
             grid.appendChild(el);
         }
     }
 
     window.showTasksForDate = (dateStr) => {
         const container = $('#selectedDateTasks');
-        const daysTasks = tasks.filter(t => t.date.startsWith(dateStr));
-        container.innerHTML = `<h4 style="margin-bottom:10px; color:var(--primary)">Việc ngày ${dateStr}</h4>`;
+        const dayTasks = tasks.filter(t => t.date.startsWith(dateStr));
         
-        if(daysTasks.length === 0) {
-            container.innerHTML += '<div style="color:var(--text-sub)">Không có việc</div>';
-            return;
-        }
-
-        daysTasks.forEach(t => {
-            const div = document.createElement('div');
-            div.className = `task-card priority-${t.priority}`;
-            div.style.padding = "10px";
-            div.innerHTML = `<div class="task-title">${t.title}</div>`;
-            div.onclick = () => openModal(t.id);
-            container.appendChild(div);
+        container.innerHTML = `<h4 style="margin-bottom:10px; color:var(--text-sub)">Ngày ${dateStr}</h4>`;
+        if(dayTasks.length === 0) container.innerHTML += '<div style="opacity:0.6">Không có lịch.</div>';
+        
+        dayTasks.forEach(t => {
+            const d = document.createElement('div');
+            d.className = `task-card priority-${t.priority}`;
+            d.style.padding = '12px';
+            d.innerHTML = `<div class="task-title" style="font-size:0.95rem">${t.title}</div>`;
+            d.onclick = () => window.editTask(t.id);
+            container.appendChild(d);
         });
     };
 
     // --- ACTIONS ---
-    window.switchView = (view) => {
-        currentView = view;
+    window.switchView = (v) => {
+        currentView = v;
         $('.view-switcher .active').classList.remove('active');
-        $(`.view-switcher button[onclick="switchView('${view}')"]`).classList.add('active');
-        
-        if(view === 'list') {
+        $(`.view-switcher button[onclick="switchView('${v}')"]`).classList.add('active');
+        $('.bottom-nav .active').classList.remove('active');
+        $(`.bottom-nav button[onclick="switchView('${v}')"]`).classList.add('active');
+
+        if(v === 'list') {
             $('#listView').style.display = 'flex';
             $('#calendarView').classList.remove('active');
         } else {
@@ -415,38 +425,36 @@
         }
     };
 
-    window.changeMonth = (delta) => {
-        currentMonth.setMonth(currentMonth.getMonth() + delta);
+    window.changeMonth = (d) => {
+        currentMonth.setMonth(currentMonth.getMonth() + d);
         renderCalendar();
     };
 
-    window.openModal = (id = null) => {
-        const modal = $('#taskModal');
-        const form = $('#taskForm');
-        form.reset();
+    window.openModal = () => {
+        $('#taskForm').reset();
         $('#taskId').value = '';
-        $('#modalTitle').innerText = 'Công việc mới';
         $('#btnDelete').style.display = 'none';
+        window.selectPriority('low');
         
-        // Default time: now
+        // Default time: Now + 1 hour
         const now = new Date();
+        now.setHours(now.getHours() + 1);
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
         $('#taskDate').value = now.toISOString().slice(0,16);
+        
+        $('#taskModal').classList.add('open');
+    };
 
-        if(id) {
-            const t = tasks.find(x => x.id === id);
-            if(t) {
-                $('#taskId').value = t.id;
-                $('#taskTitle').value = t.title;
-                $('#taskDate').value = t.date;
-                $('#taskNote').value = t.note || '';
-                $('#taskPriority').value = t.priority;
-                selectPriority(t.priority);
-                $('#modalTitle').innerText = 'Sửa công việc';
-                $('#btnDelete').style.display = 'block';
-            }
-        }
-        modal.classList.add('open');
+    window.editTask = (id) => {
+        const t = tasks.find(x => x.id === id);
+        if(!t) return;
+        $('#taskId').value = t.id;
+        $('#taskTitle').value = t.title;
+        $('#taskDate').value = t.date;
+        $('#taskNote').value = t.note || '';
+        window.selectPriority(t.priority);
+        $('#btnDelete').style.display = 'block';
+        $('#taskModal').classList.add('open');
     };
 
     window.closeModal = (e) => {
@@ -455,165 +463,154 @@
         }
     };
 
-    window.selectPriority = (val, el = null) => {
+    window.selectPriority = (val) => {
         $('#taskPriority').value = val;
-        document.querySelectorAll('.priority-opt').forEach(d => d.classList.remove('selected'));
-        if(el) el.classList.add('selected');
-        else $(`.priority-opt[data-val="${val}"]`).classList.add('selected');
-    };
-
-    // --- CRUD OPERATIONS ---
-    $('#taskForm').onsubmit = async (e) => {
-        e.preventDefault();
-        const id = $('#taskId').value;
-        const data = {
-            userId: userId,
-            title: $('#taskTitle').value,
-            date: $('#taskDate').value,
-            note: $('#taskNote').value,
-            priority: $('#taskPriority').value,
-            completed: false,
-            updatedAt: new Date().toISOString()
-        };
-
-        try {
-            if(id) {
-                delete data.userId; // don't update user
-                await updateDoc(doc(db, "tasks", id), data);
-                showToast("Đã cập nhật!");
-            } else {
-                data.createdAt = new Date().toISOString();
-                await addDoc(tasksCol, data);
-                showToast("Đã thêm mới!");
-            }
-            closeModal({target: {id: 'taskModal'}});
-        } catch(err) {
-            console.error(err);
-            showToast("Lỗi lưu dữ liệu!");
-        }
+        document.querySelectorAll('.p-btn').forEach(b => b.classList.remove('selected'));
+        $(`.p-btn[data-val="${val}"]`).classList.add('selected');
     };
 
     window.toggleComplete = async (id, status, e) => {
         e.stopPropagation();
         try {
             await updateDoc(doc(db, "tasks", id), { completed: status });
-        } catch(err) { showToast("Lỗi cập nhật!"); }
+        } catch(e) { showToast('Lỗi cập nhật', true); }
     };
 
-    window.deleteCurrentTask = async () => {
+    window.deleteTask = async () => {
+        if(!confirm('Xoá công việc này?')) return;
+        try {
+            await deleteDoc(doc(db, "tasks", $('#taskId').value));
+            showToast('Đã xoá');
+            window.closeModal();
+        } catch(e) { showToast('Lỗi xoá', true); }
+    };
+
+    $('#taskForm').onsubmit = async (e) => {
+        e.preventDefault();
         const id = $('#taskId').value;
-        if(confirm("Bạn chắc chắn muốn xoá?")) {
-            try {
-                await deleteDoc(doc(db, "tasks", id));
-                showToast("Đã xoá!");
-                closeModal({target: {id: 'taskModal'}});
-            } catch(err) { showToast("Lỗi xoá!"); }
-        }
+        const data = {
+            userId,
+            title: $('#taskTitle').value,
+            date: $('#taskDate').value,
+            note: $('#taskNote').value,
+            priority: $('#taskPriority').value,
+            completed: false,
+            notified: false // reset notification status
+        };
+
+        try {
+            if(id) {
+                delete data.userId;
+                await updateDoc(doc(db, "tasks", id), data);
+                showToast('Đã cập nhật!');
+            } else {
+                await addDoc(tasksCol, data);
+                showToast('Đã thêm mới!');
+            }
+            window.closeModal();
+        } catch(err) { showToast('Lỗi lưu dữ liệu', true); }
     };
 
-    // --- NOTIFICATIONS & REMINDERS ---
-    $('#notifToggle').onclick = () => {
-        if(Notification.permission !== "granted") {
+    // --- NOTIFICATION SYSTEM (ENHANCED) ---
+    function setupNotifications() {
+        if ('Notification' in window) {
+            if (Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        }
+        
+        $('#notifToggle').onclick = () => {
             Notification.requestPermission().then(p => {
-                if(p === "granted") showToast("Đã bật thông báo!");
+                if(p === 'granted') showToast('Đã bật thông báo');
+                else showToast('Vui lòng cấp quyền trong cài đặt', true);
+            });
+        };
+
+        // Check loop
+        setInterval(() => {
+            const now = new Date();
+            const nowStr = now.toISOString().slice(0,16);
+
+            tasks.forEach(t => {
+                // If time matches AND not completed AND not yet notified
+                if (t.date === nowStr && !t.completed && !t.notified) {
+                    triggerNotification(t);
+                    // Update Local State immediately to prevent double fire
+                    t.notified = true; 
+                    // Update Remote (optional, but good practice)
+                    // updateDoc(doc(db, "tasks", t.id), { notified: true });
+                }
+            });
+        }, 30000); // Check every 30s
+    }
+
+    function triggerNotification(task) {
+        const title = `🔔 Đến giờ: ${task.title}`;
+        const options = {
+            body: task.note || "Đã đến giờ thực hiện công việc của bạn!",
+            icon: "https://cdn-icons-png.flaticon.com/512/2693/2693507.png",
+            badge: "https://cdn-icons-png.flaticon.com/512/2693/2693507.png",
+            vibrate: [200, 100, 200, 100, 200], // Mobile vibration pattern
+            tag: 'task-' + task.id, // Prevent duplicate stacking
+            renotify: true, // Buzz again even if tag exists
+            requireInteraction: true, // Keep on screen until user clicks
+            actions: [
+                {action: 'close', title: 'Đóng'},
+                {action: 'view', title: 'Xem'}
+            ]
+        };
+
+        // Use Service Worker if available (Better for Android/Lock Screen)
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.ready.then(reg => {
+                reg.showNotification(title, options);
             });
         } else {
-            showToast("Thông báo đang bật");
+            // Fallback
+            new Notification(title, options);
         }
-    };
-
-    setInterval(() => {
-        const now = new Date();
-        const nowStr = now.toISOString().slice(0,16);
         
-        tasks.forEach(t => {
-            if(!t.completed && t.date === nowStr && !t.notified) {
-                // Browser notification
-                if(Notification.permission === "granted") {
-                    new Notification("Nhắc việc: " + t.title, {
-                        body: t.note || "Đến giờ thực hiện công việc!",
-                        icon: "https://cdn-icons-png.flaticon.com/512/2693/2693507.png"
-                    });
-                }
-                // In-app toast
-                showToast("🔔 Đến giờ: " + t.title);
-                // Mark locally processed (in real app, update DB)
-                t.notified = true; 
-            }
-        });
-    }, 60000); // Check every minute
+        // Also play sound if desired (Optional)
+        // const audio = new Audio('notification.mp3'); audio.play();
+    }
 
-    // --- THEME ---
+    // --- THEME & PWA ---
+    const savedTheme = localStorage.getItem('tm_theme');
+    if(savedTheme === 'dark') {
+        document.body.setAttribute('data-theme', 'dark');
+        $('#themeToggle i').className = 'fa-solid fa-sun';
+    }
+
     $('#themeToggle').onclick = () => {
         const isDark = document.body.getAttribute('data-theme') === 'dark';
         document.body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+        localStorage.setItem('tm_theme', isDark ? 'light' : 'dark');
         $('#themeToggle i').className = isDark ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
-        localStorage.setItem('theme', isDark ? 'light' : 'dark');
     };
-    if(localStorage.getItem('theme') === 'dark') $('#themeToggle').click();
 
-    // --- INIT ---
-    initData();
-    renderCalendar(); // Pre-render
-
-    // --- PWA LOGIC (Install Prompt) ---
+    // Install Logic
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
-        $('#navInstall').style.display = 'flex';
-        $('#pwaPrompt').style.display = 'flex';
+        $('#pwaBanner').style.display = 'flex';
+        $('#btnInstall').style.display = 'flex';
     });
 
-    window.installPWA = async () => {
-        if (deferredPrompt) {
+    window.installApp = async () => {
+        if(deferredPrompt) {
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
-            if (outcome === 'accepted') {
-                $('#pwaPrompt').style.display = 'none';
-            }
+            if(outcome === 'accepted') $('#pwaBanner').style.display = 'none';
             deferredPrompt = null;
         }
     };
-    window.showInstall = () => $('#pwaPrompt').style.display = 'flex';
 
-    // Drag & Drop Logic for List
-    const listEl = document.getElementById('listView');
-    let dragSrcEl = null;
-
-    listEl.addEventListener('dragstart', function(e) {
-        dragSrcEl = e.target;
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/html', e.target.innerHTML);
-        e.target.style.opacity = '0.4';
-    });
-    listEl.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        return false;
-    });
-    listEl.addEventListener('dragenter', function(e) {
-        e.target.classList.add('over');
-    });
-    listEl.addEventListener('dragleave', function(e) {
-        e.target.classList.remove('over');
-    });
-    listEl.addEventListener('drop', function(e) {
-        e.stopPropagation();
-        if (dragSrcEl !== this) {
-             // Visual swap only for this demo (real reorder needs DB index update)
-             // In a real app, calculate new indices and update Firebase
-             showToast("Đã sắp xếp lại (Demo)");
-        }
-        return false;
-    });
-    listEl.addEventListener('dragend', function(e) {
-        e.target.style.opacity = '1';
-    });
-
+    init();
 </script>
 
-<!-- GENERATE MANIFEST & SW DYNAMICALLY -->
+<!-- DYNAMIC MANIFEST & SERVICE WORKER -->
 <script>
-    // 1. Generate Manifest
+    // 1. Manifest (Blob)
     const manifest = {
         name: "TaskMaster Pro",
         short_name: "TaskMaster",
@@ -621,41 +618,60 @@
         display: "standalone",
         background_color: "#F4F6F8",
         theme_color: "#4A90E2",
-        icons: [{
-            src: "https://cdn-icons-png.flaticon.com/512/2693/2693507.png",
-            sizes: "512x512",
-            type: "image/png"
-        }]
+        description: "Quản lý công việc chuyên nghiệp",
+        icons: [
+            {
+                src: "https://cdn-icons-png.flaticon.com/512/2693/2693507.png",
+                sizes: "192x192",
+                type: "image/png",
+                purpose: "any maskable"
+            },
+            {
+                src: "https://cdn-icons-png.flaticon.com/512/2693/2693507.png",
+                sizes: "512x512",
+                type: "image/png",
+                purpose: "any maskable"
+            }
+        ]
     };
-    const stringManifest = JSON.stringify(manifest);
-    const blobManifest = new Blob([stringManifest], {type: 'application/json'});
-    const manifestURL = URL.createObjectURL(blobManifest);
-    const link = document.createElement('link');
-    link.rel = 'manifest';
-    link.href = manifestURL;
-    document.head.appendChild(link);
+    const manifestUrl = URL.createObjectURL(new Blob([JSON.stringify(manifest)], {type: 'application/json'}));
+    document.head.insertAdjacentHTML('beforeend', `<link rel="manifest" href="${manifestUrl}">`);
 
-    // 2. Generate Service Worker
+    // 2. Service Worker (Blob)
     if ('serviceWorker' in navigator) {
         const swCode = `
-            const CACHE_NAME = 'taskmaster-v1';
-            const urlsToCache = ['.', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css', 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'];
-
-            self.addEventListener('install', event => {
-                event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache)));
+            self.addEventListener('install', e => self.skipWaiting());
+            self.addEventListener('activate', e => self.clients.claim());
+            
+            self.addEventListener('fetch', e => {
+                // Cache-first strategy for static assets could go here
+                // For this single-file demo, we just pass through
             });
 
-            self.addEventListener('fetch', event => {
-                event.respondWith(
-                    caches.match(event.request).then(response => response || fetch(event.request))
+            self.addEventListener('notificationclick', function(event) {
+                event.notification.close();
+                event.waitUntil(
+                    clients.matchAll({type: 'window'}).then( windowClients => {
+                        // If window is open, focus it
+                        for (var i = 0; i < windowClients.length; i++) {
+                            var client = windowClients[i];
+                            if (client.url === '/' && 'focus' in client) {
+                                return client.focus();
+                            }
+                        }
+                        // If not open, open it
+                        if (clients.openWindow) {
+                            return clients.openWindow('.');
+                        }
+                    })
                 );
             });
         `;
-        const blobSw = new Blob([swCode], {type: 'application/javascript'});
-        const swURL = URL.createObjectURL(blobSw);
-        navigator.serviceWorker.register(swURL).then(() => console.log('SW Registered'));
+        const swUrl = URL.createObjectURL(new Blob([swCode], {type: 'application/javascript'}));
+        navigator.serviceWorker.register(swUrl)
+            .then(reg => console.log('SW Ready'))
+            .catch(err => console.log('SW Error', err));
     }
 </script>
-
 </body>
 </html>
