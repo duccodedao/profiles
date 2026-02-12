@@ -2,59 +2,86 @@
 const { SePayPgClient } = require('sepay-pg-node');
 const admin = require('firebase-admin');
 
-// Khởi tạo Firebase Admin (Singleton)
+// Sửa lỗi khởi tạo Firebase nhiều lần
 if (!admin.apps.length) {
-    admin.initializeApp({
-        credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT))
-    });
+    // Kiểm tra xem biến môi trường có tồn tại không
+    if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
+        throw new Error('Thiếu biến môi trường FIREBASE_SERVICE_ACCOUNT');
+    }
+    
+    try {
+        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount)
+        });
+    } catch (error) {
+        console.error("Lỗi JSON Firebase Key:", error);
+    }
 }
+
 const db = admin.firestore();
 
 module.exports = async (req, res) => {
-    if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
+    // CORS headers (đề phòng lỗi cross-origin)
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
+    
+    if (req.method === 'OPTIONS') return res.status(200).end();
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
     try {
-        const { amount, message, userLink } = req.body;
+        const { amount, message } = req.body;
 
-        // 1. Lấy cấu hình SePay từ Firestore (được lưu bởi Admin ở Frontend)
+        // 1. Kiểm tra cấu hình trong Database
         const configDoc = await db.collection('settings').doc('sepay_config').get();
-        if (!configDoc.exists) throw new Error('Chưa cấu hình SePay trong Admin');
         
-        const { merchant_id, secret_key } = configDoc.data();
+        if (!configDoc.exists) {
+            // Trả về lỗi JSON rõ ràng thay vì sập server
+            return res.status(400).json({ error: 'Admin chưa cấu hình SePay (Merchant ID/Secret Key) trong trang quản trị.' });
+        }
+        
+        const configData = configDoc.data();
+        const merchant_id = configData.merchant_id;
+        const secret_key = configData.secret_key;
 
-        // 2. Khởi tạo SePay Client
+        if (!merchant_id || !secret_key) {
+            return res.status(400).json({ error: 'Thông tin SePay chưa đầy đủ. Vui lòng liên hệ Admin.' });
+        }
+
+        // 2. Khởi tạo Client
         const client = new SePayPgClient({
-            env: 'app', // Hoặc 'sandbox' nếu test
+            env: 'app',
             merchant_id: merchant_id,
             secret_key: secret_key
         });
 
         const orderId = `DONATE_${Date.now()}`;
 
-        // 3. Tạo URL thanh toán
+        // 3. Tạo URL
         const checkoutUrl = client.checkout.initCheckoutUrl({
             payment_method: 'BANK_TRANSFER',
             order_invoice_number: orderId,
             order_amount: parseInt(amount),
             currency: 'VND',
             order_description: message || 'Ung ho tac gia',
-            success_url: `${req.headers.origin}/?status=success`, // Quay về trang chủ
-            error_url: `${req.headers.origin}/?status=error`,
+            success_url: `${req.headers.origin || 'https://hdd.io.vn/'}/?status=success`,
+            error_url: `${req.headers.origin || 'https://hdd.io.vn/'}/?status=error`,
         });
 
-        // 4. Lưu đơn hàng nháp vào Firestore (để đối soát sau này)
+        // 4. Lưu đơn nháp
         await db.collection('donations').doc(orderId).set({
             amount: parseInt(amount),
-            message,
+            message: message || '',
             status: 'pending',
             createdAt: new Date().toISOString(),
             orderId
         });
 
-        res.status(200).json({ url: checkoutUrl });
+        return res.status(200).json({ url: checkoutUrl });
 
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: error.message });
+        console.error("Server Error:", error);
+        // Quan trọng: Trả về JSON để Frontend hiển thị được lỗi
+        return res.status(500).json({ error: error.message });
     }
 };
