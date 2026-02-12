@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bmass - Coder nửa mùa</title>
+    <title>Profile Cá Nhân</title>
     
-    <!-- Dynamic Meta Tags (Sẽ được cập nhật qua JS) -->
+    <!-- Dynamic Meta Tags -->
     <meta name="description" id="meta-desc" content="Trang thông tin cá nhân.">
     <link rel="icon" id="meta-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" type="image/png">
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Cropper.js (Để cắt ảnh) -->
+    <!-- Cropper.js -->
     <link  href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
@@ -75,7 +75,7 @@
         <div class="absolute -bottom-32 left-1/3 w-96 h-96 bg-purple-500/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000"></div>
     </div>
 
-    <!-- Loading Overlay (LOGO) -->
+    <!-- Loading Overlay -->
     <div id="global-loading" class="fixed inset-0 bg-white dark:bg-slate-950 z-[900] flex flex-col items-center justify-center transition-opacity duration-300">
         <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="w-20 h-20 mb-4 animate-bounce-slow drop-shadow-2xl">
         <span class="text-sm font-bold text-slate-500 tracking-widest uppercase">Đang tải dữ liệu...</span>
@@ -215,9 +215,7 @@
             <h3 class="font-black uppercase text-sm tracking-widest text-slate-400 mb-6 flex items-center gap-2">
                 <i data-lucide="handshake" class="w-4 h-4"></i> Đối tác
             </h3>
-            <div id="partners-grid" class="flex flex-wrap items-center justify-center gap-8 opacity-70 grayscale hover:grayscale-0 transition-all duration-500">
-                <!-- Logos will be injected here -->
-            </div>
+            <div id="partners-grid" class="flex flex-wrap items-center justify-center gap-8 opacity-70 grayscale hover:grayscale-0 transition-all duration-500"></div>
         </div>
 
     </main>
@@ -333,15 +331,16 @@
                                 <div><label class="lbl">Ngày sinh</label><input type="date" id="inp-dob" class="inp"></div>
                                 <div><label class="lbl">Giới tính</label><select id="inp-gender" class="inp"><option>Nam</option><option>Nữ</option><option>Khác</option></select></div>
                             </div>
+                            
+                            <!-- QUÊ QUÁN CHỈ CÒN TỈNH -->
                             <div class="space-y-2 border p-3 rounded-xl dark:border-white/10">
-                                <label class="lbl text-primary">Quê quán (API)</label>
-                                <div class="grid grid-cols-3 gap-2">
-                                    <select id="api-city" onchange="loadDistricts()" class="inp text-xs"><option value="">Tỉnh/TP</option></select>
-                                    <select id="api-district" onchange="loadWards()" class="inp text-xs"><option value="">Quận/Huyện</option></select>
-                                    <select id="api-ward" class="inp text-xs"><option value="">Phường/Xã</option></select>
-                                </div>
+                                <label class="lbl text-primary">Quê quán (Chọn Tỉnh)</label>
+                                <select id="api-city" onchange="updateHometownStr()" class="inp text-sm font-bold">
+                                    <option value="">-- Chọn Tỉnh/Thành phố --</option>
+                                </select>
                                 <input type="hidden" id="inp-hometown-full">
                             </div>
+
                             <div class="border p-3 rounded-xl dark:border-white/10 space-y-2">
                                 <label class="lbl">Mối quan hệ</label>
                                 <select id="inp-rel-status" class="inp mb-2" onchange="togglePartnerInput()">
@@ -571,7 +570,6 @@
 
         // --- RENDER ---
         function renderProfile() {
-            // Meta & Title
             if(profileData.meta) {
                 document.title = profileData.meta.title || profileData.name;
                 document.getElementById('meta-desc').setAttribute('content', profileData.meta.description || '');
@@ -612,7 +610,6 @@
             document.getElementById('info-gender').innerText = profileData.gender || "---";
             document.getElementById('info-hometown').innerText = profileData.hometown?.full || "---";
 
-            // Socials
             const socialMap = {
                 facebook: { icon: 'facebook', color: 'text-blue-600' },
                 zalo: { icon: 'phone', color: 'text-blue-500' },
@@ -638,19 +635,18 @@
             }
             document.getElementById('social-grid').innerHTML = socialHtml;
 
-            // Bank Logic 1:1 Icon Only
+            // BANK RENDER FIX: Text Size & No Spaces
             const bankContainer = document.getElementById('bank-list');
             bankContainer.innerHTML = (profileData.banks || []).map(b => `
                 <div class="bank-card p-3 rounded-xl flex items-center justify-between shadow-lg relative overflow-hidden group bg-white dark:bg-slate-900 border dark:border-white/5">
                     <div class="flex items-center gap-4 z-10">
-                        <!-- Logo 1:1 Square - Icon Only trick (overflow hidden) -->
                         <div class="w-12 h-12 bg-white rounded-lg shadow-inner flex items-center justify-center shrink-0 overflow-hidden relative">
-                             <!-- Sử dụng object-contain và scale để cố gắng lấy phần logo chính nếu ảnh có chữ -->
                             <img src="${b.logo}" class="w-full h-full object-contain p-1">
                         </div>
                         <div>
                             <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">${b.shortName}</p>
-                            <p class="font-mono font-black text-xl tracking-widest text-slate-800 dark:text-white">${maskCard(b.number)}</p>
+                            <!-- Chỉnh sửa: text-lg, tracking-normal, không dùng maskCard -->
+                            <p class="font-mono font-bold text-lg tracking-normal text-slate-800 dark:text-white select-all">${b.number}</p>
                             <p class="text-[10px] font-bold uppercase text-slate-500">${b.owner}</p>
                         </div>
                     </div>
@@ -663,7 +659,6 @@
                 </div>
             `).join('');
 
-            // Career
             const careerContainer = document.getElementById('career-timeline');
             const items = [...(profileData.education || []), ...(profileData.work || [])];
             if(items.length === 0) careerContainer.innerHTML = '<p class="text-sm text-slate-400 italic">Chưa cập nhật thông tin.</p>';
@@ -678,7 +673,6 @@
                 `).join('');
             }
 
-            // Achievements
             const achContainer = document.getElementById('achievement-list');
             if(!profileData.achievements || profileData.achievements.length === 0) {
                 achContainer.innerHTML = '<p class="text-sm text-slate-400 italic col-span-2 text-center">Chưa có thành tựu nào.</p>';
@@ -696,7 +690,6 @@
                 `).join('');
             }
 
-            // Partners
             const partnerSec = document.getElementById('partners-section');
             const partnerGrid = document.getElementById('partners-grid');
             if(profileData.partners && profileData.partners.length > 0) {
@@ -732,7 +725,7 @@
                 }
                 reader.readAsDataURL(file);
             }
-            e.target.value = ''; // Reset input
+            e.target.value = ''; 
         });
 
         window.confirmCrop = () => {
@@ -755,20 +748,16 @@
             if (type === 'phone') {
                 title.innerText = "Gọi điện thoại";
                 const phones = profileData.phones || [];
-                // Logos nhỏ lại (h-6)
                 const carrierLogos = {
                     'mobifone': '/img/mobi.PNG', 'vinaphone': '/img/vina.png',
-                    'viettel': 'https://upload.wikimedia.org/wikipedia/commons/4/4e/Viettel_logo_2021.png', // Example
+                    'viettel': 'https://upload.wikimedia.org/wikipedia/commons/4/4e/Viettel_logo_2021.png', 
                 };
 
                 if(phones.length === 0) list.innerHTML = '<p class="text-center text-slate-500">Chưa có số điện thoại.</p>';
                 else {
                     list.innerHTML = phones.map(p => {
                         const carrierKey = p.carrier ? p.carrier.toLowerCase().trim() : '';
-                        let carrierDisplayHtml = '';
-                        // Basic text fallback styled as badge
-                        const carrierClass = `carrier-${carrierKey}`;
-                        carrierDisplayHtml = `<span class="text-[10px] font-black uppercase px-2 py-0.5 rounded shadow-sm w-16 text-center ${carrierClass} ${!p.carrier ? 'bg-slate-500 text-white' : ''}">${p.carrier || 'Sim'}</span>`;
+                        let carrierDisplayHtml = `<span class="text-[10px] font-black uppercase px-2 py-0.5 rounded shadow-sm w-16 text-center carrier-${carrierKey} ${!p.carrier ? 'bg-slate-500 text-white' : ''}">${p.carrier || 'Sim'}</span>`;
                         
                         return `
                         <a href="tel:${p.number}" class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition group">
@@ -795,13 +784,12 @@
             lucide.createIcons();
         }
 
-        // --- CONTACT FORM LOGIC ---
         window.showContactForm = () => {
              document.getElementById('modal-send-msg').classList.remove('hidden');
              if(currentUser) {
                  document.getElementById('msg-name').value = currentUser.displayName || '';
                  document.getElementById('msg-email').value = currentUser.email || '';
-                 document.getElementById('msg-email-group').classList.add('hidden'); // Hide if logged in
+                 document.getElementById('msg-email-group').classList.add('hidden'); 
              } else {
                  document.getElementById('msg-email-group').classList.remove('hidden');
              }
@@ -874,7 +862,21 @@
             document.getElementById('inp-dob').value = profileData.dob || '';
             document.getElementById('inp-gender').value = profileData.gender || 'Nam';
             
-            // Meta inputs
+            // Hometown Load
+            await fetchProvinces();
+            // Set value logic: Check if saved hometown matches any option, if so select it.
+            const savedHometown = profileData.hometown?.full || '';
+            document.getElementById('inp-hometown-full').value = savedHometown;
+            
+            // Try to auto-select if possible (simple matching)
+            const citySelect = document.getElementById('api-city');
+            for(let i=0; i<citySelect.options.length; i++) {
+                if(citySelect.options[i].dataset.name === savedHometown) {
+                    citySelect.selectedIndex = i;
+                    break;
+                }
+            }
+
             if(profileData.meta) {
                 document.getElementById('meta-title-inp').value = profileData.meta.title || '';
                 document.getElementById('meta-desc-inp').value = profileData.meta.description || '';
@@ -917,8 +919,6 @@
             
             const usbSnap = await getDoc(doc(db, "settings", "usb_config"));
             if(usbSnap.exists()) document.getElementById('usb-secret-val').value = usbSnap.data().secret || '';
-            
-            await fetchProvinces();
         }
 
         // --- SAVE PROFILE ---
@@ -936,7 +936,6 @@
                 }
 
                 let avatarUrl = profileData.avatar;
-                // Nếu có ảnh đã cắt từ cropper
                 if(croppedAvatarBase64 && ghConfig.token) {
                     const content = croppedAvatarBase64.split(',')[1];
                     const path = `avatars/${Date.now()}_avatar.png`;
@@ -968,7 +967,7 @@
                     bio: document.getElementById('inp-bio').value,
                     dob: document.getElementById('inp-dob').value,
                     gender: document.getElementById('inp-gender').value,
-                    hometown: { full: document.getElementById('inp-hometown-full').value || profileData.hometown?.full },
+                    hometown: { full: document.getElementById('inp-hometown-full').value }, // Saves directly
                     avatar: avatarUrl,
                     meta: {
                         title: document.getElementById('meta-title-inp').value,
@@ -999,7 +998,7 @@
                 await setDoc(profileRef, newData, { merge: true });
                 showToast("Đã cập nhật Profile!");
                 window.closeModal('modal-admin');
-                croppedAvatarBase64 = null; // reset
+                croppedAvatarBase64 = null; 
 
             } catch(e) {
                 showToast("Lỗi: " + e.message, true);
@@ -1115,7 +1114,6 @@
 
         window.copyToClip = (text) => { navigator.clipboard.writeText(text); showToast('Đã sao chép!'); }
         function formatDate(dateStr) { if (!dateStr) return ""; const [y, m, d] = dateStr.split('-'); return `${d}/${m}/${y}`; }
-        function maskCard(num) { if(!num) return ""; return num.replace(/\s+/g, '').replace(/(\d{4})(?=\d)/g, "$1 "); }
         function showToast(msg, isError = false) {
             const t = document.getElementById('toast');
             document.getElementById('toast-msg').innerText = msg;
@@ -1127,11 +1125,21 @@
             setTimeout(() => t.classList.add('translate-y-20', 'opacity-0'), 3000);
         }
         
-        // API Helpers
-        async function fetchProvinces() { const res = await fetch('https://esgoo.net/api-tinhthanh/1/0.htm'); const data = await res.json(); if(data.error === 0) document.getElementById('api-city').innerHTML = '<option value="">Tỉnh/TP</option>' + data.data.map(p => `<option value="${p.id}" data-name="${p.full_name}">${p.full_name}</option>`).join(''); }
-        window.loadDistricts = async () => { const pid = document.getElementById('api-city').value; const res = await fetch(`https://esgoo.net/api-tinhthanh/2/${pid}.htm`); const data = await res.json(); document.getElementById('api-district').innerHTML = '<option value="">Quận/Huyện</option>' + data.data.map(p => `<option value="${p.id}" data-name="${p.full_name}">${p.full_name}</option>`).join(''); updateHometownStr(); }
-        window.loadWards = async () => { const did = document.getElementById('api-district').value; const res = await fetch(`https://esgoo.net/api-tinhthanh/3/${did}.htm`); const data = await res.json(); const sel = document.getElementById('api-ward'); sel.innerHTML = '<option value="">Phường/Xã</option>' + data.data.map(p => `<option value="${p.id}" data-name="${p.full_name}">${p.full_name}</option>`).join(''); sel.onchange = updateHometownStr; updateHometownStr(); }
-        function updateHometownStr() { const c = document.getElementById('api-city'); const d = document.getElementById('api-district'); const w = document.getElementById('api-ward'); document.getElementById('inp-hometown-full').value = [w.options[w.selectedIndex]?.dataset.name, d.options[d.selectedIndex]?.dataset.name, c.options[c.selectedIndex]?.dataset.name].filter(x=>x).join(', '); }
+        // --- API HELPERS ---
+        async function fetchProvinces() { 
+            const res = await fetch('https://esgoo.net/api-tinhthanh/1/0.htm'); 
+            const data = await res.json(); 
+            if(data.error === 0) {
+                document.getElementById('api-city').innerHTML = '<option value="">-- Chọn Tỉnh/Thành phố --</option>' + data.data.map(p => `<option value="${p.id}" data-name="${p.full_name}">${p.full_name}</option>`).join(''); 
+            }
+        }
+        
+        window.updateHometownStr = () => { 
+            const c = document.getElementById('api-city'); 
+            const name = c.options[c.selectedIndex]?.dataset.name || '';
+            document.getElementById('inp-hometown-full').value = name; 
+        }
+
         async function loadBankList() { try { const res = await fetch('https://api.vietqr.io/v2/banks'); const data = await res.json(); if(data.code === "00") document.getElementById('api-bank-list').innerHTML = data.data.map(b => `<option value='${JSON.stringify({shortName: b.shortName, logo: b.logo})}'>${b.shortName}</option>`).join(''); } catch(e) {} }
         window.addBank = () => { const meta = JSON.parse(document.getElementById('api-bank-list').value); const num = document.getElementById('bank-acc-num').value; const owner = document.getElementById('bank-acc-name').value; if(!num) return; listBanks.push({ ...meta, number: num, owner }); renderAdminBanks(); document.getElementById('bank-acc-num').value = ''; }
         function renderAdminBanks() { document.getElementById('admin-bank-list').innerHTML = listBanks.map((b, i) => `<div class="flex items-center justify-between p-2 bg-slate-100 dark:bg-slate-800 rounded"><div class="flex items-center gap-2"><img src="${b.logo}" class="w-6 h-6 object-contain bg-white"><span class="text-xs font-bold">${b.shortName} - ${b.number}</span></div><button onclick="removeBank(${i})" class="text-red-500 text-xs">Xóa</button></div>`).join(''); }
