@@ -2,12 +2,21 @@
 <html lang="vi" class="light">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Profile Cá Nhân</title>
     
-    <!-- Dynamic Meta Tags -->
+    <!-- Dynamic Meta Tags & Manifest -->
     <meta name="description" id="meta-desc" content="Trang thông tin cá nhân.">
     <link rel="icon" id="meta-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" type="image/png">
+    
+    <!-- PWA / Mobile Capable -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#6366f1">
+    
+    <!-- Link Manifest động (Sẽ được JS cập nhật dữ liệu vào đây) -->
+    <link rel="manifest" id="dynamic-manifest">
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -332,7 +341,7 @@
                                 <div><label class="lbl">Giới tính</label><select id="inp-gender" class="inp"><option>Nam</option><option>Nữ</option><option>Khác</option></select></div>
                             </div>
                             
-                            <!-- QUÊ QUÁN CHỈ CÒN TỈNH -->
+                            <!-- QUÊ QUÁN -->
                             <div class="space-y-2 border p-3 rounded-xl dark:border-white/10">
                                 <label class="lbl text-primary">Quê quán (Chọn Tỉnh)</label>
                                 <select id="api-city" onchange="updateHometownStr()" class="inp text-sm font-bold">
@@ -570,6 +579,7 @@
 
         // --- RENDER ---
         function renderProfile() {
+            // Meta & Title
             if(profileData.meta) {
                 document.title = profileData.meta.title || profileData.name;
                 document.getElementById('meta-desc').setAttribute('content', profileData.meta.description || '');
@@ -577,6 +587,27 @@
             } else {
                 document.title = `${profileData.name} - Profile`;
             }
+
+            // --- PWA DYNAMIC MANIFEST GENERATION ---
+            const manifestLink = document.getElementById('dynamic-manifest');
+            const currentIcon = profileData.avatar || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+            const manifestObj = {
+                "name": profileData.name || "Profile Cá Nhân",
+                "short_name": profileData.nickname || "Profile",
+                "start_url": location.href,
+                "display": "standalone",
+                "background_color": "#f8fafc",
+                "theme_color": "#6366f1",
+                "icons": [
+                    { "src": currentIcon, "sizes": "192x192", "type": "image/png" },
+                    { "src": currentIcon, "sizes": "512x512", "type": "image/png" }
+                ]
+            };
+            const stringManifest = JSON.stringify(manifestObj);
+            const blob = new Blob([stringManifest], {type: 'application/json'});
+            const manifestURL = URL.createObjectURL(blob);
+            manifestLink.setAttribute('href', manifestURL);
+            // ----------------------------------------
 
             document.getElementById('profile-name').innerText = profileData.name || "No Name";
             document.getElementById('nav-nickname').innerText = profileData.nickname || "User";
@@ -635,7 +666,7 @@
             }
             document.getElementById('social-grid').innerHTML = socialHtml;
 
-            // BANK RENDER FIX: Text Size & No Spaces
+            // BANK RENDER
             const bankContainer = document.getElementById('bank-list');
             bankContainer.innerHTML = (profileData.banks || []).map(b => `
                 <div class="bank-card p-3 rounded-xl flex items-center justify-between shadow-lg relative overflow-hidden group bg-white dark:bg-slate-900 border dark:border-white/5">
@@ -645,7 +676,6 @@
                         </div>
                         <div>
                             <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">${b.shortName}</p>
-                            <!-- Chỉnh sửa: text-lg, tracking-normal, không dùng maskCard -->
                             <p class="font-mono font-bold text-lg tracking-normal text-slate-800 dark:text-white select-all">${b.number}</p>
                             <p class="text-[10px] font-bold uppercase text-slate-500">${b.owner}</p>
                         </div>
@@ -864,11 +894,8 @@
             
             // Hometown Load
             await fetchProvinces();
-            // Set value logic: Check if saved hometown matches any option, if so select it.
             const savedHometown = profileData.hometown?.full || '';
             document.getElementById('inp-hometown-full').value = savedHometown;
-            
-            // Try to auto-select if possible (simple matching)
             const citySelect = document.getElementById('api-city');
             for(let i=0; i<citySelect.options.length; i++) {
                 if(citySelect.options[i].dataset.name === savedHometown) {
@@ -967,7 +994,7 @@
                     bio: document.getElementById('inp-bio').value,
                     dob: document.getElementById('inp-dob').value,
                     gender: document.getElementById('inp-gender').value,
-                    hometown: { full: document.getElementById('inp-hometown-full').value }, // Saves directly
+                    hometown: { full: document.getElementById('inp-hometown-full').value },
                     avatar: avatarUrl,
                     meta: {
                         title: document.getElementById('meta-title-inp').value,
