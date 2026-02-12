@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -856,6 +855,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const ADMIN_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1"; 
     const ADMIN_USERNAME = "bmassk3";
+    
+    // --- NEW: Base URL for pre-uploaded images (e.g., from GitHub) ---
+    const IMAGE_BASE_URL = 'https://bmass.vercel.app/img/';
+    // -----------------------------------------------------------------
 
     particlesJS("particles-js", {
         "particles": { "number": { "value": 80, "density": { "enable": true, "value_area": 800 } }, "color": { "value": "#ffffff" }, "shape": { "type": "circle", }, "opacity": { "value": 0.5, "random": false, }, "size": { "value": 3, "random": true, }, "line_linked": { "enable": true, "distance": 150, "color": "#ffffff", "opacity": 0.4, "width": 1 }, "move": { "enable": true, "speed": 6, "direction": "none", "out_mode": "out", } },
@@ -2151,14 +2154,26 @@ document.addEventListener('DOMContentLoaded', () => {
             
         </form>`;
     
+    // NEW LOGIC: When Avatar file is selected, generate URL and populate the link input
     modalBody.querySelector('#edit-avatar-file').addEventListener('change', e => { 
         if (e.target.files[0]) { 
-            document.getElementById('edit-avatar-url-new').value = ''; 
-            const reader = new FileReader(); 
-            reader.onload = event => { document.getElementById('avatar-preview').src = event.target.result; }; 
-            reader.readAsDataURL(e.target.files[0]); 
+            const filename = e.target.files[0].name;
+            const newUrl = IMAGE_BASE_URL + filename;
+            
+            // 1. Clear file input
+            e.target.value = null; 
+            
+            // 2. Set the generated URL to the link input
+            const urlInput = document.getElementById('edit-avatar-url-new');
+            urlInput.value = newUrl; 
+
+            // 3. Trigger the preview update (which is handled by the 'input' listener on urlInput)
+            urlInput.dispatchEvent(new Event('input', { bubbles: true }));
+            
+            showToast(`Avatar: Đã tạo link từ tệp: ${filename}`, "info");
         } 
     });
+    
     modalBody.querySelector('#edit-avatar-url-new').addEventListener('input', e => {
         const url = e.target.value.trim();
         if (url) {
@@ -2199,6 +2214,25 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     });
+    
+    // --- NEW: Project File-to-Link Listener ---
+    modalBody.querySelectorAll('.project-image-file').forEach(fileInput => {
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const urlInput = fileInput.closest('.accordion-body').querySelector('.project-image');
+                const filename = file.name;
+                const newUrl = IMAGE_BASE_URL + filename;
+                
+                // Set URL, clear file input
+                urlInput.value = newUrl;
+                fileInput.value = ''; 
+                
+                showToast(`Dự án: Đã tạo link từ tệp: ${filename}`, "info");
+            }
+        });
+    });
+    // ------------------------------------------
     
     editModal.show();
 }
@@ -2270,7 +2304,14 @@ function createProjectFieldHTML(project = {}, index, categories, customCategorie
                 </div>
 
                 <label class="form-label small">Link Dự Án (Nút Mở Ngay)</label><input type="url" class="form-control mb-2 project-link" placeholder="Đường dẫn (URL)" value="${project.link || ''}">
-                <label class="form-label small">URL Hình ảnh</label><input type="url" class="form-control project-image" placeholder="Link ảnh logo" value="${project.imageUrl || ''}">
+                
+                <label class="form-label small">Link Hình ảnh (URL)</label>
+                <input type="url" class="form-control project-image" placeholder="Link ảnh logo" value="${project.imageUrl || ''}">
+                <div class="mb-2">
+                    <label class="form-label small">Hoặc Tải tệp lên để tạo Link <small class="text-muted">(.../img/filename)</small></label>
+                    <input type="file" class="form-control project-image-file" accept="image/*">
+                </div>
+
                 <label class="form-label small mt-2">Mô tả dài (Hướng dẫn, chi tiết...)</label>
                 <textarea class="form-control project-long-desc" rows="4" placeholder="Nội dung chi tiết sẽ hiển thị trong popup...">${project.longDescription || ''}</textarea>
             </div>
@@ -2296,14 +2337,10 @@ async function handleSaveProfile() {
     try { 
         let avatarUrlToSave = document.getElementById('edit-avatar-url-current').value; 
         const avatarUrlFromInput = document.getElementById('edit-avatar-url-new').value.trim();
-        const file = document.getElementById('edit-avatar-file').files[0]; 
+        // const file = document.getElementById('edit-avatar-file').files[0]; // REMOVED: File upload logic
 
-        if (file) { 
-            const filePath = `avatars/${currentUser.uid}/avatar_${Date.now()}`; 
-            const fileRef = storage.ref(filePath); 
-            await fileRef.put(file); 
-            avatarUrlToSave = await fileRef.getDownloadURL(); 
-        } else if (avatarUrlFromInput) {
+        // NEW LOGIC: Use the URL from the input (which is populated by direct paste or file-to-url logic)
+        if (avatarUrlFromInput) {
             avatarUrlToSave = avatarUrlFromInput;
         }
 
@@ -2342,14 +2379,14 @@ async function handleSaveProfile() {
                     name, 
                     description: field.querySelector('.project-desc').value.trim(), 
                     link: normalizeUrl(link),
-                    imageUrl: field.querySelector('.project-image').value.trim(), 
+                    imageUrl: field.querySelector('.project-image').value.trim(), // Stays the same (reads from URL input)
                     category: field.querySelector('.project-category').value,
                     clicks: parseInt(field.querySelector('.project-clicks-hidden').value, 10) || 0,
                     longDescription: field.querySelector('.project-long-desc').value.trim(),
                     referralLink: field.querySelector('.project-ref-link').value.trim(), 
                     referralCode: field.querySelector('.project-ref-code').value.trim(),
                     // Save Expiry Date
-                    expiryDate: field.querySelector('.project-expiry').value || null // Ensure empty string becomes null if needed
+                    expiryDate: field.querySelector('.project-expiry').value || null 
                 }); 
             } 
         }); 
@@ -2524,4 +2561,3 @@ main();
 
 </body>
 </html>
-
