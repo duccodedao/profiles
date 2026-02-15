@@ -1,8 +1,9 @@
  Bạn biết dự án unich không, Tôi muốn thêm 1 phần dự án đó vào site của tôi với giao diện siêu đẹp hiện đại chuyên nghiệp, trong phần site sẽ code dự án Unich riêng biệt, có tiêu đề, mô tả dự án, link tải apple store, ch play (có logo apple và ch play), mã qr (quét để giới thiệu) admin tải mã qr lên, link ref, code ref (có thể sao chép), phần unich có logo biểu tưởng , Tôi muốn code trực tiếp dô site luôn, như 1 phần của site, xoá phần thông tin cá nhân (giới tính, ngày sinh, tỉnh) , Đồng bộ hoá giao diện, hoà tan Unich với source
-, fix logo ngân hàng
+, fix logo ngân hàng, fix bố cục nhà mạng, số điện thoại
 
+Generate a single HTML file. Include a basic doctype, html, head, and body tags. Add a main heading 'My Webpage' and a paragraph 'This is a placeholder paragraph.' within the body.
 
-
+Generate a single HTML file with a basic structure. Also, generate a separate CSS file. Link the CSS file to the HTML file in the head section. Apply a simple style in the CSS file, such as changing the background color of the body to light blue and the text color to dark blue.
 <!DOCTYPE html>
 <html lang="vi" class="light">
 <head>
@@ -475,4 +476,902 @@
                                 <p class="text-[10px] text-slate-400 italic text-center">Bấm vào nút X để xóa, bấm vào ảnh để sửa lại.</p>
                             </div>
                             <label class="lbl mt-4">Danh sách hiện tại</label>
-                            <div id="admin-partner-list" class="grid grid-cols-2 gap
+                            <div id="admin-partner-list" class="grid grid-cols-2 gap-3"></div>
+                        </div>
+
+                        <!-- TAB: WEBSITE (META) -->
+                        <div id="tab-website" class="tab-content hidden space-y-4">
+                            <div class="p-4 bg-purple-50 dark:bg-purple-900/10 rounded-xl space-y-3">
+                                <h4 class="font-bold text-purple-600">Cấu hình SEO & Hiển thị</h4>
+                                <div>
+                                    <label class="lbl">Tiêu đề trang (Title)</label>
+                                    <input type="text" id="meta-title-inp" class="inp" placeholder="VD: Nguyễn Văn A - Profile">
+                                </div>
+                                <div>
+                                    <label class="lbl">Mô tả (Description)</label>
+                                    <textarea id="meta-desc-inp" rows="2" class="inp" placeholder="Mô tả ngắn gọn về trang..."></textarea>
+                                </div>
+                                <div>
+                                    <label class="lbl">Icon trang (Favicon URL)</label>
+                                    <input type="text" id="meta-icon-inp" class="inp" placeholder="https://...">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB: MESSAGES -->
+                        <div id="tab-messages" class="tab-content hidden space-y-4">
+                            <div class="flex justify-between items-center mb-4">
+                                <h4 class="font-bold">Danh sách tin nhắn</h4>
+                                <button type="button" onclick="loadAdminMessages()" class="text-xs bg-slate-200 dark:bg-slate-800 px-3 py-1 rounded hover:bg-slate-300">Làm mới</button>
+                            </div>
+                            <div id="admin-messages-list" class="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                                <p class="text-center text-slate-500 text-sm">Đang tải...</p>
+                            </div>
+                        </div>
+
+                        <!-- TAB: CONFIG -->
+                        <div id="tab-config" class="tab-content hidden space-y-4">
+                            <div class="p-4 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/20 space-y-3">
+                                <h4 class="font-bold text-red-500 text-sm">Cấu hình GitHub (Lưu trữ ảnh)</h4>
+                                <input type="password" id="gh-token" placeholder="Token" class="inp">
+                                <input type="text" id="gh-owner" placeholder="Username" class="inp">
+                                <input type="text" id="gh-repo" placeholder="Repository" class="inp">
+                            </div>
+
+                            <div class="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-900/20 space-y-3">
+                                <h4 class="font-bold text-blue-500 text-sm">Cấu hình USB Key</h4>
+                                <p class="text-[10px] text-slate-500">Nhập mã bí mật bên dưới. Trên USB tạo file .json chứa: {"key": "MÃ_CỦA_BẠN"}</p>
+                                <div class="flex gap-2">
+                                    <input type="text" id="usb-secret-val" placeholder="Nhập mã bí mật..." class="inp">
+                                    <button type="button" onclick="saveUSBConfig()" class="px-4 bg-blue-500 text-white rounded-lg font-bold text-xs">Lưu</button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="p-4 border-t dark:border-white/10 bg-white dark:bg-slate-900 flex justify-end gap-3">
+                <button onclick="window.closeModal('modal-admin')" class="px-6 py-2 rounded-xl text-slate-500 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition">Hủy</button>
+                <button onclick="window.saveProfile()" class="px-6 py-2 bg-primary text-white rounded-xl font-bold shadow-lg hover:bg-indigo-600 transition">Lưu Thay Đổi</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 z-[1000] translate-y-20 opacity-0 transition-all duration-300">
+        <div class="bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 font-bold text-sm">
+            <i id="toast-icon" data-lucide="check-circle" class="w-5 h-5 text-green-500"></i>
+            <span id="toast-msg">Thông báo</span>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc, updateDoc, getDoc, arrayUnion, arrayRemove, increment, collection, getDocs, addDoc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // --- CẤU HÌNH FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE", 
+            authDomain: "profile-d1214.firebaseapp.com",
+            projectId: "profile-d1214",
+            storageBucket: "profile-d1214.firebasestorage.app",
+            messagingSenderId: "914980131889",
+            appId: "1:914980131889:web:72f8da15c42dbee671b110"
+        };
+        
+        const ADMIN_EMAILS = ["sonlyhongduc@gmail.com"]; 
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        let currentUser = null;
+        let isAdmin = false;
+        let isUSBAdmin = false;
+        let profileData = {};
+        let ghConfig = {};
+        let listBanks = [];
+        let listPartners = [];
+        let cropper = null;
+        let croppedAvatarBase64 = null;
+        const carrierLogos = {
+            'viettel': 'https://upload.wikimedia.org/wikipedia/commons/4/4e/Viettel_logo_2021.png',
+            'vinaphone': '/img/vina.png',
+            'mobifone': '/img/mobi.PNG',
+            'vietnamobile': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Vietnamobile_Logo.png/800px-Vietnamobile_Logo.png',
+            'gmobile': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Gmobile_logo.png/800px-Gmobile_logo.png',
+            'itel': 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Logo_Itel.png/800px-Logo_Itel.png'
+        };
+
+        // --- AUTH ---
+        onAuthStateChanged(auth, async (user) => {
+            currentUser = user;
+            if(user) {
+                await setDoc(doc(db, "users", user.uid), {
+                    uid: user.uid,
+                    displayName: user.displayName,
+                    email: user.email,
+                    photoURL: user.photoURL,
+                    lastSeen: new Date().toISOString()
+                }, { merge: true });
+
+                const adminRef = doc(db, "settings", "admins");
+                const adminSnap = await getDoc(adminRef);
+                const serverAdmins = adminSnap.exists() ? adminSnap.data().emails : [];
+                isAdmin = ADMIN_EMAILS.includes(user.email) || (serverAdmins && serverAdmins.includes(user.email));
+
+                checkAdminUI();
+            } else {
+                isAdmin = false;
+                checkAdminUI();
+            }
+            renderAuthUI();
+            checkFollowStatus();
+        });
+
+        // --- USB LOGIN ---
+        const usbInput = document.getElementById('usb-key-input');
+        usbInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                try {
+                    const content = JSON.parse(event.target.result);
+                    if (content.key) {
+                        const usbRef = doc(db, "settings", "usb_config");
+                        const snap = await getDoc(usbRef);
+                        if (snap.exists() && snap.data().secret === content.key) {
+                            isUSBAdmin = true;
+                            showToast("Đã xác thực USB Key thành công!");
+                            checkAdminUI();
+                        } else {
+                            showToast("USB Key không hợp lệ!", true);
+                        }
+                    }
+                } catch (err) { showToast("Lỗi đọc file USB!", true); }
+            };
+            reader.readAsText(file);
+            usbInput.value = ''; 
+        });
+
+        function checkAdminUI() {
+            if (isAdmin || isUSBAdmin) {
+                document.getElementById('admin-btn').classList.remove('hidden');
+                document.getElementById('manager-btn').classList.remove('hidden');
+                if(isAdmin) loadGithubConfig();
+            } else {
+                document.getElementById('admin-btn').classList.add('hidden');
+                document.getElementById('manager-btn').classList.add('hidden');
+            }
+        }
+
+        window.saveUSBConfig = async () => {
+            const val = document.getElementById('usb-secret-val').value;
+            if (!val) return;
+            await setDoc(doc(db, "settings", "usb_config"), { secret: val });
+            showToast("Đã lưu mã USB Key!");
+        }
+
+        // --- IP & GEO FETCH ---
+        function loadNetworkInfo() {
+            // Get IP
+            fetch('https://api.ipify.org?format=json')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('user-ip').innerText = data.ip;
+                })
+                .catch(() => document.getElementById('user-ip').innerText = "Không xác định");
+
+            // Get Geo
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude.toFixed(4);
+                        const lon = position.coords.longitude.toFixed(4);
+                        document.getElementById('user-coords').innerText = `${lat}, ${lon}`;
+                    },
+                    (error) => {
+                         document.getElementById('user-coords').innerText = "Khóc hehe";
+                    }
+                );
+            } else {
+                document.getElementById('user-coords').innerText = "Trình duyệt không hỗ trợ";
+            }
+        }
+        loadNetworkInfo();
+
+        // --- SCROLL REVEAL OBSERVER ---
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, observerOptions);
+
+        function initScrollReveal() {
+            document.querySelectorAll('.reveal-on-scroll').forEach(el => {
+                observer.observe(el);
+            });
+        }
+
+        // --- DATA SYNC ---
+        const profileRef = doc(db, "profile_data", "main");
+        
+        onSnapshot(profileRef, (docSnap) => {
+            document.getElementById('global-loading').classList.add('opacity-0', 'pointer-events-none');
+            if (docSnap.exists()) {
+                profileData = docSnap.data();
+                renderProfile();
+                initScrollReveal(); // Re-init observer on new data render
+            }
+        });
+
+        // --- RENDER ---
+        function renderProfile() {
+            // Meta & Title
+            if(profileData.meta) {
+                document.title = profileData.meta.title || profileData.name;
+                document.getElementById('meta-desc').setAttribute('content', profileData.meta.description || '');
+                if(profileData.meta.favicon) document.getElementById('meta-icon').href = profileData.meta.favicon;
+            } else {
+                document.title = `${profileData.name} - Profile`;
+            }
+
+            // --- PWA DYNAMIC MANIFEST GENERATION ---
+            const manifestLink = document.getElementById('dynamic-manifest');
+            const currentIcon = profileData.avatar || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+            const manifestObj = {
+                "name": profileData.name || "Profile Cá Nhân",
+                "short_name": profileData.nickname || "Profile",
+                "start_url": location.href,
+                "display": "standalone",
+                "background_color": "#f8fafc",
+                "theme_color": "#6366f1",
+                "icons": [
+                    { "src": currentIcon, "sizes": "192x192", "type": "image/png" },
+                    { "src": currentIcon, "sizes": "512x512", "type": "image/png" }
+                ]
+            };
+            const stringManifest = JSON.stringify(manifestObj);
+            const blob = new Blob([stringManifest], {type: 'application/json'});
+            const manifestURL = URL.createObjectURL(blob);
+            manifestLink.setAttribute('href', manifestURL);
+            // ----------------------------------------
+
+            document.getElementById('profile-name').innerText = profileData.name || "No Name";
+            document.getElementById('nav-nickname').innerText = profileData.nickname || "User";
+            if(profileData.avatar) {
+                document.getElementById('profile-avatar').src = profileData.avatar;
+                document.getElementById('nav-avatar').src = profileData.avatar;
+            }
+            if(profileData.nickname) {
+                const badge = document.getElementById('profile-nickname-badge');
+                badge.innerText = profileData.nickname;
+                badge.classList.remove('hidden');
+            }
+            
+            document.getElementById('profile-bio').innerText = profileData.bio || "Chưa cập nhật tiểu sử.";
+            document.getElementById('stat-followers').innerText = (profileData.followers || []).length;
+            document.getElementById('stat-views').innerText = profileData.views || 0;
+
+            const relEl = document.getElementById('relationship-display');
+            if (profileData.relationship?.status && profileData.relationship.status !== 'Độc thân') {
+                relEl.classList.remove('hidden');
+                let html = `${profileData.relationship.status}`;
+                if(profileData.relationship.partnerName) {
+                    html += ` với <a href="${profileData.relationship.partnerLink || '#'}" target="_blank" class="font-black hover:underline cursor-pointer transition-all">${profileData.relationship.partnerName}</a>`;
+                }
+                document.getElementById('rel-status').innerHTML = html;
+            } else {
+                relEl.classList.add('hidden');
+            }
+
+            document.getElementById('info-dob').innerText = formatDate(profileData.dob);
+            document.getElementById('info-gender').innerText = profileData.gender || "---";
+            document.getElementById('info-hometown').innerText = profileData.hometown?.full || "---";
+
+            const socialMap = {
+                facebook: { icon: 'facebook', color: 'text-blue-600' },
+                zalo: { icon: 'phone', color: 'text-blue-500' },
+                instagram: { icon: 'instagram', color: 'text-pink-600' },
+                telegram: { icon: 'send', color: 'text-sky-500' },
+                linkedin: { icon: 'linkedin', color: 'text-blue-700' },
+            };
+            let socialHtml = '';
+            if(profileData.socials) {
+                Object.keys(profileData.socials).forEach(key => {
+                    const val = profileData.socials[key];
+                    if(val) {
+                        const meta = socialMap[key] || { icon: 'link', color: 'text-slate-500' };
+                        let link = val;
+                        if(key === 'zalo') link = `https://zalo.me/${val}`;
+                        if(key === 'telegram') link = `https://t.me/${val}`;
+                        socialHtml += `
+                        <a href="${link}" target="_blank" class="p-3 bg-white dark:bg-slate-800 rounded-full shadow hover:-translate-y-1 transition ${meta.color}">
+                            <i data-lucide="${meta.icon}" class="w-5 h-5"></i>
+                        </a>`;
+                    }
+                });
+            }
+            document.getElementById('social-grid').innerHTML = socialHtml;
+
+            // BANK RENDER
+            const bankContainer = document.getElementById('bank-list');
+            bankContainer.innerHTML = (profileData.banks || []).map(b => `
+                <div class="bank-card p-3 rounded-xl flex items-center justify-between shadow-lg relative overflow-hidden group bg-white dark:bg-slate-900 border dark:border-white/5">
+                    <div class="flex items-center gap-4 z-10">
+                        <div class="w-12 h-12 bg-white rounded-lg shadow-inner flex items-center justify-center shrink-0 overflow-hidden relative">
+                            <img src="${b.logo}" class="w-full h-full object-contain p-1">
+                        </div>
+                        <div>
+                            <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">${b.shortName}</p>
+                            <p class="font-mono font-bold text-lg tracking-normal text-slate-800 dark:text-white select-all">${b.number}</p>
+                            <p class="text-[10px] font-bold uppercase text-slate-500">${b.owner}</p>
+                        </div>
+                    </div>
+                    <button onclick="window.copyToClip('${b.number}')" class="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-primary hover:text-white rounded-lg z-10 transition">
+                        <i data-lucide="copy" class="w-4 h-4"></i>
+                    </button>
+                    <div class="absolute right-0 bottom-0 opacity-5 pointer-events-none">
+                       <img src="${b.logo}" class="w-32 h-32 -mb-8 -mr-8 object-contain">
+                    </div>
+                </div>
+            `).join('');
+
+            const careerContainer = document.getElementById('career-timeline');
+            const items = [...(profileData.education || []), ...(profileData.work || [])];
+            if(items.length === 0) careerContainer.innerHTML = '<p class="text-sm text-slate-400 italic">Chưa cập nhật thông tin.</p>';
+            else {
+                careerContainer.innerHTML = items.map(item => `
+                    <div class="relative mb-6 last:mb-0">
+                        <span class="absolute -left-[33px] w-4 h-4 rounded-full bg-primary border-4 border-white dark:border-slate-800"></span>
+                        <h4 class="font-bold text-slate-800 dark:text-white">${item.title}</h4>
+                        <p class="text-xs font-bold text-primary mb-1">${item.org}</p>
+                        <p class="text-xs text-slate-500">${item.time} • ${item.status || ''}</p>
+                    </div>
+                `).join('');
+            }
+
+            const achContainer = document.getElementById('achievement-list');
+            if(!profileData.achievements || profileData.achievements.length === 0) {
+                achContainer.innerHTML = '<p class="text-sm text-slate-400 italic col-span-2 text-center">Chưa có thành tựu nào.</p>';
+            } else {
+                achContainer.innerHTML = profileData.achievements.map(a => `
+                    <div class="p-4 bg-white dark:bg-slate-800 rounded-xl border dark:border-white/5 flex items-start gap-3">
+                        <div class="p-2 bg-yellow-100 dark:bg-yellow-900/20 text-yellow-600 rounded-lg">
+                            <i data-lucide="award" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h5 class="font-bold text-sm">${a.title}</h5>
+                            <span class="text-[10px] font-bold px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded text-slate-500">${a.date}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            const partnerSec = document.getElementById('partners-section');
+            const partnerGrid = document.getElementById('partners-grid');
+            if(profileData.partners && profileData.partners.length > 0) {
+                partnerSec.classList.remove('hidden');
+                partnerGrid.innerHTML = profileData.partners.map(p => `
+                    <a href="${p.link}" target="_blank" class="block group">
+                        <img src="${p.logo}" class="h-8 md:h-10 w-auto object-contain transition group-hover:scale-110">
+                    </a>
+                `).join('');
+            } else {
+                partnerSec.classList.add('hidden');
+            }
+
+            checkFollowStatus(); 
+            lucide.createIcons();
+        }
+
+        // --- CROPPER LOGIC ---
+        const imageToCrop = document.getElementById('image-to-crop');
+        document.getElementById('inp-avatar').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    imageToCrop.src = evt.target.result;
+                    document.getElementById('modal-crop').classList.remove('hidden');
+                    if(cropper) cropper.destroy();
+                    cropper = new Cropper(imageToCrop, {
+                        aspectRatio: 1,
+                        viewMode: 1,
+                        autoCropArea: 1,
+                    });
+                }
+                reader.readAsDataURL(file);
+            }
+            e.target.value = ''; 
+        });
+
+        window.confirmCrop = () => {
+            if(!cropper) return;
+            croppedAvatarBase64 = cropper.getCroppedCanvas({ width: 400, height: 400 }).toDataURL();
+            document.getElementById('preview-avatar').src = croppedAvatarBase64;
+            window.closeModal('modal-crop');
+            showToast("Đã cắt ảnh xong! Nhấn Lưu để cập nhật.");
+        }
+
+        // --- CONTACT MODAL ---
+        window.showContactModal = (type) => {
+            const modal = document.getElementById('modal-contact');
+            const list = document.getElementById('contact-list');
+            const title = document.getElementById('contact-title');
+            
+            modal.classList.remove('hidden');
+            list.innerHTML = '';
+            
+            if (type === 'phone') {
+                title.innerText = "Gọi điện thoại";
+                const phones = profileData.phones || [];
+
+                if(phones.length === 0) list.innerHTML = '<p class="text-center text-slate-500">Chưa có số điện thoại.</p>';
+                else {
+                    list.innerHTML = phones.map(p => {
+                        const carrierKey = p.carrier ? p.carrier.toLowerCase().trim() : '';
+                        const logoUrl = carrierLogos[carrierKey] || '';
+                        
+                        let carrierDisplayHtml = '';
+                        if(logoUrl) {
+                            carrierDisplayHtml = `<img src="${logoUrl}" class="h-6 w-12 object-contain bg-white rounded px-1">`;
+                        } else {
+                            carrierDisplayHtml = `<span class="text-[10px] font-black uppercase px-2 py-0.5 rounded shadow-sm w-12 text-center bg-slate-500 text-white">${p.carrier || 'Sim'}</span>`;
+                        }
+                        
+                        return `
+                        <a href="tel:${p.number}" class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition group">
+                            <div class="flex items-center gap-3">
+                                ${carrierDisplayHtml}
+                                <span class="font-bold text-lg text-slate-700 dark:text-white">${p.number}</span>
+                            </div>
+                            <i data-lucide="phone-call" class="w-5 h-5 text-green-500 group-hover:scale-110 transition"></i>
+                        </a>`;
+                    }).join('');
+                }
+            } else {
+                title.innerText = "Gửi Email";
+                const emails = (profileData.email || "").split(',').map(e => e.trim()).filter(e=>e);
+                if(emails.length === 0) list.innerHTML = '<p>Chưa có email.</p>';
+                else {
+                    list.innerHTML = emails.map(e => `
+                        <a href="mailto:${e}" class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+                             <span class="font-bold text-sm truncate">${e}</span>
+                            <i data-lucide="send" class="w-5 h-5 text-blue-500"></i>
+                        </a>`).join('');
+                }
+            }
+            lucide.createIcons();
+        }
+
+        window.showContactForm = () => {
+             document.getElementById('modal-send-msg').classList.remove('hidden');
+             if(currentUser) {
+                 document.getElementById('msg-name').value = currentUser.displayName || '';
+                 document.getElementById('msg-email').value = currentUser.email || '';
+                 document.getElementById('msg-email-group').classList.add('hidden'); 
+             } else {
+                 document.getElementById('msg-email-group').classList.remove('hidden');
+             }
+        }
+        window.toggleAnon = () => {
+            const isAnon = document.getElementById('msg-anon').checked;
+            const nameInp = document.getElementById('msg-name');
+            const emailGrp = document.getElementById('msg-email-group');
+            if(isAnon) {
+                nameInp.value = "Người ẩn danh";
+                nameInp.disabled = true;
+                emailGrp.classList.add('hidden');
+            } else {
+                nameInp.value = currentUser ? currentUser.displayName : "";
+                nameInp.disabled = false;
+                if(!currentUser) emailGrp.classList.remove('hidden');
+            }
+        }
+        window.sendContact = async () => {
+            const content = document.getElementById('msg-content').value;
+            if(!content) { showToast("Vui lòng nhập nội dung!", true); return; }
+            
+            const isAnon = document.getElementById('msg-anon').checked;
+            let data = {
+                content: content,
+                timestamp: new Date().toISOString(),
+                isAnon: isAnon
+            };
+
+            if(isAnon) {
+                data.name = "Ẩn danh";
+            } else {
+                data.name = document.getElementById('msg-name').value;
+                data.email = currentUser ? currentUser.email : document.getElementById('msg-email').value;
+            }
+
+            try {
+                await addDoc(collection(db, "messages"), data);
+                showToast("Tin nhắn đã được gửi!");
+                window.closeModal('modal-send-msg');
+                document.getElementById('contact-form').reset();
+            } catch(e) {
+                showToast("Lỗi gửi tin nhắn", true);
+            }
+        }
+
+        // --- AUTH UI ---
+        function renderAuthUI() {
+            const container = document.getElementById('auth-section');
+            if (currentUser) {
+                container.innerHTML = `
+                    <div class="flex items-center gap-2 cursor-pointer" onclick="window.doLogout()">
+                        <img src="${currentUser.photoURL}" class="w-8 h-8 rounded-full border border-slate-200">
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `<button onclick="window.doLogin()" class="px-4 py-1.5 bg-primary text-white text-xs font-bold rounded-full shadow hover:bg-indigo-600">Đăng nhập</button>`;
+            }
+        }
+        window.doLogin = () => signInWithPopup(auth, provider);
+        window.doLogout = () => signOut(auth).then(()=> location.reload());
+
+        // --- ADMIN OPEN ---
+        window.openEditModal = async () => {
+            document.getElementById('modal-admin').classList.remove('hidden');
+            document.getElementById('preview-avatar').src = profileData.avatar || '';
+            document.getElementById('inp-name').value = profileData.name || '';
+            document.getElementById('inp-nickname').value = profileData.nickname || '';
+            document.getElementById('inp-bio').value = profileData.bio || '';
+            document.getElementById('inp-dob').value = profileData.dob || '';
+            document.getElementById('inp-gender').value = profileData.gender || 'Nam';
+            
+            // Hometown Load
+            await fetchProvinces();
+            const savedHometown = profileData.hometown?.full || '';
+            document.getElementById('inp-hometown-full').value = savedHometown;
+            const citySelect = document.getElementById('api-city');
+            for(let i=0; i<citySelect.options.length; i++) {
+                if(citySelect.options[i].dataset.name === savedHometown) {
+                    citySelect.selectedIndex = i;
+                    break;
+                }
+            }
+
+            if(profileData.meta) {
+                document.getElementById('meta-title-inp').value = profileData.meta.title || '';
+                document.getElementById('meta-desc-inp').value = profileData.meta.description || '';
+                document.getElementById('meta-icon-inp').value = profileData.meta.favicon || '';
+            }
+
+            if(profileData.relationship) {
+                document.getElementById('inp-rel-status').value = profileData.relationship.status;
+                document.getElementById('inp-partner-name').value = profileData.relationship.partnerName || '';
+                document.getElementById('inp-partner-link').value = profileData.relationship.partnerLink || '';
+                togglePartnerInput();
+            }
+
+            const phones = profileData.phones || [];
+            document.getElementById('phone-list-editor').innerHTML = '';
+            phones.forEach(p => addPhoneInput(p.number, p.carrier));
+            
+            document.getElementById('inp-emails').value = profileData.email || '';
+            if(profileData.socials) {
+                document.getElementById('inp-fb').value = profileData.socials.facebook || '';
+                document.getElementById('inp-zalo').value = profileData.socials.zalo || '';
+                document.getElementById('inp-ig').value = profileData.socials.instagram || '';
+                document.getElementById('inp-tele').value = profileData.socials.telegram || '';
+                document.getElementById('inp-linkedin').value = profileData.socials.linkedin || '';
+            }
+
+            const careerData = [...(profileData.education || []), ...(profileData.work || []), ...(profileData.achievements || [])];
+            document.getElementById('inp-career-json').value = JSON.stringify({
+                education: profileData.education || [],
+                work: profileData.work || [],
+                achievements: profileData.achievements || []
+            }, null, 2);
+
+            listBanks = profileData.banks || [];
+            renderAdminBanks();
+            loadBankList();
+
+            listPartners = profileData.partners || [];
+            renderAdminPartners();
+            
+            const usbSnap = await getDoc(doc(db, "settings", "usb_config"));
+            if(usbSnap.exists()) document.getElementById('usb-secret-val').value = usbSnap.data().secret || '';
+
+            // Load Messages
+            loadAdminMessages();
+        }
+
+        window.loadAdminMessages = async () => {
+            const list = document.getElementById('admin-messages-list');
+            list.innerHTML = '<p class="text-center text-xs">Đang tải...</p>';
+            try {
+                const q = query(collection(db, "messages"), orderBy("timestamp", "desc"), limit(20));
+                const snap = await getDocs(q);
+                if(snap.empty) {
+                    list.innerHTML = '<p class="text-center text-slate-400 text-xs">Chưa có tin nhắn nào.</p>';
+                    return;
+                }
+                list.innerHTML = '';
+                snap.forEach(doc => {
+                    const msg = doc.data();
+                    const d = new Date(msg.timestamp).toLocaleString('vi-VN');
+                    list.innerHTML += `
+                        <div class="p-3 bg-slate-50 dark:bg-slate-800 rounded border dark:border-white/10">
+                            <div class="flex justify-between items-start">
+                                <span class="font-bold text-sm text-primary">${msg.name}</span>
+                                <span class="text-[10px] text-slate-400">${d}</span>
+                            </div>
+                            <p class="text-xs text-slate-500 italic mb-1">${msg.email || 'No Email'}</p>
+                            <p class="text-sm bg-white dark:bg-slate-900 p-2 rounded mt-1">${msg.content}</p>
+                        </div>
+                    `;
+                });
+            } catch (error) {
+                list.innerHTML = '<p class="text-red-500 text-xs">Lỗi tải tin nhắn.</p>';
+            }
+        }
+
+        // --- SAVE PROFILE ---
+        window.saveProfile = async () => {
+            const btn = document.querySelector('#modal-admin button.bg-primary');
+            btn.innerText = "Đang lưu...";
+            
+            try {
+                const token = document.getElementById('gh-token').value;
+                const owner = document.getElementById('gh-owner').value;
+                const repo = document.getElementById('gh-repo').value;
+                if(token && owner && repo) {
+                    await setDoc(doc(db, "settings", "github_config"), { token, owner, repo });
+                    ghConfig = { token, owner, repo };
+                }
+
+                let avatarUrl = profileData.avatar;
+                if(croppedAvatarBase64 && ghConfig.token) {
+                    const content = croppedAvatarBase64.split(',')[1];
+                    const path = `avatars/${Date.now()}_avatar.png`;
+                    const url = `https://api.github.com/repos/${ghConfig.owner}/${ghConfig.repo}/contents/${path}`;
+                    const res = await fetch(url, {
+                        method: 'PUT',
+                        headers: { 'Authorization': `token ${ghConfig.token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: "Update Avatar", content: content, branch: 'main' })
+                    });
+                    if(res.ok) {
+                        const data = await res.json();
+                        avatarUrl = data.content.download_url;
+                    }
+                }
+
+                const jsonRaw = document.getElementById('inp-career-json').value;
+                let careerData = {};
+                try { careerData = JSON.parse(jsonRaw); } catch(e) { alert("JSON Lỗi!"); return; }
+
+                const phoneElements = document.querySelectorAll('#phone-list-editor .phone-row');
+                const phones = Array.from(phoneElements).map(row => ({
+                    carrier: row.querySelector('.carrier-select').value,
+                    number: row.querySelector('.phone-inp').value
+                })).filter(x => x.number);
+                
+                const newData = {
+                    name: document.getElementById('inp-name').value,
+                    nickname: document.getElementById('inp-nickname').value,
+                    bio: document.getElementById('inp-bio').value,
+                    dob: document.getElementById('inp-dob').value,
+                    gender: document.getElementById('inp-gender').value,
+                    hometown: { full: document.getElementById('inp-hometown-full').value },
+                    avatar: avatarUrl,
+                    meta: {
+                        title: document.getElementById('meta-title-inp').value,
+                        description: document.getElementById('meta-desc-inp').value,
+                        favicon: document.getElementById('meta-icon-inp').value
+                    },
+                    relationship: {
+                        status: document.getElementById('inp-rel-status').value,
+                        partnerName: document.getElementById('inp-partner-name').value,
+                        partnerLink: document.getElementById('inp-partner-link').value
+                    },
+                    email: document.getElementById('inp-emails').value,
+                    phones: phones,
+                    socials: {
+                        facebook: document.getElementById('inp-fb').value,
+                        zalo: document.getElementById('inp-zalo').value,
+                        instagram: document.getElementById('inp-ig').value,
+                        telegram: document.getElementById('inp-tele').value,
+                        linkedin: document.getElementById('inp-linkedin').value,
+                    },
+                    banks: listBanks,
+                    partners: listPartners,
+                    education: careerData.education || [],
+                    work: careerData.work || [],
+                    achievements: careerData.achievements || []
+                };
+
+                await setDoc(profileRef, newData, { merge: true });
+                showToast("Đã cập nhật Profile!");
+                window.closeModal('modal-admin');
+                croppedAvatarBase64 = null; 
+
+            } catch(e) {
+                showToast("Lỗi: " + e.message, true);
+                console.error(e);
+            } finally {
+                btn.innerText = "Lưu Thay Đổi";
+            }
+        }
+
+        // --- ADMIN HELPERS ---
+        window.addPhoneInput = (val = '', carrier = 'Viettel') => {
+            const container = document.getElementById('phone-list-editor');
+            const div = document.createElement('div');
+            div.className = 'phone-row flex gap-2 items-center bg-white p-2 rounded shadow-sm';
+            // Adjusted width for select box here (w-[110px])
+            div.innerHTML = `
+                <select class="inp w-[110px] shrink-0 carrier-select text-xs">
+                    <option value="Viettel" ${carrier === 'Viettel' ? 'selected' : ''}>Viettel</option>
+                    <option value="Vinaphone" ${carrier === 'Vinaphone' ? 'selected' : ''}>Vinaphone</option>
+                    <option value="Mobifone" ${carrier === 'Mobifone' ? 'selected' : ''}>Mobifone</option>
+                    <option value="Vietnamobile" ${carrier === 'Vietnamobile' ? 'selected' : ''}>Vietnamobile</option>
+                    <option value="Gmobile" ${carrier === 'Gmobile' ? 'selected' : ''}>Gmobile</option>
+                    <option value="Itel" ${carrier === 'Itel' ? 'selected' : ''}>Itel/Khác</option>
+                </select>
+                <input type="text" value="${val}" class="inp phone-inp flex-1 font-bold text-slate-700 min-w-0" placeholder="09xxxx">
+                <button type="button" onclick="this.parentElement.remove()" class="p-2 text-red-500 hover:bg-red-50 rounded"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            `;
+            container.appendChild(div);
+            lucide.createIcons();
+        }
+
+        window.addPartner = () => {
+            const logo = document.getElementById('partner-logo-url').value;
+            const link = document.getElementById('partner-link').value;
+            if(!logo) return;
+            listPartners.push({ logo, link });
+            renderAdminPartners();
+            document.getElementById('partner-logo-url').value = '';
+            document.getElementById('partner-link').value = '';
+        }
+        function renderAdminPartners() {
+            document.getElementById('admin-partner-list').innerHTML = listPartners.map((p, i) => `
+                <div class="relative p-2 border rounded flex items-center justify-center bg-white h-20 group cursor-pointer" onclick="editPartner(${i})">
+                    <img src="${p.logo}" class="h-full object-contain">
+                    <button onclick="event.stopPropagation(); removePartner(${i})" class="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center">x</button>
+                    <div class="absolute inset-0 bg-black/10 hidden group-hover:flex items-center justify-center text-xs font-bold text-white">Sửa</div>
+                </div>
+            `).join('');
+        }
+        window.removePartner = (i) => { listPartners.splice(i, 1); renderAdminPartners(); }
+        window.editPartner = (i) => {
+            const p = listPartners[i];
+            document.getElementById('partner-logo-url').value = p.logo;
+            document.getElementById('partner-link').value = p.link;
+            listPartners.splice(i, 1);
+            renderAdminPartners();
+            showToast("Đã đưa thông tin lên ô nhập để sửa.");
+        }
+
+        window.openManagerModal = async () => {
+             const modal = document.getElementById('modal-manager');
+             modal.classList.remove('hidden');
+             const list = document.getElementById('manager-list');
+             list.innerHTML = '<div class="text-center p-4"><div class="loader"></div></div>';
+             try {
+                const snap = await getDocs(collection(db, "users"));
+                let html = '';
+                snap.forEach(d => {
+                    const u = d.data();
+                    html += `
+                    <div class="flex items-center gap-3 p-3 border-b dark:border-white/5">
+                        <img src="${u.photoURL}" class="w-10 h-10 rounded-full bg-slate-100">
+                        <div class="flex-1 min-w-0">
+                            <p class="font-bold text-sm truncate">${u.displayName}</p>
+                            <p class="text-xs text-slate-500 truncate">${u.email}</p>
+                        </div>
+                    </div>`;
+                });
+                list.innerHTML = html;
+             } catch(e) { list.innerHTML = "Lỗi tải danh sách."; }
+        }
+
+        function checkFollowStatus() {
+            const btn = document.getElementById('follow-btn');
+            if (!currentUser) {
+                btn.innerHTML = `<i data-lucide="user-plus" class="w-4 h-4"></i> Theo dõi`;
+                btn.classList.remove('bg-green-600');
+                return;
+            }
+            const followers = profileData.followers || [];
+            const isFollowing = followers.includes(currentUser.uid);
+            if (isFollowing) {
+                btn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> Đang theo dõi`;
+                btn.classList.add('bg-green-600', 'text-white');
+                btn.classList.remove('bg-slate-900', 'dark:bg-white');
+            } else {
+                btn.innerHTML = `<i data-lucide="user-plus" class="w-4 h-4"></i> Theo dõi`;
+                btn.classList.remove('bg-green-600');
+                btn.classList.add('bg-slate-900', 'dark:bg-white');
+            }
+            lucide.createIcons();
+        }
+        window.toggleFollow = async () => {
+            if (!currentUser) { window.doLogin(); return; }
+            const uid = currentUser.uid;
+            const followers = profileData.followers || [];
+            if (followers.includes(uid)) {
+                await updateDoc(profileRef, { followers: arrayRemove(uid) });
+                showToast("Đã hủy theo dõi");
+            } else {
+                await updateDoc(profileRef, { followers: arrayUnion(uid) });
+                showToast("Đã theo dõi!");
+            }
+        }
+
+        // --- UTILS ---
+        window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
+        window.toggleTheme = () => {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        }
+        if (localStorage.theme === 'dark') document.documentElement.classList.add('dark');
+
+        window.copyToClip = (text) => { navigator.clipboard.writeText(text); showToast('Đã sao chép!'); }
+        function formatDate(dateStr) { if (!dateStr) return ""; const [y, m, d] = dateStr.split('-'); return `${d}/${m}/${y}`; }
+        function showToast(msg, isError = false) {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            const icon = document.getElementById('toast-icon');
+            if(isError) { icon.classList.replace('text-green-500','text-red-500'); icon.setAttribute('data-lucide','alert-triangle'); }
+            else { icon.classList.replace('text-red-500','text-green-500'); icon.setAttribute('data-lucide','check-circle'); }
+            lucide.createIcons();
+            t.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => t.classList.add('translate-y-20', 'opacity-0'), 3000);
+        }
+        
+        // --- API HELPERS ---
+        async function fetchProvinces() { 
+            const res = await fetch('https://esgoo.net/api-tinhthanh/1/0.htm'); 
+            const data = await res.json(); 
+            if(data.error === 0) {
+                document.getElementById('api-city').innerHTML = '<option value="">-- Chọn Tỉnh/Thành phố --</option>' + data.data.map(p => `<option value="${p.id}" data-name="${p.full_name}">${p.full_name}</option>`).join(''); 
+            }
+        }
+        
+        window.updateHometownStr = () => { 
+            const c = document.getElementById('api-city'); 
+            const name = c.options[c.selectedIndex]?.dataset.name || '';
+            document.getElementById('inp-hometown-full').value = name; 
+        }
+
+        async function loadBankList() { try { const res = await fetch('https://api.vietqr.io/v2/banks'); const data = await res.json(); if(data.code === "00") document.getElementById('api-bank-list').innerHTML = data.data.map(b => `<option value='${JSON.stringify({shortName: b.shortName, logo: b.logo})}'>${b.shortName}</option>`).join(''); } catch(e) {} }
+        window.addBank = () => { const meta = JSON.parse(document.getElementById('api-bank-list').value); const num = document.getElementById('bank-acc-num').value; const owner = document.getElementById('bank-acc-name').value; if(!num) return; listBanks.push({ ...meta, number: num, owner }); renderAdminBanks(); document.getElementById('bank-acc-num').value = ''; }
+        function renderAdminBanks() { document.getElementById('admin-bank-list').innerHTML = listBanks.map((b, i) => `<div class="flex items-center justify-between p-2 bg-slate-100 dark:bg-slate-800 rounded"><div class="flex items-center gap-2"><img src="${b.logo}" class="w-6 h-6 object-contain bg-white"><span class="text-xs font-bold">${b.shortName} - ${b.number}</span></div><button onclick="removeBank(${i})" class="text-red-500 text-xs">Xóa</button></div>`).join(''); }
+        window.removeBank = (i) => { listBanks.splice(i, 1); renderAdminBanks(); }
+        
+        window.switchTab = (tabName) => { document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden')); document.getElementById('tab-' + tabName).classList.remove('hidden'); document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('bg-white', 'dark:bg-white/5', 'shadow-sm')); event.target.classList.add('bg-white', 'dark:bg-white/5', 'shadow-sm'); }
+        window.togglePartnerInput = () => { const val = document.getElementById('inp-rel-status').value; document.getElementById('partner-inputs').classList.toggle('hidden', val === 'Độc thân'); }
+        async function loadGithubConfig() { const s = await getDoc(doc(db, "settings", "github_config")); if(s.exists()) { ghConfig = s.data(); document.getElementById('gh-token').value = ghConfig.token || ''; document.getElementById('gh-owner').value = ghConfig.owner || ''; document.getElementById('gh-repo').value = ghConfig.repo || ''; } }
+        
+        lucide.createIcons();
+    </script>
+    <style>
+        .inp { width: 100%; padding: 0.5rem 1rem; border-radius: 0.5rem; border: 1px solid #e2e8f0; background-color: #f8fafc; outline: none; font-size: 0.875rem; }
+        .dark .inp { background-color: #1e293b; border-color: rgba(255,255,255,0.1); color: white; }
+        .inp:focus { border-color: #6366f1; }
+        .lbl { display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 0.25rem; }
+        .btn-primary { background-color: #6366f1; color: white; }
+        .loader { width: 20px; height: 20px; border: 3px solid #e2e8f0; border-bottom-color: #6366f1; border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite; }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</body>
+</html>
