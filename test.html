@@ -1,331 +1,173 @@
 <!DOCTYPE html>
-<html lang="vi" class="light">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TrafficSnap - Bản đồ & Locket Giao Thông</title>
     
-    <!-- SEO & PWA META -->
-    <title>Bmass Profile</title>
-    <meta name="description" id="meta-desc" content="Trang cá nhân tích hợp PWA và thông báo đẩy.">
-    <link rel="icon" id="meta-icon" href="https://hdd.io.vn/img/bmassloadings.png" type="image/png">
-    
-    <!-- Open Graph -->
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="Profile Cá Nhân">
-    <meta property="og:image" content="https://hdd.io.vn/img/bmasslogos.png">
-    <meta name="theme-color" content="#6366f1">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
-    <!-- PWA Settings -->
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Bmass Profile">
-    
-    <!-- Link Manifest động -->
-    <link rel="manifest" id="dynamic-manifest">
-    
-    <!-- Tailwind & Libs -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
-
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: { 
-                extend: { 
-                    colors: { primary: '#6366f1', secondary: '#ec4899', dark: '#0f172a' },
-                    animation: { 'blob': 'blob 7s infinite', 'bounce-slow': 'bounce 2s infinite' },
-                    keyframes: {
-                        blob: {
-                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
-                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
-                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
-                            '100%': { transform: 'translate(0px, 0px) scale(1)' }
-                        }
-                    }
-                } 
-            }
-        }
-    </script>
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; transition: background 0.3s; } 
-        .dark body { background-color: #020617; color: #e2e8f0; }
-        .custom-bg { background-size: cover; background-position: center; background-attachment: fixed; }
-        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); }
-        .dark .glass { background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.05); }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .dark ::-webkit-scrollbar-thumb { background: #334155; }
-        .reveal-on-scroll { opacity: 0; transform: translateY(30px); transition: all 0.8s cubic-bezier(0.5, 0, 0, 1); }
-        .reveal-on-scroll.active { opacity: 1; transform: translateY(0); }
-        
-        /* PWA Install Button Animation */
-        #pwa-install-btn { display: none; }
-        #pwa-install-btn.show { display: flex; animation: bounce-slow 3s infinite; }
+        :root {
+            --primary-color: #ff9f1c; /* Cam Locket */
+            --danger-color: #ff4444;
+            --bg-glass: rgba(20, 20, 20, 0.85);
+            --text-color: #ffffff;
+        }
+
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; overflow: hidden; background: #000; color: white; }
+
+        /* Fullscreen Map */
+        #map { height: 100vh; width: 100vw; z-index: 1; }
+
+        /* Login Screen */
+        #loginOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #111; z-index: 9999;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+        }
+        .login-btn {
+            background: white; color: #333; padding: 12px 24px;
+            border-radius: 30px; border: none; font-weight: bold; font-size: 16px;
+            cursor: pointer; display: flex; align-items: center; gap: 10px;
+        }
+
+        /* UI Overlay */
+        .ui-layer {
+            position: absolute; pointer-events: none;
+            top: 0; left: 0; width: 100%; height: 100%; z-index: 1000;
+        }
+        .interactive { pointer-events: auto; }
+
+        /* Dashboard Info */
+        .dashboard-top {
+            position: absolute; top: 20px; left: 20px; right: 20px;
+            display: flex; justify-content: space-between; align-items: flex-start;
+        }
+        .speed-panel {
+            background: var(--bg-glass);
+            padding: 10px 20px; border-radius: 15px;
+            backdrop-filter: blur(10px); text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .speed-val { font-size: 32px; font-weight: 800; color: var(--primary-color); }
+        .speed-unit { font-size: 12px; color: #aaa; }
+
+        /* User Info & Admin Badge */
+        .user-panel {
+            display: flex; flex-direction: column; align-items: flex-end; gap: 5px;
+        }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--primary-color); }
+        .admin-badge { 
+            background: var(--danger-color); font-size: 10px; padding: 2px 8px; 
+            border-radius: 4px; display: none; /* Ẩn mặc định */
+        }
+
+        /* Camera Button (Locket Style) */
+        .camera-container {
+            position: absolute; bottom: 30px; left: 0; right: 0;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .btn-snap {
+            width: 70px; height: 70px;
+            border-radius: 50%;
+            border: 4px solid white;
+            background: transparent;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .btn-snap::after {
+            content: ''; position: absolute;
+            top: 5px; left: 5px; right: 5px; bottom: 5px;
+            background: var(--primary-color); border-radius: 50%;
+        }
+        .btn-snap:active { transform: scale(0.9); }
+
+        /* Upload Status */
+        #statusMsg {
+            position: absolute; bottom: 110px; width: 100%;
+            text-align: center; font-size: 14px; text-shadow: 0 1px 3px black;
+            display: none;
+        }
+
+        /* Red Alert Effect */
+        .alert-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            box-shadow: inset 0 0 50px 20px red;
+            display: none; pointer-events: none; z-index: 900;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse { 50% { opacity: 0.5; } }
+
+        /* Hidden Input */
+        #cameraInput { display: none; }
+
+        /* Popup Image Style */
+        .popup-img {
+            width: 100%; max-width: 200px; border-radius: 10px; margin-top: 5px;
+            border: 2px solid var(--primary-color);
+        }
     </style>
 </head>
-<body class="min-h-screen relative overflow-x-hidden pb-10 custom-bg">
+<body>
 
-    <div class="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
-        <div class="absolute top-0 left-1/4 w-96 h-96 bg-primary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
-        <div class="absolute top-0 right-1/4 w-96 h-96 bg-secondary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
+    <!-- Màn hình Đăng nhập -->
+    <div id="loginOverlay">
+        <h1 style="color:var(--primary-color); margin-bottom: 30px;"><i class="fa-solid fa-camera-retro"></i> TrafficSnap</h1>
+        <button class="login-btn" onclick="loginWithGoogle()">
+            <i class="fa-brands fa-google"></i> Đăng nhập bằng Google
+        </button>
     </div>
 
-    <!-- Loading -->
-    <div id="global-loading" class="fixed inset-0 bg-white dark:bg-slate-950 z-[900] flex flex-col items-center justify-center transition-opacity duration-300">
-        <img src="/img/bmassloadings.png" class="w-20 h-20 mb-4 animate-bounce-slow drop-shadow-2xl">
-        <span class="text-sm font-bold text-slate-500 tracking-widest uppercase">Đang tải dữ liệu...</span>
+    <!-- Hiệu ứng cảnh báo -->
+    <div id="alertEffect" class="alert-screen"></div>
+
+    <!-- Bản đồ -->
+    <div id="map"></div>
+
+    <!-- Giao diện chính -->
+    <div class="ui-layer">
+        <div class="dashboard-top">
+            <div class="speed-panel interactive">
+                <div class="speed-val" id="speedEl">0</div>
+                <div class="speed-unit">km/h</div>
+            </div>
+            
+            <div class="user-panel interactive">
+                <img id="userAvatar" class="avatar" src="" style="display:none;">
+                <span id="adminLabel" class="admin-badge">ADMIN</span>
+                <button id="logoutBtn" onclick="handleLogout()" style="display:none; background: #333; color: white; border: none; padding: 5px 10px; border-radius: 5px; font-size: 12px; margin-top: 5px;">Đăng xuất</button>
+            </div>
+        </div>
+
+        <div id="statusMsg">Đang tải ảnh lên GitHub...</div>
+
+        <div class="camera-container interactive">
+            <!-- Nút chụp -->
+            <div class="btn-snap" onclick="document.getElementById('cameraInput').click()"></div>
+        </div>
     </div>
 
-    <input type="file" id="usb-key-input" class="hidden" accept=".json,.txt">
+    <!-- Input file ẩn để chụp ảnh -->
+    <input type="file" id="cameraInput" accept="image/*" capture="environment" onchange="handleFileUpload(this)">
 
-    <!-- Navbar -->
-    <nav class="sticky top-0 z-50 glass px-6 py-3 flex justify-between items-center mb-8">
-        <div class="flex items-center gap-3">
-            <img id="nav-avatar" src="https://ui-avatars.com/api/?name=P" class="w-9 h-9 rounded-full object-cover border-2 border-primary/20 shadow-sm">
-            <span id="nav-nickname" class="font-bold text-lg hidden sm:block tracking-tight truncate max-w-[150px]">Profile</span>
-        </div>
-        <div class="flex items-center gap-2">
-            <!-- PWA Install Button -->
-            <button id="pwa-install-btn" class="hidden px-3 py-1.5 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-full text-xs font-bold items-center gap-2 shadow-lg hover:shadow-xl transition transform hover:scale-105">
-                <i data-lucide="download" class="w-4 h-4"></i> Cài App
-            </button>
-            
-            <!-- Notification Button -->
-            <button id="notify-btn" onclick="window.requestNotificationPermission()" class="p-2 rounded-full text-slate-400 hover:text-yellow-500 hover:bg-black/5 dark:hover:bg-white/10 transition relative" title="Bật thông báo">
-                <i id="notify-icon" data-lucide="bell" class="w-5 h-5"></i>
-                <span id="notify-dot" class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full hidden animate-ping"></span>
-            </button>
-
-            <button onclick="window.toggleTheme()" class="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition">
-                <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
-                <i data-lucide="moon" class="w-5 h-5 dark:hidden"></i>
-            </button>
-            
-            <!-- Admin Buttons -->
-            <button onclick="document.getElementById('usb-key-input').click()" class="p-2 rounded-full text-slate-400 hover:text-primary hover:bg-black/5 dark:hover:bg-white/10 transition">
-                <i data-lucide="usb" class="w-5 h-5"></i>
-            </button>
-            <button id="admin-btn" onclick="window.openEditModal()" class="hidden px-3 py-1.5 bg-slate-800 dark:bg-white text-white dark:text-slate-900 rounded-lg text-xs font-bold uppercase shadow gap-2 items-center">
-                <i data-lucide="edit-3" class="w-3 h-3"></i> Sửa
-            </button>
-             <button id="manager-btn" onclick="window.openManagerModal()" class="hidden p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition">
-                <i data-lucide="users" class="w-5 h-5"></i>
-            </button>
-            
-            <div id="auth-section"></div>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="max-w-4xl mx-auto px-4 space-y-6">
-        <!-- Header Card -->
-        <div class="glass rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row items-center md:items-start gap-6 relative overflow-hidden reveal-on-scroll">
-            <div class="relative group">
-                <div class="absolute -inset-1 bg-gradient-to-r from-primary to-secondary rounded-full blur opacity-25 group-hover:opacity-75 transition duration-1000"></div>
-                <img id="profile-avatar" src="https://ui-avatars.com/api/?name=User&size=256" class="relative w-32 h-32 sm:w-40 sm:h-40 rounded-full object-cover border-4 border-white dark:border-slate-800 shadow-xl">
-                <div id="online-indicator" class="absolute bottom-2 right-2 w-5 h-5 bg-green-500 border-4 border-white dark:border-slate-800 rounded-full"></div>
-            </div>
-            <div class="flex-1 text-center md:text-left space-y-2 z-10">
-                <div class="flex flex-col md:flex-row items-center gap-2 md:gap-4 justify-center md:justify-start">
-                    <h1 id="profile-name" class="text-3xl sm:text-4xl font-black tracking-tight text-slate-800 dark:text-white">Loading...</h1>
-                    <span id="profile-nickname-badge" class="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider hidden"></span>
-                </div>
-                <p id="profile-bio" class="text-slate-500 dark:text-slate-400 font-medium max-w-lg mx-auto md:mx-0">...</p>
-                <div class="flex flex-wrap items-center justify-center md:justify-start gap-4 py-3">
-                    <div class="flex items-center gap-1.5 text-sm font-bold text-slate-700 dark:text-slate-300">
-                        <i data-lucide="users" class="w-4 h-4 text-primary"></i> <span id="stat-followers">0</span>
-                    </div>
-                    <div class="flex items-center gap-1.5 text-sm font-bold text-slate-700 dark:text-slate-300">
-                        <i data-lucide="eye" class="w-4 h-4 text-secondary"></i> <span id="stat-views">0</span>
-                    </div>
-                    <div id="relationship-display" class="hidden flex items-center gap-1.5 text-sm font-bold text-pink-500 bg-pink-500/10 px-3 py-1 rounded-full">
-                        <i data-lucide="heart" class="w-3 h-3 fill-current"></i> <span id="rel-status"></span>
-                    </div>
-                </div>
-                <div class="flex flex-wrap justify-center md:justify-start gap-3 mt-2">
-                    <button id="follow-btn" onclick="window.toggleFollow()" class="px-6 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl font-bold text-sm shadow-lg hover:transform hover:scale-105 transition flex items-center gap-2">
-                        <i data-lucide="user-plus" class="w-4 h-4"></i> Theo dõi
-                    </button>
-                    <button onclick="window.showContactModal('phone')" class="p-2.5 bg-white dark:bg-slate-800 border dark:border-white/10 rounded-xl hover:text-primary transition shadow-sm"><i data-lucide="phone" class="w-5 h-5"></i></button>
-                    <button onclick="window.showContactModal('email')" class="p-2.5 bg-white dark:bg-slate-800 border dark:border-white/10 rounded-xl hover:text-secondary transition shadow-sm"><i data-lucide="mail" class="w-5 h-5"></i></button>
-                </div>
-            </div>
-        </div>
-
-        <div id="social-grid" class="flex flex-wrap justify-center gap-4 reveal-on-scroll"></div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 reveal-on-scroll">
-            <div class="glass p-6 rounded-3xl space-y-4">
-                <h3 class="font-black uppercase text-sm tracking-widest text-slate-400 flex items-center gap-2"><i data-lucide="info" class="w-4 h-4"></i> Thông tin</h3>
-                <ul class="space-y-3">
-                    <li class="flex justify-between p-3 bg-white/50 dark:bg-slate-800/50 rounded-xl"><span class="text-sm font-medium text-slate-500">Ngày sinh</span><span id="info-dob" class="text-sm font-bold">--/--/----</span></li>
-                    <li class="flex justify-between p-3 bg-white/50 dark:bg-slate-800/50 rounded-xl"><span class="text-sm font-medium text-slate-500">Giới tính</span><span id="info-gender" class="text-sm font-bold">---</span></li>
-                    <li class="flex justify-between p-3 bg-white/50 dark:bg-slate-800/50 rounded-xl"><span class="text-sm font-medium text-slate-500">Quê quán</span><span id="info-hometown" class="text-sm font-bold text-right truncate">---</span></li>
-                </ul>
-            </div>
-            <div class="glass p-6 rounded-3xl space-y-4">
-                <h3 class="font-black uppercase text-sm tracking-widest text-slate-400 flex items-center gap-2"><i data-lucide="credit-card" class="w-4 h-4"></i> Ngân hàng</h3>
-                <div id="bank-list" class="space-y-3 max-h-[200px] overflow-y-auto pr-1"></div>
-            </div>
-        </div>
-
-        <div class="glass p-6 sm:p-8 rounded-3xl reveal-on-scroll">
-            <h3 class="font-black uppercase text-sm tracking-widest text-slate-400 mb-6 flex items-center gap-2"><i data-lucide="briefcase" class="w-4 h-4"></i> Học vấn & Công việc</h3>
-            <div id="career-timeline" class="space-y-6 border-l-2 border-slate-200 dark:border-slate-700 ml-3 pl-6 relative"></div>
-        </div>
-
-        <div class="glass p-6 sm:p-8 rounded-3xl reveal-on-scroll">
-            <h3 class="font-black uppercase text-sm tracking-widest text-slate-400 mb-6 flex items-center gap-2"><i data-lucide="award" class="w-4 h-4"></i> Thành tựu</h3>
-            <div id="achievement-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
-        </div>
-
-        <div id="partners-section" class="glass p-6 sm:p-8 rounded-3xl hidden reveal-on-scroll">
-            <h3 class="font-black uppercase text-sm tracking-widest text-slate-400 mb-6 flex items-center gap-2"><i data-lucide="handshake" class="w-4 h-4"></i> Đối tác</h3>
-            <div id="partners-grid" class="flex flex-wrap items-center justify-center gap-8 opacity-70 grayscale hover:grayscale-0 transition-all"></div>
-        </div>
-
-        <div class="flex justify-center mt-8 reveal-on-scroll">
-            <button onclick="window.showContactForm()" class="w-full max-w-md px-6 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:-translate-y-1 transition flex items-center justify-center gap-3">
-                <i data-lucide="send" class="w-6 h-6"></i> Gửi tin nhắn
-            </button>
-        </div>
-        
-        <div class="glass mt-8 p-4 rounded-2xl text-center space-y-2 reveal-on-scroll">
-            <div class="flex items-center justify-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-widest"><i data-lucide="globe" class="w-3 h-3"></i> Kết nối</div>
-            <div class="grid grid-cols-2 gap-4 text-sm">
-                <div><span class="block text-slate-400 text-xs">IP</span><span id="user-ip" class="font-mono font-bold">...</span></div>
-                <div><span class="block text-slate-400 text-xs">GPS</span><span id="user-coords" class="font-mono font-bold">...</span></div>
-            </div>
-        </div>
-    </main>
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
-    <footer class="text-center py-8 text-slate-400 text-xs font-medium"><p>&copy; 2024 Profile System (PWA Enabled).</p></footer>
-
-    <!-- MODALS: Contact, Crop, SendMsg, Manager, Admin -->
-    <!-- (Giữ nguyên cấu trúc Modal như cũ để tiết kiệm không gian, chỉ thêm ID nếu cần) -->
-    
-    <div id="modal-contact" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6 shadow-2xl">
-            <div class="flex justify-between items-center mb-4"><h3 id="contact-title" class="font-bold text-lg">Liên hệ</h3><button onclick="window.closeModal('modal-contact')" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button></div>
-            <div id="contact-list" class="space-y-3"></div>
-        </div>
-    </div>
-
-    <div id="modal-send-msg" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
-            <button onclick="window.closeModal('modal-send-msg')" class="absolute top-4 right-4 p-2"><i data-lucide="x" class="w-5 h-5"></i></button>
-            <h3 class="font-bold text-lg mb-4">Gửi tin nhắn</h3>
-            <form id="contact-form" class="space-y-4">
-                <div><label class="lbl">Họ tên</label><input type="text" id="msg-name" class="inp" placeholder="Tên..."></div>
-                <div id="msg-email-group"><label class="lbl">Email</label><input type="email" id="msg-email" class="inp" placeholder="Email..."></div>
-                <div><label class="lbl">Nội dung</label><textarea id="msg-content" rows="4" class="inp"></textarea></div>
-                <div class="flex items-center gap-2"><input type="checkbox" id="msg-anon" onchange="toggleAnon()" class="w-4 h-4"><label for="msg-anon" class="text-sm">Gửi ẩn danh</label></div>
-                <button type="button" onclick="window.sendContact()" class="w-full py-2 bg-primary text-white font-bold rounded-xl">Gửi đi</button>
-            </form>
-        </div>
-    </div>
-
-    <div id="modal-crop" class="fixed inset-0 bg-black z-[500] hidden flex flex-col">
-        <div class="flex-1 bg-black flex items-center justify-center overflow-hidden"><img id="image-to-crop" src=""></div>
-        <div class="bg-slate-900 p-4 flex justify-between text-white"><button onclick="window.closeModal('modal-crop')">Hủy</button><button onclick="window.confirmCrop()" class="bg-primary px-4 py-1 rounded">Cắt</button></div>
-    </div>
-
-    <div id="modal-manager" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md p-6 shadow-2xl h-[80vh] flex flex-col">
-            <div class="flex justify-between items-center mb-4 border-b pb-4"><h3 class="font-bold text-lg">Quản lý User</h3><button onclick="window.closeModal('modal-manager')"><i data-lucide="x" class="w-5 h-5"></i></button></div>
-            <div class="flex-1 overflow-y-auto space-y-4" id="manager-list"></div>
-        </div>
-    </div>
-
-    <!-- ADMIN MODAL (Full code như cũ) -->
-    <div id="modal-admin" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[300] hidden flex items-center justify-center p-0 sm:p-4">
-        <div class="bg-white dark:bg-slate-900 w-full h-full sm:h-[90vh] sm:rounded-2xl sm:max-w-4xl shadow-2xl flex flex-col overflow-hidden">
-            <div class="p-4 border-b dark:border-white/10 flex justify-between items-center bg-slate-50 dark:bg-slate-950">
-                <h3 class="font-black uppercase text-primary tracking-widest">Admin Panel</h3>
-                <button onclick="window.closeModal('modal-admin')" class="p-2"><i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
-            <div class="flex-1 flex flex-col sm:flex-row overflow-hidden">
-                <div class="w-full sm:w-48 bg-slate-50 dark:bg-slate-950 border-r dark:border-white/5 p-2 flex sm:flex-col gap-2 overflow-x-auto shrink-0">
-                    <button onclick="window.switchTab('general')" class="tab-btn active p-3 rounded-lg text-left text-xs font-bold uppercase hover:bg-white dark:hover:bg-white/5">Chung</button>
-                    <button onclick="window.switchTab('contact')" class="tab-btn p-3 rounded-lg text-left text-xs font-bold uppercase hover:bg-white dark:hover:bg-white/5">Liên hệ</button>
-                    <button onclick="window.switchTab('career')" class="tab-btn p-3 rounded-lg text-left text-xs font-bold uppercase hover:bg-white dark:hover:bg-white/5">Học vấn</button>
-                    <button onclick="window.switchTab('bank')" class="tab-btn p-3 rounded-lg text-left text-xs font-bold uppercase hover:bg-white dark:hover:bg-white/5">Ngân hàng</button>
-                    <button onclick="window.switchTab('partners')" class="tab-btn p-3 rounded-lg text-left text-xs font-bold uppercase hover:bg-white dark:hover:bg-white/5">Đối tác</button>
-                    <button onclick="window.switchTab('messages')" class="tab-btn p-3 rounded-lg text-left text-xs font-bold uppercase hover:bg-white dark:hover:bg-white/5 text-green-500">Tin nhắn</button>
-                    <button onclick="window.switchTab('config')" class="tab-btn p-3 rounded-lg text-left text-xs font-bold uppercase hover:bg-white dark:hover:bg-white/5 text-red-500">Cấu hình</button>
-                </div>
-                <div class="flex-1 overflow-y-auto p-6 bg-white dark:bg-slate-900 relative">
-                    <form id="admin-form" class="space-y-6 max-w-2xl mx-auto pb-20">
-                        <!-- Content Tabs -->
-                        <div id="tab-general" class="tab-content space-y-4">
-                            <div class="flex gap-4 items-center">
-                                <img id="preview-avatar" src="" class="w-20 h-20 rounded-full object-cover border">
-                                <label class="flex-1 cursor-pointer"><div class="px-4 py-2 bg-slate-100 rounded-lg text-sm font-bold text-center border-dashed border-2">Tải ảnh mới</div><input type="file" id="inp-avatar" class="hidden" accept="image/*"></label>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4"><div><label class="lbl">Họ tên</label><input type="text" id="inp-name" class="inp"></div><div><label class="lbl">Biệt danh</label><input type="text" id="inp-nickname" class="inp"></div></div>
-                            <div><label class="lbl">Bio</label><textarea id="inp-bio" rows="3" class="inp"></textarea></div>
-                            <div class="grid grid-cols-2 gap-4"><div><label class="lbl">Ngày sinh</label><input type="date" id="inp-dob" class="inp"></div><div><label class="lbl">Giới tính</label><select id="inp-gender" class="inp"><option>Nam</option><option>Nữ</option></select></div></div>
-                            <div class="space-y-2"><label class="lbl">Quê quán</label><select id="api-city" onchange="updateHometownStr()" class="inp text-sm"></select><input type="hidden" id="inp-hometown-full"></div>
-                            <div class="space-y-2"><label class="lbl">Quan hệ</label><select id="inp-rel-status" class="inp" onchange="togglePartnerInput()"><option>Độc thân</option><option>Đang hẹn hò</option><option>Đã kết hôn</option></select><div id="partner-inputs" class="hidden grid grid-cols-2 gap-2"><input type="text" id="inp-partner-name" placeholder="Tên" class="inp"><input type="text" id="inp-partner-link" placeholder="Link" class="inp"></div></div>
-                            <div class="p-4 bg-purple-50 dark:bg-purple-900/10 rounded-xl space-y-3 mt-4">
-                                <h4 class="font-bold text-purple-600">SEO & Meta</h4>
-                                <input type="text" id="meta-title-inp" class="inp" placeholder="Title"><textarea id="meta-desc-inp" rows="2" class="inp" placeholder="Description"></textarea><input type="text" id="meta-icon-inp" class="inp" placeholder="Favicon URL">
-                            </div>
-                        </div>
-                        <div id="tab-contact" class="tab-content hidden space-y-4">
-                            <div class="space-y-2"><label class="lbl">SĐT</label><div id="phone-list-editor" class="space-y-2"></div><button type="button" onclick="addPhoneInput()" class="text-xs">+ Thêm số</button></div>
-                            <input type="text" id="inp-emails" class="inp" placeholder="Email"><input type="text" id="inp-fb" class="inp" placeholder="Facebook"><input type="text" id="inp-zalo" class="inp" placeholder="Zalo"><input type="text" id="inp-ig" class="inp" placeholder="Instagram"><input type="text" id="inp-tele" class="inp" placeholder="Telegram"><input type="text" id="inp-linkedin" class="inp" placeholder="LinkedIn">
-                        </div>
-                        <div id="tab-career" class="tab-content hidden space-y-4"><label class="lbl">JSON Data</label><textarea id="inp-career-json" rows="10" class="inp font-mono text-xs"></textarea></div>
-                        <div id="tab-bank" class="tab-content hidden space-y-4">
-                            <div class="flex gap-2"><select id="api-bank-list" class="inp w-1/2"></select><input type="text" id="bank-acc-num" placeholder="Số TK" class="inp w-1/2"></div>
-                            <input type="text" id="bank-acc-name" placeholder="Chủ thẻ" class="inp"><button type="button" onclick="addBank()" class="btn-primary w-full py-2 rounded-lg text-xs">Thêm Bank</button><div id="admin-bank-list" class="space-y-2 mt-4"></div>
-                        </div>
-                        <div id="tab-partners" class="tab-content hidden space-y-4">
-                            <input type="text" id="partner-logo-url" placeholder="Logo URL" class="inp"><input type="text" id="partner-link" placeholder="Website" class="inp"><button type="button" onclick="addPartner()" class="btn-primary w-full py-2 rounded-lg text-xs">Thêm Partner</button><div id="admin-partner-list" class="grid grid-cols-2 gap-3 mt-4"></div>
-                        </div>
-                        <div id="tab-messages" class="tab-content hidden space-y-4">
-                             <div class="flex justify-between"><h4 class="font-bold">Inbox</h4><button type="button" onclick="loadAdminMessages()" class="text-xs bg-slate-200 px-2 py-1 rounded">Refresh</button></div>
-                             <div id="admin-messages-list" class="space-y-3 max-h-[400px] overflow-y-auto"></div>
-                        </div>
-                        <div id="tab-config" class="tab-content hidden space-y-4">
-                            <div class="p-4 bg-red-50 dark:bg-red-900/10 rounded-xl space-y-3">
-                                <h4 class="font-bold text-red-500">GitHub Image Storage</h4>
-                                <input type="password" id="gh-token" placeholder="Token" class="inp"><input type="text" id="gh-owner" placeholder="User" class="inp"><input type="text" id="gh-repo" placeholder="Repo" class="inp">
-                            </div>
-                            <div class="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-xl space-y-3">
-                                <h4 class="font-bold text-blue-500">USB Key Secret</h4>
-                                <div class="flex gap-2"><input type="text" id="usb-secret-val" placeholder="Secret Key" class="inp"><button type="button" onclick="saveUSBConfig()" class="bg-blue-500 text-white px-3 rounded-lg text-xs">Lưu</button></div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            <div class="p-4 border-t dark:border-white/10 bg-white dark:bg-slate-900 flex justify-end gap-3">
-                <button onclick="window.closeModal('modal-admin')" class="px-6 py-2 rounded-xl font-bold">Hủy</button>
-                <button onclick="window.saveProfile()" class="px-6 py-2 bg-primary text-white rounded-xl font-bold">Lưu Thay Đổi</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="toast" class="fixed bottom-5 right-5 z-[1000] translate-y-20 opacity-0 transition-all duration-300">
-        <div class="bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 font-bold text-sm">
-            <i id="toast-icon" data-lucide="check-circle" class="w-5 h-5 text-green-500"></i><span id="toast-msg">Thông báo</span>
-        </div>
-    </div>
-
+    <!-- Firebase SDK (Modular) -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, setDoc, updateDoc, getDoc, arrayUnion, arrayRemove, collection, getDocs, addDoc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDoc, doc, onSnapshot, query, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
-        // --- CONFIG ---
+        // --- 1. CONFIGURATION ---
+        
+        // Cấu hình Firebase (Theo yêu cầu của bạn)
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE", 
             authDomain: "profile-d1214.firebaseapp.com",
@@ -334,320 +176,236 @@
             messagingSenderId: "914980131889",
             appId: "1:914980131889:web:72f8da15c42dbee671b110"
         };
-        
-        // VAPID Key Public (Để nhận thông báo). Nếu chưa có, hãy tạo trong Firebase Console > Cloud Messaging > Web Push certs
-        // Đây là key ví dụ, bạn cần thay key thật của bạn vào đây để hoạt động 100%
-        const VAPID_KEY = "BFYhTZJovBtAi4VUDyR2ugZO4Q8EQ1wZKsxOTc4YBlIgxNgSKyOBPVqwo0dpWoGHRBwAd-BQ-TQ0rHiiyZqTv5Q"; // <--- THAY KEY THẬT CỦA BẠN VÀO ĐÂY
 
-        const ADMIN_EMAILS = ["sonlyhongduc@gmail.com"];
+        // Cấu hình GitHub (BẠN PHẢI TỰ ĐIỀN VÀO ĐÂY ĐỂ CHẠY)
+        const GITHUB_CONFIG = {
+            TOKEN: 'ghp_YOUR_GITHUB_TOKEN_HERE', // Thay bằng Token thật (bắt đầu bằng ghp_...)
+            OWNER: 'YOUR_GITHUB_USERNAME',       // Tên user GitHub của bạn
+            REPO: 'YOUR_REPO_NAME',              // Tên repo bạn đã tạo
+            BRANCH: 'main'                       // Branch mặc định
+        };
+
+        // Khởi tạo Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const messaging = getMessaging(app);
         const provider = new GoogleAuthProvider();
 
-        let currentUser = null, isAdmin = false, isUSBAdmin = false;
-        let profileData = {}, ghConfig = {}, listBanks = [], listPartners = [];
-        let cropper = null, croppedAvatarBase64 = null;
-        let deferredPrompt;
+        let currentUser = null;
+        let map, userMarker;
+        let isAdmin = false;
 
-        // --- PWA INSTALLATION LOGIC ---
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            const btn = document.getElementById('pwa-install-btn');
-            btn.classList.add('show');
-            btn.addEventListener('click', () => {
-                btn.classList.remove('show');
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => { deferredPrompt = null; });
-            });
-        });
+        // --- 2. AUTHENTICATION & ADMIN CHECK ---
 
-        // --- SERVICE WORKER & MESSAGING ---
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/firebase-messaging-sw.js')
-                .then(reg => console.log('SW Registered:', reg))
-                .catch(err => console.log('SW Fail:', err));
-        }
+        window.loginWithGoogle = () => {
+            signInWithPopup(auth, provider).catch(error => alert("Lỗi đăng nhập: " + error.message));
+        };
 
-        window.requestNotificationPermission = async () => {
-            try {
-                const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    // Lấy token
-                    const currentToken = await getToken(messaging, { vapidKey: VAPID_KEY });
-                    if (currentToken) {
-                        console.log("FCM Token:", currentToken);
-                        showToast("Đã bật thông báo thành công!");
-                        // Lưu token vào Firestore để admin gửi tin
-                        if(currentUser) {
-                            await setDoc(doc(db, "fcm_tokens", currentUser.uid), {
-                                token: currentToken,
-                                email: currentUser.email,
-                                updatedAt: new Date().toISOString()
-                            });
-                        } else {
-                            // Lưu token khách vãng lai
-                             await addDoc(collection(db, "guest_tokens"), {
-                                token: currentToken,
-                                updatedAt: new Date().toISOString()
-                            });
-                        }
-                        document.getElementById('notify-icon').classList.replace('text-slate-400', 'text-yellow-500');
-                    } else {
-                        showToast("Không lấy được Token.", true);
-                    }
-                } else {
-                    showToast("Bạn đã chặn thông báo.", true);
-                }
-            } catch (error) {
-                console.error("Lỗi cấp quyền:", error);
-                showToast("Lỗi khi bật thông báo.", true);
-            }
-        }
+        window.handleLogout = () => {
+            signOut(auth).then(() => location.reload());
+        };
 
-        onMessage(messaging, (payload) => {
-            console.log('Message received. ', payload);
-            showToast(`Tin nhắn mới: ${payload.notification.title}`);
-            document.getElementById('notify-dot').classList.remove('hidden');
-        });
-
-        // --- MAIN LOGIC ---
         onAuthStateChanged(auth, async (user) => {
-            currentUser = user;
-            renderAuthUI();
-            if(user) {
-                isAdmin = ADMIN_EMAILS.includes(user.email);
-                checkAdminUI();
-                await setDoc(doc(db, "users", user.uid), {
-                    uid: user.uid, displayName: user.displayName, email: user.email, photoURL: user.photoURL, lastSeen: new Date().toISOString()
-                }, { merge: true });
-            } else { isAdmin = false; checkAdminUI(); }
-            checkFollowStatus();
-        });
+            if (user) {
+                currentUser = user;
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('userAvatar').src = user.photoURL;
+                document.getElementById('userAvatar').style.display = 'block';
+                document.getElementById('logoutBtn').style.display = 'block';
 
-        const profileRef = doc(db, "profile_data", "main");
-        onSnapshot(profileRef, (docSnap) => {
-            document.getElementById('global-loading').classList.add('opacity-0', 'pointer-events-none');
-            if (docSnap.exists()) {
-                profileData = docSnap.data();
-                renderProfile();
-                initScrollReveal();
-            }
-        });
-
-        // --- RENDER FUNCTIONS (Giữ nguyên logic cũ, tối ưu code) ---
-        function renderProfile() {
-            // Meta & Manifest
-            if(profileData.meta) {
-                document.title = profileData.meta.title;
-                document.getElementById('meta-desc').content = profileData.meta.description;
-                if(profileData.meta.favicon) document.getElementById('meta-icon').href = profileData.meta.favicon;
-            }
-            // Dynamic Manifest for PWA
-            const manifestObj = {
-                "name": profileData.name || "Bmass Profile",
-                "short_name": profileData.nickname || "Profile",
-                "start_url": "/",
-                "display": "standalone",
-                "background_color": "#f8fafc",
-                "theme_color": "#6366f1",
-                "icons": [
-                    { "src": profileData.avatar || "https://ui-avatars.com/api/?name=P", "sizes": "192x192", "type": "image/png" },
-                    { "src": profileData.avatar || "https://ui-avatars.com/api/?name=P", "sizes": "512x512", "type": "image/png" }
-                ]
-            };
-            document.getElementById('dynamic-manifest').href = URL.createObjectURL(new Blob([JSON.stringify(manifestObj)], {type: 'application/json'}));
-
-            document.getElementById('profile-name').innerText = profileData.name || "User";
-            document.getElementById('nav-nickname').innerText = profileData.nickname || "Profile";
-            if(profileData.avatar) {
-                document.getElementById('profile-avatar').src = profileData.avatar;
-                document.getElementById('nav-avatar').src = profileData.avatar;
-            }
-            if(profileData.nickname) {
-                const b = document.getElementById('profile-nickname-badge'); b.innerText = profileData.nickname; b.classList.remove('hidden');
-            }
-            document.getElementById('profile-bio').innerText = profileData.bio || "";
-            document.getElementById('stat-followers').innerText = (profileData.followers||[]).length;
-            document.getElementById('stat-views').innerText = profileData.views || 0;
-            
-            // Render Socials
-            const sMap = { facebook: 'facebook', zalo: 'phone', instagram: 'instagram', telegram: 'send', linkedin: 'linkedin' };
-            let sHtml = '';
-            if(profileData.socials) Object.keys(profileData.socials).forEach(k => {
-                if(profileData.socials[k]) {
-                    let link = profileData.socials[k];
-                    if(k==='zalo') link=`https://zalo.me/${link}`; else if(k==='telegram') link=`https://t.me/${link}`;
-                    sHtml += `<a href="${link}" target="_blank" class="p-3 bg-white dark:bg-slate-800 rounded-full shadow text-primary hover:-translate-y-1 transition"><i data-lucide="${sMap[k]||'link'}" class="w-5 h-5"></i></a>`;
-                }
-            });
-            document.getElementById('social-grid').innerHTML = sHtml;
-
-            // Render Banks
-            document.getElementById('bank-list').innerHTML = (profileData.banks||[]).map(b => `
-                <div class="p-3 rounded-xl flex items-center justify-between shadow bg-white dark:bg-slate-900 border dark:border-white/5 relative overflow-hidden">
-                    <div class="flex items-center gap-3 z-10">
-                        <img src="${b.logo}" class="w-10 h-10 object-contain bg-white rounded p-1">
-                        <div><p class="font-bold text-slate-800 dark:text-white font-mono">${b.number}</p><p class="text-[10px] uppercase text-slate-500">${b.shortName}</p></div>
-                    </div>
-                    <button onclick="window.copyToClip('${b.number}')" class="p-2 bg-slate-100 dark:bg-slate-800 rounded z-10"><i data-lucide="copy" class="w-4 h-4"></i></button>
-                </div>`).join('');
-            
-            // Render Timeline
-            const tl = [...(profileData.education||[]), ...(profileData.work||[])];
-            document.getElementById('career-timeline').innerHTML = tl.length ? tl.map(i => `<div class="relative mb-6 last:mb-0"><span class="absolute -left-[33px] w-4 h-4 rounded-full bg-primary border-4 border-white dark:border-slate-800"></span><h4 class="font-bold">${i.title}</h4><p class="text-xs font-bold text-primary mb-1">${i.org}</p><p class="text-xs text-slate-500">${i.time}</p></div>`).join('') : '<p class="italic text-slate-400">Trống</p>';
-
-            lucide.createIcons();
-            checkFollowStatus();
-        }
-
-        // --- USB & ADMIN AUTH ---
-        document.getElementById('usb-key-input').addEventListener('change', async (e) => {
-            const f = e.target.files[0]; if(!f) return;
-            const r = new FileReader();
-            r.onload = async(ev) => {
-                try {
-                    const k = JSON.parse(ev.target.result).key;
-                    const s = await getDoc(doc(db,"settings","usb_config"));
-                    if(s.exists() && s.data().secret === k) { isUSBAdmin=true; showToast("USB Key OK!"); checkAdminUI(); }
-                    else showToast("Sai Key!", true);
-                } catch(err){ showToast("Lỗi file!", true); }
-            }; r.readAsText(f); e.target.value='';
-        });
-
-        function checkAdminUI() {
-            if(isAdmin || isUSBAdmin) {
-                document.getElementById('admin-btn').classList.remove('hidden');
-                document.getElementById('manager-btn').classList.remove('hidden');
-                if(isAdmin) loadGithubConfig();
+                // Check Admin từ Firestore: settings -> admins
+                await checkAdminRole(user);
+                
+                initMap(); // Khởi động bản đồ sau khi login
             } else {
-                document.getElementById('admin-btn').classList.add('hidden');
-                document.getElementById('manager-btn').classList.add('hidden');
+                document.getElementById('loginOverlay').style.display = 'flex';
+            }
+        });
+
+        async function checkAdminRole(user) {
+            try {
+                // Đọc document "admins" trong collection "settings"
+                const docRef = doc(db, "settings", "admins");
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    // Kiểm tra xem UID của user có nằm trong danh sách không
+                    // Giả sử cấu trúc data là { "UID_CUA_ADMIN": "gmail@gmail.com" }
+                    if (data[user.uid]) {
+                        isAdmin = true;
+                        document.getElementById('adminLabel').style.display = 'block';
+                        console.log("Welcome Admin: " + user.email);
+                    }
+                }
+            } catch (e) {
+                console.error("Lỗi check admin:", e);
             }
         }
 
-        // --- ADMIN FUNCTIONS ---
-        window.openEditModal = async () => {
-            document.getElementById('modal-admin').classList.remove('hidden');
-            // Fill Inputs
-            document.getElementById('inp-name').value = profileData.name||'';
-            document.getElementById('inp-nickname').value = profileData.nickname||'';
-            document.getElementById('inp-bio').value = profileData.bio||'';
-            document.getElementById('inp-dob').value = profileData.dob||'';
-            await fetchProvinces();
-            document.getElementById('inp-hometown-full').value = profileData.hometown?.full||'';
-            
-            // Banks & Partners
-            listBanks = profileData.banks||[]; renderAdminBanks(); loadBankList();
-            listPartners = profileData.partners||[]; renderAdminPartners();
-            
-            // Json Editor
-            document.getElementById('inp-career-json').value = JSON.stringify({
-                education: profileData.education||[], work: profileData.work||[], achievements: profileData.achievements||[]
-            },null,2);
+        // --- 3. MAP LOGIC & REALTIME ---
 
-            // Load Inbox
-            loadAdminMessages();
+        function initMap() {
+            // Khởi tạo map tại HCM (mặc định)
+            map = L.map('map').setView([10.7769, 106.7009], 15);
+
+            // Map nền tối (Dark mode)
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap & CartoDB',
+                maxZoom: 19
+            }).addTo(map);
+
+            // Theo dõi vị trí người dùng
+            if (navigator.geolocation) {
+                navigator.geolocation.watchPosition(updatePosition, 
+                    (err) => console.log("GPS Error", err), 
+                    { enableHighAccuracy: true }
+                );
+            }
+
+            // Lắng nghe dữ liệu báo cáo từ Firestore (Realtime)
+            listenToReports();
         }
 
-        window.saveProfile = async () => {
-            const btn = document.querySelector('#modal-admin button.bg-primary');
-            btn.innerText = "Đang lưu...";
-            try {
-                // Github Upload Logic (If needed)
-                let avt = profileData.avatar;
-                if(croppedAvatarBase64 && ghConfig.token) {
-                    // (Upload code simplified for brevity, logic same as original)
-                    // ... fetch PUT to github ...
-                }
-                
-                const career = JSON.parse(document.getElementById('inp-career-json').value);
-                
-                await setDoc(profileRef, {
-                    name: document.getElementById('inp-name').value,
-                    nickname: document.getElementById('inp-nickname').value,
-                    bio: document.getElementById('inp-bio').value,
-                    dob: document.getElementById('inp-dob').value,
-                    banks: listBanks,
-                    partners: listPartners,
-                    education: career.education, work: career.work, achievements: career.achievements,
-                    // ... other fields
-                }, {merge:true});
-                
-                showToast("Đã lưu!"); window.closeModal('modal-admin');
-            } catch(e){ console.error(e); showToast("Lỗi lưu!", true); }
-            btn.innerText = "Lưu Thay Đổi";
-        }
+        function updatePosition(pos) {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            const speed = pos.coords.speed ? Math.round(pos.coords.speed * 3.6) : 0; // m/s -> km/h
 
-        // --- HELPER FUNCTIONS ---
-        window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
-        window.toggleTheme = () => { document.documentElement.classList.toggle('dark'); localStorage.theme = document.documentElement.classList.contains('dark')?'dark':'light'; }
-        if(localStorage.theme==='dark') document.documentElement.classList.add('dark');
-        
-        window.copyToClip = (t) => { navigator.clipboard.writeText(t); showToast('Đã copy!'); }
-        function showToast(m,err=false){
-            const t = document.getElementById('toast');
-            document.getElementById('toast-msg').innerText = m;
-            const i = document.getElementById('toast-icon');
-            i.classList.remove('text-green-500','text-red-500');
-            i.classList.add(err?'text-red-500':'text-green-500');
-            i.setAttribute('data-lucide', err?'alert-triangle':'check-circle');
-            lucide.createIcons();
-            t.classList.remove('translate-y-20','opacity-0');
-            setTimeout(()=>t.classList.add('translate-y-20','opacity-0'), 3000);
-        }
+            // Cập nhật giao diện tốc độ
+            document.getElementById('speedEl').innerText = speed;
 
-        // --- LOGIN / LOGOUT ---
-        window.doLogin = () => signInWithPopup(auth, provider);
-        window.doLogout = () => signOut(auth).then(()=>location.reload());
-        function renderAuthUI() {
-            document.getElementById('auth-section').innerHTML = currentUser ? 
-            `<img src="${currentUser.photoURL}" class="w-8 h-8 rounded-full border cursor-pointer" onclick="window.doLogout()">` : 
-            `<button onclick="window.doLogin()" class="px-4 py-1 bg-primary text-white text-xs rounded-full font-bold">Login</button>`;
-        }
-        
-        // --- ADMIN SUB-FUNCTIONS ---
-        window.switchTab = (n) => { document.querySelectorAll('.tab-content').forEach(e=>e.classList.add('hidden')); document.getElementById('tab-'+n).classList.remove('hidden'); document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active','bg-white','dark:bg-white/5')); event.target.classList.add('active','bg-white','dark:bg-white/5'); }
-        async function fetchProvinces() { const r=await fetch('https://esgoo.net/api-tinhthanh/1/0.htm'); const d=await r.json(); if(d.error==0) document.getElementById('api-city').innerHTML = '<option value="">Chọn Tỉnh</option>'+d.data.map(p=>`<option value="${p.id}" data-name="${p.full_name}">${p.full_name}</option>`).join(''); }
-        window.updateHometownStr = () => { const c=document.getElementById('api-city'); document.getElementById('inp-hometown-full').value = c.options[c.selectedIndex]?.dataset.name||''; }
-        async function loadBankList() { try{const r=await fetch('https://api.vietqr.io/v2/banks'); const d=await r.json(); document.getElementById('api-bank-list').innerHTML=d.data.map(b=>`<option value='${JSON.stringify({shortName:b.shortName,logo:b.logo})}'>${b.shortName}</option>`).join('');}catch(e){} }
-        window.addBank = () => { const m=JSON.parse(document.getElementById('api-bank-list').value), n=document.getElementById('bank-acc-num').value; if(n) listBanks.push({...m,number:n,owner:document.getElementById('bank-acc-name').value}); renderAdminBanks(); }
-        function renderAdminBanks() { document.getElementById('admin-bank-list').innerHTML = listBanks.map((b,i)=>`<div class="flex justify-between p-2 bg-slate-100 dark:bg-slate-800 text-xs rounded"><span>${b.shortName}-${b.number}</span><button onclick="listBanks.splice(${i},1);renderAdminBanks()" class="text-red-500">X</button></div>`).join(''); }
-        
-        async function loadGithubConfig() { const s = await getDoc(doc(db, "settings", "github_config")); if(s.exists()) { ghConfig = s.data(); document.getElementById('gh-token').value = ghConfig.token || ''; document.getElementById('gh-owner').value = ghConfig.owner || ''; document.getElementById('gh-repo').value = ghConfig.repo || ''; } }
-        
-        // --- MESSAGES LOGIC ---
-        window.sendContact = async () => {
-            const content = document.getElementById('msg-content').value;
-            if(!content) return showToast("Nhập nội dung!", true);
-            const isAnon = document.getElementById('msg-anon').checked;
-            try {
-                await addDoc(collection(db, "messages"), {
-                    content, timestamp: new Date().toISOString(), isAnon,
-                    name: isAnon ? "Ẩn danh" : (document.getElementById('msg-name').value || currentUser?.displayName),
-                    email: isAnon ? "" : (currentUser?.email || document.getElementById('msg-email').value)
+            // Di chuyển marker người dùng
+            if (!userMarker) {
+                const icon = L.divIcon({
+                    html: '<i class="fa-solid fa-circle-dot" style="color:#4285F4; font-size: 20px; border: 2px solid white; border-radius: 50%;"></i>',
+                    className: 'user-marker',
+                    iconSize: [20, 20]
                 });
-                showToast("Đã gửi!"); window.closeModal('modal-send-msg');
-            } catch(e) { showToast("Lỗi gửi!", true); }
-        }
-        window.loadAdminMessages = async () => {
-            const list = document.getElementById('admin-messages-list');
-            const snap = await getDocs(query(collection(db, "messages"), orderBy("timestamp", "desc"), limit(20)));
-            list.innerHTML = snap.docs.map(d => {
-                const m = d.data();
-                return `<div class="p-3 bg-slate-100 dark:bg-slate-800 rounded border dark:border-white/5"><div class="flex justify-between font-bold text-xs"><span>${m.name}</span><span>${new Date(m.timestamp).toLocaleString()}</span></div><p class="text-xs text-slate-500 italic">${m.email||''}</p><p class="mt-1 text-sm">${m.content}</p></div>`;
-            }).join('');
+                userMarker = L.marker([lat, lng], {icon: icon}).addTo(map);
+                map.setView([lat, lng], 16);
+            } else {
+                userMarker.setLatLng([lat, lng]);
+            }
+
+            // Logic cảnh báo đơn giản (Demo: Nếu tốc độ > 50km/h thì cảnh báo đỏ)
+            if (speed > 50) {
+                document.getElementById('alertEffect').style.display = 'block';
+            } else {
+                document.getElementById('alertEffect').style.display = 'none';
+            }
         }
 
-        // Init Scroll & Geo
-        function initScrollReveal() { const o=new IntersectionObserver(e=>e.forEach(x=>x.isIntersecting&&x.target.classList.add('active'))); document.querySelectorAll('.reveal-on-scroll').forEach(el=>o.observe(el)); }
-        fetch('https://api.ipify.org?format=json').then(r=>r.json()).then(d=>document.getElementById('user-ip').innerText=d.ip);
-        if("geolocation" in navigator) navigator.geolocation.getCurrentPosition(p=>document.getElementById('user-coords').innerText=`${p.coords.latitude.toFixed(2)},${p.coords.longitude.toFixed(2)}`);
-        
-        lucide.createIcons();
+        function listenToReports() {
+            // Lấy 50 báo cáo mới nhất
+            const q = query(collection(db, "reports"), orderBy("timestamp", "desc"), limit(50));
+            
+            onSnapshot(q, (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === "added") {
+                        const data = change.doc.data();
+                        addReportMarker(data);
+                    }
+                });
+            });
+        }
+
+        function addReportMarker(data) {
+            // Icon Camera
+            const camIcon = L.divIcon({
+                html: '<i class="fa-solid fa-camera" style="color:var(--primary-color); font-size: 24px; filter: drop-shadow(0 0 5px orange);"></i>',
+                className: 'cam-icon',
+                iconSize: [30, 30]
+            });
+
+            const marker = L.marker([data.lat, data.lng], {icon: camIcon}).addTo(map);
+            
+            // Popup hiển thị ảnh lấy từ GitHub (thông qua link raw hoặc cdn)
+            // Lưu ý: data.imageUrl là link raw github userContent
+            const popupContent = `
+                <div style="text-align:center;">
+                    <b>${data.userEmail}</b><br>
+                    <small>${new Date(data.timestamp?.toDate()).toLocaleTimeString()}</small><br>
+                    <img src="${data.imageUrl}" class="popup-img" alt="Loading...">
+                </div>
+            `;
+            marker.bindPopup(popupContent);
+        }
+
+        // --- 4. GITHUB UPLOAD & CREATE REPORT ---
+
+        window.handleFileUpload = async (input) => {
+            const file = input.files[0];
+            if (!file || !userMarker) return;
+
+            const statusEl = document.getElementById('statusMsg');
+            statusEl.style.display = 'block';
+            statusEl.innerText = "Đang xử lý ảnh...";
+
+            try {
+                // 1. Convert ảnh sang Base64
+                const base64Content = await toBase64(file);
+                // Loại bỏ phần header "data:image/jpeg;base64,"
+                const cleanBase64 = base64Content.split(',')[1];
+
+                // 2. Upload lên GitHub thông qua API
+                const fileName = `images/report_${Date.now()}.jpg`;
+                const githubUrl = `https://api.github.com/repos/${GITHUB_CONFIG.OWNER}/${GITHUB_CONFIG.REPO}/contents/${fileName}`;
+
+                statusEl.innerText = "Đang đẩy lên GitHub...";
+                
+                const response = await fetch(githubUrl, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${GITHUB_CONFIG.TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: "New traffic report",
+                        content: cleanBase64,
+                        branch: GITHUB_CONFIG.BRANCH
+                    })
+                });
+
+                if (!response.ok) throw new Error("GitHub Upload Failed");
+                
+                const result = await response.json();
+                // Lấy link raw để hiển thị (download_url)
+                const rawUrl = result.content.download_url;
+
+                // 3. Lưu thông tin vào Firestore
+                statusEl.innerText = "Lưu dữ liệu...";
+                const lat = userMarker.getLatLng().lat;
+                const lng = userMarker.getLatLng().lng;
+
+                await addDoc(collection(db, "reports"), {
+                    lat: lat,
+                    lng: lng,
+                    imageUrl: rawUrl,
+                    userUid: currentUser.uid,
+                    userEmail: currentUser.email,
+                    timestamp: serverTimestamp(),
+                    type: "traffic_snap"
+                });
+
+                statusEl.innerText = "Thành công!";
+                setTimeout(() => statusEl.style.display = 'none', 2000);
+
+            } catch (error) {
+                console.error(error);
+                statusEl.innerText = "Lỗi: " + error.message;
+                setTimeout(() => statusEl.style.display = 'none', 3000);
+            }
+        };
+
+        // Hàm helper chuyển file sang base64
+        const toBase64 = file => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+
     </script>
-    <style>.inp { width: 100%; padding: 0.5rem; border-radius: 0.5rem; border: 1px solid #e2e8f0; background: #f8fafc; outline: none; } .dark .inp { background: #1e293b; border-color: rgba(255,255,255,0.1); color: white; } .lbl { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; display: block; margin-bottom: 0.25rem; }</style>
 </body>
 </html>
