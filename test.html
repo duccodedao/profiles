@@ -2,410 +2,240 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TrafficSnap - Bản đồ & Locket Giao Thông</title>
-    
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google API Data Extractor (Contacts, YT, Drive, Calendar)</title>
     <style>
-        :root {
-            --primary-color: #ff9f1c; /* Cam Locket */
-            --danger-color: #ff4444;
-            --bg-glass: rgba(20, 20, 20, 0.85);
-            --text-color: #ffffff;
-        }
+        :root { --primary: #4285f4; --bg: #f8f9fa; --text: #202124; }
+        body { font-family: 'Roboto', Arial, sans-serif; background: var(--bg); color: var(--text); padding: 20px; margin: 0; }
+        
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        h1 { text-align: center; color: var(--primary); margin-bottom: 10px; }
+        .subtitle { text-align: center; color: #5f6368; font-size: 14px; margin-bottom: 30px; }
 
-        body { margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; overflow: hidden; background: #000; color: white; }
+        /* Login Button */
+        .login-area { text-align: center; padding: 40px 0; }
+        .btn-google { background: #fff; color: #3c4043; border: 1px solid #dadce0; padding: 12px 24px; font-weight: 500; font-size: 16px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; transition: background .2s; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .btn-google:hover { background: #f7f8f8; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+        .warning-text { color: #d93025; font-size: 13px; margin-top: 15px; background: #fce8e6; padding: 10px; border-radius: 4px; display: inline-block; }
 
-        /* Fullscreen Map */
-        #map { height: 100vh; width: 100vw; z-index: 1; }
+        /* Dashboard */
+        #dashboard { display: none; }
+        .user-profile { display: flex; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
+        .avatar { width: 50px; height: 50px; border-radius: 50%; margin-right: 15px; }
+        .logout-btn { margin-left: auto; background: #d93025; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
 
-        /* Login Screen */
-        #loginOverlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #111; z-index: 9999;
-            display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-        }
-        .login-btn {
-            background: white; color: #333; padding: 12px 24px;
-            border-radius: 30px; border: none; font-weight: bold; font-size: 16px;
-            cursor: pointer; display: flex; align-items: center; gap: 10px;
-        }
+        /* API Buttons Grid */
+        .api-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .btn-api { padding: 15px; border: none; border-radius: 8px; color: white; cursor: pointer; font-size: 14px; font-weight: bold; transition: transform 0.1s; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100px; }
+        .btn-api:active { transform: scale(0.98); }
+        
+        .btn-contacts { background: linear-gradient(135deg, #0f9d58, #0b8043); }
+        .btn-calendar { background: linear-gradient(135deg, #4285f4, #1967d2); }
+        .btn-youtube { background: linear-gradient(135deg, #ff0000, #c20000); }
+        .btn-drive { background: linear-gradient(135deg, #f4b400, #f09300); }
 
-        /* UI Overlay */
-        .ui-layer {
-            position: absolute; pointer-events: none;
-            top: 0; left: 0; width: 100%; height: 100%; z-index: 1000;
-        }
-        .interactive { pointer-events: auto; }
-
-        /* Dashboard Info */
-        .dashboard-top {
-            position: absolute; top: 20px; left: 20px; right: 20px;
-            display: flex; justify-content: space-between; align-items: flex-start;
-        }
-        .speed-panel {
-            background: var(--bg-glass);
-            padding: 10px 20px; border-radius: 15px;
-            backdrop-filter: blur(10px); text-align: center;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .speed-val { font-size: 32px; font-weight: 800; color: var(--primary-color); }
-        .speed-unit { font-size: 12px; color: #aaa; }
-
-        /* User Info & Admin Badge */
-        .user-panel {
-            display: flex; flex-direction: column; align-items: flex-end; gap: 5px;
-        }
-        .avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--primary-color); }
-        .admin-badge { 
-            background: var(--danger-color); font-size: 10px; padding: 2px 8px; 
-            border-radius: 4px; display: none; /* Ẩn mặc định */
-        }
-
-        /* Camera Button (Locket Style) */
-        .camera-container {
-            position: absolute; bottom: 30px; left: 0; right: 0;
-            display: flex; justify-content: center; align-items: center;
-        }
-        .btn-snap {
-            width: 70px; height: 70px;
-            border-radius: 50%;
-            border: 4px solid white;
-            background: transparent;
-            position: relative;
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
-        .btn-snap::after {
-            content: ''; position: absolute;
-            top: 5px; left: 5px; right: 5px; bottom: 5px;
-            background: var(--primary-color); border-radius: 50%;
-        }
-        .btn-snap:active { transform: scale(0.9); }
-
-        /* Upload Status */
-        #statusMsg {
-            position: absolute; bottom: 110px; width: 100%;
-            text-align: center; font-size: 14px; text-shadow: 0 1px 3px black;
-            display: none;
-        }
-
-        /* Red Alert Effect */
-        .alert-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            box-shadow: inset 0 0 50px 20px red;
-            display: none; pointer-events: none; z-index: 900;
-            animation: pulse 1s infinite;
-        }
-        @keyframes pulse { 50% { opacity: 0.5; } }
-
-        /* Hidden Input */
-        #cameraInput { display: none; }
-
-        /* Popup Image Style */
-        .popup-img {
-            width: 100%; max-width: 200px; border-radius: 10px; margin-top: 5px;
-            border: 2px solid var(--primary-color);
-        }
+        /* Results Area */
+        .result-box { background: #282a36; color: #50fa7b; padding: 20px; border-radius: 8px; font-family: 'Consolas', monospace; font-size: 13px; height: 400px; overflow-y: auto; white-space: pre-wrap; border: 2px solid #44475a; }
+        .status-bar { margin-bottom: 10px; font-weight: bold; color: #4285f4; }
     </style>
 </head>
 <body>
 
-    <!-- Màn hình Đăng nhập -->
-    <div id="loginOverlay">
-        <h1 style="color:var(--primary-color); margin-bottom: 30px;"><i class="fa-solid fa-camera-retro"></i> TrafficSnap</h1>
-        <button class="login-btn" onclick="loginWithGoogle()">
-            <i class="fa-brands fa-google"></i> Đăng nhập bằng Google
+<div class="container">
+    <h1>Super Data Extractor</h1>
+    <p class="subtitle">Demo lấy dữ liệu Danh bạ, Lịch, YouTube, Drive qua Google API</p>
+
+    <!-- Màn hình đăng nhập -->
+    <div id="login-screen" class="login-area">
+        <button class="btn-google" onclick="handleLogin()">
+            <svg style="width:18px;height:18px;margin-right:10px" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 10.86-2.13 14.82-5.78l-7.73-6c-2.15 1.45-4.92 2.3-7.09 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
+            Đăng nhập & Cấp quyền
         </button>
-    </div>
-
-    <!-- Hiệu ứng cảnh báo -->
-    <div id="alertEffect" class="alert-screen"></div>
-
-    <!-- Bản đồ -->
-    <div id="map"></div>
-
-    <!-- Giao diện chính -->
-    <div class="ui-layer">
-        <div class="dashboard-top">
-            <div class="speed-panel interactive">
-                <div class="speed-val" id="speedEl">0</div>
-                <div class="speed-unit">km/h</div>
-            </div>
-            
-            <div class="user-panel interactive">
-                <img id="userAvatar" class="avatar" src="" style="display:none;">
-                <span id="adminLabel" class="admin-badge">ADMIN</span>
-                <button id="logoutBtn" onclick="handleLogout()" style="display:none; background: #333; color: white; border: none; padding: 5px 10px; border-radius: 5px; font-size: 12px; margin-top: 5px;">Đăng xuất</button>
-            </div>
-        </div>
-
-        <div id="statusMsg">Đang tải ảnh lên GitHub...</div>
-
-        <div class="camera-container interactive">
-            <!-- Nút chụp -->
-            <div class="btn-snap" onclick="document.getElementById('cameraInput').click()"></div>
+        <br>
+        <div class="warning-text">
+            ⚠️ Lưu ý: Google sẽ hiện cảnh báo "Unverified App". <br>Hãy bấm <b>Advanced -> Go to ... (unsafe)</b> để tiếp tục.
         </div>
     </div>
 
-    <!-- Input file ẩn để chụp ảnh -->
-    <input type="file" id="cameraInput" accept="image/*" capture="environment" onchange="handleFileUpload(this)">
+    <!-- Dashboard -->
+    <div id="dashboard">
+        <div class="user-profile">
+            <img id="avatar" class="avatar" src="" alt="User">
+            <div>
+                <h3 id="username" style="margin:0">User</h3>
+                <span id="email" style="font-size:12px; color:#666">...</span>
+            </div>
+            <button class="logout-btn" onclick="handleLogout()">Đăng xuất</button>
+        </div>
 
-    <!-- Scripts -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
-    <!-- Firebase SDK (Modular) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDoc, doc, onSnapshot, query, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+        <div class="api-grid">
+            <button class="btn-api btn-contacts" onclick="getContacts()">
+                📞 DANH BẠ
+                <small style="font-weight:normal; margin-top:5px; opacity:0.8">Lấy SĐT & Email bạn bè</small>
+            </button>
+            <button class="btn-api btn-calendar" onclick="getCalendar()">
+                📅 LỊCH TRÌNH
+                <small style="font-weight:normal; margin-top:5px; opacity:0.8">Lấy sự kiện họp/bay</small>
+            </button>
+            <button class="btn-api btn-youtube" onclick="getYoutube()">
+                📺 YOUTUBE
+                <small style="font-weight:normal; margin-top:5px; opacity:0.8">Lấy Subscriptions</small>
+            </button>
+            <button class="btn-api btn-drive" onclick="getDrive()">
+                📂 DRIVE
+                <small style="font-weight:normal; margin-top:5px; opacity:0.8">Lấy danh sách file</small>
+            </button>
+        </div>
 
-        // --- 1. CONFIGURATION ---
-        
-        // Cấu hình Firebase (Theo yêu cầu của bạn)
-        const firebaseConfig = {
-            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE", 
-            authDomain: "profile-d1214.firebaseapp.com",
-            projectId: "profile-d1214",
-            storageBucket: "profile-d1214.firebasestorage.app",
-            messagingSenderId: "914980131889",
-            appId: "1:914980131889:web:72f8da15c42dbee671b110"
-        };
+        <div class="status-bar" id="status-msg">Sẵn sàng...</div>
+        <div class="result-box" id="output">
+// Dữ liệu JSON sẽ hiển thị tại đây...
+        </div>
+    </div>
+</div>
 
-        // Cấu hình GitHub (BẠN PHẢI TỰ ĐIỀN VÀO ĐÂY ĐỂ CHẠY)
-        const GITHUB_CONFIG = {
-            TOKEN: 'ghp_YOUR_GITHUB_TOKEN_HERE', // Thay bằng Token thật (bắt đầu bằng ghp_...)
-            OWNER: 'YOUR_GITHUB_USERNAME',       // Tên user GitHub của bạn
-            REPO: 'YOUR_REPO_NAME',              // Tên repo bạn đã tạo
-            BRANCH: 'main'                       // Branch mặc định
-        };
+<script type="module">
+    // Import thư viện từ CDN
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-auth.js";
 
-        // Khởi tạo Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const provider = new GoogleAuthProvider();
+    // Cấu hình Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE", 
+        authDomain: "profile-d1214.firebaseapp.com",
+        projectId: "profile-d1214",
+        storageBucket: "profile-d1214.firebasestorage.app",
+        messagingSenderId: "914980131889",
+        appId: "1:914980131889:web:72f8da15c42dbee671b110"
+    };
 
-        let currentUser = null;
-        let map, userMarker;
-        let isAdmin = false;
+    // Khởi tạo
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
 
-        // --- 2. AUTHENTICATION & ADMIN CHECK ---
+    // ====================================================
+    // THÊM 4 QUYỀN (SCOPES) QUAN TRỌNG
+    // ====================================================
+    provider.addScope('https://www.googleapis.com/auth/contacts.readonly');       // 1. Danh bạ
+    provider.addScope('https://www.googleapis.com/auth/calendar.readonly');       // 2. Lịch
+    provider.addScope('https://www.googleapis.com/auth/youtube.readonly');        // 3. YouTube
+    provider.addScope('https://www.googleapis.com/auth/drive.metadata.readonly'); // 4. Drive
 
-        window.loginWithGoogle = () => {
-            signInWithPopup(auth, provider).catch(error => alert("Lỗi đăng nhập: " + error.message));
-        };
+    let accessToken = ""; // Biến lưu token
 
-        window.handleLogout = () => {
-            signOut(auth).then(() => location.reload());
-        };
+    // Xử lý UI
+    const loginScreen = document.getElementById('login-screen');
+    const dashboard = document.getElementById('dashboard');
+    const output = document.getElementById('output');
+    const statusMsg = document.getElementById('status-msg');
 
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                currentUser = user;
-                document.getElementById('loginOverlay').style.display = 'none';
-                document.getElementById('userAvatar').src = user.photoURL;
-                document.getElementById('userAvatar').style.display = 'block';
-                document.getElementById('logoutBtn').style.display = 'block';
-
-                // Check Admin từ Firestore: settings -> admins
-                await checkAdminRole(user);
-                
-                initMap(); // Khởi động bản đồ sau khi login
-            } else {
-                document.getElementById('loginOverlay').style.display = 'flex';
-            }
-        });
-
-        async function checkAdminRole(user) {
-            try {
-                // Đọc document "admins" trong collection "settings"
-                const docRef = doc(db, "settings", "admins");
-                const docSnap = await getDoc(docRef);
-
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    // Kiểm tra xem UID của user có nằm trong danh sách không
-                    // Giả sử cấu trúc data là { "UID_CUA_ADMIN": "gmail@gmail.com" }
-                    if (data[user.uid]) {
-                        isAdmin = true;
-                        document.getElementById('adminLabel').style.display = 'block';
-                        console.log("Welcome Admin: " + user.email);
-                    }
-                }
-            } catch (e) {
-                console.error("Lỗi check admin:", e);
-            }
+    function log(msg, data = null) {
+        statusMsg.textContent = msg;
+        if(data) {
+            output.textContent = JSON.stringify(data, null, 4); // Format JSON đẹp
+        } else {
+            output.textContent = "// Đang chờ dữ liệu...";
         }
+    }
 
-        // --- 3. MAP LOGIC & REALTIME ---
-
-        function initMap() {
-            // Khởi tạo map tại HCM (mặc định)
-            map = L.map('map').setView([10.7769, 106.7009], 15);
-
-            // Map nền tối (Dark mode)
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; OpenStreetMap & CartoDB',
-                maxZoom: 19
-            }).addTo(map);
-
-            // Theo dõi vị trí người dùng
-            if (navigator.geolocation) {
-                navigator.geolocation.watchPosition(updatePosition, 
-                    (err) => console.log("GPS Error", err), 
-                    { enableHighAccuracy: true }
-                );
-            }
-
-            // Lắng nghe dữ liệu báo cáo từ Firestore (Realtime)
-            listenToReports();
-        }
-
-        function updatePosition(pos) {
-            const lat = pos.coords.latitude;
-            const lng = pos.coords.longitude;
-            const speed = pos.coords.speed ? Math.round(pos.coords.speed * 3.6) : 0; // m/s -> km/h
-
-            // Cập nhật giao diện tốc độ
-            document.getElementById('speedEl').innerText = speed;
-
-            // Di chuyển marker người dùng
-            if (!userMarker) {
-                const icon = L.divIcon({
-                    html: '<i class="fa-solid fa-circle-dot" style="color:#4285F4; font-size: 20px; border: 2px solid white; border-radius: 50%;"></i>',
-                    className: 'user-marker',
-                    iconSize: [20, 20]
-                });
-                userMarker = L.marker([lat, lng], {icon: icon}).addTo(map);
-                map.setView([lat, lng], 16);
-            } else {
-                userMarker.setLatLng([lat, lng]);
-            }
-
-            // Logic cảnh báo đơn giản (Demo: Nếu tốc độ > 50km/h thì cảnh báo đỏ)
-            if (speed > 50) {
-                document.getElementById('alertEffect').style.display = 'block';
-            } else {
-                document.getElementById('alertEffect').style.display = 'none';
-            }
-        }
-
-        function listenToReports() {
-            // Lấy 50 báo cáo mới nhất
-            const q = query(collection(db, "reports"), orderBy("timestamp", "desc"), limit(50));
-            
-            onSnapshot(q, (snapshot) => {
-                snapshot.docChanges().forEach((change) => {
-                    if (change.type === "added") {
-                        const data = change.doc.data();
-                        addReportMarker(data);
-                    }
-                });
-            });
-        }
-
-        function addReportMarker(data) {
-            // Icon Camera
-            const camIcon = L.divIcon({
-                html: '<i class="fa-solid fa-camera" style="color:var(--primary-color); font-size: 24px; filter: drop-shadow(0 0 5px orange);"></i>',
-                className: 'cam-icon',
-                iconSize: [30, 30]
-            });
-
-            const marker = L.marker([data.lat, data.lng], {icon: camIcon}).addTo(map);
-            
-            // Popup hiển thị ảnh lấy từ GitHub (thông qua link raw hoặc cdn)
-            // Lưu ý: data.imageUrl là link raw github userContent
-            const popupContent = `
-                <div style="text-align:center;">
-                    <b>${data.userEmail}</b><br>
-                    <small>${new Date(data.timestamp?.toDate()).toLocaleTimeString()}</small><br>
-                    <img src="${data.imageUrl}" class="popup-img" alt="Loading...">
-                </div>
-            `;
-            marker.bindPopup(popupContent);
-        }
-
-        // --- 4. GITHUB UPLOAD & CREATE REPORT ---
-
-        window.handleFileUpload = async (input) => {
-            const file = input.files[0];
-            if (!file || !userMarker) return;
-
-            const statusEl = document.getElementById('statusMsg');
-            statusEl.style.display = 'block';
-            statusEl.innerText = "Đang xử lý ảnh...";
-
-            try {
-                // 1. Convert ảnh sang Base64
-                const base64Content = await toBase64(file);
-                // Loại bỏ phần header "data:image/jpeg;base64,"
-                const cleanBase64 = base64Content.split(',')[1];
-
-                // 2. Upload lên GitHub thông qua API
-                const fileName = `images/report_${Date.now()}.jpg`;
-                const githubUrl = `https://api.github.com/repos/${GITHUB_CONFIG.OWNER}/${GITHUB_CONFIG.REPO}/contents/${fileName}`;
-
-                statusEl.innerText = "Đang đẩy lên GitHub...";
-                
-                const response = await fetch(githubUrl, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `token ${GITHUB_CONFIG.TOKEN}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        message: "New traffic report",
-                        content: cleanBase64,
-                        branch: GITHUB_CONFIG.BRANCH
-                    })
-                });
-
-                if (!response.ok) throw new Error("GitHub Upload Failed");
-                
-                const result = await response.json();
-                // Lấy link raw để hiển thị (download_url)
-                const rawUrl = result.content.download_url;
-
-                // 3. Lưu thông tin vào Firestore
-                statusEl.innerText = "Lưu dữ liệu...";
-                const lat = userMarker.getLatLng().lat;
-                const lng = userMarker.getLatLng().lng;
-
-                await addDoc(collection(db, "reports"), {
-                    lat: lat,
-                    lng: lng,
-                    imageUrl: rawUrl,
-                    userUid: currentUser.uid,
-                    userEmail: currentUser.email,
-                    timestamp: serverTimestamp(),
-                    type: "traffic_snap"
-                });
-
-                statusEl.innerText = "Thành công!";
-                setTimeout(() => statusEl.style.display = 'none', 2000);
-
-            } catch (error) {
+    // 1. Đăng nhập
+    window.handleLogin = () => {
+        signInWithPopup(auth, provider)
+            .then((result) => {
+                const credential = GoogleAuthProvider.credentialFromResult(result);
+                accessToken = credential.accessToken; // LẤY TOKEN Ở ĐÂY
+                console.log("Token:", accessToken);
+                log("Đăng nhập thành công! Hãy chọn một chức năng phía trên.");
+            }).catch((error) => {
                 console.error(error);
-                statusEl.innerText = "Lỗi: " + error.message;
-                setTimeout(() => statusEl.style.display = 'none', 3000);
-            }
-        };
+                alert("Lỗi: " + error.message);
+            });
+    };
 
-        // Hàm helper chuyển file sang base64
-        const toBase64 = file => new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = error => reject(error);
-        });
+    // 2. Đăng xuất
+    window.handleLogout = () => signOut(auth);
 
-    </script>
+    // 3. Theo dõi trạng thái
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            loginScreen.style.display = 'none';
+            dashboard.style.display = 'block';
+            document.getElementById('avatar').src = user.photoURL;
+            document.getElementById('username').textContent = user.displayName;
+            document.getElementById('email').textContent = user.email;
+        } else {
+            loginScreen.style.display = 'block';
+            dashboard.style.display = 'none';
+            accessToken = "";
+        }
+    });
+
+    // ====================================================
+    // CÁC HÀM GỌI API (FETCH DATA)
+    // ====================================================
+
+    // API 1: Lấy Danh Bạ (Google People API)
+    window.getContacts = async () => {
+        if(!accessToken) return alert("Chưa có token!");
+        log("Đang tải danh bạ...");
+        
+        // Endpoint đặc biệt của People API
+        const url = 'https://people.googleapis.com/v1/people/me/connections?personFields=names,emailAddresses,phoneNumbers&pageSize=10';
+        
+        try {
+            const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+            const data = await res.json();
+            log("Đã tải xong Danh bạ (10 người đầu tiên):", data);
+        } catch (e) { log("Lỗi: " + e); }
+    };
+
+    // API 2: Lấy Lịch (Google Calendar API)
+    window.getCalendar = async () => {
+        if(!accessToken) return alert("Chưa có token!");
+        log("Đang tải lịch trình...");
+        
+        // Lấy các sự kiện trong lịch chính (primary)
+        const url = 'https://www.googleapis.com/calendar/v3/calendars/primary/events?maxResults=10&orderBy=startTime&singleEvents=true';
+        
+        try {
+            const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+            const data = await res.json();
+            log("Đã tải xong Lịch trình:", data);
+        } catch (e) { log("Lỗi: " + e); }
+    };
+
+    // API 3: Lấy YouTube (YouTube Data API)
+    window.getYoutube = async () => {
+        if(!accessToken) return alert("Chưa có token!");
+        log("Đang tải dữ liệu YouTube...");
+        
+        // Lấy danh sách kênh đã đăng ký (Subscriptions)
+        const url = 'https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=10';
+        
+        try {
+            const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+            const data = await res.json();
+            log("Đã tải xong danh sách Subscriptions:", data);
+        } catch (e) { log("Lỗi: " + e); }
+    };
+
+    // API 4: Lấy Drive (Google Drive API)
+    window.getDrive = async () => {
+        if(!accessToken) return alert("Chưa có token!");
+        log("Đang tải file Drive...");
+        
+        // Lấy 10 file gần nhất
+        const url = 'https://www.googleapis.com/drive/v3/files?pageSize=10&fields=files(id,name,mimeType,createdTime)';
+        
+        try {
+            const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+            const data = await res.json();
+            log("Đã tải xong danh sách File:", data);
+        } catch (e) { log("Lỗi: " + e); }
+    };
+
+</script>
+
 </body>
 </html>
