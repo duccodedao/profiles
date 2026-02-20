@@ -3,239 +3,296 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google API Data Extractor (Contacts, YT, Drive, Calendar)</title>
+    <title>Trình Chạy Code Đa Thiết Bị</title>
     <style>
-        :root { --primary: #4285f4; --bg: #f8f9fa; --text: #202124; }
-        body { font-family: 'Roboto', Arial, sans-serif; background: var(--bg); color: var(--text); padding: 20px; margin: 0; }
-        
-        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-        h1 { text-align: center; color: var(--primary); margin-bottom: 10px; }
-        .subtitle { text-align: center; color: #5f6368; font-size: 14px; margin-bottom: 30px; }
+        /* --- CSS CHUNG --- */
+        :root {
+            --bg-color: #1e1e2e;
+            --sidebar-bg: #282a36;
+            --text-color: #f8f8f2;
+            --accent-color: #bd93f9;
+            --border-color: #44475a;
+            --header-height: 60px;
+        }
 
-        /* Login Button */
-        .login-area { text-align: center; padding: 40px 0; }
-        .btn-google { background: #fff; color: #3c4043; border: 1px solid #dadce0; padding: 12px 24px; font-weight: 500; font-size: 16px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; transition: background .2s; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-        .btn-google:hover { background: #f7f8f8; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
-        .warning-text { color: #d93025; font-size: 13px; margin-top: 15px; background: #fce8e6; padding: 10px; border-radius: 4px; display: inline-block; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        /* Dashboard */
-        #dashboard { display: none; }
-        .user-profile { display: flex; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
-        .avatar { width: 50px; height: 50px; border-radius: 50%; margin-right: 15px; }
-        .logout-btn { margin-left: auto; background: #d93025; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
 
-        /* API Buttons Grid */
-        .api-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .btn-api { padding: 15px; border: none; border-radius: 8px; color: white; cursor: pointer; font-size: 14px; font-weight: bold; transition: transform 0.1s; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100px; }
-        .btn-api:active { transform: scale(0.98); }
-        
-        .btn-contacts { background: linear-gradient(135deg, #0f9d58, #0b8043); }
-        .btn-calendar { background: linear-gradient(135deg, #4285f4, #1967d2); }
-        .btn-youtube { background: linear-gradient(135deg, #ff0000, #c20000); }
-        .btn-drive { background: linear-gradient(135deg, #f4b400, #f09300); }
+        /* --- HEADER --- */
+        header {
+            height: var(--header-height);
+            background-color: var(--sidebar-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
 
-        /* Results Area */
-        .result-box { background: #282a36; color: #50fa7b; padding: 20px; border-radius: 8px; font-family: 'Consolas', monospace; font-size: 13px; height: 400px; overflow-y: auto; white-space: pre-wrap; border: 2px solid #44475a; }
-        .status-bar { margin-bottom: 10px; font-weight: bold; color: #4285f4; }
+        .logo { font-size: 1.2rem; font-weight: bold; color: var(--accent-color); }
+        .logo span { color: white; }
+
+        .run-btn {
+            background-color: #50fa7b;
+            color: #282a36;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .run-btn:hover { background-color: #40d66d; transform: scale(1.05); }
+
+        /* --- LAYOUT CHÍNH --- */
+        .main-container {
+            display: flex;
+            height: calc(100vh - var(--header-height));
+        }
+
+        /* --- EDITOR (BÊN TRÁI) --- */
+        .editor-pane {
+            width: 40%;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .editor-header {
+            padding: 10px;
+            background: #191a21;
+            font-size: 0.9rem;
+            color: #8be9fd;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        #code-input {
+            width: 100%;
+            height: 100%;
+            background-color: var(--sidebar-bg);
+            color: #f8f8f2;
+            border: none;
+            padding: 15px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: none;
+            outline: none;
+        }
+
+        /* --- PREVIEW (BÊN PHẢI) --- */
+        .preview-pane {
+            width: 60%;
+            display: flex;
+            flex-direction: column;
+            background-color: #e4e4e4; /* Màu nền giả lập bàn làm việc */
+            position: relative;
+        }
+
+        /* Thanh công cụ thiết bị */
+        .device-toolbar {
+            height: 50px;
+            background: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            border-bottom: 1px solid #ddd;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .device-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 8px 15px;
+            border-radius: 8px;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 500;
+            transition: 0.2s;
+        }
+
+        .device-btn:hover { background-color: #f0f0f0; }
+        .device-btn.active { background-color: var(--accent-color); color: white; }
+
+        /* Vùng chứa iframe */
+        .iframe-wrapper {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center; /* Căn giữa thiết bị */
+            padding: 20px;
+            overflow: auto;
+        }
+
+        iframe {
+            background-color: white;
+            border: none;
+            transition: width 0.3s ease, height 0.3s ease, border-radius 0.3s ease;
+            box-shadow: 0 0 20px rgba(0,0,0,0.15);
+        }
+
+        /* Các chế độ thiết bị */
+        /* PC: Full chiều rộng có thể */
+        .mode-pc iframe {
+            width: 100%;
+            height: 100%;
+            border-radius: 0;
+            border: none;
+        }
+
+        /* Tablet (iPad Portrait) */
+        .mode-tablet iframe {
+            width: 768px;
+            height: 1024px;
+            max-height: 95%; /* Để không bị tràn màn hình */
+            border-radius: 20px;
+            border: 10px solid #333; /* Giả lập viền máy */
+        }
+
+        /* Mobile (iPhone) */
+        .mode-mobile iframe {
+            width: 375px;
+            height: 667px;
+            max-height: 95%;
+            border-radius: 30px;
+            border: 12px solid #333;
+            border-top-width: 40px; /* Tai thỏ */
+            border-bottom-width: 40px; /* Nút home ảo */
+        }
+
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>Super Data Extractor</h1>
-    <p class="subtitle">Demo lấy dữ liệu Danh bạ, Lịch, YouTube, Drive qua Google API</p>
-
-    <!-- Màn hình đăng nhập -->
-    <div id="login-screen" class="login-area">
-        <button class="btn-google" onclick="handleLogin()">
-            <svg style="width:18px;height:18px;margin-right:10px" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 10.86-2.13 14.82-5.78l-7.73-6c-2.15 1.45-4.92 2.3-7.09 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
-            Đăng nhập & Cấp quyền
+    <header>
+        <div class="logo">⚡ Code<span>Runner</span></div>
+        <button class="run-btn" onclick="runCode()">
+            ▶ Chạy Code
         </button>
-        <br>
-        <div class="warning-text">
-            ⚠️ Lưu ý: Google sẽ hiện cảnh báo "Unverified App". <br>Hãy bấm <b>Advanced -> Go to ... (unsafe)</b> để tiếp tục.
-        </div>
-    </div>
+    </header>
 
-    <!-- Dashboard -->
-    <div id="dashboard">
-        <div class="user-profile">
-            <img id="avatar" class="avatar" src="" alt="User">
-            <div>
-                <h3 id="username" style="margin:0">User</h3>
-                <span id="email" style="font-size:12px; color:#666">...</span>
-            </div>
-            <button class="logout-btn" onclick="handleLogout()">Đăng xuất</button>
-        </div>
-
-        <div class="api-grid">
-            <button class="btn-api btn-contacts" onclick="getContacts()">
-                📞 DANH BẠ
-                <small style="font-weight:normal; margin-top:5px; opacity:0.8">Lấy SĐT & Email bạn bè</small>
-            </button>
-            <button class="btn-api btn-calendar" onclick="getCalendar()">
-                📅 LỊCH TRÌNH
-                <small style="font-weight:normal; margin-top:5px; opacity:0.8">Lấy sự kiện họp/bay</small>
-            </button>
-            <button class="btn-api btn-youtube" onclick="getYoutube()">
-                📺 YOUTUBE
-                <small style="font-weight:normal; margin-top:5px; opacity:0.8">Lấy Subscriptions</small>
-            </button>
-            <button class="btn-api btn-drive" onclick="getDrive()">
-                📂 DRIVE
-                <small style="font-weight:normal; margin-top:5px; opacity:0.8">Lấy danh sách file</small>
-            </button>
-        </div>
-
-        <div class="status-bar" id="status-msg">Sẵn sàng...</div>
-        <div class="result-box" id="output">
-// Dữ liệu JSON sẽ hiển thị tại đây...
-        </div>
-    </div>
-</div>
-
-<script type="module">
-    // Import thư viện từ CDN
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-app.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-auth.js";
-
-    // Cấu hình Firebase
-    const firebaseConfig = {
-        apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE", 
-        authDomain: "profile-d1214.firebaseapp.com",
-        projectId: "profile-d1214",
-        storageBucket: "profile-d1214.firebasestorage.app",
-        messagingSenderId: "914980131889",
-        appId: "1:914980131889:web:72f8da15c42dbee671b110"
-    };
-
-    // Khởi tạo
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const provider = new GoogleAuthProvider();
-
-    // ====================================================
-    // THÊM 4 QUYỀN (SCOPES) QUAN TRỌNG
-    // ====================================================
-    provider.addScope('https://www.googleapis.com/auth/contacts.readonly');       // 1. Danh bạ
-    provider.addScope('https://www.googleapis.com/auth/calendar.readonly');       // 2. Lịch
-    provider.addScope('https://www.googleapis.com/auth/youtube.readonly');        // 3. YouTube
-    provider.addScope('https://www.googleapis.com/auth/drive.metadata.readonly'); // 4. Drive
-
-    let accessToken = ""; // Biến lưu token
-
-    // Xử lý UI
-    const loginScreen = document.getElementById('login-screen');
-    const dashboard = document.getElementById('dashboard');
-    const output = document.getElementById('output');
-    const statusMsg = document.getElementById('status-msg');
-
-    function log(msg, data = null) {
-        statusMsg.textContent = msg;
-        if(data) {
-            output.textContent = JSON.stringify(data, null, 4); // Format JSON đẹp
-        } else {
-            output.textContent = "// Đang chờ dữ liệu...";
-        }
+    <div class="main-container">
+        <!-- Khu vực nhập code -->
+        <div class="editor-pane">
+            <div class="editor-header">📝 Source Code (HTML/CSS/JS)</div>
+            <textarea id="code-input" placeholder="Dán code của bạn vào đây..." spellcheck="false">
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+    body { 
+        font-family: sans-serif; 
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        text-align: center;
+        padding-top: 50px;
+        margin: 0;
+        height: 100vh;
     }
+    .card {
+        background: rgba(255,255,255,0.2);
+        backdrop-filter: blur(10px);
+        padding: 20px;
+        border-radius: 15px;
+        display: inline-block;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        max-width: 90%;
+    }
+    button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 20px;
+        background: white;
+        color: #764ba2;
+        font-weight: bold;
+        cursor: pointer;
+        margin-top: 10px;
+    }
+    button:hover { transform: scale(1.05); }
+</style>
+</head>
+<body>
+    <div class="card">
+        <h1>Xin chào! 👋</h1>
+        <p>Đây là bản xem trước website của bạn.</p>
+        <p>Hãy thử đổi thiết bị xem sao!</p>
+        <button onclick="alert('Đã click!')">Click Me</button>
+    </div>
+</body>
+</html>
+            </textarea>
+        </div>
 
-    // 1. Đăng nhập
-    window.handleLogin = () => {
-        signInWithPopup(auth, provider)
-            .then((result) => {
-                const credential = GoogleAuthProvider.credentialFromResult(result);
-                accessToken = credential.accessToken; // LẤY TOKEN Ở ĐÂY
-                console.log("Token:", accessToken);
-                log("Đăng nhập thành công! Hãy chọn một chức năng phía trên.");
-            }).catch((error) => {
-                console.error(error);
-                alert("Lỗi: " + error.message);
-            });
-    };
+        <!-- Khu vực xem trước -->
+        <div class="preview-pane">
+            <div class="device-toolbar">
+                <button class="device-btn active" onclick="setDevice('pc', this)">💻 PC</button>
+                <button class="device-btn" onclick="setDevice('tablet', this)">📟 Tablet</button>
+                <button class="device-btn" onclick="setDevice('mobile', this)">📱 Mobile</button>
+            </div>
+            
+            <div class="iframe-wrapper mode-pc" id="iframe-wrapper">
+                <iframe id="preview-frame"></iframe>
+            </div>
+        </div>
+    </div>
 
-    // 2. Đăng xuất
-    window.handleLogout = () => signOut(auth);
-
-    // 3. Theo dõi trạng thái
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            loginScreen.style.display = 'none';
-            dashboard.style.display = 'block';
-            document.getElementById('avatar').src = user.photoURL;
-            document.getElementById('username').textContent = user.displayName;
-            document.getElementById('email').textContent = user.email;
-        } else {
-            loginScreen.style.display = 'block';
-            dashboard.style.display = 'none';
-            accessToken = "";
+    <script>
+        // Hàm chạy code
+        function runCode() {
+            const code = document.getElementById('code-input').value;
+            const iframe = document.getElementById('preview-frame');
+            
+            // Mở document của iframe để ghi nội dung
+            const iframeDoc = iframe.contentWindow.document;
+            iframeDoc.open();
+            iframeDoc.write(code);
+            iframeDoc.close();
         }
-    });
 
-    // ====================================================
-    // CÁC HÀM GỌI API (FETCH DATA)
-    // ====================================================
+        // Hàm đổi thiết bị
+        function setDevice(type, btnElement) {
+            const wrapper = document.getElementById('iframe-wrapper');
+            
+            // Xóa hết class cũ
+            wrapper.classList.remove('mode-pc', 'mode-tablet', 'mode-mobile');
+            
+            // Thêm class mới tương ứng
+            wrapper.classList.add('mode-' + type);
 
-    // API 1: Lấy Danh Bạ (Google People API)
-    window.getContacts = async () => {
-        if(!accessToken) return alert("Chưa có token!");
-        log("Đang tải danh bạ...");
-        
-        // Endpoint đặc biệt của People API
-        const url = 'https://people.googleapis.com/v1/people/me/connections?personFields=names,emailAddresses,phoneNumbers&pageSize=10';
-        
-        try {
-            const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
-            const data = await res.json();
-            log("Đã tải xong Danh bạ (10 người đầu tiên):", data);
-        } catch (e) { log("Lỗi: " + e); }
-    };
+            // Cập nhật trạng thái nút bấm (Active)
+            const buttons = document.querySelectorAll('.device-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+        }
 
-    // API 2: Lấy Lịch (Google Calendar API)
-    window.getCalendar = async () => {
-        if(!accessToken) return alert("Chưa có token!");
-        log("Đang tải lịch trình...");
-        
-        // Lấy các sự kiện trong lịch chính (primary)
-        const url = 'https://www.googleapis.com/calendar/v3/calendars/primary/events?maxResults=10&orderBy=startTime&singleEvents=true';
-        
-        try {
-            const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
-            const data = await res.json();
-            log("Đã tải xong Lịch trình:", data);
-        } catch (e) { log("Lỗi: " + e); }
-    };
+        // Tự động chạy code demo khi vừa tải trang
+        window.onload = runCode;
 
-    // API 3: Lấy YouTube (YouTube Data API)
-    window.getYoutube = async () => {
-        if(!accessToken) return alert("Chưa có token!");
-        log("Đang tải dữ liệu YouTube...");
-        
-        // Lấy danh sách kênh đã đăng ký (Subscriptions)
-        const url = 'https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=10';
-        
-        try {
-            const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
-            const data = await res.json();
-            log("Đã tải xong danh sách Subscriptions:", data);
-        } catch (e) { log("Lỗi: " + e); }
-    };
-
-    // API 4: Lấy Drive (Google Drive API)
-    window.getDrive = async () => {
-        if(!accessToken) return alert("Chưa có token!");
-        log("Đang tải file Drive...");
-        
-        // Lấy 10 file gần nhất
-        const url = 'https://www.googleapis.com/drive/v3/files?pageSize=10&fields=files(id,name,mimeType,createdTime)';
-        
-        try {
-            const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
-            const data = await res.json();
-            log("Đã tải xong danh sách File:", data);
-        } catch (e) { log("Lỗi: " + e); }
-    };
-
-</script>
+        // (Tùy chọn) Cho phép ấn Ctrl + Enter để chạy
+        document.getElementById('code-input').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                runCode();
+            }
+        });
+    </script>
 
 </body>
 </html>
