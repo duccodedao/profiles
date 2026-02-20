@@ -1,733 +1,534 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CyberScout AI | Phân Tích Lừa Đảo Thông Minh</title>
+    <title>BmassHD - QR Pro (Verify)</title>
     
     <!-- Libraries -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
-
-    <!-- Tailwind Config for Cyber Theme -->
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        cyber: {
-                            bg: '#050b14',
-                            card: '#0f172a',
-                            border: '#1e293b',
-                            primary: '#00f0ff', // Neon Cyan
-                            secondary: '#7000ff', // Neon Purple
-                            danger: '#ff003c', // Cyber Red
-                            warning: '#fcee0a', // Cyber Yellow
-                            success: '#00ff9d', // Cyber Green
-                            text: '#94a3b8'
-                        }
-                    },
-                    fontFamily: {
-                        mono: ['JetBrains Mono', 'monospace'],
-                        display: ['Orbitron', 'sans-serif'],
-                    },
-                    animation: {
-                        'scan': 'scan 2s linear infinite',
-                        'pulse-glow': 'pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                    },
-                    keyframes: {
-                        scan: {
-                            '0%': { transform: 'translateY(-100%)' },
-                            '100%': { transform: 'translateY(100%)' }
-                        },
-                        'pulse-glow': {
-                            '0%, 100%': { opacity: 1, filter: 'drop-shadow(0 0 5px #00f0ff)' },
-                            '50%': { opacity: .5, filter: 'drop-shadow(0 0 20px #00f0ff)' }
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    
     <style>
-        body {
-            background-color: #050b14;
-            color: #e2e8f0;
-            font-family: 'JetBrains Mono', monospace;
-            background-image: 
-                radial-gradient(circle at 50% 50%, rgba(112, 0, 255, 0.05) 0%, transparent 50%),
-                linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
-            background-size: 100% 100%, 40px 40px, 40px 40px;
+        /* --- THEME VARIABLES --- */
+        :root {
+            --primary: #4e73df; --primary-dark: #2e59d9;
+            --secondary: #858796; --success: #1cc88a; --danger: #e74a3b;
+            --bg-body: #f3f4f6; --bg-card: #ffffff; --bg-input: #ffffff;
+            --text-main: #2d3748; --text-sub: #718096; --border: #e2e8f0;
+            --shadow: 0 10px 25px rgba(0,0,0,0.05); --radius: 12px; --transition: all 0.3s ease;
         }
 
-        /* Glassmorphism */
-        .glass {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(0, 240, 255, 0.1);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        [data-theme="dark"] {
+            --primary: #4e73df; --primary-dark: #3751a0;
+            --bg-body: #1a202c; --bg-card: #2d3748; --bg-input: #4a5568;
+            --text-main: #f7fafc; --text-sub: #a0aec0; --border: #4a5568;
+            --shadow: 0 10px 25px rgba(0,0,0,0.3);
         }
 
-        .glass-panel {
-            background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(10, 10, 15, 0.95));
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        /* Utilities */
-        .text-glow { text-shadow: 0 0 10px currentColor; }
-        .border-glow { box-shadow: 0 0 10px rgba(0, 240, 255, 0.2); }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-body); color: var(--text-main); padding: 20px; min-height: 100vh; display: flex; flex-direction: column; align-items: center; transition: var(--transition); }
         
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #050b14; }
-        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #00f0ff; }
+        .container { width: 100%; max-width: 1200px; background: var(--bg-card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; display: flex; flex-wrap: wrap; margin-bottom: 30px; position: relative; transition: var(--transition); }
+        
+        /* HEADER */
+        .header { width: 100%; padding: 20px; background: linear-gradient(135deg, var(--primary), #224abe); color: white; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 1.4rem; font-weight: 700; margin-bottom: 5px; }
+        .btn-icon { background: rgba(255,255,255,0.2); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+        .btn-icon:hover { background: rgba(255,255,255,0.35); transform: rotate(15deg); }
 
-        /* Loader */
-        .cyber-loader {
-            width: 48px;
-            height: 48px;
-            border: 3px solid #00f0ff;
-            border-radius: 50%;
-            display: inline-block;
-            position: relative;
-            box-sizing: border-box;
-            animation: rotation 1s linear infinite;
-        }
-        .cyber-loader::after {
-            content: '';  
-            box-sizing: border-box;
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 3px solid transparent;
-            border-bottom-color: #ff003c;
-            animation: rotation 0.5s linear infinite reverse;
-        }
-        @keyframes rotation {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        /* LAYOUT */
+        .col-left, .col-right { padding: 30px; flex: 1; min-width: 350px; transition: var(--transition); }
+        .col-left { border-right: 1px solid var(--border); }
+        .col-right { background-color: var(--bg-body); display: flex; flex-direction: column; align-items: center; }
+        [data-theme="dark"] .col-right { background-color: #283141; }
+
+        /* BANK GRID */
+        .search-box { position: relative; margin-bottom: 15px; }
+        .search-box input { width: 100%; padding: 10px 15px 10px 40px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-main); outline: none; }
+        .search-box i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-sub); }
+        
+        .bank-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; max-height: 220px; overflow-y: auto; padding-right: 5px; }
+        .bank-item { border: 2px solid var(--border); border-radius: 10px; padding: 5px; cursor: pointer; transition: var(--transition); background: var(--bg-card); height: 70px; display: flex; align-items: center; justify-content: center; position: relative; }
+        .bank-item img { max-width: 80%; max-height: 80%; object-fit: contain; filter: grayscale(100%); transition: var(--transition); }
+        .bank-item:hover { transform: translateY(-3px); border-color: var(--primary); }
+        .bank-item.active { border-color: var(--primary); background: rgba(78, 115, 223, 0.05); }
+        .bank-item.active img { filter: grayscale(0%); }
+
+        /* INPUTS */
+        .form-label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9rem; color: var(--text-sub); }
+        .form-control { width: 100%; padding: 12px 15px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-input); color: var(--text-main); font-size: 1rem; outline: none; transition: var(--transition); }
+        .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(78, 115, 223, 0.15); }
+
+        /* BUTTONS */
+        .btn-action { width: 100%; padding: 14px; border: none; border-radius: 30px; background: var(--primary); color: white; font-weight: 600; font-size: 1rem; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; }
+        .btn-action:hover { background: var(--primary-dark); transform: translateY(-2px); }
+        .btn-secondary { background: var(--secondary); }
+        .btn-secondary:hover { background: #6c757d; }
+
+        /* QR FRAME */
+        .qr-frame { background: white; padding: 15px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: center; min-height: 380px; width: 100%; max-width: 380px; display: flex; align-items: center; justify-content: center; position: relative; border: 1px solid #eee; }
+        .qr-frame img { max-width: 100%; height: auto; border-radius: 8px; display: none; }
+        .qr-frame img.loaded { display: block; animation: zoomIn 0.4s ease; }
+        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* ADMIN SPECIFIC */
+        #adminPanel { width: 100%; max-width: 1200px; background: var(--bg-card); padding: 25px; border-radius: var(--radius); border-top: 4px solid var(--primary); display: none; margin-top: 20px; box-shadow: var(--shadow); }
+        .verify-box { display: flex; gap: 10px; align-items: center; }
+        .btn-verify { background: var(--success); color: white; border: none; padding: 0 15px; border-radius: 8px; height: 45px; cursor: pointer; white-space: nowrap; font-weight: 600; display: flex; align-items: center; gap: 5px; }
+        .btn-verify:hover { background: #169b6b; }
+        .btn-verify:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* LOADING */
+        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-card); z-index: 2000; display: flex; justify-content: center; align-items: center; flex-direction: column; transition: opacity 0.5s; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #eee; border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        @media (max-width: 768px) {
+            .container { flex-direction: column; }
+            .col-left { border-right: none; border-bottom: 1px solid var(--border); }
+            .verify-box { flex-direction: column; align-items: stretch; }
+            .btn-verify { width: 100%; justify-content: center; }
         }
     </style>
 </head>
-<body class="antialiased min-h-screen flex flex-col relative overflow-x-hidden">
+<body>
 
-    <!-- Overlay Scanline Effect -->
-    <div class="fixed inset-0 pointer-events-none z-50 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%]"></div>
+<div id="initialLoading" class="loading-overlay">
+    <div class="spinner"></div>
+    <p style="margin-top: 15px; font-weight: 500;">Đang khởi tạo...</p>
+</div>
 
-    <!-- Navigation -->
-    <nav class="fixed w-full z-40 glass border-b border-cyber-border top-0">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center gap-3">
-                    <i class="fa-solid fa-shield-virus text-cyber-primary text-2xl animate-pulse-glow"></i>
-                    <span class="font-display font-bold text-xl tracking-wider text-white">CYBER<span class="text-cyber-primary">SCOUT</span>.AI</span>
-                </div>
-                <div class="hidden md:block">
-                    <div class="ml-10 flex items-baseline space-x-4">
-                        <button onclick="app.router('home')" class="text-white hover:text-cyber-primary px-3 py-2 rounded-md text-sm font-medium transition-colors">Analyzer</button>
-                        <button onclick="app.router('admin')" id="nav-admin" class="hidden text-gray-400 hover:text-cyber-danger px-3 py-2 rounded-md text-sm font-medium transition-colors">Admin Console</button>
-                    </div>
-                </div>
-                <div class="flex items-center gap-4">
-                    <div id="user-info" class="hidden flex items-center gap-2">
-                        <img id="user-avatar" src="" class="h-8 w-8 rounded-full border border-cyber-primary">
-                        <span id="user-name" class="text-xs text-cyber-primary"></span>
-                    </div>
-                    <button id="btn-login" class="bg-cyber-primary/10 hover:bg-cyber-primary/20 text-cyber-primary border border-cyber-primary/50 px-4 py-1.5 rounded text-sm font-bold transition-all hover:shadow-[0_0_15px_rgba(0,240,255,0.3)]">
-                        <i class="fa-brands fa-google mr-2"></i> LOGIN
-                    </button>
-                    <button id="btn-logout" class="hidden text-gray-400 hover:text-white text-sm"><i class="fa-solid fa-right-from-bracket"></i></button>
-                </div>
+<div class="container">
+    <div class="header">
+        <h1><i class="fas fa-qrcode"></i> BmassHD Pro</h1>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn-icon" onclick="toggleTheme()"><i class="fas fa-moon" id="themeIcon"></i></button>
+            <button class="btn-icon" id="btnLogin" onclick="handleLogin()"><i class="fas fa-user-shield"></i></button>
+            <button class="btn-icon" id="btnLogout" onclick="handleLogout()" style="display: none;"><i class="fas fa-sign-out-alt"></i></button>
+        </div>
+    </div>
+
+    <!-- USER INTERFACE -->
+    <div class="col-left">
+        <div class="form-group">
+            <label class="form-label">1. Chọn Ngân Hàng</label>
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="bankSearch" placeholder="Tìm kiếm ngân hàng..." onkeyup="filterBanks()">
+            </div>
+            <div class="bank-grid" id="bankGrid"></div>
+            <div style="margin-top: 8px; font-size: 0.9rem;">
+                Đang chọn: <strong id="selectedBankName" style="color: var(--primary);">...</strong>
             </div>
         </div>
-    </nav>
 
-    <!-- Main Content -->
-    <main class="flex-grow pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full relative">
+        <div class="form-group">
+            <label class="form-label">2. Thông tin nhận tiền</label>
+            <input type="text" id="accountNumber" class="form-control" readonly placeholder="Số tài khoản">
+            <input type="text" id="fullName" class="form-control" readonly style="margin-top: 10px;" placeholder="Tên chủ tài khoản">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">3. Nhập số tiền</label>
+            <input type="text" id="amount" class="form-control" placeholder="0đ" oninput="formatCurrency(this)">
+            <textarea id="transferContent" class="form-control" style="margin-top: 15px;" rows="2" placeholder="Nội dung chuyển khoản">Chuyen khoan</textarea>
+        </div>
+
+        <button class="btn-action" onclick="generateQR()"><i class="fas fa-magic"></i> TẠO MÃ QR</button>
+    </div>
+
+    <div class="col-right">
+        <label class="form-label">MÃ QR CỦA BẠN</label>
+        <div class="qr-frame" id="qrFrame">
+            <div id="qrLoader" style="display: none; flex-direction: column; align-items: center;">
+                <div class="spinner"></div><br><small>Đang tạo...</small>
+            </div>
+            <div id="qrPlaceholder" style="color: var(--text-sub); text-align: center;">
+                <i class="fas fa-qrcode" style="font-size: 4rem; opacity: 0.2; margin-bottom: 15px;"></i>
+                <p>Nhập thông tin để xem trước</p>
+            </div>
+            <img id="qrImage" src="" alt="QR Code">
+        </div>
+        <button class="btn-action" onclick="downloadQR()" id="btnDownload" style="display:none;">
+            <i class="fas fa-download"></i> Tải ảnh về
+        </button>
+    </div>
+</div>
+
+<!-- ADMIN PANEL WITH LOOKUP FEATURE -->
+<div id="adminPanel">
+    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px;">
+        <h2 style="color: var(--primary);"><i class="fas fa-link"></i> Quản Lý & Liên Kết Ngân Hàng</h2>
+        <button onclick="document.getElementById('adminPanel').style.display='none'" style="border:none; background:none; cursor:pointer;"><i class="fas fa-times"></i></button>
+    </div>
+
+    <!-- FORM LIÊN KẾT -->
+    <div style="display: grid; gap: 15px; margin-bottom: 20px;">
+        <select id="admBankSelect" class="form-control">
+            <option value="">-- Chọn ngân hàng --</option>
+        </select>
         
-        <!-- View: ANALYZER (Home) -->
-        <div id="view-home" class="space-y-8 animate-fade-in">
-            <!-- Hero Input Section -->
-            <div class="text-center mb-12">
-                <h1 class="font-display text-4xl md:text-5xl font-bold text-white mb-4"><span class="text-cyber-primary">AI-POWERED</span> SCAM DETECTION</h1>
-                <p class="text-cyber-text max-w-2xl mx-auto">Hệ thống phân tích rủi ro thời gian thực sử dụng Heuristic Engine và Big Data để phát hiện lừa đảo, phishing và mã độc.</p>
-            </div>
-
-            <div class="glass p-1 rounded-xl max-w-3xl mx-auto shadow-[0_0_40px_rgba(0,240,255,0.05)]">
-                <div class="bg-cyber-bg rounded-lg p-6">
-                    <!-- Tabs -->
-                    <div class="flex space-x-4 mb-6 border-b border-cyber-border pb-2">
-                        <button class="tab-btn active text-cyber-primary border-b-2 border-cyber-primary pb-2 font-bold" data-type="url"><i class="fa-solid fa-globe mr-2"></i>URL / Domain</button>
-                        <button class="tab-btn text-gray-500 hover:text-white pb-2 transition-colors" data-type="email"><i class="fa-solid fa-envelope mr-2"></i>Email</button>
-                        <button class="tab-btn text-gray-500 hover:text-white pb-2 transition-colors" data-type="phone"><i class="fa-solid fa-phone mr-2"></i>Phone</button>
-                    </div>
-
-                    <!-- Input -->
-                    <div class="relative group">
-                        <div class="absolute -inset-0.5 bg-gradient-to-r from-cyber-primary to-cyber-secondary rounded-lg blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
-                        <div class="relative flex">
-                            <input type="text" id="scan-input" class="block w-full bg-cyber-card border border-cyber-border text-white rounded-l-lg py-4 px-6 focus:outline-none focus:border-cyber-primary focus:ring-1 focus:ring-cyber-primary placeholder-gray-600 font-mono" placeholder="Nhập đường dẫn website (ví dụ: shopee-kmai.com)...">
-                            <button id="btn-scan" class="bg-cyber-primary hover:bg-cyan-400 text-black font-bold py-4 px-8 rounded-r-lg transition-all flex items-center gap-2">
-                                <i class="fa-solid fa-radar"></i> SCAN
-                            </button>
-                        </div>
-                    </div>
-                    <p class="mt-2 text-xs text-gray-500 flex justify-between">
-                        <span><i class="fa-solid fa-shield-halved text-green-500 mr-1"></i> Database updated: <span class="text-gray-300">Just now</span></span>
-                        <span><i class="fa-solid fa-bolt text-yellow-500 mr-1"></i> AI Engine: <span class="text-cyber-primary">Active</span></span>
-                    </p>
-                </div>
-            </div>
-
-            <!-- Loading State -->
-            <div id="loader" class="hidden flex flex-col items-center justify-center py-12">
-                <span class="cyber-loader mb-4"></span>
-                <p class="text-cyber-primary font-mono animate-pulse">ANALYZING TARGET...</p>
-                <div class="w-64 h-1 bg-gray-800 rounded mt-4 overflow-hidden relative">
-                    <div class="absolute h-full bg-cyber-primary w-1/2 animate-scan"></div>
-                </div>
-            </div>
-
-            <!-- Result Section -->
-            <div id="result-container" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Left: Score Card -->
-                <div class="glass p-6 rounded-xl flex flex-col items-center justify-center relative overflow-hidden">
-                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyber-primary to-transparent"></div>
-                    <h3 class="font-display text-lg text-white mb-4">RISK SCORE</h3>
-                    <div class="relative w-48 h-48">
-                        <canvas id="riskChart"></canvas>
-                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                            <span id="score-val" class="text-4xl font-bold text-white font-display">0</span>
-                            <span id="score-text" class="text-xs text-gray-400 uppercase tracking-widest">SAFE</span>
-                        </div>
-                    </div>
-                    <div id="verdict-badge" class="mt-4 px-4 py-2 rounded border font-bold tracking-wider text-sm">
-                        SAFE
-                    </div>
-                </div>
-
-                <!-- Center: Analysis Details -->
-                <div class="glass p-6 rounded-xl lg:col-span-2">
-                    <h3 class="font-display text-lg text-white mb-4 flex items-center gap-2">
-                        <i class="fa-solid fa-microchip text-cyber-secondary"></i> AI ANALYSIS REPORT
-                    </h3>
-                    
-                    <div class="space-y-4">
-                        <!-- Reasons -->
-                        <div class="bg-cyber-bg/50 p-4 rounded border border-cyber-border">
-                            <h4 class="text-sm text-gray-400 mb-2 uppercase font-bold">Phát hiện rủi ro:</h4>
-                            <ul id="analysis-reasons" class="space-y-2 text-sm">
-                                <!-- JS Injected -->
-                            </ul>
-                        </div>
-
-                        <!-- Technical Indicators -->
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div class="bg-cyber-bg p-3 rounded border border-cyber-border text-center">
-                                <div class="text-xs text-gray-500">Domain Age</div>
-                                <div id="tech-age" class="text-white font-mono font-bold">--</div>
-                            </div>
-                            <div class="bg-cyber-bg p-3 rounded border border-cyber-border text-center">
-                                <div class="text-xs text-gray-500">SSL Issuer</div>
-                                <div id="tech-ssl" class="text-white font-mono font-bold">--</div>
-                            </div>
-                            <div class="bg-cyber-bg p-3 rounded border border-cyber-border text-center">
-                                <div class="text-xs text-gray-500">Server Location</div>
-                                <div id="tech-loc" class="text-white font-mono font-bold">--</div>
-                            </div>
-                            <div class="bg-cyber-bg p-3 rounded border border-cyber-border text-center">
-                                <div class="text-xs text-gray-500">Blacklist Status</div>
-                                <div id="tech-bl" class="text-white font-mono font-bold">--</div>
-                            </div>
-                        </div>
-
-                        <!-- Recommendation -->
-                        <div id="recommendation-box" class="p-4 rounded border-l-4 bg-opacity-10 text-sm">
-                            <i class="fa-solid fa-circle-info mr-2"></i> <span id="recommendation-text">...</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Bottom: Community Reports / Timeline -->
-                <div class="glass p-6 rounded-xl lg:col-span-3">
-                    <h3 class="font-display text-lg text-white mb-4 flex items-center gap-2">
-                        <i class="fa-solid fa-users-viewfinder text-cyber-warning"></i> COMMUNITY INTELLIGENCE
-                    </h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm text-left text-gray-400">
-                            <thead class="text-xs text-cyber-primary uppercase bg-cyber-bg border-b border-cyber-border">
-                                <tr>
-                                    <th class="px-4 py-3">Source</th>
-                                    <th class="px-4 py-3">Report Date</th>
-                                    <th class="px-4 py-3">Type</th>
-                                    <th class="px-4 py-3">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="report-table-body">
-                                <tr class="border-b border-cyber-border hover:bg-cyber-border/30">
-                                    <td class="px-4 py-3 font-mono">Anti-Phishing Working Group</td>
-                                    <td class="px-4 py-3">2023-10-27</td>
-                                    <td class="px-4 py-3 text-cyber-danger">Phishing</td>
-                                    <td class="px-4 py-3"><span class="bg-red-900 text-red-300 px-2 py-1 rounded text-xs">Confirmed</span></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        <div id="no-reports" class="hidden text-center py-4 text-gray-600 italic">Chưa có báo cáo nào từ cộng đồng cho mục tiêu này.</div>
-                    </div>
-                </div>
-            </div>
+        <!-- Khu vực nhập và kiểm tra -->
+        <div class="verify-box">
+            <input type="text" id="admAccNum" class="form-control" placeholder="Nhập Số tài khoản">
+            <button class="btn-verify" id="btnLookup" onclick="lookupBankAccount()">
+                <i class="fas fa-search-dollar"></i> Kiểm tra tên
+            </button>
         </div>
 
-        <!-- View: ADMIN DASHBOARD -->
-        <div id="view-admin" class="hidden space-y-8 animate-fade-in">
-            <h2 class="font-display text-3xl text-white mb-6 border-l-4 border-cyber-danger pl-4">ADMIN <span class="text-cyber-danger">COMMAND CENTER</span></h2>
-            
-            <!-- Stats -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div class="glass p-4 rounded-lg border-t-2 border-cyber-primary">
-                    <div class="text-gray-400 text-xs uppercase">Total Scans</div>
-                    <div class="text-2xl font-display text-white mt-1">1,248</div>
-                </div>
-                <div class="glass p-4 rounded-lg border-t-2 border-cyber-danger">
-                    <div class="text-gray-400 text-xs uppercase">Threats Detected</div>
-                    <div class="text-2xl font-display text-cyber-danger mt-1">89</div>
-                </div>
-                <div class="glass p-4 rounded-lg border-t-2 border-cyber-warning">
-                    <div class="text-gray-400 text-xs uppercase">Pending Reports</div>
-                    <div class="text-2xl font-display text-cyber-warning mt-1">12</div>
-                </div>
-                <div class="glass p-4 rounded-lg border-t-2 border-cyber-secondary">
-                    <div class="text-gray-400 text-xs uppercase">Active Users</div>
-                    <div class="text-2xl font-display text-white mt-1">342</div>
-                </div>
-            </div>
+        <input type="text" id="admFullName" class="form-control" placeholder="Tên chủ TK (Tự động điền khi kiểm tra)">
+        
+        <select id="admStatus" class="form-control">
+            <option value="active">🟢 Hiển thị (Active)</option>
+            <option value="maintenance">🔴 Bảo trì</option>
+        </select>
+    </div>
 
-            <!-- Management -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Blacklist Manager -->
-                <div class="glass p-6 rounded-xl">
-                    <h3 class="font-bold text-white mb-4 flex justify-between items-center">
-                        <span>Blacklist Management</span>
-                        <button class="text-xs bg-cyber-danger hover:bg-red-600 text-white px-2 py-1 rounded"><i class="fa-solid fa-plus mr-1"></i> Add</button>
-                    </h3>
-                    <ul class="space-y-2 text-sm font-mono max-h-60 overflow-y-auto pr-2">
-                        <li class="flex justify-between bg-cyber-bg p-2 rounded border border-cyber-border">
-                            <span class="text-red-400">fake-bank-login.com</span>
-                            <button class="text-gray-500 hover:text-white"><i class="fa-solid fa-trash"></i></button>
-                        </li>
-                        <li class="flex justify-between bg-cyber-bg p-2 rounded border border-cyber-border">
-                            <span class="text-red-400">0988xxxxxx (Spam)</span>
-                            <button class="text-gray-500 hover:text-white"><i class="fa-solid fa-trash"></i></button>
-                        </li>
-                    </ul>
-                </div>
+    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+        <button class="btn-action" id="btnSaveBank" onclick="saveBankToFirebase()">
+            <i class="fas fa-save"></i> Lưu Ngân Hàng
+        </button>
+        <button class="btn-action btn-secondary" id="btnCancelEdit" onclick="cancelEditBank()" style="display: none; width: auto;">Hủy</button>
+    </div>
 
-                <!-- AI Config -->
-                <div class="glass p-6 rounded-xl">
-                    <h3 class="font-bold text-white mb-4">AI Engine Configuration</h3>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="text-xs text-gray-400 block mb-1">Sensitivity Threshold</label>
-                            <input type="range" class="w-full accent-cyber-primary h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
-                            <div class="flex justify-between text-xs text-gray-500">
-                                <span>Low</span>
-                                <span>High</span>
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-sm text-gray-300">Auto-ban high risk IPs</span>
-                            <div class="w-10 h-5 bg-cyber-primary rounded-full relative cursor-pointer">
-                                <div class="w-3 h-3 bg-black rounded-full absolute top-1 right-1"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <!-- DANH SÁCH -->
+    <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+        <thead style="background: var(--bg-input);">
+            <tr>
+                <th style="padding: 10px; text-align: left;">Ngân hàng</th>
+                <th style="padding: 10px; text-align: left;">Chi tiết</th>
+                <th style="padding: 10px; text-align: right;">Thao tác</th>
+            </tr>
+        </thead>
+        <tbody id="adminTableBody"></tbody>
+    </table>
+</div>
 
-    </main>
+<!-- SCRIPTS -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
-    <!-- Footer -->
-    <footer class="border-t border-cyber-border bg-black/50 py-6 mt-auto">
-        <div class="max-w-7xl mx-auto px-4 text-center">
-            <p class="text-gray-600 text-xs font-mono">
-                &copy; 2023 CYBERSCOUT AI. POWERED BY HEURISTIC ENGINE v2.4.<br>
-                <span class="text-cyber-primary">SYSTEM STATUS: OPERATIONAL</span>
-            </p>
-        </div>
-    </footer>
-
-    <!-- Firebase SDKs (Placeholder) -->
-    <script type="module">
-        // Import Firebase modules
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
-
-        // --- CONFIGURATION START ---
-        // ⚠️ Thay thế bằng Config Firebase thật của bạn để tính năng Login/DB hoạt động
-        const firebaseConfig = {
+<script>
+    /* ============================================================
+       CẤU HÌNH API - THAY ĐỔI THÔNG TIN CỦA BẠN TẠI ĐÂY
+    ============================================================ */
+    // 1. Firebase Config
+    const firebaseConfig = {
         apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
         authDomain: "profile-d1214.firebaseapp.com",
         projectId: "profile-d1214",
         storageBucket: "profile-d1214.firebasestorage.app",
         messagingSenderId: "914980131889",
-        appId: "1:914980131889:web:72f8da15c42dbee671b110",
-        measurementId: "G-C587M69LZW"
+        appId: "1:914980131889:web:72f8da15c42dbee671b110"
     };
-        // --- CONFIGURATION END ---
 
-        // Initialize Firebase (Try/Catch to prevent crash if config is missing)
-        let auth, db, provider;
+    // 2. VietQR API Keys (Đăng ký tại my.vietqr.io để lấy)
+    // Nếu chưa có, tính năng "Kiểm tra tên" sẽ báo lỗi.
+    const VIETQR_CLIENT_ID = "YOUR_CLIENT_ID_HERE"; 
+    const VIETQR_API_KEY = "YOUR_API_KEY_HERE"; 
+
+    // 3. Admin Config
+    const ADMIN_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1";
+
+    /* ============================================================ */
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    const provider = new firebase.auth.GoogleAuthProvider();
+
+    let USER_BANKS = [];
+    let API_BANKS_LIST = [];
+    let currentBank = null;
+    let editingBankId = null;
+    let qrBlobUrl = null;
+
+    // --- INIT ---
+    document.addEventListener('DOMContentLoaded', async () => {
+        initTheme();
+        await fetchVietQRBanks();
+        listenFirebaseBanks();
+    });
+
+    // --- THEME ---
+    function initTheme() {
+        const theme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        document.getElementById('themeIcon').className = theme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+    }
+    function toggleTheme() {
+        const cur = document.documentElement.getAttribute('data-theme');
+        const next = cur === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+        document.getElementById('themeIcon').className = next === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+    }
+
+    // --- DATA HANDLING ---
+    async function fetchVietQRBanks() {
         try {
-            const app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-            provider = new GoogleAuthProvider();
-            console.log("Firebase Initialized");
-        } catch (e) {
-            console.warn("Firebase config missing or invalid. Auth features will be simulated.");
+            const res = await fetch('https://api.vietqr.io/v2/banks');
+            const data = await res.json();
+            if(data.code === "00") {
+                API_BANKS_LIST = data.data;
+                populateAdminDropdown();
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    function listenFirebaseBanks() {
+        db.collection("banks").orderBy("createdAt", "desc").onSnapshot(snap => {
+            USER_BANKS = [];
+            snap.forEach(doc => USER_BANKS.push({id: doc.id, ...doc.data()}));
+            document.getElementById('initialLoading').style.display = 'none';
+            renderBankGrid();
+            loadAdminTable();
+            if(!currentBank && USER_BANKS.length) {
+                const active = USER_BANKS.find(b => b.status === 'active');
+                if(active) selectBank(active.id);
+            }
+        });
+    }
+
+    // --- UI RENDER ---
+    function renderBankGrid(filter = "") {
+        const grid = document.getElementById('bankGrid');
+        grid.innerHTML = '';
+        const list = filter ? USER_BANKS.filter(b => b.shortName.toLowerCase().includes(filter.toLowerCase())) : USER_BANKS;
+        
+        list.forEach(bank => {
+            const div = document.createElement('div');
+            const activeClass = (currentBank && currentBank.id === bank.id) ? 'active' : '';
+            div.className = `bank-item ${activeClass}`;
+            div.onclick = () => selectBank(bank.id);
+            div.innerHTML = `<img src="${bank.logo}">`;
+            grid.appendChild(div);
+        });
+    }
+
+    function filterBanks() { renderBankGrid(document.getElementById('bankSearch').value); }
+
+    function selectBank(id) {
+        const bank = USER_BANKS.find(b => b.id === id);
+        if(!bank) return;
+        currentBank = bank;
+        renderBankGrid(document.getElementById('bankSearch').value);
+        
+        document.getElementById('selectedBankName').innerText = bank.shortName + " - " + bank.name;
+        document.getElementById('accountNumber').value = bank.acc;
+        document.getElementById('fullName').value = bank.fullName;
+        
+        if(document.getElementById('amount').value) generateQR();
+    }
+
+    // --- QR GENERATE ---
+    async function generateQR() {
+        if(!currentBank) return showToast("Chọn ngân hàng trước!", "error");
+        
+        const amount = parseInt(document.getElementById('amount').value.replace(/,/g, ''));
+        if(!amount) return showToast("Nhập số tiền!", "warning");
+
+        const loader = document.getElementById('qrLoader');
+        const img = document.getElementById('qrImage');
+        const ph = document.getElementById('qrPlaceholder');
+        const btn = document.getElementById('btnDownload');
+        
+        loader.style.display = 'flex';
+        img.style.display = 'none';
+        ph.style.display = 'none';
+        btn.style.display = 'none';
+
+        const content = document.getElementById('transferContent').value;
+        const url = `https://img.vietqr.io/image/${currentBank.code}-${currentBank.acc}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(content)}&accountName=${encodeURIComponent(currentBank.fullName)}`;
+
+        try {
+            const res = await fetch(url);
+            const blob = await res.blob();
+            qrBlobUrl = URL.createObjectURL(blob);
+            img.src = qrBlobUrl;
+            img.onload = () => {
+                loader.style.display = 'none';
+                img.style.display = 'block';
+                img.classList.add('loaded');
+                btn.style.display = 'flex';
+            }
+        } catch(e) {
+            loader.style.display = 'none';
+            ph.style.display = 'block';
+            showToast("Lỗi tải QR", "error");
+        }
+    }
+
+    function downloadQR() {
+        if(!qrBlobUrl) return;
+        const a = document.createElement('a');
+        a.href = qrBlobUrl;
+        a.download = `QR_${currentBank.shortName}.png`;
+        a.click();
+    }
+
+    // --- ADMIN & LOOKUP FEATURE (TÍNH NĂNG MỚI) ---
+    auth.onAuthStateChanged(user => {
+        const isAdm = user && user.uid === ADMIN_UID;
+        document.getElementById('btnLogin').style.display = isAdm ? 'none' : 'flex';
+        document.getElementById('btnLogout').style.display = isAdm ? 'flex' : 'none';
+        document.getElementById('adminPanel').style.display = isAdm ? 'block' : 'none';
+    });
+
+    function handleLogin() { auth.signInWithPopup(provider); }
+    function handleLogout() { auth.signOut(); }
+
+    function populateAdminDropdown() {
+        const sel = document.getElementById('admBankSelect');
+        API_BANKS_LIST.sort((a,b) => a.shortName.localeCompare(b.shortName));
+        API_BANKS_LIST.forEach(b => {
+            const opt = document.createElement('option');
+            opt.value = b.id;
+            opt.text = `${b.shortName} - ${b.name}`;
+            sel.appendChild(opt);
+        });
+    }
+
+    // 🚀 HÀM TRA CỨU TÀI KHOẢN NGÂN HÀNG (LOOKUP)
+    async function lookupBankAccount() {
+        const bankId = document.getElementById('admBankSelect').value;
+        const accNum = document.getElementById('admAccNum').value;
+        const btn = document.getElementById('btnLookup');
+
+        if (!bankId || !accNum) {
+            return showToast("Vui lòng chọn ngân hàng và nhập số TK!", "warning");
         }
 
-        // --- GLOBAL STATE ---
-        const state = {
-            user: null,
-            scanType: 'url', // url, email, phone
-            isLoading: false
-        };
+        if (VIETQR_CLIENT_ID === "YOUR_CLIENT_ID_HERE") {
+            return Swal.fire("Thiếu API Key", "Vui lòng cập nhật Client ID và API Key trong code để sử dụng tính năng này!", "error");
+        }
 
-        // --- AUTH LOGIC ---
-        const authLogic = {
-            login: async () => {
-                if (!auth) return alert("Vui lòng cấu hình Firebase Config trong code!");
-                try {
-                    await signInWithPopup(auth, provider);
-                } catch (error) {
-                    console.error(error);
-                    alert("Login failed: " + error.message);
-                }
-            },
-            logout: () => auth && signOut(auth),
-            monitor: () => {
-                if (!auth) return;
-                onAuthStateChanged(auth, (user) => {
-                    state.user = user;
-                    const loginBtn = document.getElementById('btn-login');
-                    const logoutBtn = document.getElementById('btn-logout');
-                    const userInfo = document.getElementById('user-info');
-                    const navAdmin = document.getElementById('nav-admin');
+        const selectedBank = API_BANKS_LIST.find(b => b.id == bankId);
+        
+        // UI Loading
+        btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px;"></div> Đang tra cứu...';
+        btn.disabled = true;
 
-                    if (user) {
-                        loginBtn.classList.add('hidden');
-                        logoutBtn.classList.remove('hidden');
-                        userInfo.classList.remove('hidden');
-                        document.getElementById('user-avatar').src = user.photoURL;
-                        document.getElementById('user-name').innerText = user.displayName;
+        try {
+            const response = await fetch("https://api.vietqr.io/v2/lookup", {
+                method: "POST",
+                headers: {
+                    "x-client-id": VIETQR_CLIENT_ID,
+                    "x-api-key": VIETQR_API_KEY,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    bin: selectedBank.bin,
+                    accountNumber: accNum,
+                }),
+            });
 
-                        // Mock Admin check (In production, check DB custom claims)
-                        if (user.email.includes("admin") || user.email === "admin@cyberscout.ai") {
-                            navAdmin.classList.remove('hidden');
-                        }
-
-                        // Save user to Firestore
-                        setDoc(doc(db, "users", user.uid), {
-                            email: user.email,
-                            lastLogin: serverTimestamp()
-                        }, { merge: true });
-                    } else {
-                        loginBtn.classList.remove('hidden');
-                        logoutBtn.classList.add('hidden');
-                        userInfo.classList.add('hidden');
-                        navAdmin.classList.add('hidden');
-                        app.router('home');
-                    }
-                });
+            const data = await response.json();
+            
+            if (data.code === "00") {
+                // Thành công
+                document.getElementById('admFullName').value = data.data.accountName;
+                showToast(`Đã tìm thấy: ${data.data.accountName}`, "success");
+                Swal.fire("Thành công", `Chủ tài khoản: <b>${data.data.accountName}</b>`, "success");
+            } else {
+                // Thất bại (Sai số TK hoặc lỗi Bank)
+                showToast("Không tìm thấy thông tin tài khoản!", "error");
+                Swal.fire("Lỗi", data.desc || "Không kiểm tra được tài khoản này.", "error");
             }
+
+        } catch (error) {
+            console.error(error);
+            showToast("Lỗi kết nối API", "error");
+        } finally {
+            btn.innerHTML = '<i class="fas fa-search-dollar"></i> Kiểm tra tên';
+            btn.disabled = false;
+        }
+    }
+
+    function saveBankToFirebase() {
+        const bankId = document.getElementById('admBankSelect').value;
+        const accNum = document.getElementById('admAccNum').value;
+        const fullName = document.getElementById('admFullName').value;
+        
+        if(!bankId || !accNum || !fullName) return showToast("Điền đủ thông tin!", "warning");
+
+        const apiBank = API_BANKS_LIST.find(b => b.id == bankId);
+        const data = {
+            code: apiBank.code, bin: apiBank.bin, shortName: apiBank.shortName, 
+            name: apiBank.name, logo: apiBank.logo, acc: accNum, 
+            fullName: fullName.toUpperCase(), status: document.getElementById('admStatus').value,
+            ...(editingBankId ? {} : {createdAt: firebase.firestore.FieldValue.serverTimestamp()})
         };
 
-        // --- AI ENGINE (Risk Analysis Logic) ---
-        const aiEngine = {
-            // Heuristic Analysis
-            analyze: async (input, type) => {
-                // Simulate processing delay
-                await new Promise(r => setTimeout(r, 1500));
+        const promise = editingBankId 
+            ? db.collection("banks").doc(editingBankId).update(data)
+            : db.collection("banks").add(data);
 
-                let score = 0; // 0 (Safe) -> 100 (Scam)
-                let reasons = [];
-                let indicators = { age: 'N/A', ssl: 'N/A', loc: 'N/A', bl: 'Clean' };
+        promise.then(() => {
+            showToast("Đã lưu thành công!", "success");
+            cancelEditBank();
+        }).catch(e => showToast(e.message, "error"));
+    }
 
-                input = input.trim().toLowerCase();
+    function loadAdminTable() {
+        const tb = document.getElementById('adminTableBody');
+        tb.innerHTML = '';
+        USER_BANKS.forEach(b => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="padding:10px;"><img src="${b.logo}" width="30"> ${b.shortName}</td>
+                <td style="padding:10px;">${b.acc}<br><b>${b.fullName}</b></td>
+                <td style="padding:10px; text-align:right;">
+                    <button class="btn-secondary" onclick="startEdit('${b.id}')"><i class="fas fa-edit"></i></button>
+                    <button class="btn-secondary" style="background:var(--danger)" onclick="delBank('${b.id}')"><i class="fas fa-trash"></i></button>
+                </td>
+            `;
+            tb.appendChild(tr);
+        });
+    }
 
-                if (type === 'url') {
-                    // 1. TLD Check
-                    const riskyTLDs = ['.xyz', '.top', '.club', '.info', '.tk', '.gq'];
-                    if (riskyTLDs.some(tld => input.endsWith(tld))) {
-                        score += 30;
-                        reasons.push("Sử dụng tên miền giá rẻ/miễn phí thường dùng cho spam (.xyz, .top, ...)");
-                    }
+    function startEdit(id) {
+        editingBankId = id;
+        const b = USER_BANKS.find(x => x.id === id);
+        const apiB = API_BANKS_LIST.find(x => x.bin === b.bin);
+        if(apiB) document.getElementById('admBankSelect').value = apiB.id;
+        document.getElementById('admAccNum').value = b.acc;
+        document.getElementById('admFullName').value = b.fullName;
+        document.getElementById('admStatus').value = b.status;
+        document.getElementById('btnSaveBank').innerHTML = "Cập nhật";
+        document.getElementById('btnCancelEdit').style.display = 'inline-flex';
+        document.getElementById('adminPanel').scrollIntoView({behavior:'smooth'});
+    }
 
-                    // 2. Keyword Phishing Check
-                    const phishingKeywords = ['login', 'verify', 'secure', 'account', 'bank', 'update', 'gift', 'free', 'shopee', 'tiki', 'zalo'];
-                    const foundKeywords = phishingKeywords.filter(k => input.includes(k));
-                    if (foundKeywords.length > 0) {
-                        score += 25;
-                        reasons.push(`Chứa từ khóa nhạy cảm dễ gây nhầm lẫn: ${foundKeywords.join(', ')}`);
-                    }
+    function cancelEditBank() {
+        editingBankId = null;
+        document.getElementById('admBankSelect').value = "";
+        document.getElementById('admAccNum').value = "";
+        document.getElementById('admFullName').value = "";
+        document.getElementById('btnSaveBank').innerHTML = '<i class="fas fa-save"></i> Lưu Ngân Hàng';
+        document.getElementById('btnCancelEdit').style.display = 'none';
+    }
 
-                    // 3. Length & Entropy
-                    if (input.length > 30) {
-                        score += 15;
-                        reasons.push("Đường dẫn URL quá dài, có dấu hiệu obfuscation.");
-                    }
-                    if ((input.match(/-/g) || []).length > 2) {
-                        score += 10;
-                        reasons.push("Sử dụng quá nhiều ký tự nối (-), dấu hiệu giả mạo tên miền.");
-                    }
+    function delBank(id) {
+        if(confirm("Xóa ngân hàng này?")) db.collection("banks").doc(id).delete();
+    }
 
-                    // 4. Mock Technical Indicators
-                    indicators.age = score > 50 ? "< 1 Month" : "> 2 Years";
-                    indicators.ssl = score > 50 ? "Let's Encrypt (Free)" : "DigiCert EV";
-                    indicators.loc = score > 50 ? "Russia/China" : "US/Singapore";
-                    indicators.bl = score > 80 ? "Listed (2 DBs)" : "Clean";
-
-                } else if (type === 'email') {
-                    // Email Analysis
-                    const parts = input.split('@');
-                    if (parts.length === 2) {
-                        const domain = parts[1];
-                        const disposableDomains = ['tempmail.com', '10minutemail.com', 'guerrillamail.com'];
-                        
-                        if (disposableDomains.includes(domain)) {
-                            score = 100;
-                            reasons.push("Phát hiện Email ảo (Disposable Email) dùng 1 lần.");
-                        } else if (!['gmail.com', 'yahoo.com', 'outlook.com', 'icloud.com'].includes(domain)) {
-                            score += 20;
-                            reasons.push("Domain email lạ, không phổ biến.");
-                        }
-                        
-                        if (parts[0].match(/[0-9]{4,}/)) {
-                            score += 30;
-                            reasons.push("Username chứa chuỗi số ngẫu nhiên đáng ngờ.");
-                        }
-                    }
-                    indicators.age = "Unknown";
-                    indicators.ssl = "SPF/DKIM: Fail";
-                } else if (type === 'phone') {
-                    // Phone Analysis
-                    if (input.startsWith('02') || input.startsWith('+842')) {
-                        // Landline logic
-                    } else if (input.startsWith('1900')) {
-                        score += 40;
-                        reasons.push("Đầu số dịch vụ tính phí cao (1900).");
-                    }
-                    
-                    // Mock spam database check
-                    const spamPattern = ['888', '999', '666'];
-                    if (spamPattern.some(p => input.includes(p))) {
-                        // Safe logic usually, but scammers use "VIP" numbers too to lure
-                        score += 10;
-                    }
-                    if (input.length < 10) {
-                        score += 50;
-                        reasons.push("Độ dài số điện thoại không hợp lệ.");
-                    }
-                }
-
-                // Normalization
-                score = Math.min(100, Math.max(0, score));
-
-                // Determine Level
-                let level = 'SAFE';
-                let color = 'text-cyber-success';
-                let recommendation = "Mục tiêu có vẻ an toàn. Tuy nhiên luôn cần cảnh giác.";
-
-                if (score > 80) {
-                    level = 'SCAM';
-                    color = 'text-cyber-danger';
-                    recommendation = "CẢNH BÁO ĐỎ: Mục tiêu có dấu hiệu lừa đảo rất cao. TUYỆT ĐỐI KHÔNG truy cập hoặc chuyển tiền.";
-                } else if (score > 50) {
-                    level = 'DANGEROUS';
-                    color = 'text-orange-500';
-                    recommendation = "Rủi ro cao. Có nhiều tín hiệu đáng ngờ. Nên kiểm tra kỹ thông tin chính chủ.";
-                } else if (score > 20) {
-                    level = 'SUSPICIOUS';
-                    color = 'text-cyber-warning';
-                    recommendation = "Có một số điểm đáng ngờ cần lưu ý.";
-                }
-
-                return { score, level, color, reasons, indicators, recommendation };
-            }
-        };
-
-        // --- UI CONTROLLER ---
-        const ui = {
-            chartInstance: null,
-
-            initChart: () => {
-                const ctx = document.getElementById('riskChart').getContext('2d');
-                ui.chartInstance = new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Risk', 'Safe'],
-                        datasets: [{
-                            data: [0, 100],
-                            backgroundColor: ['#1e293b', '#1e293b'],
-                            borderWidth: 0,
-                            cutout: '80%',
-                            circumference: 180,
-                            rotation: 270,
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false }, tooltip: { enabled: false } }
-                    }
-                });
-            },
-
-            updateChart: (score, colorHex) => {
-                if (!ui.chartInstance) return;
-                ui.chartInstance.data.datasets[0].data = [score, 100 - score];
-                ui.chartInstance.data.datasets[0].backgroundColor = [colorHex, '#1e293b'];
-                ui.chartInstance.update();
-            },
-
-            renderResult: (data) => {
-                const resultContainer = document.getElementById('result-container');
-                const loader = document.getElementById('loader');
-                
-                loader.classList.add('hidden');
-                resultContainer.classList.remove('hidden');
-
-                // Update Score
-                document.getElementById('score-val').innerText = data.score;
-                document.getElementById('score-text').innerText = data.level;
-                document.getElementById('score-text').className = `text-xs uppercase tracking-widest font-bold ${data.color}`;
-                
-                const badge = document.getElementById('verdict-badge');
-                badge.className = `mt-4 px-4 py-2 rounded border font-bold tracking-wider text-sm ${data.color} border-current`;
-                badge.innerText = data.level;
-
-                // Update Chart Color
-                let hexColor = '#00ff9d'; // Green
-                if (data.score > 20) hexColor = '#fcee0a'; // Yellow
-                if (data.score > 50) hexColor = '#f97316'; // Orange
-                if (data.score > 80) hexColor = '#ff003c'; // Red
-                ui.updateChart(data.score, hexColor);
-
-                // Update Reasons
-                const reasonList = document.getElementById('analysis-reasons');
-                reasonList.innerHTML = '';
-                if (data.reasons.length === 0) {
-                    reasonList.innerHTML = '<li class="text-green-400"><i class="fa-solid fa-check mr-2"></i>Không phát hiện dấu hiệu bất thường rõ ràng.</li>';
-                } else {
-                    data.reasons.forEach(r => {
-                        reasonList.innerHTML += `<li class="text-gray-300"><i class="fa-solid fa-triangle-exclamation text-cyber-warning mr-2"></i>${r}</li>`;
-                    });
-                }
-
-                // Update Indicators
-                document.getElementById('tech-age').innerText = data.indicators.age;
-                document.getElementById('tech-ssl').innerText = data.indicators.ssl;
-                document.getElementById('tech-loc').innerText = data.indicators.loc;
-                document.getElementById('tech-bl').innerText = data.indicators.bl;
-
-                // Update Recommendation
-                const recBox = document.getElementById('recommendation-box');
-                const recText = document.getElementById('recommendation-text');
-                recText.innerText = data.recommendation;
-                
-                // Style recommendation box based on score
-                if(data.score > 50) {
-                    recBox.className = "p-4 rounded border-l-4 bg-red-900/20 border-cyber-danger text-sm text-red-200";
-                } else if (data.score > 20) {
-                    recBox.className = "p-4 rounded border-l-4 bg-yellow-900/20 border-cyber-warning text-sm text-yellow-200";
-                } else {
-                    recBox.className = "p-4 rounded border-l-4 bg-green-900/20 border-cyber-success text-sm text-green-200";
-                }
-
-                // Save scan history if user logged in
-                if (auth && auth.currentUser) {
-                    addDoc(collection(db, "checks"), {
-                        uid: auth.currentUser.uid,
-                        target: document.getElementById('scan-input').value,
-                        type: state.scanType,
-                        result: data,
-                        timestamp: serverTimestamp()
-                    });
-                }
-            }
-        };
-
-        // --- MAIN APP CONTROLLER ---
-        const app = {
-            init: () => {
-                ui.initChart();
-                authLogic.monitor();
-
-                // Event Listeners
-                document.getElementById('btn-login').addEventListener('click', authLogic.login);
-                document.getElementById('btn-logout').addEventListener('click', authLogic.logout);
-                
-                // Tabs
-                document.querySelectorAll('.tab-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        document.querySelectorAll('.tab-btn').forEach(b => {
-                            b.classList.remove('active', 'text-cyber-primary', 'border-b-2', 'border-cyber-primary', 'font-bold');
-                            b.classList.add('text-gray-500');
-                        });
-                        e.currentTarget.classList.add('active', 'text-cyber-primary', 'border-b-2', 'border-cyber-primary', 'font-bold');
-                        e.currentTarget.classList.remove('text-gray-500');
-                        
-                        state.scanType = e.currentTarget.dataset.type;
-                        
-                        // Update Placeholder
-                        const input = document.getElementById('scan-input');
-                        if (state.scanType === 'url') input.placeholder = "Nhập đường dẫn website (ví dụ: shopee-kmai.com)...";
-                        if (state.scanType === 'email') input.placeholder = "Nhập địa chỉ email cần kiểm tra...";
-                        if (state.scanType === 'phone') input.placeholder = "Nhập số điện thoại (098...)";
-                    });
-                });
-
-                // Scan Action
-                document.getElementById('btn-scan').addEventListener('click', async () => {
-                    const input = document.getElementById('scan-input').value;
-                    if (!input) return alert("Vui lòng nhập thông tin!");
-
-                    // UI Reset
-                    document.getElementById('result-container').classList.add('hidden');
-                    document.getElementById('loader').classList.remove('hidden');
-
-                    // Analyze
-                    const result = await aiEngine.analyze(input, state.scanType);
-                    ui.renderResult(result);
-                });
-            },
-
-            router: (view) => {
-                document.getElementById('view-home').classList.add('hidden');
-                document.getElementById('view-admin').classList.add('hidden');
-                document.getElementById(`view-${view}`).classList.remove('hidden');
-            }
-        };
-
-        // Expose app to global for HTML onclick handlers
-        window.app = app;
-
-        // Start
-        document.addEventListener('DOMContentLoaded', app.init);
-
-    </script>
+    function formatCurrency(el) {
+        let v = el.value.replace(/\D/g, '');
+        el.value = v ? parseInt(v).toLocaleString('en-US') : '';
+    }
+    
+    function showToast(msg, type="info") {
+        Toastify({
+            text: msg, duration: 3000, gravity: "top", position: "right",
+            backgroundColor: type==="success"?"#1cc88a":(type==="error"?"#e74a3b":"#4e73df")
+        }).showToast();
+    }
+</script>
 </body>
 </html>
