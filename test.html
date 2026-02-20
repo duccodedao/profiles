@@ -3,21 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>P2P USDT Exchange | Professional Fintech</title>
+    <title>P2P USDT Exchange | FlashUSDT</title>
     
     <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Tailwind Config for Fintech Theme -->
+    <!-- Tailwind Config -->
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
-                        primary: '#00D632', // Fintech Green
+                        primary: '#00D632', 
+                        primaryDark: '#00A825',
                         secondary: '#1A1B23',
                         surface: '#242631',
                         accent: '#3B82F6',
@@ -32,414 +33,456 @@
         }
     </script>
 
-    <!-- Custom CSS -->
     <style>
-        body {
-            background-color: #0F1014;
-            color: #E2E8F0;
-            font-family: 'Inter', sans-serif;
-            overflow-x: hidden;
-        }
-
-        /* Glassmorphism */
+        body { background-color: #0F1014; color: #E2E8F0; font-family: 'Inter', sans-serif; }
+        
+        /* Glass Effect */
         .glass {
             background: rgba(36, 38, 49, 0.7);
             backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.08);
         }
-
         .glass-panel {
-            background: linear-gradient(145deg, rgba(36, 38, 49, 0.9), rgba(20, 21, 28, 0.9));
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            background: #1E2028;
             border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
         }
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0F1014;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #333;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0F1014; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
 
-        /* Animation */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in {
-            animation: fadeIn 0.4s ease-out forwards;
-        }
-
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        
         .btn-gradient {
             background: linear-gradient(135deg, #00D632 0%, #00A825 100%);
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
-        .btn-gradient:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0, 214, 50, 0.4);
-        }
+        .btn-gradient:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0, 214, 50, 0.3); }
+        .btn-gradient:active { transform: translateY(0); }
 
-        /* Loading Skeleton */
-        .skeleton {
-            background: linear-gradient(90deg, #242631 25%, #2d303e 50%, #242631 75%);
-            background-size: 200% 100%;
-            animation: loading 1.5s infinite;
-        }
-        @keyframes loading {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-
-        /* Toast */
-        #toast-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 9999;
-        }
+        /* Helpers */
+        .hidden { display: none !important; }
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
-<body class="antialiased min-h-screen flex flex-col">
+<body class="antialiased min-h-screen flex flex-col overflow-hidden">
 
     <!-- Loading Screen -->
-    <div id="app-loader" class="fixed inset-0 z-50 flex items-center justify-center bg-[#0F1014]">
-        <div class="text-primary text-4xl animate-pulse">
-            <i class="fa-solid fa-circle-notch fa-spin"></i>
+    <div id="app-loader" class="fixed inset-0 z-[100] flex items-center justify-center bg-[#0F1014]">
+        <div class="flex flex-col items-center gap-4">
+            <i class="fa-solid fa-circle-notch fa-spin text-primary text-5xl"></i>
+            <p class="text-gray-400 text-sm tracking-wider animate-pulse">LOADING SYSTEM...</p>
         </div>
     </div>
 
     <!-- Login View -->
-    <div id="login-view" class="hidden min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-        <!-- Background Decor -->
-        <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-primary/20 rounded-full blur-[120px]"></div>
-        <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-blue-500/10 rounded-full blur-[120px]"></div>
+    <div id="login-view" class="hidden absolute inset-0 z-40 flex items-center justify-center p-4 bg-[#0F1014]">
+        <!-- Background Elements -->
+        <div class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px]"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px]"></div>
 
-        <div class="glass-panel p-8 rounded-2xl w-full max-w-md text-center z-10 animate-fade-in">
-            <div class="mb-6 flex justify-center">
-                <div class="w-16 h-16 bg-primary/20 rounded-xl flex items-center justify-center text-primary text-3xl">
-                    <i class="fa-solid fa-coins"></i>
+        <div class="glass-panel p-8 rounded-3xl w-full max-w-md text-center z-10 animate-fade-in relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent"></div>
+            
+            <div class="mb-8 flex justify-center">
+                <div class="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center text-primary text-4xl shadow-[0_0_30px_rgba(0,214,50,0.2)]">
+                    <i class="fa-solid fa-bolt"></i>
                 </div>
             </div>
-            <h1 class="text-3xl font-bold mb-2">P2P Exchange</h1>
-            <p class="text-gray-400 mb-8">Nền tảng mua bán USDT tự động, an toàn và nhanh chóng.</p>
             
-            <button id="btn-login" class="w-full bg-white text-black font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-3 hover:bg-gray-100 transition-colors shadow-lg">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-6 h-6" alt="Google">
+            <h1 class="text-3xl font-bold mb-2 text-white">Flash<span class="text-primary">USDT</span></h1>
+            <p class="text-gray-400 mb-8 text-sm leading-relaxed">
+                Sàn giao dịch P2P tự động 24/7.<br>An toàn - Nhanh chóng - Tỷ giá tốt nhất.
+            </p>
+            
+            <button id="btn-login" class="w-full bg-white hover:bg-gray-100 text-black font-semibold py-3.5 px-4 rounded-xl flex items-center justify-center gap-3 transition-all shadow-lg group">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-6 h-6 group-hover:scale-110 transition-transform" alt="Google">
                 Đăng nhập với Google
             </button>
+            <p class="mt-6 text-xs text-gray-500">Bằng việc đăng nhập, bạn đồng ý với điều khoản sử dụng.</p>
         </div>
     </div>
 
     <!-- Main App View -->
-    <div id="main-view" class="hidden flex-1 flex flex-col md:flex-row h-screen overflow-hidden">
+    <div id="main-view" class="hidden flex-1 flex flex-col md:flex-row h-screen">
         
-        <!-- Sidebar (Desktop) / Navbar (Mobile) -->
-        <nav class="md:w-64 bg-secondary border-r border-white/5 flex-shrink-0 flex flex-col justify-between z-20">
+        <!-- Sidebar -->
+        <nav id="sidebar" class="hidden md:flex md:w-64 bg-secondary border-r border-white/5 flex-col justify-between z-30 transition-all duration-300 absolute md:relative h-full w-64 shadow-2xl md:shadow-none">
             <div class="p-6">
-                <div class="flex items-center gap-3 mb-8">
+                <div class="flex items-center gap-3 mb-10">
                     <i class="fa-solid fa-bolt text-primary text-2xl"></i>
-                    <span class="text-xl font-bold tracking-tight">Flash<span class="text-primary">USDT</span></span>
+                    <span class="text-xl font-bold tracking-tight text-white">Flash<span class="text-primary">USDT</span></span>
                 </div>
                 
                 <div class="space-y-2">
-                    <button onclick="router.navigate('buy')" class="nav-item w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 text-gray-400 hover:text-white hover:bg-white/5 transition-all active-nav" data-page="buy">
-                        <i class="fa-solid fa-cart-shopping w-5"></i> Mua USDT
+                    <button onclick="router.navigate('buy')" class="nav-item w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 text-white bg-white/5 font-medium transition-all shadow-inner" data-page="buy">
+                        <i class="fa-solid fa-cart-shopping w-5 text-center"></i> Mua USDT
                     </button>
                     <button onclick="router.navigate('history')" class="nav-item w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 text-gray-400 hover:text-white hover:bg-white/5 transition-all" data-page="history">
-                        <i class="fa-solid fa-clock-rotate-left w-5"></i> Lịch sử
+                        <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> Lịch sử
                     </button>
-                    <button id="admin-nav-btn" onclick="router.navigate('admin')" class="hidden nav-item w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 text-warning hover:bg-warning/10 transition-all" data-page="admin">
-                        <i class="fa-solid fa-shield-halved w-5"></i> Admin Panel
+                    <button id="admin-nav-btn" onclick="router.navigate('admin')" class="hidden nav-item w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 text-warning hover:bg-warning/10 transition-all mt-4 border border-warning/20" data-page="admin">
+                        <i class="fa-solid fa-shield-halved w-5 text-center"></i> Admin Panel
                     </button>
                 </div>
             </div>
 
-            <div class="p-4 border-t border-white/5">
+            <div class="p-4 border-t border-white/5 bg-[#15161C]">
                 <div class="flex items-center gap-3 mb-4 px-2">
-                    <img id="user-avatar" src="" alt="Avatar" class="w-10 h-10 rounded-full border border-white/10">
+                    <img id="user-avatar" src="" alt="Avatar" class="w-10 h-10 rounded-full border border-white/10 shadow-sm">
                     <div class="overflow-hidden">
-                        <p id="user-name" class="text-sm font-semibold truncate">User</p>
-                        <p id="user-rank" class="text-xs text-primary">Bronze Member</p>
+                        <p id="user-name" class="text-sm font-semibold truncate text-white">User</p>
+                        <p id="user-rank" class="text-[10px] uppercase font-bold text-gray-500">Member</p>
                     </div>
                 </div>
-                <button id="btn-logout" class="w-full py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
-                    <i class="fa-solid fa-right-from-bracket mr-2"></i> Đăng xuất
+                <button id="btn-logout" class="w-full py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
                 </button>
             </div>
         </nav>
 
+        <!-- Overlay for Mobile Sidebar -->
+        <div id="sidebar-overlay" class="md:hidden fixed inset-0 bg-black/50 z-20 hidden backdrop-blur-sm" onclick="ui.toggleSidebar()"></div>
+
         <!-- Content Area -->
-        <main class="flex-1 overflow-y-auto relative bg-[#0F1014] p-4 md:p-8">
+        <main class="flex-1 overflow-y-auto relative bg-[#0F1014] p-4 md:p-8 w-full">
             <!-- Header Mobile -->
-            <div class="md:hidden flex justify-between items-center mb-6">
-                <span class="text-xl font-bold">Flash<span class="text-primary">USDT</span></span>
-                <button id="mobile-menu-btn" class="text-gray-300"><i class="fa-solid fa-bars text-xl"></i></button>
+            <div class="md:hidden flex justify-between items-center mb-6 bg-secondary/80 backdrop-blur-md p-4 rounded-xl border border-white/5 sticky top-0 z-10">
+                <span class="text-lg font-bold">Flash<span class="text-primary">USDT</span></span>
+                <button onclick="ui.toggleSidebar()" class="text-gray-300 hover:text-white p-2"><i class="fa-solid fa-bars text-xl"></i></button>
             </div>
 
             <!-- Page: BUY USDT -->
-            <div id="page-buy" class="page-content max-w-4xl mx-auto animate-fade-in">
-                <h2 class="text-2xl font-bold mb-6">Mua USDT <span class="text-primary text-sm font-normal bg-primary/10 px-2 py-1 rounded ml-2">Live Rate</span></h2>
+            <div id="page-buy" class="page-content max-w-5xl mx-auto animate-fade-in">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <h2 class="text-2xl font-bold text-white">Mua USDT</h2>
+                    <div class="flex items-center gap-2 text-sm bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
+                        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                        <span class="text-gray-400">Tỷ giá:</span>
+                        <span id="display-rate-top" class="font-mono text-white font-bold">-- VND</span>
+                    </div>
+                </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <!-- Config Form -->
-                    <div class="md:col-span-2 space-y-6">
-                        <div class="glass-panel p-6 rounded-2xl">
-                            <div class="mb-4">
-                                <label class="block text-gray-400 text-sm mb-2">Chọn mạng lưới (Network)</label>
+                    <div class="lg:col-span-2 space-y-6">
+                        <div class="glass-panel p-6 rounded-2xl relative overflow-hidden">
+                            <!-- Network Selection -->
+                            <div class="mb-6">
+                                <label class="block text-gray-400 text-sm mb-3 font-medium">Chọn mạng lưới (Network)</label>
                                 <div class="grid grid-cols-3 gap-3">
-                                    <button class="network-opt p-3 rounded-xl border border-white/10 bg-white/5 hover:border-primary transition-all text-center text-sm font-medium active" data-net="TRC20">TRC20</button>
-                                    <button class="network-opt p-3 rounded-xl border border-white/10 bg-white/5 hover:border-primary transition-all text-center text-sm font-medium" data-net="BEP20">BEP20</button>
-                                    <button class="network-opt p-3 rounded-xl border border-white/10 bg-white/5 hover:border-primary transition-all text-center text-sm font-medium" data-net="ERC20">ERC20</button>
+                                    <button class="network-opt p-3 rounded-xl border border-white/10 bg-[#15161C] hover:border-primary/50 transition-all flex flex-col items-center gap-2 active group relative" data-net="TRC20">
+                                        <i class="fa-solid fa-circle-nodes text-lg text-gray-500 group-[.active]:text-primary"></i>
+                                        <span class="text-sm font-bold text-gray-300 group-[.active]:text-white">TRC20</span>
+                                        <div class="absolute inset-0 border-2 border-transparent group-[.active]:border-primary rounded-xl pointer-events-none"></div>
+                                    </button>
+                                    <button class="network-opt p-3 rounded-xl border border-white/10 bg-[#15161C] hover:border-primary/50 transition-all flex flex-col items-center gap-2 group relative" data-net="BEP20">
+                                        <i class="fa-brands fa-hive text-lg text-gray-500 group-[.active]:text-yellow-500"></i>
+                                        <span class="text-sm font-bold text-gray-300 group-[.active]:text-white">BEP20</span>
+                                        <div class="absolute inset-0 border-2 border-transparent group-[.active]:border-yellow-500 rounded-xl pointer-events-none"></div>
+                                    </button>
+                                    <button class="network-opt p-3 rounded-xl border border-white/10 bg-[#15161C] hover:border-primary/50 transition-all flex flex-col items-center gap-2 group relative" data-net="ERC20">
+                                        <i class="fa-brands fa-ethereum text-lg text-gray-500 group-[.active]:text-blue-500"></i>
+                                        <span class="text-sm font-bold text-gray-300 group-[.active]:text-white">ERC20</span>
+                                        <div class="absolute inset-0 border-2 border-transparent group-[.active]:border-blue-500 rounded-xl pointer-events-none"></div>
+                                    </button>
                                 </div>
                             </div>
 
-                            <div class="mb-4">
-                                <label class="block text-gray-400 text-sm mb-2">Số lượng mua (USDT)</label>
-                                <div class="relative">
-                                    <input type="number" id="input-amount" class="w-full bg-[#1A1B23] border border-white/10 rounded-xl py-4 px-4 pr-16 text-xl font-bold focus:outline-none focus:border-primary transition-colors text-white placeholder-gray-600" placeholder="100">
-                                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">USDT</span>
+                            <!-- Amount Input -->
+                            <div class="mb-6">
+                                <label class="block text-gray-400 text-sm mb-3 font-medium">Số lượng mua</label>
+                                <div class="relative group">
+                                    <input type="number" id="input-amount" class="w-full bg-[#15161C] border border-white/10 rounded-xl py-4 px-5 pr-20 text-2xl font-bold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all text-white placeholder-gray-700" placeholder="100">
+                                    <div class="absolute right-5 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
+                                        <img src="https://cryptologos.cc/logos/tether-usdt-logo.png" class="w-6 h-6" alt="USDT">
+                                        <span class="text-gray-400 font-bold">USDT</span>
+                                    </div>
                                 </div>
-                                <div class="flex justify-between mt-2 text-xs">
-                                    <span class="text-gray-500">Min: <span id="limit-min">--</span></span>
-                                    <span class="text-gray-500">Max: <span id="limit-max">--</span></span>
+                                <div class="flex justify-between mt-3 text-xs font-medium">
+                                    <span class="text-gray-500 bg-white/5 px-2 py-1 rounded">Min: <span id="limit-min" class="text-gray-300">--</span></span>
+                                    <span class="text-gray-500 bg-white/5 px-2 py-1 rounded">Max: <span id="limit-max" class="text-gray-300">--</span></span>
                                 </div>
                             </div>
 
-                            <div class="bg-white/5 rounded-xl p-4 space-y-2 mb-6">
+                            <!-- Bill Details -->
+                            <div class="bg-[#15161C] rounded-xl p-5 space-y-3 mb-6 border border-white/5">
                                 <div class="flex justify-between text-sm">
-                                    <span class="text-gray-400">Tỷ giá hiện tại:</span>
-                                    <span class="font-mono text-white" id="display-rate">Loading...</span>
+                                    <span class="text-gray-400">Tỷ giá chuyển đổi</span>
+                                    <span class="font-mono text-white font-medium" id="display-rate">--</span>
                                 </div>
                                 <div class="flex justify-between text-sm">
-                                    <span class="text-gray-400">Phí giao dịch (<span id="user-fee-percent">--</span>%):</span>
-                                    <span class="font-mono text-red-400" id="display-fee">0 VND</span>
+                                    <span class="text-gray-400">Phí giao dịch (<span id="user-fee-percent">--</span>%)</span>
+                                    <span class="font-mono text-gray-300" id="display-fee">0 ₫</span>
                                 </div>
-                                <div class="flex justify-between text-sm" id="tier-discount-row">
-                                    <span class="text-warning"><i class="fa-solid fa-crown mr-1"></i>Giảm giá VIP:</span>
-                                    <span class="font-mono text-primary" id="display-discount">-0 VND</span>
+                                <div class="flex justify-between text-sm hidden" id="tier-discount-row">
+                                    <span class="text-warning flex items-center gap-1"><i class="fa-solid fa-crown text-xs"></i> Giảm giá VIP</span>
+                                    <span class="font-mono text-primary" id="display-discount">-0 ₫</span>
                                 </div>
                                 <div class="h-px bg-white/10 my-2"></div>
                                 <div class="flex justify-between items-center">
-                                    <span class="text-gray-300 font-medium">Tổng thanh toán:</span>
-                                    <span class="text-2xl font-bold text-primary" id="display-total">0 VND</span>
+                                    <span class="text-gray-300 font-semibold">Tổng thanh toán</span>
+                                    <span class="text-2xl font-bold text-primary" id="display-total">0 ₫</span>
                                 </div>
                             </div>
 
-                            <button id="btn-create-order" class="w-full btn-gradient py-4 rounded-xl font-bold text-black text-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
-                                <i class="fa-solid fa-wallet mr-2"></i> Tạo giao dịch
+                            <button id="btn-create-order" class="w-full btn-gradient py-4 rounded-xl font-bold text-black text-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2 group">
+                                <span>Tiến hành giao dịch</span>
+                                <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
                             </button>
                         </div>
                     </div>
 
                     <!-- Side Info -->
                     <div class="space-y-6">
-                         <div class="glass p-6 rounded-2xl text-center">
-                            <div class="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-3 text-primary text-2xl">
+                         <div class="glass p-6 rounded-2xl text-center border-t-4 border-primary">
+                            <div class="w-16 h-16 bg-gradient-to-br from-primary/20 to-primary/5 rounded-full flex items-center justify-center mx-auto mb-4 text-primary text-2xl ring-4 ring-primary/10">
                                 <i class="fa-solid fa-shield-halved"></i>
                             </div>
-                            <h3 class="font-bold mb-1">Bảo mật tuyệt đối</h3>
-                            <p class="text-xs text-gray-400">Giao dịch được kiểm duyệt bởi Admin.</p>
+                            <h3 class="font-bold text-white text-lg mb-2">Bảo mật tuyệt đối</h3>
+                            <p class="text-sm text-gray-400 leading-relaxed">Hệ thống giao dịch được mã hóa và kiểm duyệt chặt chẽ. Đảm bảo an toàn tài sản 100%.</p>
                         </div>
 
                         <div class="glass p-6 rounded-2xl">
-                             <h3 class="font-bold mb-3 border-b border-white/10 pb-2">Hỗ trợ</h3>
+                             <h3 class="font-bold mb-4 border-b border-white/10 pb-3 flex items-center gap-2 text-white">
+                                <i class="fa-solid fa-headset text-primary"></i> Hỗ trợ trực tuyến
+                             </h3>
                              <div id="support-links" class="space-y-3">
-                                 <!-- Links injected by JS -->
-                                 <div class="skeleton h-8 w-full rounded"></div>
+                                 <!-- JS injected -->
+                                 <div class="animate-pulse h-10 bg-white/5 rounded-lg w-full"></div>
                              </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Page: PAYMENT (Dynamic Overlay) -->
-            <div id="payment-overlay" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-                <div class="glass-panel w-full max-w-lg rounded-2xl p-6 relative animate-fade-in overflow-y-auto max-h-[90vh]">
-                    <button onclick="ui.closePayment()" class="absolute top-4 right-4 text-gray-400 hover:text-white">
-                        <i class="fa-solid fa-xmark text-xl"></i>
-                    </button>
-
-                    <div class="text-center mb-6">
-                        <h2 class="text-xl font-bold">Thanh toán đơn hàng</h2>
-                        <div class="text-sm text-yellow-500 mt-1 font-mono" id="pay-timer">15:00</div>
-                    </div>
-
-                    <div class="bg-white p-4 rounded-xl mb-6 mx-auto w-48 h-48 flex items-center justify-center">
-                        <img id="pay-qr" src="" alt="QR Code" class="w-full h-full object-contain">
-                    </div>
-
-                    <div class="space-y-4 mb-6">
-                        <div class="bg-white/5 p-3 rounded-lg flex justify-between items-center">
-                            <div>
-                                <div class="text-xs text-gray-400">Ngân hàng</div>
-                                <div class="font-bold" id="pay-bank-name">--</div>
-                            </div>
-                            <button onclick="utils.copyText('pay-bank-name')" class="text-primary hover:text-white"><i class="fa-regular fa-copy"></i></button>
-                        </div>
-                        <div class="bg-white/5 p-3 rounded-lg flex justify-between items-center">
-                            <div>
-                                <div class="text-xs text-gray-400">Số tài khoản</div>
-                                <div class="font-bold font-mono text-lg" id="pay-bank-num">--</div>
-                            </div>
-                            <button onclick="utils.copyText('pay-bank-num')" class="text-primary hover:text-white"><i class="fa-regular fa-copy"></i></button>
-                        </div>
-                        <div class="bg-white/5 p-3 rounded-lg flex justify-between items-center border border-primary/50 bg-primary/5">
-                            <div>
-                                <div class="text-xs text-primary font-semibold">Nội dung chuyển khoản (Bắt buộc)</div>
-                                <div class="font-bold font-mono text-lg text-white" id="pay-content">--</div>
-                            </div>
-                            <button onclick="utils.copyText('pay-content')" class="text-primary hover:text-white"><i class="fa-regular fa-copy"></i></button>
-                        </div>
-                         <div class="bg-white/5 p-3 rounded-lg flex justify-between items-center">
-                            <div>
-                                <div class="text-xs text-gray-400">Số tiền</div>
-                                <div class="font-bold font-mono text-xl text-primary" id="pay-amount">--</div>
-                            </div>
-                            <button onclick="utils.copyText('pay-amount', true)" class="text-primary hover:text-white"><i class="fa-regular fa-copy"></i></button>
-                        </div>
-                    </div>
-
-                    <div id="pay-action-area">
-                        <button onclick="ui.showConfirmForm()" class="w-full bg-primary hover:bg-green-600 text-black font-bold py-3 rounded-xl transition-colors">
-                            Tôi đã chuyển tiền
+            <!-- Page: PAYMENT (Overlay) -->
+            <div id="payment-overlay" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 animate-fade-in">
+                <div class="glass-panel w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+                    <!-- Header -->
+                    <div class="p-4 bg-white/5 border-b border-white/10 flex justify-between items-center shrink-0">
+                        <h2 class="font-bold text-lg text-white"><i class="fa-solid fa-money-bill-transfer mr-2 text-primary"></i>Thanh toán đơn hàng</h2>
+                        <button onclick="ui.closePayment()" class="text-gray-400 hover:text-white transition-colors w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center">
+                            <i class="fa-solid fa-xmark text-lg"></i>
                         </button>
-                        <p class="text-center text-xs text-gray-500 mt-2">Chỉ nhấn khi đã chuyển khoản thành công</p>
                     </div>
 
-                    <div id="pay-confirm-form" class="hidden space-y-4">
-                        <div>
-                            <label class="text-sm text-gray-400">Mã tham chiếu ngân hàng (Ref No)</label>
-                            <input type="text" id="input-tx-ref" class="w-full bg-[#1A1B23] border border-white/10 rounded-lg p-3 text-white focus:border-primary focus:outline-none" placeholder="Ví dụ: 823123...">
+                    <!-- Body -->
+                    <div class="p-6 overflow-y-auto">
+                        <div class="text-center mb-6">
+                            <div class="inline-block bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 px-4 py-1 rounded-full text-sm font-bold font-mono mb-2">
+                                <i class="fa-regular fa-clock mr-1"></i> <span id="pay-timer">15:00</span>
+                            </div>
+                            <p class="text-xs text-gray-400">Vui lòng chuyển khoản chính xác nội dung bên dưới</p>
                         </div>
-                        <button id="btn-submit-payment" class="w-full btn-gradient py-3 rounded-xl font-bold text-black">
-                            Xác nhận giao dịch
-                        </button>
+
+                        <!-- QR Code Area -->
+                        <div class="bg-white rounded-xl p-4 mb-6 mx-auto w-64 shadow-[0_0_20px_rgba(255,255,255,0.05)] relative group">
+                            <img id="pay-qr" src="" alt="VietQR" class="w-full h-full object-contain mix-blend-multiply">
+                            <div class="absolute inset-0 flex items-center justify-center bg-white/90 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl">
+                                <span class="text-black font-bold text-sm">Mở app ngân hàng & Quét</span>
+                            </div>
+                        </div>
+
+                        <!-- Bank Info Details -->
+                        <div class="space-y-3 mb-6">
+                            <div class="bg-[#15161C] p-3 rounded-lg flex justify-between items-center border border-white/5">
+                                <div>
+                                    <div class="text-[10px] text-gray-500 uppercase font-bold tracking-wide">Ngân hàng</div>
+                                    <div class="font-bold text-white text-sm" id="pay-bank-name">--</div>
+                                </div>
+                                <button onclick="utils.copyText('pay-bank-name')" class="text-gray-400 hover:text-white p-2"><i class="fa-regular fa-copy"></i></button>
+                            </div>
+                            <div class="bg-[#15161C] p-3 rounded-lg flex justify-between items-center border border-white/5">
+                                <div>
+                                    <div class="text-[10px] text-gray-500 uppercase font-bold tracking-wide">Số tài khoản</div>
+                                    <div class="font-bold text-white text-lg font-mono tracking-wider" id="pay-bank-num">--</div>
+                                </div>
+                                <button onclick="utils.copyText('pay-bank-num')" class="text-primary hover:text-green-400 p-2"><i class="fa-regular fa-copy"></i></button>
+                            </div>
+                            <div class="bg-primary/10 p-3 rounded-lg flex justify-between items-center border border-primary/30">
+                                <div>
+                                    <div class="text-[10px] text-primary uppercase font-bold tracking-wide">Nội dung (Bắt buộc)</div>
+                                    <div class="font-bold text-white text-lg font-mono" id="pay-content">--</div>
+                                </div>
+                                <button onclick="utils.copyText('pay-content')" class="text-primary hover:text-green-400 p-2"><i class="fa-regular fa-copy"></i></button>
+                            </div>
+                             <div class="bg-[#15161C] p-3 rounded-lg flex justify-between items-center border border-white/5">
+                                <div>
+                                    <div class="text-[10px] text-gray-500 uppercase font-bold tracking-wide">Số tiền</div>
+                                    <div class="font-bold text-primary text-xl font-mono" id="pay-amount">--</div>
+                                </div>
+                                <button onclick="utils.copyText('pay-amount', true)" class="text-primary hover:text-green-400 p-2"><i class="fa-regular fa-copy"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div id="pay-action-area" class="mt-4">
+                            <button onclick="ui.showConfirmForm()" class="w-full bg-primary hover:bg-green-600 text-black font-bold py-3 rounded-xl transition-colors shadow-lg">
+                                <i class="fa-solid fa-check-circle mr-2"></i> Tôi đã chuyển tiền
+                            </button>
+                            <p class="text-center text-xs text-gray-500 mt-3">Lưu ý: Chỉ nhấn xác nhận khi tài khoản đã bị trừ tiền.</p>
+                        </div>
+
+                        <div id="pay-confirm-form" class="hidden mt-4 space-y-4 animate-fade-in">
+                            <div class="bg-warning/10 border border-warning/20 p-3 rounded-lg text-xs text-warning">
+                                <i class="fa-solid fa-triangle-exclamation mr-1"></i> Vui lòng nhập mã giao dịch để Admin đối soát nhanh hơn.
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-400 font-bold ml-1 mb-1 block">Mã giao dịch ngân hàng (Ref No)</label>
+                                <input type="text" id="input-tx-ref" class="w-full bg-[#15161C] border border-white/10 rounded-lg p-3 text-white focus:border-primary focus:outline-none placeholder-gray-600 text-sm" placeholder="VD: FT2305...">
+                            </div>
+                            <button id="btn-submit-payment" class="w-full btn-gradient py-3 rounded-xl font-bold text-black shadow-lg">
+                                Xác nhận đã chuyển
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Page: HISTORY -->
             <div id="page-history" class="page-content hidden max-w-6xl mx-auto animate-fade-in">
-                <h2 class="text-2xl font-bold mb-6">Lịch sử giao dịch</h2>
+                <h2 class="text-2xl font-bold mb-6 text-white">Lịch sử giao dịch</h2>
 
-                <!-- Stats -->
+                <!-- Stats Cards -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                    <div class="glass p-4 rounded-xl">
-                        <p class="text-gray-400 text-xs">Tổng đơn</p>
-                        <p class="text-xl font-bold" id="stat-total-orders">0</p>
+                    <div class="glass p-5 rounded-xl border-l-4 border-blue-500">
+                        <p class="text-gray-400 text-xs uppercase font-bold tracking-wider mb-1">Tổng đơn</p>
+                        <p class="text-2xl font-bold text-white" id="stat-total-orders">0</p>
                     </div>
-                    <div class="glass p-4 rounded-xl">
-                        <p class="text-gray-400 text-xs">Thành công</p>
-                        <p class="text-xl font-bold text-primary" id="stat-success">0</p>
+                    <div class="glass p-5 rounded-xl border-l-4 border-green-500">
+                        <p class="text-gray-400 text-xs uppercase font-bold tracking-wider mb-1">Thành công</p>
+                        <p class="text-2xl font-bold text-green-400" id="stat-success">0</p>
                     </div>
-                    <div class="glass p-4 rounded-xl">
-                        <p class="text-gray-400 text-xs">Tổng Volume</p>
-                        <p class="text-xl font-bold text-yellow-400" id="stat-volume">0 USDT</p>
+                    <div class="glass p-5 rounded-xl border-l-4 border-yellow-500">
+                        <p class="text-gray-400 text-xs uppercase font-bold tracking-wider mb-1">Tổng Volume</p>
+                        <p class="text-2xl font-bold text-yellow-400" id="stat-volume">0</p>
                     </div>
-                    <div class="glass p-4 rounded-xl">
-                        <p class="text-gray-400 text-xs">Cấp bậc</p>
-                        <p class="text-xl font-bold text-accent" id="stat-rank">Bronze</p>
+                    <div class="glass p-5 rounded-xl border-l-4 border-purple-500">
+                        <p class="text-gray-400 text-xs uppercase font-bold tracking-wider mb-1">Hạng thành viên</p>
+                        <p class="text-2xl font-bold text-purple-400" id="stat-rank">Bronze</p>
                     </div>
                 </div>
 
                 <!-- Table -->
-                <div class="glass-panel rounded-xl overflow-hidden overflow-x-auto">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-white/5 text-gray-400 uppercase text-xs">
-                            <tr>
-                                <th class="px-6 py-3">ID</th>
-                                <th class="px-6 py-3">Thời gian</th>
-                                <th class="px-6 py-3">Mạng</th>
-                                <th class="px-6 py-3 text-right">USDT</th>
-                                <th class="px-6 py-3 text-right">VND</th>
-                                <th class="px-6 py-3 text-center">Trạng thái</th>
-                                <th class="px-6 py-3 text-center">Chi tiết</th>
-                            </tr>
-                        </thead>
-                        <tbody id="history-list" class="divide-y divide-white/5">
-                            <!-- JS injected -->
-                        </tbody>
-                    </table>
-                    <div id="empty-history" class="text-center py-8 text-gray-500 hidden">
-                        Chưa có giao dịch nào.
+                <div class="glass-panel rounded-xl overflow-hidden border border-white/5">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-white/5 text-gray-400 uppercase text-xs font-bold tracking-wider">
+                                <tr>
+                                    <th class="px-6 py-4">Mã đơn</th>
+                                    <th class="px-6 py-4">Ngày tạo</th>
+                                    <th class="px-6 py-4">Mạng lưới</th>
+                                    <th class="px-6 py-4 text-right">Mua (USDT)</th>
+                                    <th class="px-6 py-4 text-right">Thanh toán</th>
+                                    <th class="px-6 py-4 text-center">Trạng thái</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-list" class="divide-y divide-white/5 text-gray-300">
+                                <!-- JS injected -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="empty-history" class="text-center py-12 text-gray-500 hidden">
+                        <i class="fa-solid fa-box-open text-4xl mb-3 opacity-50"></i>
+                        <p>Chưa có giao dịch nào.</p>
                     </div>
                 </div>
             </div>
 
             <!-- Page: ADMIN -->
-            <div id="page-admin" class="page-content hidden max-w-6xl mx-auto animate-fade-in">
+            <div id="page-admin" class="page-content hidden max-w-7xl mx-auto animate-fade-in">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-warning">Admin Dashboard</h2>
-                    <button onclick="admin.saveSettings()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm font-bold shadow-lg transition-colors">
-                        <i class="fa-solid fa-save mr-2"></i> Lưu Cài Đặt
+                    <h2 class="text-2xl font-bold text-warning flex items-center gap-2">
+                        <i class="fa-solid fa-user-shield"></i> Admin Dashboard
+                    </h2>
+                    <button onclick="admin.saveSettings()" class="bg-blue-600 hover:bg-blue-500 px-5 py-2.5 rounded-lg text-sm font-bold shadow-lg transition-colors text-white flex items-center gap-2">
+                        <i class="fa-solid fa-save"></i> Lưu Cấu Hình
                     </button>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                    <!-- Settings -->
-                    <div class="glass-panel p-6 rounded-2xl lg:col-span-1 space-y-4 h-fit">
-                        <h3 class="font-bold text-lg mb-4 border-b border-white/10 pb-2">Cấu hình hệ thống</h3>
+                    <!-- Settings Panel -->
+                    <div class="glass-panel p-6 rounded-2xl lg:col-span-1 space-y-5 h-fit border-t-4 border-warning">
+                        <h3 class="font-bold text-lg mb-4 text-white pb-2 border-b border-white/10">Cấu hình chung</h3>
                         
-                        <div>
-                            <label class="text-xs text-gray-400">Phí giao dịch (%)</label>
-                            <input type="number" id="adm-fee" class="w-full bg-black/20 border border-white/10 rounded px-3 py-2 text-sm mt-1">
-                        </div>
-                        <div class="grid grid-cols-2 gap-2">
-                             <div>
-                                <label class="text-xs text-gray-400">Min (USDT)</label>
-                                <input type="number" id="adm-min" class="w-full bg-black/20 border border-white/10 rounded px-3 py-2 text-sm mt-1">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-xs text-gray-400 font-bold mb-1 block">Phí giao dịch (%)</label>
+                                <input type="number" id="adm-fee" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm focus:border-warning outline-none text-white">
                             </div>
-                             <div>
-                                <label class="text-xs text-gray-400">Max (USDT)</label>
-                                <input type="number" id="adm-max" class="w-full bg-black/20 border border-white/10 rounded px-3 py-2 text-sm mt-1">
+                            <div class="grid grid-cols-2 gap-3">
+                                 <div>
+                                    <label class="text-xs text-gray-400 font-bold mb-1 block">Min (USDT)</label>
+                                    <input type="number" id="adm-min" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm focus:border-warning outline-none text-white">
+                                </div>
+                                 <div>
+                                    <label class="text-xs text-gray-400 font-bold mb-1 block">Max (USDT)</label>
+                                    <input type="number" id="adm-max" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm focus:border-warning outline-none text-white">
+                                </div>
                             </div>
-                        </div>
-                        <div>
-                            <label class="text-xs text-gray-400">Thời gian chờ (phút)</label>
-                            <input type="number" id="adm-timer" class="w-full bg-black/20 border border-white/10 rounded px-3 py-2 text-sm mt-1">
+                            <div>
+                                <label class="text-xs text-gray-400 font-bold mb-1 block">Thời gian thanh toán (phút)</label>
+                                <input type="number" id="adm-timer" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm focus:border-warning outline-none text-white">
+                            </div>
                         </div>
                         
-                        <div class="pt-4 border-t border-white/10">
-                            <h4 class="font-bold text-sm mb-2">Thông tin ngân hàng</h4>
-                            <input type="text" id="adm-bank-name" placeholder="Tên Ngân hàng" class="w-full bg-black/20 border border-white/10 rounded px-3 py-2 text-sm mt-1 mb-2">
-                            <input type="text" id="adm-bank-acc" placeholder="Số tài khoản" class="w-full bg-black/20 border border-white/10 rounded px-3 py-2 text-sm mt-1 mb-2">
-                            <input type="text" id="adm-bank-owner" placeholder="Chủ tài khoản" class="w-full bg-black/20 border border-white/10 rounded px-3 py-2 text-sm mt-1 mb-2">
-                            <input type="text" id="adm-bank-qr" placeholder="Link ảnh QR" class="w-full bg-black/20 border border-white/10 rounded px-3 py-2 text-sm mt-1">
+                        <div class="pt-4 border-t border-white/10 space-y-3">
+                            <h4 class="font-bold text-sm text-white">Tài khoản nhận tiền (VietQR)</h4>
+                            <div>
+                                <label class="text-xs text-gray-500 block mb-1">Mã Ngân Hàng (BinID)</label>
+                                <select id="adm-bank-id" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm focus:border-warning outline-none text-white">
+                                    <option value="970436">Vietcombank</option>
+                                    <option value="970415">VietinBank</option>
+                                    <option value="970418">BIDV</option>
+                                    <option value="970405">Agribank</option>
+                                    <option value="970407">Techcombank</option>
+                                    <option value="970422">MB Bank</option>
+                                    <option value="970432">VPBank</option>
+                                    <option value="970423">TPBank</option>
+                                    <option value="970441">VIB</option>
+                                    <option value="970416">ACB</option>
+                                    <!-- Thêm các bank khác nếu cần -->
+                                </select>
+                                <p class="text-[10px] text-gray-500 mt-1">Chọn đúng ngân hàng để VietQR hoạt động.</p>
+                            </div>
+                            <input type="text" id="adm-bank-name" placeholder="Tên hiển thị (VD: Techcombank)" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm focus:border-warning outline-none text-white">
+                            <input type="text" id="adm-bank-acc" placeholder="Số tài khoản" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm focus:border-warning outline-none text-white">
+                            <input type="text" id="adm-bank-owner" placeholder="Tên chủ tài khoản" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm focus:border-warning outline-none text-white">
                         </div>
 
                          <div class="pt-4 border-t border-white/10">
-                            <h4 class="font-bold text-sm mb-2">Liên hệ (JSON)</h4>
-                            <textarea id="adm-contacts" rows="3" class="w-full bg-black/20 border border-white/10 rounded px-3 py-2 text-xs font-mono text-gray-300"></textarea>
+                            <h4 class="font-bold text-sm text-white mb-2">Liên hệ (JSON format)</h4>
+                            <textarea id="adm-contacts" rows="3" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-gray-300 focus:border-warning outline-none"></textarea>
                         </div>
                     </div>
 
                     <!-- Order Management -->
-                    <div class="glass-panel p-6 rounded-2xl lg:col-span-2 min-h-[500px]">
-                        <h3 class="font-bold text-lg mb-4 flex justify-between">
-                            Quản lý đơn hàng 
-                            <span class="text-xs font-normal bg-white/10 px-2 py-1 rounded cursor-pointer" onclick="admin.loadOrders()"><i class="fa-solid fa-rotate"></i> Refresh</span>
-                        </h3>
-                        <div class="overflow-x-auto">
+                    <div class="glass-panel p-6 rounded-2xl lg:col-span-2 min-h-[600px] flex flex-col">
+                        <div class="flex justify-between items-center mb-4 pb-2 border-b border-white/10">
+                            <h3 class="font-bold text-lg text-white">Quản lý đơn hàng</h3>
+                            <button onclick="admin.loadOrders()" class="text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded transition-colors text-white">
+                                <i class="fa-solid fa-rotate mr-1"></i> Làm mới
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto flex-1">
                             <table class="w-full text-sm text-left">
                                 <thead class="bg-white/5 text-gray-400 uppercase text-xs">
                                     <tr>
-                                        <th class="px-4 py-2">Order ID</th>
-                                        <th class="px-4 py-2">User</th>
-                                        <th class="px-4 py-2">USDT / VND</th>
-                                        <th class="px-4 py-2">Status</th>
-                                        <th class="px-4 py-2">Action</th>
+                                        <th class="px-4 py-3">Order INFO</th>
+                                        <th class="px-4 py-3">User</th>
+                                        <th class="px-4 py-3">Số tiền</th>
+                                        <th class="px-4 py-3">Trạng thái</th>
+                                        <th class="px-4 py-3 text-right">Hành động</th>
                                     </tr>
                                 </thead>
-                                <tbody id="admin-order-list" class="divide-y divide-white/5">
+                                <tbody id="admin-order-list" class="divide-y divide-white/5 text-gray-300">
                                     <!-- Rendered by JS -->
                                 </tbody>
                             </table>
@@ -452,16 +495,16 @@
     </div>
 
     <!-- Toast Container -->
-    <div id="toast-container"></div>
+    <div id="toast-container" class="fixed top-5 right-5 z-[200] flex flex-col gap-3"></div>
 
-    <!-- Firebase SDKs -->
+    <!-- Firebase SDKs & Logic -->
     <script type="module">
-        // Import Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
-        // --- Configuration ---
+        // --- Firebase Config ---
+        // Thay thế bằng Config thật của bạn nếu có. Hiện tại đang dùng key public cho demo.
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
@@ -471,203 +514,127 @@
             appId: "1:914980131889:web:72f8da15c42dbee671b110"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
-        // --- State Management ---
+        // --- Global State ---
         const store = {
             user: null,
             isAdmin: false,
             settings: {
-                fee: 2, // 2% default
+                fee: 2, 
                 min: 10,
                 max: 5000,
                 timer: 15,
-                bank: { name: 'Techcombank', acc: '1903333333', owner: 'ADMIN', qr: 'https://via.placeholder.com/200' },
-                contacts: { "Telegram": "#", "Zalo": "#" }
+                bank: { 
+                    binId: '970407', // Techcombank default
+                    name: 'Techcombank', 
+                    acc: '1903333333', 
+                    owner: 'ADMIN FLASH USDT' 
+                },
+                contacts: { "Telegram": "https://t.me/support", "Zalo": "https://zalo.me/0999999999" }
             },
-            currentRate: 25500, // Fallback rate
+            currentRate: 25500, // Fallback
             selectedNet: 'TRC20',
             activeOrder: null,
-            userOrders: []
+            userOrders: [],
+            userTier: { name: 'Member', discount: 0, color: 'text-gray-400' }
         };
 
-        // --- Utility Functions ---
+        // --- Utilities ---
         const utils = {
             formatVND: (amount) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount),
             formatDate: (timestamp) => {
-                if(!timestamp) return '';
+                if(!timestamp) return '---';
                 const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-                return date.toLocaleString('vi-VN');
+                return date.toLocaleString('vi-VN', { hour: '2-digit', minute:'2-digit', day:'2-digit', month:'2-digit' });
             },
-            randomId: () => 'ORD-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
+            randomId: () => 'ORD' + Math.floor(Math.random() * 900000 + 100000), // 6 digit number
             copyText: (elementId, raw = false) => {
                 const text = document.getElementById(elementId).innerText;
-                const val = raw ? text.replace(/\D/g,'') : text; // raw for money
-                navigator.clipboard.writeText(val).then(() => {
-                    utils.showToast('Đã sao chép vào bộ nhớ tạm!', 'success');
-                });
+                const val = raw ? text.replace(/\D/g,'') : text; 
+                navigator.clipboard.writeText(val).then(() => utils.showToast('Đã sao chép!', 'success'));
             },
             showToast: (msg, type = 'info') => {
                 const container = document.getElementById('toast-container');
                 const toast = document.createElement('div');
-                const colors = {
-                    success: 'bg-green-600',
-                    error: 'bg-red-600',
-                    info: 'bg-blue-600'
+                const styles = {
+                    success: 'bg-green-600 border-green-500',
+                    error: 'bg-red-600 border-red-500',
+                    info: 'bg-blue-600 border-blue-500'
                 };
-                const icon = type === 'success' ? 'fa-check' : (type === 'error' ? 'fa-triangle-exclamation' : 'fa-info-circle');
+                const icon = type === 'success' ? 'fa-check-circle' : (type === 'error' ? 'fa-triangle-exclamation' : 'fa-info-circle');
                 
-                toast.className = `${colors[type]} text-white px-6 py-3 rounded-xl shadow-2xl mb-3 flex items-center gap-3 animate-fade-in min-w-[250px]`;
-                toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${msg}</span>`;
+                toast.className = `${styles[type]} text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 animate-fade-in border w-72`;
+                toast.innerHTML = `<i class="fa-solid ${icon} text-lg"></i> <span class="text-sm font-medium">${msg}</span>`;
                 
                 container.appendChild(toast);
                 setTimeout(() => {
                     toast.style.opacity = '0';
+                    toast.style.transform = 'translateY(-10px)';
+                    toast.style.transition = 'all 0.3s';
                     setTimeout(() => toast.remove(), 300);
                 }, 3000);
             },
-            playSound: (type) => {
-                // Simple beep simulation or real file
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioCtx.createOscillator();
-                oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(type === 'success' ? 880 : 440, audioCtx.currentTime);
-                oscillator.connect(audioCtx.destination);
-                oscillator.start();
-                oscillator.stop(audioCtx.currentTime + 0.1);
-            },
             calculateTier: (volume) => {
-                if (volume >= 1000) return { name: 'VIP', discount: 20, color: 'text-yellow-400' };
-                if (volume >= 500) return { name: 'Gold', discount: 10, color: 'text-yellow-200' };
-                if (volume >= 100) return { name: 'Silver', discount: 5, color: 'text-gray-300' };
-                return { name: 'Bronze', discount: 0, color: 'text-orange-400' };
+                if (volume >= 5000) return { name: 'VIP', discount: 20, color: 'text-yellow-400' };
+                if (volume >= 1000) return { name: 'Gold', discount: 10, color: 'text-yellow-200' };
+                if (volume >= 200) return { name: 'Silver', discount: 5, color: 'text-gray-300' };
+                return { name: 'Member', discount: 0, color: 'text-gray-500' };
+            },
+            // VietQR Generator
+            generateVietQR: (amount, content) => {
+                // Format: https://img.vietqr.io/image/[BankID]-[AccountNo]-[Template].png?amount=[Amount]&addInfo=[Content]
+                const { binId, acc } = store.settings.bank;
+                return `https://img.vietqr.io/image/${binId}-${acc}-compact.png?amount=${Math.floor(amount)}&addInfo=${encodeURIComponent(content)}`;
             }
         };
 
-        // --- Core Logic ---
-
-        // 1. Auth Logic
-        onAuthStateChanged(auth, async (user) => {
-            const loader = document.getElementById('app-loader');
-            const loginView = document.getElementById('login-view');
-            const mainView = document.getElementById('main-view');
-
-            if (user) {
-                store.user = user;
-                
-                // Check User/Save DB
-                const userRef = doc(db, "users", user.uid);
-                const userSnap = await getDoc(userRef);
-                if (!userSnap.exists()) {
-                    await setDoc(userRef, { 
-                        email: user.email, 
-                        uid: user.uid, 
-                        totalVolume: 0,
-                        createdAt: serverTimestamp() 
-                    });
-                }
-                
-                // Check Admin
-                const adminRef = doc(db, "Settings", "Admins", user.uid, "profile"); // Check within collection structure
-                // Simplified: Check if doc exists in Settings/Admins/{uid}
-                // Since prompt says UID in collection Settings/Admins/{uid}
-                // We will check by trying to get a dummy doc or just logic by path.
-                // Better: Have a collection "admins".
-                // FOR THIS DEMO: I'll use a hardcoded logic or check a specific doc.
-                // Let's assume there is a collection 'admins' with docID = uid
-                const adminCheck = await getDoc(doc(db, "Settings/Admins/" + user.uid)); 
-                if (adminCheck.exists()) {
-                    store.isAdmin = true;
-                    document.getElementById('admin-nav-btn').classList.remove('hidden');
-                }
-
-                // UI Updates
-                document.getElementById('user-avatar').src = user.photoURL;
-                document.getElementById('user-name').innerText = user.displayName;
-                
-                // Load System Settings
-                await appLogic.loadSettings();
-                
-                // Fetch Price
-                await appLogic.fetchPrice();
-                
-                // Listen to User Stats
-                appLogic.listenUserStats();
-
-                loginView.classList.add('hidden');
-                mainView.classList.remove('hidden');
-                router.navigate('buy');
-            } else {
-                store.user = null;
-                loginView.classList.remove('hidden');
-                mainView.classList.add('hidden');
-            }
-            loader.classList.add('hidden');
-        });
-
-        document.getElementById('btn-login').addEventListener('click', () => {
-            signInWithPopup(auth, provider).catch(err => utils.showToast(err.message, 'error'));
-        });
-
-        document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
-
-        // 2. Router
-        const router = {
-            navigate: (page) => {
-                document.querySelectorAll('.page-content').forEach(el => el.classList.add('hidden'));
-                document.getElementById(`page-${page}`).classList.remove('hidden');
-                
-                document.querySelectorAll('.nav-item').forEach(el => {
-                    el.classList.remove('bg-white/5', 'text-white');
-                    el.classList.add('text-gray-400');
-                    if(el.dataset.page === page) {
-                        el.classList.add('bg-white/5', 'text-white');
-                        el.classList.remove('text-gray-400');
-                    }
-                });
-
-                if(page === 'admin' && store.isAdmin) admin.loadOrders();
-                if(page === 'history') appLogic.renderHistory();
-                
-                // Mobile menu close
-                document.querySelector('nav').classList.add('hidden', 'md:flex'); // Reset mobile state
-            }
-        };
-
-        // 3. App Logic
+        // --- Core Application Logic ---
         const appLogic = {
-            loadSettings: async () => {
-                const docSnap = await getDoc(doc(db, "Settings", "Config"));
-                if (docSnap.exists()) {
-                    store.settings = { ...store.settings, ...docSnap.data() };
+            init: async () => {
+                // Initialize default Settings if not exist
+                const settingsRef = doc(db, "Settings", "Config");
+                try {
+                    const snap = await getDoc(settingsRef);
+                    if (!snap.exists()) {
+                        await setDoc(settingsRef, store.settings);
+                    } else {
+                        store.settings = { ...store.settings, ...snap.data() };
+                    }
+                    appLogic.updateUISettings();
+                } catch(e) {
+                    console.error("Init Error", e);
                 }
-                // Render Settings to UI
+            },
+
+            updateUISettings: () => {
                 document.getElementById('limit-min').innerText = store.settings.min;
                 document.getElementById('limit-max').innerText = store.settings.max;
                 document.getElementById('user-fee-percent').innerText = store.settings.fee;
                 
-                // Render Support Links
-                const contactHtml = Object.entries(store.settings.contacts).map(([k, v]) => 
-                    `<a href="${v}" target="_blank" class="block w-full text-center py-2 rounded border border-white/10 hover:bg-white/5 transition-colors text-sm">${k}</a>`
+                const links = Object.entries(store.settings.contacts).map(([k, v]) => 
+                    `<a href="${v}" target="_blank" class="flex items-center justify-between px-4 py-3 bg-[#15161C] hover:bg-white/10 rounded-xl transition-colors text-sm text-gray-300 hover:text-white group">
+                        <span>${k}</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square text-xs opacity-50 group-hover:opacity-100"></i>
+                    </a>`
                 ).join('');
-                document.getElementById('support-links').innerHTML = contactHtml;
+                document.getElementById('support-links').innerHTML = links;
             },
 
             fetchPrice: async () => {
                 try {
-                    // Try fetch from public API
                     const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=vnd');
                     const data = await res.json();
                     store.currentRate = data.tether.vnd;
                 } catch (e) {
-                    console.log("API Error, using fallback rate");
-                    // Keep default 25500 if fail
+                    console.warn("API Error, using fallback rate");
                 }
-                document.getElementById('display-rate').innerText = `${utils.formatVND(store.currentRate)} / USDT`;
+                const rateText = `${parseInt(store.currentRate).toLocaleString('vi-VN')} VND`;
+                document.getElementById('display-rate').innerText = rateText;
+                document.getElementById('display-rate-top').innerText = rateText;
                 appLogic.calcPrice();
             },
 
@@ -687,79 +654,89 @@
                         }
                     });
 
-                    // Update UI Stats
-                    const tier = utils.calculateTier(totalVolume);
-                    document.getElementById('user-rank').innerText = tier.name;
-                    document.getElementById('user-rank').className = `text-xs font-bold ${tier.color}`;
+                    // Stats Logic
+                    store.userTier = utils.calculateTier(totalVolume);
                     
+                    // Header Update
+                    document.getElementById('user-rank').innerText = store.userTier.name;
+                    document.getElementById('user-rank').className = `text-[10px] uppercase font-bold ${store.userTier.color}`;
+                    
+                    // History Page Stats
                     document.getElementById('stat-total-orders').innerText = store.userOrders.length;
                     document.getElementById('stat-success').innerText = successCount;
-                    document.getElementById('stat-volume').innerText = totalVolume.toLocaleString() + ' USDT';
-                    document.getElementById('stat-rank').innerText = tier.name;
-                    document.getElementById('stat-rank').className = `text-xl font-bold ${tier.color}`;
+                    document.getElementById('stat-volume').innerText = totalVolume.toLocaleString() + ' U';
+                    document.getElementById('stat-rank').innerText = store.userTier.name;
+                    document.getElementById('stat-rank').className = `text-2xl font-bold ${store.userTier.color}`;
 
-                    // Update Discount Display in Buy Tab
-                    store.userTier = tier;
-                    if(document.getElementById('page-buy').classList.contains('hidden') === false) {
-                         appLogic.calcPrice();
-                    }
-                    if(document.getElementById('page-history').classList.contains('hidden') === false) {
-                         appLogic.renderHistory();
-                    }
+                    // Refresh Views
+                    if(!document.getElementById('page-buy').classList.contains('hidden')) appLogic.calcPrice();
+                    if(!document.getElementById('page-history').classList.contains('hidden')) appLogic.renderHistory();
                 });
             },
 
             calcPrice: () => {
                 const amountInput = parseFloat(document.getElementById('input-amount').value) || 0;
+                
+                if (amountInput <= 0) {
+                    document.getElementById('display-fee').innerText = "0 ₫";
+                    document.getElementById('display-total').innerText = "0 ₫";
+                    document.getElementById('btn-create-order').disabled = true;
+                    return;
+                }
+
                 const basePrice = amountInput * store.currentRate;
-                
-                // Fee Logic
                 const baseFeePercent = store.settings.fee;
-                const discount = store.userTier ? store.userTier.discount : 0; // % discount on fee? or Fee reduction? 
-                // Prompt: Silver -5%, Gold -10%. Assuming percentage of the fee.
-                // Real Fee % = BaseFee * (1 - discount/100)
+                const discountPercent = store.userTier.discount;
                 
-                const effectiveFeePercent = baseFeePercent * (1 - (discount/100));
-                const feeAmount = basePrice * (effectiveFeePercent / 100);
-                
+                // Fee = BaseFee * (1 - Discount/100)
+                const realFeePercent = baseFeePercent * (1 - (discountPercent / 100));
+                const feeAmount = basePrice * (realFeePercent / 100);
                 const total = basePrice + feeAmount;
-                const discountAmount = (basePrice * (baseFeePercent/100)) - feeAmount;
+
+                // Discount logic for display
+                const originalFee = basePrice * (baseFeePercent / 100);
+                const discountAmount = originalFee - feeAmount;
 
                 document.getElementById('display-fee').innerText = utils.formatVND(feeAmount);
-                document.getElementById('display-discount').innerText = `-${utils.formatVND(discountAmount)} (${discount}%)`;
-                document.getElementById('display-total').innerText = utils.formatVND(total);
+                document.getElementById('display-total').innerText = utils.formatVND(Math.ceil(total));
+                
+                const discountRow = document.getElementById('tier-discount-row');
+                if (discountPercent > 0) {
+                    discountRow.classList.remove('hidden');
+                    document.getElementById('display-discount').innerText = `-${utils.formatVND(discountAmount)} (${discountPercent}%)`;
+                } else {
+                    discountRow.classList.add('hidden');
+                }
 
-                // Enable/Disable Button
+                // Validation
                 const btn = document.getElementById('btn-create-order');
                 if (amountInput >= store.settings.min && amountInput <= store.settings.max) {
                     btn.disabled = false;
-                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
                 } else {
                     btn.disabled = true;
-                    btn.classList.add('opacity-50', 'cursor-not-allowed');
                 }
             },
 
             createOrder: async () => {
                 const amount = parseFloat(document.getElementById('input-amount').value);
                 const basePrice = amount * store.currentRate;
-                const discount = store.userTier ? store.userTier.discount : 0;
-                const effectiveFeePercent = store.settings.fee * (1 - (discount/100));
-                const fee = basePrice * (effectiveFeePercent / 100);
-                const total = basePrice + fee;
+                const realFeePercent = store.settings.fee * (1 - (store.userTier.discount / 100));
+                const fee = basePrice * (realFeePercent / 100);
+                const total = Math.ceil(basePrice + fee);
+                const orderId = utils.randomId();
 
                 const orderData = {
                     uid: store.user.uid,
-                    orderId: utils.randomId(),
+                    userName: store.user.displayName,
+                    orderId: orderId,
                     network: store.selectedNet,
                     amountUSDT: amount,
                     priceVND: store.currentRate,
                     fee: fee,
-                    totalVND: Math.round(total),
+                    totalVND: total,
                     status: 'pending',
                     createdAt: serverTimestamp(),
-                    referenceCode: '', // User will fill
-                    txHash: '', // User/Admin will fill
+                    transferContent: orderId // Content for Bank Transfer
                 };
 
                 try {
@@ -782,33 +759,79 @@
                 document.getElementById('empty-history').classList.add('hidden');
 
                 const statusMap = {
-                    'pending': '<span class="px-2 py-1 rounded bg-yellow-500/20 text-yellow-400 text-xs">Chờ thanh toán</span>',
-                    'pending_confirm': '<span class="px-2 py-1 rounded bg-blue-500/20 text-blue-400 text-xs">Đang xử lý</span>',
-                    'completed': '<span class="px-2 py-1 rounded bg-green-500/20 text-green-400 text-xs">Thành công</span>',
-                    'failed': '<span class="px-2 py-1 rounded bg-red-500/20 text-red-400 text-xs">Thất bại</span>',
-                    'expired': '<span class="px-2 py-1 rounded bg-gray-500/20 text-gray-400 text-xs">Hết hạn</span>'
+                    'pending': '<span class="px-2 py-1 rounded bg-yellow-500/10 text-yellow-500 text-xs font-bold border border-yellow-500/20">Chờ thanh toán</span>',
+                    'pending_confirm': '<span class="px-2 py-1 rounded bg-blue-500/10 text-blue-400 text-xs font-bold border border-blue-500/20 animate-pulse">Đang xử lý</span>',
+                    'completed': '<span class="px-2 py-1 rounded bg-green-500/10 text-green-500 text-xs font-bold border border-green-500/20">Thành công</span>',
+                    'failed': '<span class="px-2 py-1 rounded bg-red-500/10 text-red-500 text-xs font-bold border border-red-500/20">Thất bại/Hủy</span>'
                 };
 
                 store.userOrders.forEach(order => {
                     const tr = document.createElement('tr');
-                    tr.className = 'hover:bg-white/5 transition-colors';
+                    tr.className = 'hover:bg-white/5 transition-colors group';
                     tr.innerHTML = `
-                        <td class="px-6 py-4 font-mono text-xs">${order.orderId}</td>
-                        <td class="px-6 py-4 text-xs text-gray-400">${utils.formatDate(order.createdAt)}</td>
-                        <td class="px-6 py-4"><span class="bg-white/10 px-2 py-1 rounded text-xs">${order.network}</span></td>
-                        <td class="px-6 py-4 text-right font-bold text-green-400">${order.amountUSDT}</td>
-                        <td class="px-6 py-4 text-right font-mono">${order.totalVND.toLocaleString()}</td>
+                        <td class="px-6 py-4 font-mono font-bold text-white group-hover:text-primary transition-colors">${order.orderId}</td>
+                        <td class="px-6 py-4 text-xs text-gray-500">${utils.formatDate(order.createdAt)}</td>
+                        <td class="px-6 py-4"><span class="bg-white/10 px-2 py-1 rounded text-xs border border-white/5">${order.network}</span></td>
+                        <td class="px-6 py-4 text-right font-bold text-white">${order.amountUSDT} U</td>
+                        <td class="px-6 py-4 text-right font-mono text-gray-400">${order.totalVND.toLocaleString()} ₫</td>
                         <td class="px-6 py-4 text-center">${statusMap[order.status] || order.status}</td>
-                        <td class="px-6 py-4 text-center">
-                            ${order.txHash ? `<a href="#" class="text-primary hover:underline text-xs" title="${order.txHash}">TX Hash</a>` : '--'}
-                        </td>
                     `;
                     tbody.appendChild(tr);
                 });
             }
         };
 
-        // 4. Admin Logic
+        // --- Auth Logic ---
+        onAuthStateChanged(auth, async (user) => {
+            const loader = document.getElementById('app-loader');
+            const loginView = document.getElementById('login-view');
+            const mainView = document.getElementById('main-view');
+
+            if (user) {
+                store.user = user;
+                
+                // Check/Save User
+                const userRef = doc(db, "users", user.uid);
+                const userSnap = await getDoc(userRef);
+                
+                if (userSnap.exists()) {
+                     // Check Admin Role from Firestore
+                     if (userSnap.data().role === 'admin') {
+                         store.isAdmin = true;
+                         document.getElementById('admin-nav-btn').classList.remove('hidden');
+                     }
+                } else {
+                    // New User
+                    await setDoc(userRef, { 
+                        email: user.email, 
+                        uid: user.uid, 
+                        totalVolume: 0,
+                        role: 'user',
+                        createdAt: serverTimestamp() 
+                    });
+                }
+
+                // UI setup
+                document.getElementById('user-avatar').src = user.photoURL;
+                document.getElementById('user-name').innerText = user.displayName;
+                
+                // Start App
+                await appLogic.init();
+                await appLogic.fetchPrice();
+                appLogic.listenUserStats();
+
+                loginView.classList.add('hidden');
+                mainView.classList.remove('hidden');
+                router.navigate('buy');
+            } else {
+                store.user = null;
+                loginView.classList.remove('hidden');
+                mainView.classList.add('hidden');
+            }
+            loader.classList.add('hidden');
+        });
+
+        // --- Admin Functions ---
         const admin = {
             saveSettings: async () => {
                 if(!store.isAdmin) return;
@@ -818,129 +841,179 @@
                     max: parseFloat(document.getElementById('adm-max').value),
                     timer: parseFloat(document.getElementById('adm-timer').value),
                     bank: {
+                        binId: document.getElementById('adm-bank-id').value,
                         name: document.getElementById('adm-bank-name').value,
                         acc: document.getElementById('adm-bank-acc').value,
-                        owner: document.getElementById('adm-bank-owner').value,
-                        qr: document.getElementById('adm-bank-qr').value
+                        owner: document.getElementById('adm-bank-owner').value
                     },
                     contacts: JSON.parse(document.getElementById('adm-contacts').value || '{}')
                 };
                 try {
                     await setDoc(doc(db, "Settings", "Config"), newSettings, { merge: true });
-                    utils.showToast('Đã lưu cấu hình!', 'success');
+                    utils.showToast('Đã lưu cấu hình hệ thống!', 'success');
                     store.settings = { ...store.settings, ...newSettings };
                 } catch(e) {
-                    utils.showToast('Lỗi lưu: ' + e.message, 'error');
+                    utils.showToast('Lỗi JSON hoặc Permission: ' + e.message, 'error');
                 }
             },
             
             loadOrders: () => {
+                if(!store.isAdmin) return;
                 const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+                
+                // Listen realtime for Admin Dashboard
                 onSnapshot(q, (snapshot) => {
                     const tbody = document.getElementById('admin-order-list');
                     tbody.innerHTML = '';
+                    
                     snapshot.forEach(docSnap => {
                         const order = { id: docSnap.id, ...docSnap.data() };
                         const tr = document.createElement('tr');
-                        tr.className = 'hover:bg-white/5';
+                        tr.className = 'hover:bg-white/5 border-b border-white/5 last:border-0';
                         
-                        // Action Buttons Logic
+                        // Actions
                         let actions = '';
                         if(order.status === 'pending_confirm') {
                             actions = `
-                                <div class="flex gap-2">
-                                    <button onclick="window.adminApprove('${order.id}')" class="bg-green-600 p-2 rounded text-xs hover:bg-green-500" title="Duyệt"><i class="fa-solid fa-check"></i></button>
-                                    <button onclick="window.adminReject('${order.id}')" class="bg-red-600 p-2 rounded text-xs hover:bg-red-500" title="Từ chối"><i class="fa-solid fa-xmark"></i></button>
+                                <div class="flex gap-2 justify-end">
+                                    <button onclick="window.adminApprove('${order.id}')" class="bg-green-600 px-3 py-1.5 rounded text-xs font-bold hover:bg-green-500 shadow-lg shadow-green-900/20 text-white">
+                                        <i class="fa-solid fa-check mr-1"></i>Duyệt
+                                    </button>
+                                    <button onclick="window.adminReject('${order.id}')" class="bg-red-600 px-3 py-1.5 rounded text-xs font-bold hover:bg-red-500 shadow-lg shadow-red-900/20 text-white">
+                                        <i class="fa-solid fa-xmark mr-1"></i>Hủy
+                                    </button>
                                 </div>
                             `;
                         } else {
-                            actions = '<span class="text-gray-500 text-xs">--</span>';
+                            actions = `<span class="text-gray-600 text-xs italic">Đã xử lý</span>`;
                         }
 
-                        // Ref Code highlight
-                        const refDisplay = order.referenceCode ? `<div class="text-xs text-yellow-400 bg-yellow-400/10 px-1 rounded mt-1">Ref: ${order.referenceCode}</div>` : '';
+                        // Status Badge
+                        const stClass = order.status === 'completed' ? 'text-green-500' : (order.status==='failed' ? 'text-red-500' : (order.status==='pending_confirm' ? 'text-blue-400' : 'text-yellow-500'));
+                        
+                        // Reference Code (User's input)
+                        const refCode = order.referenceCode ? `<div class="mt-1 text-xs text-blue-400 bg-blue-400/10 px-1.5 py-0.5 rounded inline-block border border-blue-400/20">Ref: ${order.referenceCode}</div>` : '';
 
                         tr.innerHTML = `
                             <td class="px-4 py-3">
-                                <div class="font-mono text-xs font-bold">${order.orderId}</div>
+                                <div class="font-mono text-sm font-bold text-white">${order.orderId}</div>
                                 <div class="text-[10px] text-gray-500">${utils.formatDate(order.createdAt)}</div>
-                            </td>
-                            <td class="px-4 py-3 text-xs">${order.uid.substr(0, 8)}...</td>
-                            <td class="px-4 py-3">
-                                <div class="font-bold text-green-400 text-sm">${order.amountUSDT} U</div>
-                                <div class="font-mono text-xs text-gray-400">${order.totalVND.toLocaleString()} đ</div>
-                                <div class="text-[10px] bg-white/10 inline-block px-1 rounded mt-1">${order.network}</div>
+                                <div class="text-[10px] text-primary mt-1">${order.network}</div>
                             </td>
                             <td class="px-4 py-3">
-                                <span class="text-xs font-bold ${order.status === 'completed' ? 'text-green-500' : (order.status==='failed' ? 'text-red-500' : 'text-blue-400')}">
-                                    ${order.status.toUpperCase()}
-                                </span>
-                                ${refDisplay}
+                                <div class="text-xs text-white">${order.userName || 'User'}</div>
+                                <div class="text-[10px] text-gray-500 font-mono">${order.uid.substr(0, 8)}...</div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="font-bold text-white text-sm">${order.amountUSDT} U</div>
+                                <div class="font-mono text-xs text-gray-400 border-t border-white/5 pt-1 mt-1">${order.totalVND.toLocaleString()} ₫</div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <span class="text-xs font-bold uppercase ${stClass}">${order.status}</span>
+                                <br>${refCode}
                             </td>
                             <td class="px-4 py-3">${actions}</td>
                         `;
                         tbody.appendChild(tr);
                     });
                     
-                    // Populate Admin Form Inputs if empty
+                    // Fill Settings Form if empty
                     if(!document.getElementById('adm-fee').value) {
                          document.getElementById('adm-fee').value = store.settings.fee;
                          document.getElementById('adm-min').value = store.settings.min;
                          document.getElementById('adm-max').value = store.settings.max;
                          document.getElementById('adm-timer').value = store.settings.timer;
+                         document.getElementById('adm-bank-id').value = store.settings.bank.binId || '970407';
                          document.getElementById('adm-bank-name').value = store.settings.bank.name;
                          document.getElementById('adm-bank-acc').value = store.settings.bank.acc;
                          document.getElementById('adm-bank-owner').value = store.settings.bank.owner;
-                         document.getElementById('adm-bank-qr').value = store.settings.bank.qr;
                          document.getElementById('adm-contacts').value = JSON.stringify(store.settings.contacts, null, 2);
                     }
                 });
             }
         };
 
-        // Window scope for onclick events in HTML string
+        // Window scope implementation for HTML onclick
         window.adminApprove = async (docId) => {
-            const txHash = prompt("Nhập Transaction Hash (Blockchain):");
-            if(txHash) {
-                await updateDoc(doc(db, "orders", docId), {
-                    status: 'completed',
-                    txHash: txHash
-                });
-                utils.showToast('Đã duyệt đơn hàng!', 'success');
+            const tx = prompt("Nhập TX Hash (Blockchain Transaction) để hoàn tất:");
+            if(tx) {
+                try {
+                    await updateDoc(doc(db, "orders", docId), { status: 'completed', txHash: tx });
+                    utils.showToast('Duyệt đơn thành công!', 'success');
+                } catch(e) { utils.showToast(e.message, 'error'); }
             }
         };
 
         window.adminReject = async (docId) => {
-            if(confirm("Bạn có chắc muốn hủy đơn này?")) {
-                await updateDoc(doc(db, "orders", docId), {
-                    status: 'failed'
-                });
-                utils.showToast('Đã từ chối đơn hàng!', 'info');
+            if(confirm("Xác nhận HỦY đơn hàng này? Hành động không thể hoàn tác.")) {
+                try {
+                    await updateDoc(doc(db, "orders", docId), { status: 'failed' });
+                    utils.showToast('Đã hủy đơn hàng.', 'info');
+                } catch(e) { utils.showToast(e.message, 'error'); }
             }
         };
 
+        // --- Router & UI ---
+        const router = {
+            navigate: (page) => {
+                document.querySelectorAll('.page-content').forEach(el => el.classList.add('hidden'));
+                document.getElementById(`page-${page}`).classList.remove('hidden');
+                
+                document.querySelectorAll('.nav-item').forEach(el => {
+                    el.classList.remove('bg-white/5', 'text-white', 'shadow-inner', 'font-medium');
+                    el.classList.add('text-gray-400');
+                    if(el.dataset.page === page) {
+                        el.classList.add('bg-white/5', 'text-white', 'shadow-inner', 'font-medium');
+                        el.classList.remove('text-gray-400');
+                    }
+                });
 
-        // 5. UI Helpers
+                if(page === 'admin' && store.isAdmin) admin.loadOrders();
+                
+                // Close mobile menu
+                document.getElementById('sidebar-overlay').classList.add('hidden');
+                document.getElementById('sidebar').classList.remove('flex');
+                document.getElementById('sidebar').classList.add('hidden', 'md:flex');
+            }
+        };
+
         const ui = {
+            toggleSidebar: () => {
+                const sb = document.getElementById('sidebar');
+                const overlay = document.getElementById('sidebar-overlay');
+                if(sb.classList.contains('hidden')) {
+                    sb.classList.remove('hidden');
+                    sb.classList.add('flex');
+                    overlay.classList.remove('hidden');
+                } else {
+                    sb.classList.add('hidden');
+                    sb.classList.remove('flex');
+                    overlay.classList.add('hidden');
+                }
+            },
+            
             showPaymentModal: () => {
                 const modal = document.getElementById('payment-overlay');
                 const order = store.activeOrder;
                 
-                // Populate Data
+                // Update Texts
                 document.getElementById('pay-bank-name').innerText = store.settings.bank.name;
                 document.getElementById('pay-bank-num').innerText = store.settings.bank.acc;
-                document.getElementById('pay-content').innerText = order.orderId; // Transfer content = OrderID
+                document.getElementById('pay-content').innerText = order.transferContent;
                 document.getElementById('pay-amount').innerText = utils.formatVND(order.totalVND);
-                document.getElementById('pay-qr').src = store.settings.bank.qr;
                 
-                // Reset View
+                // Generate QR
+                const qrUrl = utils.generateVietQR(order.totalVND, order.transferContent);
+                document.getElementById('pay-qr').src = qrUrl;
+                
+                // Reset State
                 document.getElementById('pay-action-area').classList.remove('hidden');
                 document.getElementById('pay-confirm-form').classList.add('hidden');
                 document.getElementById('input-tx-ref').value = '';
 
                 modal.classList.remove('hidden');
 
-                // Timer
+                // Timer Logic
                 let timeLeft = store.settings.timer * 60;
                 const timerEl = document.getElementById('pay-timer');
                 if(window.payInterval) clearInterval(window.payInterval);
@@ -952,8 +1025,8 @@
                     if(timeLeft <= 0) {
                         clearInterval(window.payInterval);
                         ui.closePayment();
-                        utils.showToast('Đơn hàng đã hết hạn!', 'error');
-                        // Logic update DB expired could be here
+                        utils.showToast('Giao dịch hết hạn!', 'error');
+                        // Logic update db expired could be added here
                     }
                     timeLeft--;
                 }, 1000);
@@ -969,54 +1042,60 @@
                 document.getElementById('pay-confirm-form').classList.remove('hidden');
             }
         };
-        
-        // Expose UI to window
-        window.ui = ui;
+
+        // --- Event Binding ---
         window.router = router;
         window.utils = utils;
-        window.admin = admin;
+        window.ui = ui;
+        window.admin = admin; // Expose for HTML access
 
-        // --- Event Listeners ---
+        document.getElementById('btn-login').addEventListener('click', () => signInWithPopup(auth, provider).catch(e => utils.showToast(e.message, 'error')));
+        document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
         
-        // Input Amount Change
         document.getElementById('input-amount').addEventListener('input', appLogic.calcPrice);
-
-        // Network Selection
-        document.querySelectorAll('.network-opt').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.network-opt').forEach(b => b.classList.remove('active', 'border-primary', 'text-primary'));
-                e.target.classList.add('active', 'border-primary', 'text-primary');
-                store.selectedNet = e.target.dataset.net;
-            });
-        });
-
-        // Create Order Button
         document.getElementById('btn-create-order').addEventListener('click', appLogic.createOrder);
 
-        // Submit Payment
+        // Submit Payment Confirm
         document.getElementById('btn-submit-payment').addEventListener('click', async () => {
-            const refCode = document.getElementById('input-tx-ref').value;
-            if(!refCode) return utils.showToast('Vui lòng nhập mã tham chiếu!', 'error');
+            const refCode = document.getElementById('input-tx-ref').value.trim();
+            if(!refCode) return utils.showToast('Vui lòng nhập mã giao dịch!', 'error');
 
             try {
+                const btn = document.getElementById('btn-submit-payment');
+                btn.disabled = true;
+                btn.innerText = 'Đang gửi...';
+
                 await updateDoc(doc(db, "orders", store.activeOrder.id), {
                     status: 'pending_confirm',
                     referenceCode: refCode
                 });
-                utils.showToast('Đã gửi xác nhận. Vui lòng chờ Admin duyệt!', 'success');
+                
+                utils.showToast('Đã gửi xác nhận thành công!', 'success');
                 ui.closePayment();
                 router.navigate('history');
             } catch (e) {
-                utils.showToast('Lỗi: ' + e.message, 'error');
+                utils.showToast(e.message, 'error');
+            } finally {
+                const btn = document.getElementById('btn-submit-payment');
+                btn.disabled = false;
+                btn.innerText = 'Xác nhận đã chuyển';
             }
         });
 
-        // Mobile Menu
-        document.getElementById('mobile-menu-btn').addEventListener('click', () => {
-            const nav = document.querySelector('nav');
-            nav.classList.toggle('hidden');
-            nav.classList.add('absolute', 'top-0', 'left-0', 'h-full', 'w-64');
+        // Network Selector Logic
+        document.querySelectorAll('.network-opt').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                // Remove active from all
+                document.querySelectorAll('.network-opt').forEach(b => b.classList.remove('active', 'border-primary', 'bg-white/5'));
+                // Add to clicked (handle click inside button)
+                const target = e.currentTarget;
+                target.classList.add('active', 'border-primary', 'bg-white/5');
+                store.selectedNet = target.dataset.net;
+            });
         });
+
+        // Set Default TRC20 active
+        document.querySelector('.network-opt[data-net="TRC20"]').classList.add('active', 'border-primary', 'bg-white/5');
 
     </script>
 </body>
