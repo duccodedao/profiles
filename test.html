@@ -1,534 +1,759 @@
 <!DOCTYPE html>
-<html lang="vi" data-theme="light">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BmassHD - QR Pro (Verify)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BmassHD Pro - QR Chuyển Khoản & Quản Lý</title>
     
     <!-- Libraries -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <link rel="icon" type="image/x-icon" href="https://duccodedao.github.io/Images/avt.png">
     
     <style>
-        /* --- THEME VARIABLES --- */
+        /* --- CORE VARIABLES --- */
         :root {
-            --primary: #4e73df; --primary-dark: #2e59d9;
-            --secondary: #858796; --success: #1cc88a; --danger: #e74a3b;
-            --bg-body: #f3f4f6; --bg-card: #ffffff; --bg-input: #ffffff;
-            --text-main: #2d3748; --text-sub: #718096; --border: #e2e8f0;
-            --shadow: 0 10px 25px rgba(0,0,0,0.05); --radius: 12px; --transition: all 0.3s ease;
+            --primary: #4e73df; --primary-dark: #224abe;
+            --secondary: #858796;
+            --success: #1cc88a; --danger: #e74a3b; --warning: #f6c23e;
+            --bg-body: #f3f4f6; --bg-card: #ffffff; --bg-input: #f8f9fc;
+            --text-main: #2d3748; --text-muted: #718096;
+            --border: #e2e8f0;
+            --shadow: 0 10px 30px rgba(0,0,0,0.08);
+            --radius: 16px;
         }
 
+        /* DARK MODE VARIABLES */
         [data-theme="dark"] {
-            --primary: #4e73df; --primary-dark: #3751a0;
             --bg-body: #1a202c; --bg-card: #2d3748; --bg-input: #4a5568;
-            --text-main: #f7fafc; --text-sub: #a0aec0; --border: #4a5568;
-            --shadow: 0 10px 25px rgba(0,0,0,0.3);
+            --text-main: #f7fafc; --text-muted: #a0aec0;
+            --border: #4a5568;
+            --shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body { background-color: var(--bg-body); color: var(--text-main); padding: 20px; min-height: 100vh; display: flex; flex-direction: column; align-items: center; transition: var(--transition); }
+        /* --- RESET & BASIC --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-body); color: var(--text-main); transition: all 0.3s ease; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; }
         
-        .container { width: 100%; max-width: 1200px; background: var(--bg-card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; display: flex; flex-wrap: wrap; margin-bottom: 30px; position: relative; transition: var(--transition); }
+        /* --- LAYOUT --- */
+        .app-container { width: 100%; max-width: 1200px; background: var(--bg-card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; margin-bottom: 30px; position: relative; }
         
         /* HEADER */
-        .header { width: 100%; padding: 20px; background: linear-gradient(135deg, var(--primary), #224abe); color: white; display: flex; justify-content: space-between; align-items: center; }
-        .header h1 { font-size: 1.4rem; font-weight: 700; margin-bottom: 5px; }
-        .btn-icon { background: rgba(255,255,255,0.2); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
-        .btn-icon:hover { background: rgba(255,255,255,0.35); transform: rotate(15deg); }
+        .header { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); padding: 20px 30px; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .brand { display: flex; align-items: center; gap: 10px; }
+        .brand h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: 0.5px; }
+        .header-actions { display: flex; gap: 15px; }
+        .icon-btn { background: rgba(255,255,255,0.2); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .icon-btn:hover { background: rgba(255,255,255,0.3); transform: scale(1.05); }
 
-        /* LAYOUT */
-        .col-left, .col-right { padding: 30px; flex: 1; min-width: 350px; transition: var(--transition); }
-        .col-left { border-right: 1px solid var(--border); }
-        .col-right { background-color: var(--bg-body); display: flex; flex-direction: column; align-items: center; }
-        [data-theme="dark"] .col-right { background-color: #283141; }
+        /* MAIN CONTENT GRID */
+        .main-body { display: flex; flex-wrap: wrap; }
+        .col-config { flex: 1.2; padding: 30px; border-right: 1px solid var(--border); min-width: 350px; }
+        .col-preview { flex: 0.8; padding: 30px; background-color: var(--bg-body); min-width: 320px; display: flex; flex-direction: column; align-items: center; }
 
-        /* BANK GRID */
-        .search-box { position: relative; margin-bottom: 15px; }
-        .search-box input { width: 100%; padding: 10px 15px 10px 40px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-main); outline: none; }
-        .search-box i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-sub); }
+        /* --- COMPONENTS --- */
         
-        .bank-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; max-height: 220px; overflow-y: auto; padding-right: 5px; }
-        .bank-item { border: 2px solid var(--border); border-radius: 10px; padding: 5px; cursor: pointer; transition: var(--transition); background: var(--bg-card); height: 70px; display: flex; align-items: center; justify-content: center; position: relative; }
-        .bank-item img { max-width: 80%; max-height: 80%; object-fit: contain; filter: grayscale(100%); transition: var(--transition); }
-        .bank-item:hover { transform: translateY(-3px); border-color: var(--primary); }
-        .bank-item.active { border-color: var(--primary); background: rgba(78, 115, 223, 0.05); }
-        .bank-item.active img { filter: grayscale(0%); }
-
-        /* INPUTS */
-        .form-label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9rem; color: var(--text-sub); }
-        .form-control { width: 100%; padding: 12px 15px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-input); color: var(--text-main); font-size: 1rem; outline: none; transition: var(--transition); }
-        .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(78, 115, 223, 0.15); }
-
-        /* BUTTONS */
-        .btn-action { width: 100%; padding: 14px; border: none; border-radius: 30px; background: var(--primary); color: white; font-weight: 600; font-size: 1rem; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; }
-        .btn-action:hover { background: var(--primary-dark); transform: translateY(-2px); }
-        .btn-secondary { background: var(--secondary); }
-        .btn-secondary:hover { background: #6c757d; }
-
-        /* QR FRAME */
-        .qr-frame { background: white; padding: 15px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: center; min-height: 380px; width: 100%; max-width: 380px; display: flex; align-items: center; justify-content: center; position: relative; border: 1px solid #eee; }
-        .qr-frame img { max-width: 100%; height: auto; border-radius: 8px; display: none; }
-        .qr-frame img.loaded { display: block; animation: zoomIn 0.4s ease; }
-        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-        /* ADMIN SPECIFIC */
-        #adminPanel { width: 100%; max-width: 1200px; background: var(--bg-card); padding: 25px; border-radius: var(--radius); border-top: 4px solid var(--primary); display: none; margin-top: 20px; box-shadow: var(--shadow); }
-        .verify-box { display: flex; gap: 10px; align-items: center; }
-        .btn-verify { background: var(--success); color: white; border: none; padding: 0 15px; border-radius: 8px; height: 45px; cursor: pointer; white-space: nowrap; font-weight: 600; display: flex; align-items: center; gap: 5px; }
-        .btn-verify:hover { background: #169b6b; }
-        .btn-verify:disabled { opacity: 0.6; cursor: not-allowed; }
-
-        /* LOADING */
-        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-card); z-index: 2000; display: flex; justify-content: center; align-items: center; flex-direction: column; transition: opacity 0.5s; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #eee; border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-
-        @media (max-width: 768px) {
-            .container { flex-direction: column; }
-            .col-left { border-right: none; border-bottom: 1px solid var(--border); }
-            .verify-box { flex-direction: column; align-items: stretch; }
-            .btn-verify { width: 100%; justify-content: center; }
+        /* Bank Grid */
+        .bank-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 12px; margin-top: 10px; max-height: 220px; overflow-y: auto; padding: 2px; }
+        .bank-item { 
+            background: var(--bg-card); border: 2px solid var(--border); border-radius: 12px; height: 70px; 
+            display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; 
+            transition: all 0.2s ease; 
         }
+        .bank-item img { max-width: 80%; max-height: 80%; object-fit: contain; filter: grayscale(100%); transition: 0.2s; }
+        .bank-item:hover { border-color: var(--primary); transform: translateY(-2px); }
+        .bank-item.active { border-color: var(--primary); background: rgba(78, 115, 223, 0.05); box-shadow: 0 4px 10px rgba(78,115,223,0.2); }
+        .bank-item.active img { filter: grayscale(0%); }
+        .bank-status { position: absolute; top: -6px; right: -6px; font-size: 0.6rem; padding: 2px 5px; border-radius: 8px; color: white; font-weight: bold; z-index: 2; }
+        .st-on { background: var(--success); } .st-off { background: var(--danger); }
+        .bank-item.disabled { opacity: 0.5; pointer-events: none; }
+
+        /* Forms */
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9rem; color: var(--text-muted); }
+        .form-control { width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px; font-size: 1rem; background: var(--bg-input); color: var(--text-main); outline: none; transition: 0.3s; }
+        .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(78, 115, 223, 0.15); }
+        .input-group { display: flex; gap: 8px; }
+        
+        /* Tools (Calculator) */
+        .tools-toggle { font-size: 0.85rem; color: var(--primary); cursor: pointer; margin-top: 5px; display: inline-block; text-decoration: underline; }
+        .split-tools { background: rgba(78, 115, 223, 0.1); padding: 15px; border-radius: 10px; margin-top: 10px; display: none; border: 1px dashed var(--primary); }
+        .split-tools.show { display: block; animation: fadeIn 0.3s; }
+
+        /* Suggestions Tags */
+        .suggestions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+        .tag { background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; transition: 0.2s; }
+        .tag:hover { border-color: var(--primary); color: var(--primary); background: white; }
+
+        /* Template Select */
+        .tpl-opts { display: flex; gap: 15px; justify-content: center; }
+        .tpl-item { flex: 1; border: 2px solid var(--border); border-radius: 10px; overflow: hidden; cursor: pointer; opacity: 0.7; transition: 0.2s; position: relative; }
+        .tpl-item img { width: 100%; display: block; }
+        .tpl-item.active { border-color: var(--primary); opacity: 1; transform: scale(1.03); box-shadow: 0 5px 15px rgba(78,115,223,0.2); }
+        
+        /* QR Preview Area */
+        .qr-card { 
+            background: white; padding: 20px; border-radius: 20px; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1); 
+            text-align: center; width: 100%; max-width: 380px;
+            position: relative; overflow: hidden;
+            border: 1px solid #eee;
+            transition: all 0.3s;
+        }
+        .qr-header { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #eee; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .qr-header img { height: 30px; object-fit: contain; }
+        .qr-header span { font-weight: 700; color: #333; font-size: 1.1rem; }
+        
+        .qr-img-box { position: relative; min-height: 300px; display: flex; align-items: center; justify-content: center; }
+        .qr-real { width: 100%; border-radius: 8px; display: none; }
+        .qr-placeholder { color: #ccc; display: flex; flex-direction: column; align-items: center; }
+        .qr-placeholder i { font-size: 4rem; margin-bottom: 10px; }
+        
+        .qr-footer { margin-top: 15px; text-align: left; background: #f8f9fc; padding: 15px; border-radius: 10px; }
+        .qr-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; }
+        .qr-row:last-child { margin-bottom: 0; }
+        .qr-label { color: #888; }
+        .qr-value { font-weight: 600; color: #333; text-align: right; }
+        .money-highlight { color: var(--primary); font-size: 1.1rem; font-weight: 800; }
+
+        /* Loader */
+        .loader { width: 48px; height: 48px; border: 5px solid #FFF; border-bottom-color: var(--primary); border-radius: 50%; display: inline-block; box-sizing: border-box; animation: rotation 1s linear infinite; position: absolute; }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Actions */
+        .btn-main { background: var(--primary); color: white; width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: 600; font-size: 1rem; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 20px; box-shadow: 0 4px 15px rgba(78,115,223,0.3); }
+        .btn-main:hover { background: var(--primary-dark); transform: translateY(-2px); }
+        
+        .action-group { display: flex; gap: 10px; width: 100%; max-width: 380px; margin-top: 20px; }
+        .btn-act { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-main); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 0.85rem; transition: 0.2s; }
+        .btn-act i { font-size: 1.2rem; color: var(--primary); }
+        .btn-act:hover { background: var(--bg-input); border-color: var(--primary); }
+
+        /* History Section */
+        .history-section { width: 100%; border-top: 1px solid var(--border); padding: 20px; background: var(--bg-body); }
+        .history-title { font-weight: 700; margin-bottom: 15px; display: flex; justify-content: space-between; }
+        .history-list { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px; }
+        .hist-item { min-width: 200px; background: var(--bg-card); padding: 15px; border-radius: 12px; border: 1px solid var(--border); cursor: pointer; transition: 0.2s; }
+        .hist-item:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .hist-bank { font-weight: bold; font-size: 0.9rem; color: var(--primary); }
+        .hist-amount { font-weight: 800; font-size: 1.1rem; margin: 5px 0; }
+        .hist-date { font-size: 0.75rem; color: var(--text-muted); }
+
+        /* Admin Panel */
+        #adminPanel { display: none; width: 100%; padding: 20px; background: #fff; margin-top: 20px; border-top: 4px solid var(--warning); }
+        .admin-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .app-container { flex-direction: column; border-radius: 0; box-shadow: none; margin-bottom: 0; }
+            .col-config { border-right: none; border-bottom: 1px solid var(--border); padding: 20px; }
+            .col-preview { padding: 20px; }
+            .bank-grid { grid-template-columns: repeat(4, 1fr); }
+            body { padding: 0; background: var(--bg-body); }
+            .history-list { flex-direction: column; }
+            .hist-item { width: 100%; }
+        }
+        @keyframes fadeIn { from{opacity:0; transform:translateY(-10px)} to{opacity:1; transform:translateY(0)} }
     </style>
 </head>
 <body>
 
-<div id="initialLoading" class="loading-overlay">
-    <div class="spinner"></div>
-    <p style="margin-top: 15px; font-weight: 500;">Đang khởi tạo...</p>
-</div>
-
-<div class="container">
+<div class="app-container">
+    <!-- Header -->
     <div class="header">
-        <h1><i class="fas fa-qrcode"></i> BmassHD Pro</h1>
-        <div style="display: flex; gap: 10px;">
-            <button class="btn-icon" onclick="toggleTheme()"><i class="fas fa-moon" id="themeIcon"></i></button>
-            <button class="btn-icon" id="btnLogin" onclick="handleLogin()"><i class="fas fa-user-shield"></i></button>
-            <button class="btn-icon" id="btnLogout" onclick="handleLogout()" style="display: none;"><i class="fas fa-sign-out-alt"></i></button>
-        </div>
-    </div>
-
-    <!-- USER INTERFACE -->
-    <div class="col-left">
-        <div class="form-group">
-            <label class="form-label">1. Chọn Ngân Hàng</label>
-            <div class="search-box">
-                <i class="fas fa-search"></i>
-                <input type="text" id="bankSearch" placeholder="Tìm kiếm ngân hàng..." onkeyup="filterBanks()">
-            </div>
-            <div class="bank-grid" id="bankGrid"></div>
-            <div style="margin-top: 8px; font-size: 0.9rem;">
-                Đang chọn: <strong id="selectedBankName" style="color: var(--primary);">...</strong>
+        <div class="brand">
+            <i class="fas fa-qrcode fa-lg"></i>
+            <div>
+                <h1>BmassHD <span style="font-size: 0.8rem; background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px;">PRO</span></h1>
             </div>
         </div>
-
-        <div class="form-group">
-            <label class="form-label">2. Thông tin nhận tiền</label>
-            <input type="text" id="accountNumber" class="form-control" readonly placeholder="Số tài khoản">
-            <input type="text" id="fullName" class="form-control" readonly style="margin-top: 10px;" placeholder="Tên chủ tài khoản">
+        <div class="header-actions">
+            <button class="icon-btn" onclick="toggleTheme()" title="Đổi giao diện"><i class="fas fa-moon" id="themeIcon"></i></button>
+            <button class="icon-btn" id="btnLogin" onclick="handleLogin()" title="Admin"><i class="fas fa-user-shield"></i></button>
+            <button class="icon-btn" id="btnLogout" onclick="handleLogout()" style="display:none;" title="Đăng xuất"><i class="fas fa-sign-out-alt"></i></button>
         </div>
-
-        <div class="form-group">
-            <label class="form-label">3. Nhập số tiền</label>
-            <input type="text" id="amount" class="form-control" placeholder="0đ" oninput="formatCurrency(this)">
-            <textarea id="transferContent" class="form-control" style="margin-top: 15px;" rows="2" placeholder="Nội dung chuyển khoản">Chuyen khoan</textarea>
-        </div>
-
-        <button class="btn-action" onclick="generateQR()"><i class="fas fa-magic"></i> TẠO MÃ QR</button>
     </div>
 
-    <div class="col-right">
-        <label class="form-label">MÃ QR CỦA BẠN</label>
-        <div class="qr-frame" id="qrFrame">
-            <div id="qrLoader" style="display: none; flex-direction: column; align-items: center;">
-                <div class="spinner"></div><br><small>Đang tạo...</small>
+    <div class="main-body">
+        <!-- Cột Cấu Hình (Trái) -->
+        <div class="col-config">
+            <div class="form-group">
+                <label class="form-label"><i class="fas fa-university"></i> Chọn ngân hàng</label>
+                <div class="bank-grid" id="bankGrid">
+                    <!-- JS render banks here -->
+                    <div style="text-align:center; padding: 20px; width: 100%; color: #888;">Đang tải dữ liệu...</div>
+                </div>
+                <div id="selectedBankDisplay" style="margin-top: 8px; font-size: 0.9rem; color: var(--primary); font-weight: 600;"></div>
             </div>
-            <div id="qrPlaceholder" style="color: var(--text-sub); text-align: center;">
-                <i class="fas fa-qrcode" style="font-size: 4rem; opacity: 0.2; margin-bottom: 15px;"></i>
-                <p>Nhập thông tin để xem trước</p>
+
+            <!-- Info Account -->
+            <div class="form-group">
+                <div class="input-group">
+                    <input type="text" id="accountNumber" class="form-control" readonly placeholder="Số tài khoản" style="font-weight: bold;">
+                    <button class="btn-act" style="flex: 0 0 50px;" onclick="copyToClipboard('accountNumber')"><i class="fas fa-copy"></i></button>
+                </div>
+                <input type="text" id="fullName" class="form-control" readonly style="margin-top: 10px; font-size: 0.9rem; color: var(--text-muted);" placeholder="Tên chủ tài khoản">
             </div>
-            <img id="qrImage" src="" alt="QR Code">
+
+            <!-- Amount & Content -->
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="fas fa-coins"></i> Số tiền & Nội dung
+                    <span class="tools-toggle" onclick="toggleTools()">[<i class="fas fa-calculator"></i> Chia tiền nhóm]</span>
+                </label>
+                
+                <!-- Split Bill Tool -->
+                <div id="splitTools" class="split-tools">
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <input type="number" id="splitTotal" class="form-control" placeholder="Tổng bill" oninput="calculateSplit()">
+                        <input type="number" id="splitPeople" class="form-control" placeholder="Số người" value="2" oninput="calculateSplit()">
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">Mỗi người: <b id="splitResult" style="color: var(--primary);">0</b></div>
+                </div>
+
+                <input type="text" id="amount" class="form-control" placeholder="Nhập số tiền (VD: 50,000)" oninput="formatCurrency(this)">
+                <div class="suggestions">
+                    <span class="tag" onclick="setAmount(20000)">20k</span>
+                    <span class="tag" onclick="setAmount(50000)">50k</span>
+                    <span class="tag" onclick="setAmount(100000)">100k</span>
+                    <span class="tag" onclick="setAmount(500000)">500k</span>
+                </div>
+                
+                <textarea id="transferContent" class="form-control" style="margin-top: 15px;" rows="2" placeholder="Nội dung chuyển khoản (Không dấu)">Chuyen khoan</textarea>
+            </div>
+
+            <!-- Templates -->
+            <div class="form-group">
+                <label class="form-label">Giao diện mã QR</label>
+                <div class="tpl-opts">
+                    <div class="tpl-item active" onclick="selectTemplate('compact2', this)">
+                        <img src="https://img.vietqr.io/image/VCB-0891000650891-compact2.jpg" alt="Compact2">
+                    </div>
+                    <div class="tpl-item" onclick="selectTemplate('compact', this)">
+                        <img src="https://img.vietqr.io/image/VCB-0891000650891-compact.jpg" alt="Compact">
+                    </div>
+                    <div class="tpl-item" onclick="selectTemplate('qr_only', this)">
+                        <div style="height: 100%; display: flex; align-items: center; justify-content: center; background: #eee;">
+                            <i class="fas fa-qrcode fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-main" onclick="generateQR()"><i class="fas fa-magic"></i> TẠO MÃ QR NGAY</button>
         </div>
-        <button class="btn-action" onclick="downloadQR()" id="btnDownload" style="display:none;">
-            <i class="fas fa-download"></i> Tải ảnh về
-        </button>
-    </div>
-</div>
 
-<!-- ADMIN PANEL WITH LOOKUP FEATURE -->
-<div id="adminPanel">
-    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px;">
-        <h2 style="color: var(--primary);"><i class="fas fa-link"></i> Quản Lý & Liên Kết Ngân Hàng</h2>
-        <button onclick="document.getElementById('adminPanel').style.display='none'" style="border:none; background:none; cursor:pointer;"><i class="fas fa-times"></i></button>
-    </div>
+        <!-- Cột Kết Quả (Phải) -->
+        <div class="col-preview">
+            <!-- QR Card Preview -->
+            <div class="qr-card" id="captureArea">
+                <div class="qr-header">
+                    <img id="logoPreview" src="https://via.placeholder.com/30" alt="Bank Logo">
+                    <span id="bankNamePreview">Ngân hàng</span>
+                </div>
+                
+                <div class="qr-img-box">
+                    <span class="loader" id="qrLoader" style="display: none;"></span>
+                    <img id="qrImage" class="qr-real" src="" alt="QR Code" crossorigin="anonymous">
+                    <div id="qrPlaceholder" class="qr-placeholder">
+                        <i class="fas fa-qrcode" style="color: #ddd;"></i>
+                        <span style="font-size: 0.9rem; color: #999;">Nhập số tiền để hiện mã</span>
+                    </div>
+                </div>
 
-    <!-- FORM LIÊN KẾT -->
-    <div style="display: grid; gap: 15px; margin-bottom: 20px;">
-        <select id="admBankSelect" class="form-control">
-            <option value="">-- Chọn ngân hàng --</option>
-        </select>
-        
-        <!-- Khu vực nhập và kiểm tra -->
-        <div class="verify-box">
-            <input type="text" id="admAccNum" class="form-control" placeholder="Nhập Số tài khoản">
-            <button class="btn-verify" id="btnLookup" onclick="lookupBankAccount()">
-                <i class="fas fa-search-dollar"></i> Kiểm tra tên
-            </button>
+                <div class="qr-footer">
+                    <div class="qr-row">
+                        <span class="qr-label">Chủ tài khoản:</span>
+                        <span class="qr-value" id="namePreview">--</span>
+                    </div>
+                    <div class="qr-row">
+                        <span class="qr-label">Số tài khoản:</span>
+                        <span class="qr-value" id="accPreview">--</span>
+                    </div>
+                    <div class="qr-row" style="margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px;">
+                        <span class="qr-label">Số tiền:</span>
+                        <span class="qr-value money-highlight" id="amountPreview">0 VND</span>
+                    </div>
+                    <div class="qr-row">
+                        <span class="qr-label">Nội dung:</span>
+                        <span class="qr-value" id="contentPreview" style="font-weight: 400; font-style: italic;">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-group" id="resultActions" style="opacity: 0.5; pointer-events: none;">
+                <button class="btn-act" onclick="downloadSmartCard()">
+                    <i class="fas fa-download"></i> Tải ảnh đẹp
+                </button>
+                <button class="btn-act" onclick="shareQR()">
+                    <i class="fas fa-share-alt"></i> Chia sẻ
+                </button>
+                <button class="btn-act" onclick="saveToHistoryManual()">
+                    <i class="fas fa-save"></i> Lưu mẫu
+                </button>
+            </div>
         </div>
-
-        <input type="text" id="admFullName" class="form-control" placeholder="Tên chủ TK (Tự động điền khi kiểm tra)">
-        
-        <select id="admStatus" class="form-control">
-            <option value="active">🟢 Hiển thị (Active)</option>
-            <option value="maintenance">🔴 Bảo trì</option>
-        </select>
     </div>
 
-    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-        <button class="btn-action" id="btnSaveBank" onclick="saveBankToFirebase()">
-            <i class="fas fa-save"></i> Lưu Ngân Hàng
-        </button>
-        <button class="btn-action btn-secondary" id="btnCancelEdit" onclick="cancelEditBank()" style="display: none; width: auto;">Hủy</button>
+    <!-- History Section -->
+    <div class="history-section">
+        <div class="history-title">
+            <span><i class="fas fa-history"></i> Lịch sử tạo gần đây</span>
+            <button onclick="clearHistory()" style="border:none; background:none; color:var(--danger); cursor:pointer; font-size:0.8rem;">Xóa lịch sử</button>
+        </div>
+        <div class="history-list" id="historyList">
+            <div style="width:100%; text-align:center; color:var(--text-muted); padding:20px;">Chưa có lịch sử giao dịch.</div>
+        </div>
     </div>
 
-    <!-- DANH SÁCH -->
-    <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-        <thead style="background: var(--bg-input);">
-            <tr>
-                <th style="padding: 10px; text-align: left;">Ngân hàng</th>
-                <th style="padding: 10px; text-align: left;">Chi tiết</th>
-                <th style="padding: 10px; text-align: right;">Thao tác</th>
-            </tr>
-        </thead>
-        <tbody id="adminTableBody"></tbody>
-    </table>
+    <!-- ADMIN PANEL (Hidden) -->
+    <div id="adminPanel">
+        <h3 style="color: var(--primary); margin-bottom: 15px;">Quản Trị Hệ Thống</h3>
+        <div class="admin-controls">
+            <select id="admBankSelect" class="form-control" style="grid-column: span 2;"></select>
+            <input type="text" id="admAccNum" class="form-control" placeholder="Số TK">
+            <input type="text" id="admFullName" class="form-control" placeholder="Tên Chủ TK (HOA)">
+            <select id="admStatus" class="form-control">
+                <option value="active">Hiển thị</option>
+                <option value="maintenance">Bảo trì (Ẩn)</option>
+            </select>
+            <button class="btn-main" onclick="saveBankToFirebase()" style="grid-column: span 2; margin-top: 0;">Lưu / Cập Nhật</button>
+        </div>
+        <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse: collapse; font-size: 0.9rem;" id="adminTable">
+                <thead><tr style="background:#eee; text-align:left;"><th style="padding:8px;">Bank</th><th style="padding:8px;">STK</th><th style="padding:8px;">Action</th></tr></thead>
+                <tbody id="adminTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Hidden Canvas for Download Generation -->
+    <canvas id="exportCanvas" style="display: none;"></canvas>
 </div>
 
 <!-- SCRIPTS -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<!-- html2canvas for smart download -->
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
 <script>
-    /* ============================================================
-       CẤU HÌNH API - THAY ĐỔI THÔNG TIN CỦA BẠN TẠI ĐÂY
-    ============================================================ */
-    // 1. Firebase Config
+    /* ================= CONFIG ================= */
     const firebaseConfig = {
         apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
         authDomain: "profile-d1214.firebaseapp.com",
         projectId: "profile-d1214",
         storageBucket: "profile-d1214.firebasestorage.app",
         messagingSenderId: "914980131889",
-        appId: "1:914980131889:web:72f8da15c42dbee671b110"
+        appId: "1:914980131889:web:72f8da15c42dbee671b110",
+        measurementId: "G-C587M69LZW"
     };
-
-    // 2. VietQR API Keys (Đăng ký tại my.vietqr.io để lấy)
-    // Nếu chưa có, tính năng "Kiểm tra tên" sẽ báo lỗi.
-    const VIETQR_CLIENT_ID = "493f6415-eafb-45f3-9e33-ec2f95f4deae"; 
-    const VIETQR_API_KEY = "140e9860-5b03-4a8d-aa15-6ba79bef92ce"; 
-
-    // 3. Admin Config
-    const ADMIN_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1";
-
-    /* ============================================================ */
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const auth = firebase.auth();
     const provider = new firebase.auth.GoogleAuthProvider();
+    const ADMIN_UID = "VYIs9XHLR9RMStwtcdwMrOIo33w1";
 
     let USER_BANKS = [];
     let API_BANKS_LIST = [];
     let currentBank = null;
-    let editingBankId = null;
-    let qrBlobUrl = null;
+    let currentTemplate = 'compact2';
+    let editId = null;
 
-    // --- INIT ---
-    document.addEventListener('DOMContentLoaded', async () => {
-        initTheme();
-        await fetchVietQRBanks();
+    /* ================= INITIALIZATION ================= */
+    document.addEventListener('DOMContentLoaded', () => {
+        loadTheme();
+        loadHistory();
+        fetchVietQRBanks();
         listenFirebaseBanks();
     });
 
-    // --- THEME ---
-    function initTheme() {
-        const theme = localStorage.getItem('theme') || 'light';
-        document.documentElement.setAttribute('data-theme', theme);
-        document.getElementById('themeIcon').className = theme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
-    }
+    /* ================= THEME & UI ================= */
     function toggleTheme() {
-        const cur = document.documentElement.getAttribute('data-theme');
-        const next = cur === 'light' ? 'dark' : 'light';
-        document.documentElement.setAttribute('data-theme', next);
-        localStorage.setItem('theme', next);
-        document.getElementById('themeIcon').className = next === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+        const body = document.body;
+        const icon = document.getElementById('themeIcon');
+        const isDark = body.getAttribute('data-theme') === 'dark';
+        
+        if (isDark) {
+            body.setAttribute('data-theme', 'light');
+            icon.className = 'fas fa-moon';
+            localStorage.setItem('theme', 'light');
+        } else {
+            body.setAttribute('data-theme', 'dark');
+            icon.className = 'fas fa-sun';
+            localStorage.setItem('theme', 'dark');
+        }
     }
 
-    // --- DATA HANDLING ---
+    function loadTheme() {
+        const saved = localStorage.getItem('theme');
+        if (saved === 'dark') {
+            document.body.setAttribute('data-theme', 'dark');
+            document.getElementById('themeIcon').className = 'fas fa-sun';
+        }
+    }
+
+    function toggleTools() {
+        document.getElementById('splitTools').classList.toggle('show');
+    }
+
+    /* ================= LOGIC BANK & QR ================= */
     async function fetchVietQRBanks() {
         try {
             const res = await fetch('https://api.vietqr.io/v2/banks');
             const data = await res.json();
-            if(data.code === "00") {
+            if (data.code === "00") {
                 API_BANKS_LIST = data.data;
-                populateAdminDropdown();
+                populateAdminSelect();
             }
-        } catch(e) { console.error(e); }
+        } catch (e) { console.error(e); }
     }
 
     function listenFirebaseBanks() {
         db.collection("banks").orderBy("createdAt", "desc").onSnapshot(snap => {
             USER_BANKS = [];
             snap.forEach(doc => USER_BANKS.push({id: doc.id, ...doc.data()}));
-            document.getElementById('initialLoading').style.display = 'none';
             renderBankGrid();
-            loadAdminTable();
-            if(!currentBank && USER_BANKS.length) {
-                const active = USER_BANKS.find(b => b.status === 'active');
-                if(active) selectBank(active.id);
+            renderAdminTable();
+            
+            // Auto select first active bank
+            if (!currentBank && USER_BANKS.length > 0) {
+                const first = USER_BANKS.find(b => b.status === 'active');
+                if (first) selectBank(first.id);
             }
         });
     }
 
-    // --- UI RENDER ---
-    function renderBankGrid(filter = "") {
+    function renderBankGrid() {
         const grid = document.getElementById('bankGrid');
         grid.innerHTML = '';
-        const list = filter ? USER_BANKS.filter(b => b.shortName.toLowerCase().includes(filter.toLowerCase())) : USER_BANKS;
         
-        list.forEach(bank => {
+        // Sort: Active first
+        const sorted = [...USER_BANKS].sort((a,b) => (a.status === 'active' ? -1 : 1));
+
+        sorted.forEach(bank => {
             const div = document.createElement('div');
-            const activeClass = (currentBank && currentBank.id === bank.id) ? 'active' : '';
-            div.className = `bank-item ${activeClass}`;
-            div.onclick = () => selectBank(bank.id);
-            div.innerHTML = `<img src="${bank.logo}">`;
+            const isMaintenance = bank.status !== 'active';
+            div.className = `bank-item ${isMaintenance ? 'disabled' : ''} ${currentBank?.id === bank.id ? 'active' : ''}`;
+            div.innerHTML = `
+                <div class="bank-status ${isMaintenance ? 'st-off' : 'st-on'}">${isMaintenance ? 'Bảo trì' : 'Active'}</div>
+                <img src="${bank.logo}" alt="${bank.shortName}">
+            `;
+            if (!isMaintenance) div.onclick = () => selectBank(bank.id);
             grid.appendChild(div);
         });
     }
 
-    function filterBanks() { renderBankGrid(document.getElementById('bankSearch').value); }
-
     function selectBank(id) {
         const bank = USER_BANKS.find(b => b.id === id);
-        if(!bank) return;
+        if (!bank) return;
         currentBank = bank;
-        renderBankGrid(document.getElementById('bankSearch').value);
-        
-        document.getElementById('selectedBankName').innerText = bank.shortName + " - " + bank.name;
+        renderBankGrid(); // update active class
+
+        // Update Form
+        document.getElementById('selectedBankDisplay').innerText = `${bank.shortName} - ${bank.name}`;
         document.getElementById('accountNumber').value = bank.acc;
         document.getElementById('fullName').value = bank.fullName;
         
-        if(document.getElementById('amount').value) generateQR();
+        // Update Preview Text
+        document.getElementById('bankNamePreview').innerText = bank.shortName;
+        document.getElementById('logoPreview').src = bank.logo;
+        document.getElementById('namePreview').innerText = bank.fullName;
+        document.getElementById('accPreview').innerText = bank.acc;
+        
+        if (document.getElementById('amount').value) generateQR();
     }
 
-    // --- QR GENERATE ---
-    async function generateQR() {
-        if(!currentBank) return showToast("Chọn ngân hàng trước!", "error");
+    function generateQR() {
+        if (!currentBank) return Swal.fire('Thông báo', 'Vui lòng chọn ngân hàng trước', 'info');
         
-        const amount = parseInt(document.getElementById('amount').value.replace(/,/g, ''));
-        if(!amount) return showToast("Nhập số tiền!", "warning");
+        const rawAmount = document.getElementById('amount').value.replace(/,/g, '');
+        const amount = parseInt(rawAmount);
+        const content = document.getElementById('transferContent').value || "Chuyen khoan";
 
+        if (!amount || amount < 1000) {
+            return Swal.fire({toast: true, position: 'top', icon: 'warning', title: 'Số tiền tối thiểu 1.000đ', showConfirmButton: false, timer: 1500});
+        }
+
+        // UI Loading
         const loader = document.getElementById('qrLoader');
         const img = document.getElementById('qrImage');
-        const ph = document.getElementById('qrPlaceholder');
-        const btn = document.getElementById('btnDownload');
-        
-        loader.style.display = 'flex';
+        const placeholder = document.getElementById('qrPlaceholder');
+        const actions = document.getElementById('resultActions');
+
+        loader.style.display = 'block';
         img.style.display = 'none';
-        ph.style.display = 'none';
-        btn.style.display = 'none';
+        placeholder.style.display = 'none';
+        actions.style.opacity = 0.5;
+        actions.style.pointerEvents = 'none';
 
-        const content = document.getElementById('transferContent').value;
-        const url = `https://img.vietqr.io/image/${currentBank.code}-${currentBank.acc}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(content)}&accountName=${encodeURIComponent(currentBank.fullName)}`;
+        // Update Text Preview
+        document.getElementById('amountPreview').innerText = amount.toLocaleString('vi-VN') + ' VND';
+        document.getElementById('contentPreview').innerText = content;
 
-        try {
-            const res = await fetch(url);
-            const blob = await res.blob();
-            qrBlobUrl = URL.createObjectURL(blob);
-            img.src = qrBlobUrl;
-            img.onload = () => {
-                loader.style.display = 'none';
-                img.style.display = 'block';
-                img.classList.add('loaded');
-                btn.style.display = 'flex';
-            }
-        } catch(e) {
+        // API Call
+        const url = `https://img.vietqr.io/image/${currentBank.code}-${currentBank.acc}-${currentTemplate}.jpg?amount=${amount}&addInfo=${encodeURIComponent(content)}&accountName=${encodeURIComponent(currentBank.fullName)}`;
+
+        // Preload Image
+        const newImg = new Image();
+        newImg.crossOrigin = "Anonymous";
+        newImg.onload = function() {
+            img.src = this.src;
             loader.style.display = 'none';
-            ph.style.display = 'block';
-            showToast("Lỗi tải QR", "error");
+            img.style.display = 'block';
+            actions.style.opacity = 1;
+            actions.style.pointerEvents = 'auto';
+            
+            // Auto save to history
+            addToHistory(currentBank.shortName, amount, content);
+        };
+        newImg.onerror = function() {
+            loader.style.display = 'none';
+            placeholder.innerHTML = '<span style="color:red">Lỗi tạo QR</span>';
+            placeholder.style.display = 'flex';
+        };
+        newImg.src = url;
+    }
+
+    /* ================= UTILITIES ================= */
+    function formatCurrency(input) {
+        let val = input.value.replace(/\D/g, '');
+        input.value = val ? parseInt(val).toLocaleString('en-US') : '';
+    }
+
+    function setAmount(val) {
+        document.getElementById('amount').value = val.toLocaleString('en-US');
+        generateQR();
+    }
+
+    function selectTemplate(tpl, el) {
+        currentTemplate = tpl;
+        document.querySelectorAll('.tpl-item').forEach(i => i.classList.remove('active'));
+        el.classList.add('active');
+        if (document.getElementById('amount').value) generateQR();
+    }
+
+    function copyToClipboard(id) {
+        const val = document.getElementById(id).value;
+        if(val) {
+            navigator.clipboard.writeText(val);
+            Swal.fire({toast:true, position:'top-end', icon:'success', title:'Đã sao chép', timer:1000, showConfirmButton:false});
         }
     }
 
-    function downloadQR() {
-        if(!qrBlobUrl) return;
-        const a = document.createElement('a');
-        a.href = qrBlobUrl;
-        a.download = `QR_${currentBank.shortName}.png`;
-        a.click();
+    function calculateSplit() {
+        const total = parseFloat(document.getElementById('splitTotal').value) || 0;
+        const people = parseFloat(document.getElementById('splitPeople').value) || 1;
+        const result = Math.ceil(total / people);
+        
+        document.getElementById('splitResult').innerText = result.toLocaleString('en-US') + ' đ';
+        if (result > 0) {
+            document.getElementById('amount').value = result.toLocaleString('en-US');
+        }
     }
 
-    // --- ADMIN & LOOKUP FEATURE (TÍNH NĂNG MỚI) ---
-    auth.onAuthStateChanged(user => {
-        const isAdm = user && user.uid === ADMIN_UID;
-        document.getElementById('btnLogin').style.display = isAdm ? 'none' : 'flex';
-        document.getElementById('btnLogout').style.display = isAdm ? 'flex' : 'none';
-        document.getElementById('adminPanel').style.display = isAdm ? 'block' : 'none';
-    });
+    /* ================= HISTORY SYSTEM ================= */
+    function addToHistory(bankName, amount, content) {
+        let history = JSON.parse(localStorage.getItem('qr_history') || '[]');
+        const newItem = {
+            bank: bankName,
+            amount: amount,
+            content: content,
+            date: new Date().toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'}) + ' ' + new Date().toLocaleDateString('vi-VN')
+        };
+        
+        // Add to top, max 10 items
+        history.unshift(newItem);
+        if(history.length > 10) history.pop();
+        
+        localStorage.setItem('qr_history', JSON.stringify(history));
+        loadHistory();
+    }
 
-    function handleLogin() { auth.signInWithPopup(provider); }
-    function handleLogout() { auth.signOut(); }
+    function loadHistory() {
+        const list = document.getElementById('historyList');
+        const history = JSON.parse(localStorage.getItem('qr_history') || '[]');
+        
+        if (history.length === 0) {
+            list.innerHTML = '<div style="width:100%; text-align:center; color:var(--text-muted); padding:10px;">Chưa có lịch sử.</div>';
+            return;
+        }
 
-    function populateAdminDropdown() {
-        const sel = document.getElementById('admBankSelect');
-        API_BANKS_LIST.sort((a,b) => a.shortName.localeCompare(b.shortName));
-        API_BANKS_LIST.forEach(b => {
-            const opt = document.createElement('option');
-            opt.value = b.id;
-            opt.text = `${b.shortName} - ${b.name}`;
-            sel.appendChild(opt);
+        list.innerHTML = '';
+        history.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'hist-item';
+            div.innerHTML = `
+                <div class="hist-bank">${item.bank}</div>
+                <div class="hist-amount">${parseInt(item.amount).toLocaleString('en-US')} đ</div>
+                <div class="hist-date">${item.date}</div>
+                <div style="font-size:0.8rem; color:#666; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">${item.content}</div>
+            `;
+            div.onclick = () => {
+                document.getElementById('amount').value = parseInt(item.amount).toLocaleString('en-US');
+                document.getElementById('transferContent').value = item.content;
+                generateQR();
+            };
+            list.appendChild(div);
         });
     }
+    
+    function clearHistory() {
+        localStorage.removeItem('qr_history');
+        loadHistory();
+    }
+    
+    function saveToHistoryManual() {
+        if(!currentBank) return;
+        const amount = document.getElementById('amount').value.replace(/,/g, '');
+        if(!amount) return;
+        addToHistory(currentBank.shortName, amount, document.getElementById('transferContent').value);
+        Swal.fire({toast:true, position:'bottom', icon:'success', title:'Đã lưu vào lịch sử', timer:1500});
+    }
 
-    // 🚀 HÀM TRA CỨU TÀI KHOẢN NGÂN HÀNG (LOOKUP)
-    async function lookupBankAccount() {
-        const bankId = document.getElementById('admBankSelect').value;
-        const accNum = document.getElementById('admAccNum').value;
-        const btn = document.getElementById('btnLookup');
-
-        if (!bankId || !accNum) {
-            return showToast("Vui lòng chọn ngân hàng và nhập số TK!", "warning");
-        }
-
-        if (VIETQR_CLIENT_ID === "YOUR_CLIENT_ID_HERE") {
-            return Swal.fire("Thiếu API Key", "Vui lòng cập nhật Client ID và API Key trong code để sử dụng tính năng này!", "error");
-        }
-
-        const selectedBank = API_BANKS_LIST.find(b => b.id == bankId);
+    /* ================= ADVANCED DOWNLOAD & SHARE ================= */
+    async function downloadSmartCard() {
+        const captureArea = document.getElementById('captureArea');
         
-        // UI Loading
-        btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px;"></div> Đang tra cứu...';
-        btn.disabled = true;
-
         try {
-            const response = await fetch("https://api.vietqr.io/v2/lookup", {
-                method: "POST",
-                headers: {
-                    "x-client-id": VIETQR_CLIENT_ID,
-                    "x-api-key": VIETQR_API_KEY,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    bin: selectedBank.bin,
-                    accountNumber: accNum,
-                }),
+            // Using html2canvas to capture the styled div
+            const canvas = await html2canvas(captureArea, {
+                scale: 2, // High resolution
+                useCORS: true,
+                backgroundColor: null // Transparent logic handled by CSS
             });
-
-            const data = await response.json();
             
-            if (data.code === "00") {
-                // Thành công
-                document.getElementById('admFullName').value = data.data.accountName;
-                showToast(`Đã tìm thấy: ${data.data.accountName}`, "success");
-                Swal.fire("Thành công", `Chủ tài khoản: <b>${data.data.accountName}</b>`, "success");
-            } else {
-                // Thất bại (Sai số TK hoặc lỗi Bank)
-                showToast("Không tìm thấy thông tin tài khoản!", "error");
-                Swal.fire("Lỗi", data.desc || "Không kiểm tra được tài khoản này.", "error");
-            }
-
-        } catch (error) {
-            console.error(error);
-            showToast("Lỗi kết nối API", "error");
-        } finally {
-            btn.innerHTML = '<i class="fas fa-search-dollar"></i> Kiểm tra tên';
-            btn.disabled = false;
+            const link = document.createElement('a');
+            link.download = `QR_${currentBank.shortName}_${new Date().getTime()}.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+        } catch (err) {
+            Swal.fire("Lỗi tải ảnh", "Không thể tạo ảnh. Hãy thử lại.", "error");
+            console.error(err);
         }
+    }
+
+    async function shareQR() {
+        if (!navigator.share) {
+            return Swal.fire("Thông báo", "Trình duyệt của bạn không hỗ trợ tính năng chia sẻ này.", "info");
+        }
+        
+        try {
+            const captureArea = document.getElementById('captureArea');
+            const canvas = await html2canvas(captureArea, { scale: 2, useCORS: true });
+            
+            canvas.toBlob(async (blob) => {
+                const file = new File([blob], "qr_transfer.png", { type: "image/png" });
+                await navigator.share({
+                    title: 'Thông tin chuyển khoản',
+                    text: `Chuyển khoản ${document.getElementById('amount').value} VND cho ${currentBank.fullName}`,
+                    files: [file]
+                });
+            });
+        } catch (err) {
+            console.log("Share failed or cancelled");
+        }
+    }
+
+    /* ================= ADMIN LOGIC ================= */
+    auth.onAuthStateChanged(user => {
+        const panel = document.getElementById('adminPanel');
+        const btnLogin = document.getElementById('btnLogin');
+        const btnLogout = document.getElementById('btnLogout');
+
+        if (user && user.uid === ADMIN_UID) {
+            panel.style.display = 'block';
+            btnLogin.style.display = 'none';
+            btnLogout.style.display = 'flex';
+        } else {
+            panel.style.display = 'none';
+            btnLogin.style.display = 'flex';
+            btnLogout.style.display = 'none';
+        }
+    });
+
+    function handleLogin() { auth.signInWithPopup(provider).catch(console.error); }
+    function handleLogout() { auth.signOut(); }
+
+    function populateAdminSelect() {
+        const sel = document.getElementById('admBankSelect');
+        sel.innerHTML = '<option value="">-- Chọn ngân hàng --</option>';
+        API_BANKS_LIST.sort((a,b) => a.shortName.localeCompare(b.shortName)).forEach(b => {
+            sel.innerHTML += `<option value="${b.id}">${b.shortName} - ${b.name}</option>`;
+        });
     }
 
     function saveBankToFirebase() {
         const bankId = document.getElementById('admBankSelect').value;
-        const accNum = document.getElementById('admAccNum').value;
-        const fullName = document.getElementById('admFullName').value;
-        
-        if(!bankId || !accNum || !fullName) return showToast("Điền đủ thông tin!", "warning");
+        const acc = document.getElementById('admAccNum').value;
+        const name = document.getElementById('admFullName').value;
+        const status = document.getElementById('admStatus').value;
 
-        const apiBank = API_BANKS_LIST.find(b => b.id == bankId);
-        const data = {
-            code: apiBank.code, bin: apiBank.bin, shortName: apiBank.shortName, 
-            name: apiBank.name, logo: apiBank.logo, acc: accNum, 
-            fullName: fullName.toUpperCase(), status: document.getElementById('admStatus').value,
-            ...(editingBankId ? {} : {createdAt: firebase.firestore.FieldValue.serverTimestamp()})
+        if(!bankId || !acc || !name) return Swal.fire('Thiếu tin', 'Điền đủ thông tin!', 'warning');
+        
+        const apiData = API_BANKS_LIST.find(b => b.id == bankId);
+        const payload = {
+            code: apiData.code,
+            bin: apiData.bin,
+            shortName: apiData.shortName,
+            name: apiData.name,
+            logo: apiData.logo,
+            acc: acc,
+            fullName: name.toUpperCase(),
+            status: status,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
-        const promise = editingBankId 
-            ? db.collection("banks").doc(editingBankId).update(data)
-            : db.collection("banks").add(data);
-
-        promise.then(() => {
-            showToast("Đã lưu thành công!", "success");
-            cancelEditBank();
-        }).catch(e => showToast(e.message, "error"));
+        const p = editId ? db.collection("banks").doc(editId).update(payload) : db.collection("banks").add(payload);
+        
+        p.then(() => {
+            Swal.fire('Thành công', 'Đã lưu dữ liệu', 'success');
+            clearAdminForm();
+        }).catch(e => Swal.fire('Lỗi', e.message, 'error'));
     }
 
-    function loadAdminTable() {
+    function renderAdminTable() {
         const tb = document.getElementById('adminTableBody');
         tb.innerHTML = '';
         USER_BANKS.forEach(b => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td style="padding:10px;"><img src="${b.logo}" width="30"> ${b.shortName}</td>
-                <td style="padding:10px;">${b.acc}<br><b>${b.fullName}</b></td>
-                <td style="padding:10px; text-align:right;">
-                    <button class="btn-secondary" onclick="startEdit('${b.id}')"><i class="fas fa-edit"></i></button>
-                    <button class="btn-secondary" style="background:var(--danger)" onclick="delBank('${b.id}')"><i class="fas fa-trash"></i></button>
-                </td>
+            tb.innerHTML += `
+                <tr style="border-bottom:1px solid #eee;">
+                    <td style="padding:8px;">${b.shortName}</td>
+                    <td style="padding:8px;">${b.acc}</td>
+                    <td style="padding:8px;">
+                        <button onclick="editBank('${b.id}')" style="margin-right:5px;cursor:pointer;">✏️</button>
+                        <button onclick="deleteBank('${b.id}')" style="color:red;cursor:pointer;">🗑️</button>
+                    </td>
+                </tr>
             `;
-            tb.appendChild(tr);
         });
     }
 
-    function startEdit(id) {
-        editingBankId = id;
+    function editBank(id) {
         const b = USER_BANKS.find(x => x.id === id);
-        const apiB = API_BANKS_LIST.find(x => x.bin === b.bin);
-        if(apiB) document.getElementById('admBankSelect').value = apiB.id;
+        editId = id;
+        const apiMatch = API_BANKS_LIST.find(x => x.bin === b.bin || x.code === b.code);
+        if(apiMatch) document.getElementById('admBankSelect').value = apiMatch.id;
         document.getElementById('admAccNum').value = b.acc;
         document.getElementById('admFullName').value = b.fullName;
         document.getElementById('admStatus').value = b.status;
-        document.getElementById('btnSaveBank').innerHTML = "Cập nhật";
-        document.getElementById('btnCancelEdit').style.display = 'inline-flex';
         document.getElementById('adminPanel').scrollIntoView({behavior:'smooth'});
     }
 
-    function cancelEditBank() {
-        editingBankId = null;
-        document.getElementById('admBankSelect').value = "";
-        document.getElementById('admAccNum').value = "";
-        document.getElementById('admFullName').value = "";
-        document.getElementById('btnSaveBank').innerHTML = '<i class="fas fa-save"></i> Lưu Ngân Hàng';
-        document.getElementById('btnCancelEdit').style.display = 'none';
+    function deleteBank(id) {
+        if(confirm("Xóa bank này?")) db.collection("banks").doc(id).delete();
     }
 
-    function delBank(id) {
-        if(confirm("Xóa ngân hàng này?")) db.collection("banks").doc(id).delete();
+    function clearAdminForm() {
+        editId = null;
+        document.getElementById('admAccNum').value = '';
+        document.getElementById('admFullName').value = '';
     }
 
-    function formatCurrency(el) {
-        let v = el.value.replace(/\D/g, '');
-        el.value = v ? parseInt(v).toLocaleString('en-US') : '';
-    }
-    
-    function showToast(msg, type="info") {
-        Toastify({
-            text: msg, duration: 3000, gravity: "top", position: "right",
-            backgroundColor: type==="success"?"#1cc88a":(type==="error"?"#e74a3b":"#4e73df")
-        }).showToast();
-    }
 </script>
 </body>
 </html>
