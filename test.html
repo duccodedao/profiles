@@ -4,122 +4,241 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web3Modal - Connect 500+ Wallets</title>
+    <title>Auto Detect All Wallets (Zero Errors)</title>
     <style>
         body {
-            background-color: #141414;
-            color: white;
+            background-color: #121212;
+            color: #ffffff;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 50px 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
         }
 
-        .header-box {
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: #1e1e1e;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid #333;
+        }
+
+        h2 { text-align: center; margin-bottom: 5px; color: #4facfe; }
+        p.subtitle { text-align: center; color: #888; margin-bottom: 30px; font-size: 14px; }
+
+        .wallet-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .wallet-btn {
+            background-color: #2a2a2a;
+            border: 1px solid #444;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .wallet-btn:hover {
+            background-color: #333;
+            border-color: #4facfe;
+            transform: translateY(-2px);
+        }
+
+        .wallet-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .wallet-icon {
+            width: 35px;
+            height: 35px;
+            border-radius: 8px;
+            object-fit: contain;
+        }
+
+        /* Vùng hiển thị sau khi kết nối */
+        #connected-area {
+            display: none;
             text-align: center;
-            margin-bottom: 40px;
+            animation: fadeIn 0.5s;
         }
 
-        .header-box h1 {
-            background: -webkit-linear-gradient(#4facfe, #00f2fe);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .address-box {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            padding: 15px;
+            border-radius: 10px;
+            color: #58a6ff;
+            font-family: monospace;
+            font-size: 16px;
+            margin: 20px 0;
+            word-break: break-all;
         }
 
-        /* Tùy chỉnh nút của Web3Modal một chút nếu cần */
-        w3m-button {
-            transform: scale(1.2); /* Phóng to nút mặc định */
+        .disconnect-btn {
+            background: #da3633;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 15px;
+        }
+
+        .disconnect-btn:hover { background: #b32d2a; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        #empty-msg {
+            text-align: center;
+            color: #f39c12;
+            padding: 20px;
+            background: rgba(243, 156, 18, 0.1);
+            border-radius: 8px;
+            display: none;
         }
     </style>
 </head>
 <body>
 
-    <div class="header-box">
-        <h1>Cổng Kết Nối Đa Ví Web3</h1>
-        <p style="color: #888;">Hỗ trợ MetaMask, Trust, Binance, OKX, Bitget, QR Code Mobile và 500+ ví khác</p>
+    <div class="container">
+        <!-- Vùng Danh sách Ví -->
+        <div id="selection-area">
+            <h2>Kết Nối Ví Web3</h2>
+            <p class="subtitle">Tự động phát hiện mọi ví Extension trên trình duyệt</p>
+            
+            <div id="empty-msg">
+                Đang quét... Nếu không thấy gì, vui lòng cài đặt ít nhất 1 ví extension (MetaMask, OKX, Trust...) vào trình duyệt và tải lại trang.
+            </div>
+
+            <div class="wallet-list" id="wallet-container">
+                <!-- Javascript sẽ tự động thêm ví vào đây -->
+            </div>
+        </div>
+
+        <!-- Vùng Đã Kết Nối -->
+        <div id="connected-area">
+            <h2 id="connected-name">Đã kết nối MetaMask</h2>
+            <img id="connected-icon" src="" style="width: 60px; height: 60px; border-radius: 12px; margin-top: 10px;">
+            <div class="address-box" id="wallet-address">0x...</div>
+            <button class="disconnect-btn" onclick="disconnectWallet()">Ngắt kết nối</button>
+        </div>
     </div>
 
-    <!-- Đây là NÚT THẦN KỲ của Web3Modal. Nó sẽ tự động biến đổi khi đã kết nối -->
-    <w3m-button></w3m-button>
+    <script>
+        // Mảng lưu trữ tất cả các ví mà trình duyệt tìm thấy
+        let detectedWallets = [];
 
-    <!-- Nạp thư viện Web3Modal thông qua ES Modules -->
-    <script type="module">
-        // Import thư viện từ CDN esm.sh (Hỗ trợ tốt ES Module trên trình duyệt)
-        import { createWeb3Modal, defaultConfig } from 'https://esm.sh/@web3modal/ethers5@4.1.1';
-
-        // =====================================================================
-        // ⚠️ QUAN TRỌNG: BẠN PHẢI THAY MÃ PROJECT ID CỦA BẠN VÀO ĐÂY
-        // Lấy miễn phí tại: https://cloud.walletconnect.com/
-        // =====================================================================
-        const projectId = '8151f1532050e0dcf4daeb6baf32f507'; // <-- Thay bằng Project ID của bạn
-        
-        // 1. Cấu hình các mạng lưới (Chains) bạn muốn hỗ trợ
-        const mainnet = {
-            chainId: 1,
-            name: 'Ethereum',
-            currency: 'ETH',
-            explorerUrl: 'https://etherscan.io',
-            rpcUrl: 'https://cloudflare-eth.com'
-        }
-
-        const bsc = {
-            chainId: 56,
-            name: 'BNB Smart Chain',
-            currency: 'BNB',
-            explorerUrl: 'https://bscscan.com',
-            rpcUrl: 'https://bsc-dataseed.binance.org/'
-        }
-
-        const polygon = {
-            chainId: 137,
-            name: 'Polygon',
-            currency: 'MATIC',
-            explorerUrl: 'https://polygonscan.com',
-            rpcUrl: 'https://polygon-rpc.com'
-        }
-
-        // 2. Cấu hình thông tin Website của bạn (Sẽ hiện lên trên điện thoại người dùng khi họ quét QR)
-        const metadata = {
-            name: 'Tên Website Của Bạn',
-            description: 'Mô tả DApp của bạn',
-            url: 'https://mywebsite.com', // Thay bằng domain của bạn
-            icons: ['https://avatars.githubusercontent.com/u/37784886'] // Logo website
-        }
-
-        // 3. Khởi tạo Web3Modal
-        const modal = createWeb3Modal({
-            ethersConfig: defaultConfig({ 
-                metadata,
-                defaultChainId: 1,
-                enableEIP6963: true, // Tự động phát hiện CÁC EXTENSION VÍ TẠI TRÌNH DUYỆT (Cực kỳ quan trọng)
-                enableInjected: true,
-                enableCoinbase: true,
-            }),
-            chains: [mainnet, bsc, polygon],
-            projectId,
-            themeMode: 'dark', // 'light' hoặc 'dark'
-            themeVariables: {
-                '--w3m-accent': '#4facfe', // Đổi màu chủ đạo của bảng chọn ví
-                '--w3m-border-radius-master': '2px'
+        // 1. Lắng nghe sự kiện EIP-6963 (Chuẩn mới nhất của Web3 để các ví tự báo cáo sự tồn tại của chúng)
+        window.addEventListener("eip6963:announceProvider", (event) => {
+            const providerDetail = event.detail;
+            
+            // Tránh trùng lặp nếu ví báo cáo nhiều lần
+            const exists = detectedWallets.find(w => w.info.uuid === providerDetail.info.uuid);
+            if (!exists) {
+                detectedWallets.push(providerDetail);
+                renderWallets();
             }
         });
 
-        // 4. (Tùy chọn) Lắng nghe sự kiện khi người dùng kết nối thành công để lấy địa chỉ ví làm logic tiếp theo
-        modal.subscribeEvents(event => {
-            console.log("Web3Modal Event:", event);
-        });
+        // 2. Phát tín hiệu yêu cầu các ví đang cài trên máy "lên tiếng"
+        window.dispatchEvent(new Event("eip6963:requestProvider"));
 
-        modal.subscribeProvider(state => {
-            if (state.address) {
-                console.log("Đã kết nối ví! Địa chỉ:", state.address);
-                console.log("Mạng lưới hiện tại (Chain ID):", state.chainId);
-            } else {
-                console.log("Đã ngắt kết nối.");
+        // 3. Hiển thị các ví tìm được ra giao diện
+        function renderWallets() {
+            const container = document.getElementById('wallet-container');
+            const emptyMsg = document.getElementById('empty-msg');
+            
+            container.innerHTML = ''; // Xóa rỗng để vẽ lại
+
+            if (detectedWallets.length === 0) {
+                emptyMsg.style.display = 'block';
+                return;
             }
-        });
+
+            emptyMsg.style.display = 'none';
+
+            detectedWallets.forEach((wallet) => {
+                // Ví tự cung cấp Tên (wallet.info.name) và Icon (wallet.info.icon)
+                const btnHTML = `
+                    <button class="wallet-btn" onclick="connectWallet('${wallet.info.uuid}')">
+                        <div class="wallet-info">
+                            <img src="${wallet.info.icon}" class="wallet-icon" alt="${wallet.info.name}">
+                            <span>${wallet.info.name}</span>
+                        </div>
+                        <span style="color: #4facfe;">Kết nối &rarr;</span>
+                    </button>
+                `;
+                container.innerHTML += btnHTML;
+            });
+        }
+
+        // 4. Xử lý khi bấm nút Kết nối
+        async function connectWallet(uuid) {
+            // Tìm đúng ví dựa vào UUID
+            const wallet = detectedWallets.find(w => w.info.uuid === uuid);
+            if (!wallet) return;
+
+            try {
+                // Gọi hàm eth_requestAccounts để xin quyền kết nối
+                const accounts = await wallet.provider.request({ method: 'eth_requestAccounts' });
+                const address = accounts[0];
+
+                // Hiển thị UI thành công
+                showConnectedUI(wallet.info, address);
+
+            } catch (error) {
+                console.error("Lỗi kết nối:", error);
+                if (error.code === 4001) {
+                    alert("Bạn đã từ chối yêu cầu kết nối trên ví!");
+                } else {
+                    alert("Có lỗi xảy ra: " + error.message);
+                }
+            }
+        }
+
+        // 5. Cập nhật Giao diện Đã kết nối
+        function showConnectedUI(walletInfo, address) {
+            document.getElementById('selection-area').style.display = 'none';
+            document.getElementById('connected-area').style.display = 'block';
+
+            document.getElementById('connected-name').innerText = `Đã kết nối: ${walletInfo.name}`;
+            document.getElementById('connected-icon').src = walletInfo.icon;
+            
+            // Rút gọn địa chỉ cho đẹp (vd: 0x1234...abcd)
+            // const shortAddress = address.slice(0, 6) + "..." + address.slice(-4);
+            // In ra full địa chỉ theo yêu cầu của bạn:
+            document.getElementById('wallet-address').innerText = address;
+        }
+
+        // 6. Nút Ngắt kết nối (Chỉ là ẩn UI đi, Web3 không có hàm disconnect từ phía web)
+        function disconnectWallet() {
+            document.getElementById('selection-area').style.display = 'block';
+            document.getElementById('connected-area').style.display = 'none';
+        }
+
+        // Xử lý trường hợp load trang 1 giây mà chưa quét được ví nào (Do chưa cài extension)
+        setTimeout(() => {
+            if (detectedWallets.length === 0) {
+                document.getElementById('empty-msg').style.display = 'block';
+            }
+        }, 1000);
+
     </script>
 </body>
 </html>
