@@ -1,298 +1,125 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trình Chạy Code Đa Thiết Bị</title>
+    <title>Web3Modal - Connect 500+ Wallets</title>
     <style>
-        /* --- CSS CHUNG --- */
-        :root {
-            --bg-color: #1e1e2e;
-            --sidebar-bg: #282a36;
-            --text-color: #f8f8f2;
-            --accent-color: #bd93f9;
-            --border-color: #44475a;
-            --header-height: 60px;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
         body {
+            background-color: #141414;
+            color: white;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+            margin: 0;
         }
 
-        /* --- HEADER --- */
-        header {
-            height: var(--header-height);
-            background-color: var(--sidebar-bg);
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 20px;
+        .header-box {
+            text-align: center;
+            margin-bottom: 40px;
         }
 
-        .logo { font-size: 1.2rem; font-weight: bold; color: var(--accent-color); }
-        .logo span { color: white; }
-
-        .run-btn {
-            background-color: #50fa7b;
-            color: #282a36;
-            border: none;
-            padding: 8px 20px;
-            border-radius: 5px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 5px;
+        .header-box h1 {
+            background: -webkit-linear-gradient(#4facfe, #00f2fe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        .run-btn:hover { background-color: #40d66d; transform: scale(1.05); }
-
-        /* --- LAYOUT CHÍNH --- */
-        .main-container {
-            display: flex;
-            height: calc(100vh - var(--header-height));
+        /* Tùy chỉnh nút của Web3Modal một chút nếu cần */
+        w3m-button {
+            transform: scale(1.2); /* Phóng to nút mặc định */
         }
-
-        /* --- EDITOR (BÊN TRÁI) --- */
-        .editor-pane {
-            width: 40%;
-            display: flex;
-            flex-direction: column;
-            border-right: 1px solid var(--border-color);
-        }
-
-        .editor-header {
-            padding: 10px;
-            background: #191a21;
-            font-size: 0.9rem;
-            color: #8be9fd;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        #code-input {
-            width: 100%;
-            height: 100%;
-            background-color: var(--sidebar-bg);
-            color: #f8f8f2;
-            border: none;
-            padding: 15px;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 14px;
-            line-height: 1.5;
-            resize: none;
-            outline: none;
-        }
-
-        /* --- PREVIEW (BÊN PHẢI) --- */
-        .preview-pane {
-            width: 60%;
-            display: flex;
-            flex-direction: column;
-            background-color: #e4e4e4; /* Màu nền giả lập bàn làm việc */
-            position: relative;
-        }
-
-        /* Thanh công cụ thiết bị */
-        .device-toolbar {
-            height: 50px;
-            background: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 15px;
-            border-bottom: 1px solid #ddd;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-
-        .device-btn {
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            padding: 8px 15px;
-            border-radius: 8px;
-            color: #555;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-weight: 500;
-            transition: 0.2s;
-        }
-
-        .device-btn:hover { background-color: #f0f0f0; }
-        .device-btn.active { background-color: var(--accent-color); color: white; }
-
-        /* Vùng chứa iframe */
-        .iframe-wrapper {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center; /* Căn giữa thiết bị */
-            padding: 20px;
-            overflow: auto;
-        }
-
-        iframe {
-            background-color: white;
-            border: none;
-            transition: width 0.3s ease, height 0.3s ease, border-radius 0.3s ease;
-            box-shadow: 0 0 20px rgba(0,0,0,0.15);
-        }
-
-        /* Các chế độ thiết bị */
-        /* PC: Full chiều rộng có thể */
-        .mode-pc iframe {
-            width: 100%;
-            height: 100%;
-            border-radius: 0;
-            border: none;
-        }
-
-        /* Tablet (iPad Portrait) */
-        .mode-tablet iframe {
-            width: 768px;
-            height: 1024px;
-            max-height: 95%; /* Để không bị tràn màn hình */
-            border-radius: 20px;
-            border: 10px solid #333; /* Giả lập viền máy */
-        }
-
-        /* Mobile (iPhone) */
-        .mode-mobile iframe {
-            width: 375px;
-            height: 667px;
-            max-height: 95%;
-            border-radius: 30px;
-            border: 12px solid #333;
-            border-top-width: 40px; /* Tai thỏ */
-            border-bottom-width: 40px; /* Nút home ảo */
-        }
-
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="logo">⚡ Code<span>Runner</span></div>
-        <button class="run-btn" onclick="runCode()">
-            ▶ Chạy Code
-        </button>
-    </header>
-
-    <div class="main-container">
-        <!-- Khu vực nhập code -->
-        <div class="editor-pane">
-            <div class="editor-header">📝 Source Code (HTML/CSS/JS)</div>
-            <textarea id="code-input" placeholder="Dán code của bạn vào đây..." spellcheck="false">
-<!DOCTYPE html>
-<html>
-<head>
-<style>
-    body { 
-        font-family: sans-serif; 
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        text-align: center;
-        padding-top: 50px;
-        margin: 0;
-        height: 100vh;
-    }
-    .card {
-        background: rgba(255,255,255,0.2);
-        backdrop-filter: blur(10px);
-        padding: 20px;
-        border-radius: 15px;
-        display: inline-block;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        max-width: 90%;
-    }
-    button {
-        padding: 10px 20px;
-        border: none;
-        border-radius: 20px;
-        background: white;
-        color: #764ba2;
-        font-weight: bold;
-        cursor: pointer;
-        margin-top: 10px;
-    }
-    button:hover { transform: scale(1.05); }
-</style>
-</head>
-<body>
-    <div class="card">
-        <h1>Xin chào! 👋</h1>
-        <p>Đây là bản xem trước website của bạn.</p>
-        <p>Hãy thử đổi thiết bị xem sao!</p>
-        <button onclick="alert('Đã click!')">Click Me</button>
-    </div>
-</body>
-</html>
-            </textarea>
-        </div>
-
-        <!-- Khu vực xem trước -->
-        <div class="preview-pane">
-            <div class="device-toolbar">
-                <button class="device-btn active" onclick="setDevice('pc', this)">💻 PC</button>
-                <button class="device-btn" onclick="setDevice('tablet', this)">📟 Tablet</button>
-                <button class="device-btn" onclick="setDevice('mobile', this)">📱 Mobile</button>
-            </div>
-            
-            <div class="iframe-wrapper mode-pc" id="iframe-wrapper">
-                <iframe id="preview-frame"></iframe>
-            </div>
-        </div>
+    <div class="header-box">
+        <h1>Cổng Kết Nối Đa Ví Web3</h1>
+        <p style="color: #888;">Hỗ trợ MetaMask, Trust, Binance, OKX, Bitget, QR Code Mobile và 500+ ví khác</p>
     </div>
 
-    <script>
-        // Hàm chạy code
-        function runCode() {
-            const code = document.getElementById('code-input').value;
-            const iframe = document.getElementById('preview-frame');
-            
-            // Mở document của iframe để ghi nội dung
-            const iframeDoc = iframe.contentWindow.document;
-            iframeDoc.open();
-            iframeDoc.write(code);
-            iframeDoc.close();
+    <!-- Đây là NÚT THẦN KỲ của Web3Modal. Nó sẽ tự động biến đổi khi đã kết nối -->
+    <w3m-button></w3m-button>
+
+    <!-- Nạp thư viện Web3Modal thông qua ES Modules -->
+    <script type="module">
+        // Import thư viện từ CDN esm.sh (Hỗ trợ tốt ES Module trên trình duyệt)
+        import { createWeb3Modal, defaultConfig } from 'https://esm.sh/@web3modal/ethers5@4.1.1';
+
+        // =====================================================================
+        // ⚠️ QUAN TRỌNG: BẠN PHẢI THAY MÃ PROJECT ID CỦA BẠN VÀO ĐÂY
+        // Lấy miễn phí tại: https://cloud.walletconnect.com/
+        // =====================================================================
+        const projectId = '8151f1532050e0dcf4daeb6baf32f507'; // <-- Thay bằng Project ID của bạn
+        
+        // 1. Cấu hình các mạng lưới (Chains) bạn muốn hỗ trợ
+        const mainnet = {
+            chainId: 1,
+            name: 'Ethereum',
+            currency: 'ETH',
+            explorerUrl: 'https://etherscan.io',
+            rpcUrl: 'https://cloudflare-eth.com'
         }
 
-        // Hàm đổi thiết bị
-        function setDevice(type, btnElement) {
-            const wrapper = document.getElementById('iframe-wrapper');
-            
-            // Xóa hết class cũ
-            wrapper.classList.remove('mode-pc', 'mode-tablet', 'mode-mobile');
-            
-            // Thêm class mới tương ứng
-            wrapper.classList.add('mode-' + type);
-
-            // Cập nhật trạng thái nút bấm (Active)
-            const buttons = document.querySelectorAll('.device-btn');
-            buttons.forEach(btn => btn.classList.remove('active'));
-            btnElement.classList.add('active');
+        const bsc = {
+            chainId: 56,
+            name: 'BNB Smart Chain',
+            currency: 'BNB',
+            explorerUrl: 'https://bscscan.com',
+            rpcUrl: 'https://bsc-dataseed.binance.org/'
         }
 
-        // Tự động chạy code demo khi vừa tải trang
-        window.onload = runCode;
+        const polygon = {
+            chainId: 137,
+            name: 'Polygon',
+            currency: 'MATIC',
+            explorerUrl: 'https://polygonscan.com',
+            rpcUrl: 'https://polygon-rpc.com'
+        }
 
-        // (Tùy chọn) Cho phép ấn Ctrl + Enter để chạy
-        document.getElementById('code-input').addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.key === 'Enter') {
-                runCode();
+        // 2. Cấu hình thông tin Website của bạn (Sẽ hiện lên trên điện thoại người dùng khi họ quét QR)
+        const metadata = {
+            name: 'Tên Website Của Bạn',
+            description: 'Mô tả DApp của bạn',
+            url: 'https://mywebsite.com', // Thay bằng domain của bạn
+            icons: ['https://avatars.githubusercontent.com/u/37784886'] // Logo website
+        }
+
+        // 3. Khởi tạo Web3Modal
+        const modal = createWeb3Modal({
+            ethersConfig: defaultConfig({ 
+                metadata,
+                defaultChainId: 1,
+                enableEIP6963: true, // Tự động phát hiện CÁC EXTENSION VÍ TẠI TRÌNH DUYỆT (Cực kỳ quan trọng)
+                enableInjected: true,
+                enableCoinbase: true,
+            }),
+            chains: [mainnet, bsc, polygon],
+            projectId,
+            themeMode: 'dark', // 'light' hoặc 'dark'
+            themeVariables: {
+                '--w3m-accent': '#4facfe', // Đổi màu chủ đạo của bảng chọn ví
+                '--w3m-border-radius-master': '2px'
+            }
+        });
+
+        // 4. (Tùy chọn) Lắng nghe sự kiện khi người dùng kết nối thành công để lấy địa chỉ ví làm logic tiếp theo
+        modal.subscribeEvents(event => {
+            console.log("Web3Modal Event:", event);
+        });
+
+        modal.subscribeProvider(state => {
+            if (state.address) {
+                console.log("Đã kết nối ví! Địa chỉ:", state.address);
+                console.log("Mạng lưới hiện tại (Chain ID):", state.chainId);
+            } else {
+                console.log("Đã ngắt kết nối.");
             }
         });
     </script>
-
 </body>
 </html>
