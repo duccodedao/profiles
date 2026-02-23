@@ -3,17 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bmass Profile</title>
-    
+    <title>Profile Cá Nhân</title>
+
     <!-- SEO -->
-    <meta name="description" id="meta-desc" content="Profile cá nhân">
+    <meta name="description" id="meta-desc" content="Profile Info">
     <link rel="icon" id="meta-icon" href="https://hdd.io.vn/img/bmassloadings.png" type="image/png">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Profile Cá Nhân">
     <meta property="og:image" content="https://hdd.io.vn/img/bmasslogos.png">
     <meta name="theme-color" content="#6366f1">
-    
-    <!-- Tailwind & Libraries -->
+
+    <!-- CSS / Libs -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
@@ -26,15 +25,7 @@
             theme: { 
                 extend: { 
                     colors: { primary: '#6366f1', secondary: '#ec4899', dark: '#0f172a' },
-                    animation: { 'blob': 'blob 7s infinite', 'bounce-slow': 'bounce 2s infinite' },
-                    keyframes: {
-                        blob: {
-                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
-                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
-                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
-                            '100%': { transform: 'translate(0px, 0px) scale(1)' }
-                        }
-                    }
+                    animation: { 'bounce-slow': 'bounce 2s infinite' }
                 } 
             }
         }
@@ -44,313 +35,279 @@
         .dark body { background-color: #020617; color: #e2e8f0; }
         .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); }
         .dark .glass { background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.05); }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .dark ::-webkit-scrollbar-thumb { background: #334155; }
-        .sidebar-transition { transition: transform 0.3s ease-in-out; }
-        .reveal-on-scroll { opacity: 0; transform: translateY(30px); transition: all 0.8s cubic-bezier(0.5, 0, 0, 1); }
+        .sidebar { transform: translateX(-100%); transition: transform 0.3s ease-in-out; }
+        .sidebar.open { transform: translateX(0); }
+        .reveal-on-scroll { opacity: 0; transform: translateY(20px); transition: all 0.6s ease-out; }
         .reveal-on-scroll.active { opacity: 1; transform: translateY(0); }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
     </style>
 </head>
 <body class="min-h-screen relative overflow-x-hidden pb-10">
 
-    <!-- Background Blob -->
-    <div class="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
-        <div class="absolute top-0 left-1/4 w-96 h-96 bg-primary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
-        <div class="absolute top-0 right-1/4 w-96 h-96 bg-secondary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
-    </div>
-
     <!-- Loading -->
-    <div id="global-loading" class="fixed inset-0 bg-white dark:bg-slate-950 z-[900] flex flex-col items-center justify-center transition-opacity duration-300">
-        <img src="https://hdd.io.vn/img/bmassloadings.png" class="w-20 h-20 mb-4 animate-bounce-slow drop-shadow-2xl">
+    <div id="global-loading" class="fixed inset-0 bg-white dark:bg-slate-950 z-[999] flex flex-col items-center justify-center transition-opacity duration-500">
+        <img src="https://hdd.io.vn/img/bmassloadings.png" class="w-16 h-16 animate-bounce-slow">
     </div>
 
-    <!-- USB Input Hidden -->
+    <!-- Hidden USB Input -->
     <input type="file" id="usb-key-input" class="hidden" accept=".json,.txt">
 
-    <!-- HEADER / MENU BUTTON -->
-    <div class="fixed top-4 left-4 z-50">
-        <button onclick="window.toggleSidebar()" class="p-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur rounded-full shadow-lg border border-slate-200 dark:border-slate-700 hover:scale-105 transition">
-            <i data-lucide="menu" class="w-6 h-6 text-slate-800 dark:text-white"></i>
-        </button>
-    </div>
+    <!-- MENU BUTTON (TOP LEFT) -->
+    <button onclick="toggleSidebar()" class="fixed top-4 left-4 z-50 p-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur rounded-full shadow-lg border border-slate-200 dark:border-slate-700 hover:scale-105 transition">
+        <i data-lucide="menu" class="w-6 h-6 text-slate-800 dark:text-white"></i>
+    </button>
 
     <!-- SIDEBAR -->
-    <div id="sidebar-overlay" onclick="window.toggleSidebar()" class="fixed inset-0 bg-black/50 z-[90] hidden backdrop-blur-sm transition-opacity"></div>
-    <aside id="sidebar" class="fixed top-0 left-0 h-full w-72 bg-white dark:bg-slate-950 z-[100] shadow-2xl transform -translate-x-full sidebar-transition flex flex-col border-r dark:border-white/5">
-        <!-- Sidebar Header -->
-        <div class="p-6 border-b dark:border-white/5 flex items-center justify-between">
-            <span class="font-black text-xl tracking-tighter text-primary">MENU</span>
-            <button onclick="window.toggleSidebar()" class="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-[100] hidden backdrop-blur-sm"></div>
+    <aside id="sidebar" class="sidebar fixed top-0 left-0 h-full w-72 bg-white dark:bg-slate-950 z-[101] shadow-2xl flex flex-col border-r dark:border-white/5">
+        <div class="p-6 border-b dark:border-white/5 flex justify-between items-center">
+            <span class="font-black text-xl text-primary">MENU</span>
+            <button onclick="toggleSidebar()"><i data-lucide="x" class="w-6 h-6"></i></button>
         </div>
-        
-        <!-- Sidebar Body -->
-        <div class="flex-1 overflow-y-auto p-4 space-y-2" id="sidebar-content">
-            <!-- Dynamic Content Injected JS -->
+        <div id="sidebar-content" class="flex-1 overflow-y-auto p-4 space-y-2">
+            <!-- Items injected by JS -->
         </div>
-
-        <!-- Sidebar Footer -->
-        <div class="p-4 border-t dark:border-white/5">
-            <div id="auth-btn-area"></div>
+        <div class="p-4 border-t dark:border-white/5" id="sidebar-footer">
+            <!-- Login/Logout btn -->
         </div>
     </aside>
 
     <!-- MAIN CONTENT -->
-    <main class="max-w-4xl mx-auto px-4 pt-20 space-y-6">
+    <main class="max-w-3xl mx-auto px-4 pt-20 space-y-6">
 
-        <!-- HEADER CARD -->
-        <div class="glass rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row items-center md:items-start gap-6 relative overflow-hidden reveal-on-scroll">
+        <!-- Header Profile -->
+        <div class="glass rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row items-center gap-6 relative overflow-hidden reveal-on-scroll">
             <div class="relative group">
-                <div class="absolute -inset-1 bg-gradient-to-r from-primary to-secondary rounded-full blur opacity-25"></div>
-                <img id="profile-avatar" src="https://ui-avatars.com/api/?name=U" class="relative w-32 h-32 sm:w-40 sm:h-40 rounded-full object-cover border-4 border-white dark:border-slate-800 shadow-xl">
-                <div id="online-indicator" class="absolute bottom-2 right-2 w-5 h-5 bg-green-500 border-4 border-white dark:border-slate-800 rounded-full"></div>
+                <div class="absolute -inset-1 bg-gradient-to-r from-primary to-secondary rounded-full blur opacity-30"></div>
+                <img id="profile-avatar" src="https://ui-avatars.com/api/?name=User" class="relative w-32 h-32 rounded-full object-cover border-4 border-white dark:border-slate-800 shadow-xl">
+                <div class="absolute bottom-2 right-2 w-5 h-5 bg-green-500 border-4 border-white dark:border-slate-800 rounded-full"></div>
             </div>
-
             <div class="flex-1 text-center md:text-left space-y-2 z-10">
-                <h1 id="profile-name" class="text-3xl sm:text-4xl font-black tracking-tight text-slate-800 dark:text-white">Loading...</h1>
-                <span id="profile-nickname-badge" class="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider hidden"></span>
-                <p id="profile-bio" class="text-slate-500 dark:text-slate-400 font-medium max-w-lg mx-auto md:mx-0 py-2">...</p>
-
+                <h1 id="profile-name" class="text-3xl font-black text-slate-800 dark:text-white">Đang tải...</h1>
+                <span id="profile-nickname" class="hidden px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase"></span>
+                <p id="profile-bio" class="text-slate-500 dark:text-slate-400 font-medium">...</p>
+                
                 <!-- Stats -->
-                <div class="flex flex-wrap items-center justify-center md:justify-start gap-4">
-                    <div class="flex items-center gap-1.5 text-sm font-bold text-slate-700 dark:text-slate-300">
-                        <i data-lucide="users" class="w-4 h-4 text-primary"></i> <span id="stat-followers">0</span> Follower
+                <div class="flex justify-center md:justify-start gap-4 py-2">
+                    <div class="flex items-center gap-1 text-sm font-bold text-slate-600 dark:text-slate-300">
+                        <i data-lucide="users" class="w-4 h-4 text-primary"></i> <span id="stat-followers">0</span>
                     </div>
-                    <div class="flex items-center gap-1.5 text-sm font-bold text-slate-700 dark:text-slate-300">
-                        <i data-lucide="eye" class="w-4 h-4 text-secondary"></i> <span id="stat-views">0</span> View
+                    <div class="flex items-center gap-1 text-sm font-bold text-slate-600 dark:text-slate-300">
+                        <i data-lucide="eye" class="w-4 h-4 text-secondary"></i> <span id="stat-views">0</span>
                     </div>
                 </div>
 
-                <!-- Actions -->
-                <div class="flex flex-wrap justify-center md:justify-start gap-3 mt-4">
-                    <button id="follow-btn" onclick="window.toggleFollow()" class="px-6 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl font-bold text-sm shadow-lg hover:scale-105 transition flex items-center gap-2">
-                        <i data-lucide="user-plus" class="w-4 h-4"></i> Theo dõi
-                    </button>
-                    <button onclick="window.showContactModal('phone')" class="p-2.5 bg-white dark:bg-slate-800 border dark:border-white/10 rounded-xl hover:text-primary transition shadow-sm"><i data-lucide="phone" class="w-5 h-5"></i></button>
-                    <button onclick="window.showContactModal('email')" class="p-2.5 bg-white dark:bg-slate-800 border dark:border-white/10 rounded-xl hover:text-secondary transition shadow-sm"><i data-lucide="mail" class="w-5 h-5"></i></button>
+                <!-- Buttons -->
+                <div class="flex justify-center md:justify-start gap-3">
+                    <button id="follow-btn" onclick="toggleFollow()" class="px-6 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl font-bold text-sm shadow hover:scale-105 transition">Theo dõi</button>
+                    <button onclick="showContactModal('phone')" class="p-2 bg-white dark:bg-slate-800 rounded-xl border dark:border-white/10 hover:text-primary"><i data-lucide="phone" class="w-5 h-5"></i></button>
+                    <button onclick="showContactModal('email')" class="p-2 bg-white dark:bg-slate-800 rounded-xl border dark:border-white/10 hover:text-secondary"><i data-lucide="mail" class="w-5 h-5"></i></button>
                 </div>
             </div>
         </div>
 
-        <!-- SOCIALS -->
+        <!-- Social Links -->
         <div id="social-grid" class="flex flex-wrap justify-center gap-4 reveal-on-scroll"></div>
 
-        <!-- PROJECTS SECTION (NEW) -->
-        <div id="projects-section" class="glass p-6 sm:p-8 rounded-3xl reveal-on-scroll hidden">
-            <h3 class="font-black uppercase text-sm tracking-widest text-slate-400 mb-6 flex items-center gap-2">
-                <i data-lucide="folder-kanban" class="w-4 h-4"></i> Dự án
-            </h3>
-            <div id="project-list" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+        <!-- PROJECTS (New) -->
+        <div id="projects-section" class="hidden space-y-4 reveal-on-scroll">
+            <h3 class="font-black uppercase text-sm text-slate-400 flex items-center gap-2"><i data-lucide="folder-kanban" class="w-4 h-4"></i> Dự án nổi bật</h3>
+            <div id="project-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
         </div>
 
-        <!-- BANKING -->
+        <!-- Banking -->
         <div class="glass p-6 rounded-3xl space-y-4 reveal-on-scroll">
-            <h3 class="font-black uppercase text-sm tracking-widest text-slate-400 flex items-center gap-2">
-                <i data-lucide="credit-card" class="w-4 h-4"></i> Ngân hàng
-            </h3>
+            <h3 class="font-black uppercase text-sm text-slate-400 flex items-center gap-2"><i data-lucide="credit-card" class="w-4 h-4"></i> Ngân hàng</h3>
             <div id="bank-list" class="space-y-3"></div>
         </div>
 
-        <!-- CONNECTION INFO (NEW: Address & Device) -->
-        <div class="glass mt-8 p-4 rounded-2xl text-center space-y-2 reveal-on-scroll">
-            <div class="flex items-center justify-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-widest">
-                <i data-lucide="globe" class="w-3 h-3"></i> Thông tin truy cập
-            </div>
+        <!-- Connection Info (Replaced Coordinates) -->
+        <div class="glass p-4 rounded-2xl text-center space-y-3 reveal-on-scroll">
+            <div class="text-xs font-bold text-slate-500 uppercase tracking-widest"><i data-lucide="globe" class="w-3 h-3 inline"></i> Thông tin truy cập</div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                <div class="bg-white/50 dark:bg-slate-800/50 p-2 rounded-lg">
-                    <span class="block text-slate-400 text-xs mb-1">Thiết bị</span>
-                    <span id="user-device" class="font-bold text-primary">Đang kiểm tra...</span>
+                <div class="bg-white/50 dark:bg-slate-800/50 p-2 rounded">
+                    <span class="block text-xs text-slate-400">Thiết bị</span>
+                    <span id="info-device" class="font-bold text-primary">Đang kiểm tra...</span>
                 </div>
-                <div class="bg-white/50 dark:bg-slate-800/50 p-2 rounded-lg">
-                    <span class="block text-slate-400 text-xs mb-1">Vị trí (Ước tính)</span>
-                    <span id="user-location" class="font-bold text-slate-700 dark:text-white">Đang tải...</span>
+                <div class="bg-white/50 dark:bg-slate-800/50 p-2 rounded">
+                    <span class="block text-xs text-slate-400">Vị trí (Ước tính)</span>
+                    <span id="info-location" class="font-bold text-slate-700 dark:text-white">Đang tải...</span>
                 </div>
             </div>
         </div>
 
-        <!-- MESSAGE BTN -->
-        <div class="flex justify-center mt-8 pb-8 reveal-on-scroll">
-            <button onclick="window.showContactForm()" class="w-full max-w-md px-6 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:-translate-y-1 transition flex items-center justify-center gap-3">
-                <i data-lucide="send" class="w-6 h-6"></i> Gửi tin nhắn cho tôi
+        <!-- Send Message -->
+        <div class="flex justify-center pb-8 reveal-on-scroll">
+            <button onclick="showMsgModal()" class="w-full max-w-md py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-2xl font-bold shadow-xl hover:-translate-y-1 transition flex items-center justify-center gap-2">
+                <i data-lucide="send" class="w-5 h-5"></i> Gửi tin nhắn
             </button>
         </div>
+
     </main>
 
-    <!-- MODALS AREA -->
+    <!-- MODALS -->
 
-    <!-- Account Details Modal -->
+    <!-- Account Modal (User) -->
     <div id="modal-account" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6 shadow-2xl relative animate-fade-in">
-            <button onclick="window.closeModal('modal-account')" class="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
-            <div class="text-center mb-6">
-                <img id="acc-avatar" src="" class="w-20 h-20 rounded-full mx-auto mb-3 border-2 border-primary">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6 relative">
+            <button onclick="closeModal('modal-account')" class="absolute top-3 right-3 p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
+            <div class="text-center">
+                <img id="acc-img" src="" class="w-20 h-20 rounded-full mx-auto mb-3 border-2 border-primary">
                 <h3 id="acc-name" class="font-bold text-xl">Name</h3>
-                <p id="acc-email" class="text-sm text-slate-500">email@example.com</p>
-            </div>
-            <div class="space-y-3 text-sm">
-                <div class="flex justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded">
-                    <span class="text-slate-500">UID</span>
-                    <span id="acc-uid" class="font-mono font-bold truncate max-w-[150px]">...</span>
-                </div>
-                 <div class="flex justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded">
-                    <span class="text-slate-500">Tham gia</span>
-                    <span id="acc-date" class="font-bold">...</span>
+                <p id="acc-email" class="text-xs text-slate-500 mb-4">email</p>
+                <div class="bg-slate-100 dark:bg-slate-800 rounded p-3 text-left space-y-2 text-sm">
+                    <div class="flex justify-between"><span>UID:</span> <span id="acc-uid" class="font-mono font-bold text-xs truncate w-32"></span></div>
+                    <div class="flex justify-between"><span>Ngày tham gia:</span> <span id="acc-date" class="font-bold"></span></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Contact View Modal -->
-    <div id="modal-contact" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6 shadow-2xl">
-            <div class="flex justify-between items-center mb-4">
-                <h3 id="contact-title" class="font-bold text-lg">Liên hệ</h3>
-                <button onclick="window.closeModal('modal-contact')" class="p-2 rounded-full hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <!-- Contact Modal -->
+    <div id="modal-contact" class="fixed inset-0 bg-black/60 z-[200] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6">
+            <div class="flex justify-between mb-4">
+                <h3 id="contact-title" class="font-bold">Liên hệ</h3>
+                <button onclick="closeModal('modal-contact')"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
-            <div id="contact-list" class="space-y-3"></div>
+            <div id="contact-list" class="space-y-2"></div>
         </div>
     </div>
 
-    <!-- Send Msg Modal -->
-    <div id="modal-send-msg" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
-            <button onclick="window.closeModal('modal-send-msg')" class="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
-            <h3 class="font-bold text-lg mb-4">Gửi tin nhắn</h3>
-            <form id="contact-form" class="space-y-4">
-                <input type="text" id="msg-name" class="inp" placeholder="Tên của bạn">
-                <div id="msg-email-group"><input type="email" id="msg-email" class="inp" placeholder="Email liên hệ"></div>
-                <textarea id="msg-content" rows="4" class="inp" placeholder="Nội dung..."></textarea>
-                <div class="flex items-center gap-2">
-                    <input type="checkbox" id="msg-anon" onchange="toggleAnon()" class="w-4 h-4"> <label for="msg-anon" class="text-sm">Gửi ẩn danh</label>
-                </div>
-                <button type="button" onclick="window.sendContact()" class="w-full py-2 bg-primary text-white font-bold rounded-xl shadow">Gửi đi</button>
-            </form>
+    <!-- Msg Modal -->
+    <div id="modal-msg" class="fixed inset-0 bg-black/60 z-[200] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md p-6">
+            <div class="flex justify-between mb-4"><h3 class="font-bold">Gửi tin nhắn</h3><button onclick="closeModal('modal-msg')"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+            <div class="space-y-3">
+                <input id="msg-name" class="w-full p-2 border rounded dark:bg-slate-800 dark:border-white/10" placeholder="Tên của bạn">
+                <input id="msg-email" class="w-full p-2 border rounded dark:bg-slate-800 dark:border-white/10" placeholder="Email (nếu có)">
+                <textarea id="msg-content" class="w-full p-2 border rounded dark:bg-slate-800 dark:border-white/10" rows="3" placeholder="Nội dung..."></textarea>
+                <div class="flex items-center gap-2"><input type="checkbox" id="msg-anon" onchange="toggleAnon()"> <label for="msg-anon" class="text-sm">Ẩn danh</label></div>
+                <button onclick="sendMsg()" class="w-full py-2 bg-primary text-white font-bold rounded">Gửi</button>
+            </div>
         </div>
     </div>
 
-    <!-- Admin Edit Modal (Full Screen) -->
+    <!-- ADMIN PANEL (Sidebar Modal) -->
     <div id="modal-admin" class="fixed inset-0 bg-black/80 z-[300] hidden flex items-center justify-center sm:p-4">
-        <div class="bg-white dark:bg-slate-900 w-full h-full sm:h-[90vh] sm:rounded-2xl sm:max-w-5xl shadow-2xl flex flex-col overflow-hidden">
-            <div class="p-4 border-b dark:border-white/10 flex justify-between items-center bg-slate-50 dark:bg-slate-950">
+        <div class="bg-white dark:bg-slate-900 w-full h-full sm:h-[90vh] sm:rounded-xl sm:max-w-4xl flex flex-col overflow-hidden">
+            <div class="p-4 border-b dark:border-white/10 flex justify-between bg-slate-50 dark:bg-slate-950">
                 <h3 class="font-black uppercase text-primary">Admin Panel</h3>
-                <button onclick="window.closeModal('modal-admin')" class="p-2 bg-slate-200 dark:bg-slate-800 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+                <button onclick="closeModal('modal-admin')"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div class="flex-1 flex flex-col sm:flex-row overflow-hidden">
-                <!-- Sidebar tabs -->
-                <div class="w-full sm:w-48 bg-slate-50 dark:bg-slate-950 border-r dark:border-white/5 p-2 flex sm:flex-col gap-2 overflow-x-auto shrink-0">
-                    <button onclick="window.switchTab('general')" class="tab-btn active p-3 rounded-lg text-left text-xs font-bold uppercase hover:bg-white dark:hover:bg-white/5">Thông tin chung</button>
-                    <button onclick="window.switchTab('projects')" class="tab-btn p-3 rounded-lg text-left text-xs font-bold uppercase hover:bg-white dark:hover:bg-white/5">Dự án</button>
-                    <button onclick="window.switchTab('bank')" class="tab-btn p-3 rounded-lg text-left text-xs font-bold uppercase hover:bg-white dark:hover:bg-white/5">Ngân hàng</button>
-                    <button onclick="window.switchTab('users')" class="tab-btn p-3 rounded-lg text-left text-xs font-bold uppercase hover:bg-white dark:hover:bg-white/5 text-blue-500">QL Người dùng</button>
-                    <button onclick="window.switchTab('messages')" class="tab-btn p-3 rounded-lg text-left text-xs font-bold uppercase hover:bg-white dark:hover:bg-white/5 text-green-500">Tin nhắn</button>
-                    <button onclick="window.switchTab('config')" class="tab-btn p-3 rounded-lg text-left text-xs font-bold uppercase hover:bg-white dark:hover:bg-white/5 text-red-500">Cấu hình</button>
+                <div class="w-full sm:w-40 bg-slate-50 dark:bg-slate-950 p-2 flex sm:flex-col gap-1 overflow-x-auto shrink-0">
+                    <button onclick="switchTab('gen')" class="tab-btn active text-left p-2 rounded text-xs font-bold hover:bg-white">Thông tin chung</button>
+                    <button onclick="switchTab('prj')" class="tab-btn text-left p-2 rounded text-xs font-bold hover:bg-white">Dự án</button>
+                    <button onclick="switchTab('bank')" class="tab-btn text-left p-2 rounded text-xs font-bold hover:bg-white">Ngân hàng</button>
+                    <button onclick="switchTab('user')" class="tab-btn text-left p-2 rounded text-xs font-bold text-blue-500 hover:bg-white">Người dùng</button>
+                    <button onclick="switchTab('cfg')" class="tab-btn text-left p-2 rounded text-xs font-bold text-red-500 hover:bg-white">Cấu hình</button>
                 </div>
-
-                <!-- Content -->
-                <div class="flex-1 overflow-y-auto p-6 bg-white dark:bg-slate-900 relative">
-                    <!-- General -->
-                    <div id="tab-general" class="tab-content space-y-4">
-                        <div class="flex gap-4 items-center">
-                            <img id="preview-avatar" src="" class="w-20 h-20 rounded-full border">
-                            <label class="cursor-pointer bg-slate-100 px-4 py-2 rounded font-bold text-sm">Tải ảnh mới <input type="file" id="inp-avatar" class="hidden"></label>
+                <div class="flex-1 overflow-y-auto p-4 bg-white dark:bg-slate-900 space-y-4">
+                    <!-- Tab General -->
+                    <div id="tab-gen" class="tab-content space-y-3">
+                        <div class="flex items-center gap-3">
+                            <img id="adm-avatar" src="" class="w-16 h-16 rounded-full border">
+                            <label class="px-3 py-1 bg-slate-100 rounded text-xs font-bold cursor-pointer">Upload Ảnh <input type="file" id="inp-avatar" class="hidden"></label>
                         </div>
-                        <input type="text" id="inp-name" class="inp" placeholder="Họ tên">
-                        <input type="text" id="inp-nickname" class="inp" placeholder="Biệt danh">
-                        <textarea id="inp-bio" rows="3" class="inp" placeholder="Tiểu sử"></textarea>
-                        
-                        <label class="lbl mt-4">Liên hệ & MXH</label>
-                        <input type="text" id="inp-fb" class="inp" placeholder="Link Facebook">
-                        <input type="text" id="inp-zalo" class="inp" placeholder="SĐT Zalo">
-                        <input type="text" id="inp-tele" class="inp" placeholder="Username Telegram">
-                        <input type="text" id="inp-email-list" class="inp" placeholder="Email (cách nhau dấu phẩy)">
-                        
-                        <div id="phone-list-editor" class="space-y-2"></div>
-                        <button type="button" onclick="addPhoneInput()" class="text-xs text-primary font-bold">+ Thêm SĐT</button>
+                        <input id="inp-name" class="w-full p-2 border rounded" placeholder="Họ tên">
+                        <input id="inp-nick" class="w-full p-2 border rounded" placeholder="Biệt danh">
+                        <textarea id="inp-bio" class="w-full p-2 border rounded" rows="2" placeholder="Tiểu sử"></textarea>
+                        <hr>
+                        <label class="text-xs font-bold">Mạng xã hội</label>
+                        <input id="inp-fb" class="w-full p-2 border rounded" placeholder="Link Facebook">
+                        <input id="inp-zalo" class="w-full p-2 border rounded" placeholder="SĐT Zalo">
+                        <input id="inp-tele" class="w-full p-2 border rounded" placeholder="Username Telegram">
+                        <input id="inp-email" class="w-full p-2 border rounded" placeholder="Email liên hệ">
+                        <div id="phone-list"></div>
+                        <button onclick="addPhoneInput()" class="text-xs text-primary">+ Thêm SĐT</button>
                     </div>
 
-                    <!-- Projects -->
-                    <div id="tab-projects" class="tab-content hidden space-y-4">
-                        <div class="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl space-y-3 border dark:border-white/10">
-                            <h4 class="font-bold text-sm">Thêm dự án mới</h4>
-                            <input type="text" id="prj-title" class="inp" placeholder="Tên dự án">
-                            <textarea id="prj-desc" class="inp" placeholder="Mô tả ngắn" rows="2"></textarea>
+                    <!-- Tab Project -->
+                    <div id="tab-prj" class="tab-content hidden space-y-3">
+                        <div class="p-3 bg-slate-50 dark:bg-slate-800 rounded border space-y-2">
+                            <h4 class="font-bold text-xs">Thêm dự án</h4>
+                            <input id="prj-title" class="w-full p-2 border rounded text-xs" placeholder="Tên dự án">
+                            <input id="prj-desc" class="w-full p-2 border rounded text-xs" placeholder="Mô tả">
                             <div class="grid grid-cols-2 gap-2">
-                                <input type="text" id="prj-logo" class="inp" placeholder="Link Logo">
-                                <input type="text" id="prj-cover" class="inp" placeholder="Link ảnh bìa">
+                                <input id="prj-logo" class="p-2 border rounded text-xs" placeholder="Link Logo">
+                                <input id="prj-cover" class="p-2 border rounded text-xs" placeholder="Link Ảnh bìa">
                             </div>
                             <div class="grid grid-cols-2 gap-2">
-                                <input type="text" id="prj-ref-link" class="inp" placeholder="Link Ref (Tham gia)">
-                                <input type="text" id="prj-ref-code" class="inp" placeholder="Mã Ref">
+                                <input id="prj-link" class="p-2 border rounded text-xs" placeholder="Link Ref">
+                                <input id="prj-code" class="p-2 border rounded text-xs" placeholder="Mã Ref">
                             </div>
-                            <button onclick="addProject()" class="w-full bg-primary text-white py-2 rounded-lg font-bold shadow">Thêm vào danh sách</button>
+                            <button onclick="addProject()" class="w-full py-1 bg-primary text-white rounded text-xs font-bold">Thêm</button>
                         </div>
-                        <div id="admin-project-list" class="space-y-3"></div>
+                        <div id="adm-prj-list" class="space-y-2"></div>
                     </div>
 
-                    <!-- Banks -->
-                    <div id="tab-bank" class="tab-content hidden space-y-4">
+                    <!-- Tab Bank -->
+                    <div id="tab-bank" class="tab-content hidden space-y-3">
                         <div class="flex gap-2">
-                            <select id="api-bank-list" class="inp w-1/2"></select>
-                            <input type="text" id="bank-acc-num" placeholder="Số tài khoản" class="inp w-1/2">
+                            <select id="api-banks" class="w-1/2 p-2 border rounded text-xs"></select>
+                            <input id="bank-num" class="w-1/2 p-2 border rounded text-xs" placeholder="STK">
                         </div>
-                        <input type="text" id="bank-acc-name" placeholder="Tên chủ thẻ" class="inp">
-                        <button onclick="addBank()" class="w-full bg-primary text-white py-2 rounded-lg font-bold">Thêm Ngân hàng</button>
-                        <div id="admin-bank-list" class="space-y-2 mt-4"></div>
+                        <input id="bank-own" class="w-full p-2 border rounded text-xs" placeholder="Tên chủ thẻ">
+                        <button onclick="addBank()" class="w-full py-1 bg-primary text-white rounded text-xs font-bold">Thêm NH</button>
+                        <div id="adm-bank-list" class="space-y-2"></div>
                     </div>
 
-                    <!-- User Manager -->
-                    <div id="tab-users" class="tab-content hidden space-y-4">
-                        <button onclick="loadManager()" class="text-xs bg-slate-200 px-3 py-1 rounded">Làm mới</button>
-                        <div id="manager-list" class="space-y-3"></div>
+                    <!-- Tab User -->
+                    <div id="tab-user" class="tab-content hidden">
+                        <button onclick="loadUsers()" class="mb-2 text-xs bg-slate-200 px-2 py-1 rounded">Làm mới</button>
+                        <div id="user-list" class="space-y-2"></div>
                     </div>
 
-                    <!-- Messages -->
-                    <div id="tab-messages" class="tab-content hidden space-y-4">
-                         <button onclick="loadAdminMessages()" class="text-xs bg-slate-200 px-3 py-1 rounded">Làm mới</button>
-                         <div id="admin-messages-list" class="space-y-3"></div>
-                    </div>
-                    
-                    <!-- Config -->
-                    <div id="tab-config" class="tab-content hidden space-y-4">
-                        <div class="p-4 bg-red-50 rounded-xl space-y-2">
-                             <h4 class="font-bold text-red-500">GitHub (Chứa ảnh)</h4>
-                             <input type="password" id="gh-token" class="inp" placeholder="Token">
-                             <input type="text" id="gh-owner" class="inp" placeholder="Username">
-                             <input type="text" id="gh-repo" class="inp" placeholder="Repo">
+                    <!-- Tab Config -->
+                    <div id="tab-cfg" class="tab-content hidden space-y-3">
+                        <div class="bg-red-50 p-3 rounded">
+                            <div class="font-bold text-xs text-red-500 mb-2">GitHub Storage</div>
+                            <input id="gh-token" type="password" class="w-full p-1 border rounded text-xs mb-1" placeholder="Token">
+                            <input id="gh-owner" class="w-full p-1 border rounded text-xs mb-1" placeholder="Owner">
+                            <input id="gh-repo" class="w-full p-1 border rounded text-xs" placeholder="Repo">
                         </div>
-                        <div class="p-4 bg-blue-50 rounded-xl space-y-2">
-                            <h4 class="font-bold text-blue-500">USB Key Secret</h4>
-                            <input type="text" id="usb-secret-val" class="inp" placeholder="Nhập mã bí mật">
-                            <button onclick="saveUSBConfig()" class="bg-blue-500 text-white px-4 py-1 rounded text-xs">Lưu Key</button>
+                        <div class="bg-blue-50 p-3 rounded">
+                            <div class="font-bold text-xs text-blue-500 mb-2">USB Key</div>
+                            <input id="usb-val" class="w-full p-1 border rounded text-xs mb-1" placeholder="Secret Key">
+                            <button onclick="saveUSB()" class="px-3 py-1 bg-blue-500 text-white rounded text-xs">Lưu</button>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="p-4 bg-white dark:bg-slate-900 border-t flex justify-end gap-3">
-                <button onclick="window.saveProfile()" class="px-6 py-2 bg-primary text-white rounded-xl font-bold shadow-lg">Lưu Tất Cả</button>
+            <div class="p-4 bg-slate-50 dark:bg-slate-950 border-t flex justify-end">
+                <button onclick="saveProfile()" class="px-6 py-2 bg-primary text-white rounded font-bold shadow">Lưu Thay Đổi</button>
             </div>
         </div>
     </div>
 
     <!-- Crop Modal -->
-    <div id="modal-crop" class="fixed inset-0 bg-black z-[500] hidden flex flex-col justify-center">
-        <div class="h-3/4"><img id="image-to-crop" src="" class="max-w-full max-h-full block mx-auto"></div>
-        <div class="bg-slate-900 p-4 flex justify-between text-white">
-            <button onclick="window.closeModal('modal-crop')">Hủy</button>
-            <button onclick="window.confirmCrop()" class="font-bold text-primary">Cắt & Dùng</button>
+    <div id="modal-crop" class="fixed inset-0 bg-black z-[400] hidden flex flex-col">
+        <div class="flex-1 overflow-hidden flex justify-center"><img id="crop-img" class="max-h-full"></div>
+        <div class="p-4 bg-slate-900 flex justify-between text-white">
+            <button onclick="closeModal('modal-crop')">Hủy</button>
+            <button onclick="confirmCrop()" class="font-bold text-primary">Cắt & Dùng</button>
+        </div>
+    </div>
+
+    <!-- QR Modal -->
+    <div id="modal-qr" class="fixed inset-0 bg-black/80 z-[400] hidden flex items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-xl text-center">
+            <h3 class="font-bold mb-4">Quét mã để tham gia</h3>
+            <img id="qr-img" class="mx-auto w-48 h-48 border mb-4">
+            <button onclick="closeModal('modal-qr')" class="text-sm text-slate-500">Đóng</button>
         </div>
     </div>
 
     <!-- Toast -->
-    <div id="toast" class="fixed bottom-5 right-5 z-[1000] translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white px-6 py-3 rounded-xl shadow-2xl font-bold flex gap-2">
-        <i data-lucide="check-circle" class="w-5 h-5 text-green-500"></i> <span id="toast-msg">OK</span>
-    </div>
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-800 text-white px-4 py-2 rounded-lg shadow-xl translate-y-20 opacity-0 transition-all z-[999]">Thông báo</div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, setDoc, updateDoc, getDoc, arrayUnion, arrayRemove, increment, collection, getDocs, addDoc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc, increment, collection, getDocs, addDoc, query, orderBy, limit, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // CONFIG FIREBASE
         const firebaseConfig = {
@@ -361,544 +318,391 @@
             messagingSenderId: "914980131889",
             appId: "1:914980131889:web:72f8da15c42dbee671b110"
         };
-        const ADMIN_EMAILS = ["sonlyhongduc@gmail.com"];
-
+        
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
-        const profileRef = doc(db, "profile_data", "main");
+        const mainRef = doc(db, "profile_data", "main");
+        const ADMIN_MAILS = ["sonlyhongduc@gmail.com"];
 
+        let profile = {};
         let currentUser = null;
         let isAdmin = false;
-        let isUSBAdmin = false;
-        let profileData = {};
-        let listBanks = [];
-        let listProjects = [];
+        let isUSB = false;
+        let banks = [];
+        let projects = [];
         let cropper = null;
-        let croppedAvatarBase64 = null;
-        let ghConfig = {};
+        let newAvatar = null;
+        let ghCfg = {};
 
-        // 1. INIT & AUTH
-        onAuthStateChanged(auth, async (user) => {
-            currentUser = user;
-            renderSidebar(); 
-            checkFollowStatus();
-
-            if(user) {
-                // Log device info & location for User
-                logUserConnection(user);
+        // 1. INIT
+        onAuthStateChanged(auth, async (u) => {
+            currentUser = u;
+            if(u) {
+                // Check Admin
+                const s = await getDoc(doc(db,"settings","admins"));
+                const list = s.exists() ? s.data().emails : [];
+                isAdmin = ADMIN_MAILS.includes(u.email) || list.includes(u.email);
                 
-                const adminRef = doc(db, "settings", "admins");
-                const s = await getDoc(adminRef);
-                const admins = s.exists() ? s.data().emails : [];
-                isAdmin = ADMIN_EMAILS.includes(user.email) || (admins && admins.includes(user.email));
-                if(isAdmin) loadGithubConfig();
-            } else {
-                isAdmin = false;
-            }
-            renderSidebar(); // Re-render sidebar with new permissions
+                // Log User Device & Location
+                updateUserLog(u);
+                if(isAdmin) loadGhConfig();
+            } else { isAdmin = false; }
+            renderSidebar();
+            checkFollow();
         });
 
-        // 2. FETCH DATA & RENDER
-        onSnapshot(profileRef, (docSnap) => {
+        // 2. DATA LISTENER
+        onSnapshot(mainRef, (snap) => {
             document.getElementById('global-loading').classList.add('opacity-0', 'pointer-events-none');
-            if (docSnap.exists()) {
-                profileData = docSnap.data();
-                renderProfile();
-                
-                // FIX VIEW COUNT: Increment only once per session
-                if (!sessionStorage.getItem('viewed')) {
-                    updateDoc(profileRef, { views: increment(1) });
-                    sessionStorage.setItem('viewed', 'true');
+            if(snap.exists()){
+                profile = snap.data();
+                renderUI();
+                // Fix view count (once per session)
+                if(!sessionStorage.getItem('viewed')) {
+                    updateDoc(mainRef, { views: increment(1) });
+                    sessionStorage.setItem('viewed','1');
                 }
             }
         });
 
-        function renderProfile() {
+        function renderUI() {
             // Header
-            document.title = profileData.name || "Profile";
-            document.getElementById('profile-name').innerText = profileData.name || "No Name";
-            document.getElementById('profile-bio').innerText = profileData.bio || "";
-            document.getElementById('stat-followers').innerText = (profileData.followers || []).length;
-            document.getElementById('stat-views').innerText = profileData.views || 0;
-            if(profileData.avatar) {
-                document.getElementById('profile-avatar').src = profileData.avatar;
-                document.getElementById('meta-icon').href = profileData.avatar;
-            }
-            if(profileData.nickname) {
-                const b = document.getElementById('profile-nickname-badge');
-                b.innerText = profileData.nickname;
-                b.classList.remove('hidden');
+            document.title = profile.name || "Profile";
+            document.getElementById('profile-name').innerText = profile.name || "No Name";
+            document.getElementById('profile-bio').innerText = profile.bio || "";
+            document.getElementById('stat-followers').innerText = (profile.followers||[]).length;
+            document.getElementById('stat-views').innerText = profile.views || 0;
+            if(profile.avatar) document.getElementById('profile-avatar').src = profile.avatar;
+            if(profile.nickname) {
+                const n = document.getElementById('profile-nickname');
+                n.innerText = profile.nickname; n.classList.remove('hidden');
             }
 
             // Socials
+            const sMap = { facebook: 'facebook', zalo: 'phone', telegram: 'send' };
             let html = '';
-            const socialMap = {
-                facebook: { icon: 'facebook', color: 'text-blue-600' },
-                zalo: { icon: 'phone', color: 'text-blue-500' },
-                telegram: { icon: 'send', color: 'text-sky-500' },
-            };
-            if(profileData.socials) {
-                Object.keys(profileData.socials).forEach(k => {
-                    const v = profileData.socials[k];
-                    if(v) {
-                        let link = v;
-                        if(k==='zalo') link = `https://zalo.me/${v}`;
-                        if(k==='telegram') link = `https://t.me/${v}`;
-                        html += `<a href="${link}" target="_blank" class="p-3 bg-white dark:bg-slate-800 rounded-full shadow hover:-translate-y-1 transition ${socialMap[k]?.color || ''}"><i data-lucide="${socialMap[k]?.icon || 'link'}" class="w-5 h-5"></i></a>`;
+            if(profile.socials) {
+                for(let k in profile.socials) {
+                    if(profile.socials[k]) {
+                        let link = profile.socials[k];
+                        if(k==='zalo') link=`https://zalo.me/${link}`;
+                        if(k==='telegram') link=`https://t.me/${link}`;
+                        html += `<a href="${link}" target="_blank" class="p-3 bg-white dark:bg-slate-800 rounded-full shadow hover:-translate-y-1 transition text-primary"><i data-lucide="${sMap[k]||'link'}" class="w-5 h-5"></i></a>`;
                     }
-                });
+                }
             }
             document.getElementById('social-grid').innerHTML = html;
 
             // Projects
-            const prjSection = document.getElementById('projects-section');
-            const prjList = document.getElementById('project-list');
-            listProjects = profileData.projects || [];
-            if(listProjects.length > 0) {
-                prjSection.classList.remove('hidden');
-                prjList.innerHTML = listProjects.map(p => `
-                    <div class="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow border dark:border-white/5 flex flex-col">
-                        <div class="h-32 bg-gray-200 relative">
+            projects = profile.projects || [];
+            if(projects.length > 0) {
+                document.getElementById('projects-section').classList.remove('hidden');
+                document.getElementById('project-list').innerHTML = projects.map(p => `
+                    <div class="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow flex flex-col border dark:border-white/5">
+                        <div class="h-32 bg-slate-200 relative">
                             ${p.cover ? `<img src="${p.cover}" class="w-full h-full object-cover">` : ''}
-                            <div class="absolute -bottom-6 left-4">
-                                <img src="${p.logo || 'https://via.placeholder.com/50'}" class="w-12 h-12 rounded-lg border-2 border-white shadow bg-white object-contain">
-                            </div>
+                            <div class="absolute -bottom-6 left-4 bg-white p-1 rounded-lg shadow"><img src="${p.logo||''}" class="w-10 h-10 object-contain"></div>
                         </div>
                         <div class="pt-8 p-4 flex-1 flex flex-col">
-                            <h4 class="font-bold text-lg">${p.title}</h4>
-                            <p class="text-xs text-slate-500 line-clamp-2 mb-3 flex-1">${p.desc}</p>
-                            <div class="flex gap-2 mt-auto">
-                                <a href="${p.refLink}" target="_blank" class="flex-1 bg-primary text-white text-xs font-bold py-2 rounded-lg text-center hover:opacity-90">Tham gia ngay</a>
-                                <button onclick="window.copyToClip('${p.refCode}')" class="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg" title="Copy mã Ref"><i data-lucide="copy" class="w-4 h-4"></i></button>
-                                <button onclick="window.showQR('${p.refLink}')" class="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg"><i data-lucide="qr-code" class="w-4 h-4"></i></button>
+                            <h4 class="font-bold mb-1">${p.title}</h4>
+                            <p class="text-xs text-slate-500 mb-3 line-clamp-2 flex-1">${p.desc}</p>
+                            <div class="flex gap-2">
+                                <a href="${p.link}" target="_blank" class="flex-1 bg-primary text-white text-xs font-bold py-2 rounded text-center">Tham gia</a>
+                                <button onclick="copyTxt('${p.code}')" class="p-2 bg-slate-100 dark:bg-slate-700 rounded"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                                <button onclick="showQR('${p.link}')" class="p-2 bg-slate-100 dark:bg-slate-700 rounded"><i data-lucide="qr-code" class="w-4 h-4"></i></button>
                             </div>
                         </div>
                     </div>
                 `).join('');
-            } else {
-                prjSection.classList.add('hidden');
-            }
+            } else document.getElementById('projects-section').classList.add('hidden');
 
             // Banks
-            listBanks = profileData.banks || [];
-            document.getElementById('bank-list').innerHTML = listBanks.map(b => `
-                <div class="p-3 bg-white dark:bg-slate-900 rounded-xl flex items-center justify-between border shadow-sm">
+            banks = profile.banks || [];
+            document.getElementById('bank-list').innerHTML = banks.map(b => `
+                <div class="flex items-center justify-between p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border dark:border-white/5">
                     <div class="flex items-center gap-3">
                         <img src="${b.logo}" class="w-10 h-10 object-contain p-1 border rounded bg-white">
                         <div>
-                            <p class="text-[10px] font-bold text-slate-400 uppercase">${b.shortName}</p>
-                            <p class="font-mono font-bold text-slate-800 dark:text-white">${b.number}</p>
-                            <p class="text-[10px] text-slate-500 uppercase">${b.owner}</p>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase">${b.short}</p>
+                            <p class="font-mono font-bold">${b.num}</p>
+                            <p class="text-[10px] text-slate-500 uppercase">${b.own}</p>
                         </div>
                     </div>
-                    <button onclick="window.copyToClip('${b.number}')" class="p-2 bg-slate-100 dark:bg-slate-800 rounded hover:text-primary"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                    <button onclick="copyTxt('${b.num}')" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"><i data-lucide="copy" class="w-4 h-4"></i></button>
                 </div>
             `).join('');
 
-            checkFollowStatus();
-            lucide.createIcons();
-            initScrollReveal();
-        }
-
-        // 3. SIDEBAR & NAVIGATION
-        window.toggleSidebar = () => {
-            const sb = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebar-overlay');
-            if(sb.classList.contains('-translate-x-full')) {
-                sb.classList.remove('-translate-x-full');
-                overlay.classList.remove('hidden');
-            } else {
-                sb.classList.add('-translate-x-full');
-                overlay.classList.add('hidden');
-            }
-        }
-
-        function renderSidebar() {
-            const content = document.getElementById('sidebar-content');
-            const authArea = document.getElementById('auth-btn-area');
-            
-            let html = '';
-            
-            // Common items
-            html += `
-                <button onclick="window.toggleTheme()" class="w-full text-left p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-3 font-bold text-sm text-slate-600 dark:text-slate-300">
-                    <i data-lucide="sun-moon" class="w-5 h-5"></i> Giao diện Sáng/Tối
-                </button>
-                <button onclick="document.getElementById('usb-key-input').click()" class="w-full text-left p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-3 font-bold text-sm text-slate-600 dark:text-slate-300">
-                    <i data-lucide="usb" class="w-5 h-5"></i> Kết nối USB Key
-                </button>
-            `;
-
-            // User Items
-            if (currentUser) {
-                html += `
-                    <button onclick="window.showAccountModal()" class="w-full text-left p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-3 font-bold text-sm text-slate-600 dark:text-slate-300">
-                        <i data-lucide="user" class="w-5 h-5"></i> Tài khoản
-                    </button>
-                `;
-            }
-
-            // Admin Items
-            if (isAdmin || isUSBAdmin) {
-                html += `<div class="my-2 border-t dark:border-white/10"></div>`;
-                html += `
-                    <div class="px-3 text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Admin</div>
-                    <button onclick="window.openEditModal()" class="w-full text-left p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-3 font-bold text-sm text-primary">
-                        <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Quản lý & Chỉnh sửa
-                    </button>
-                `;
-            }
-
-            content.innerHTML = html;
-
-            // Auth Button
-            if (currentUser) {
-                authArea.innerHTML = `
-                    <button onclick="window.doLogout()" class="w-full py-3 bg-red-50 text-red-500 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-red-100">
-                        <i data-lucide="log-out" class="w-4 h-4"></i> Đăng xuất
-                    </button>
-                `;
-            } else {
-                authArea.innerHTML = `
-                    <button onclick="window.doLogin()" class="w-full py-3 bg-primary text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow hover:opacity-90">
-                        <i data-lucide="log-in" class="w-4 h-4"></i> Đăng nhập
-                    </button>
-                `;
-            }
+            checkFollow();
+            initScroll();
             lucide.createIcons();
         }
 
-        // 4. LOGIC: LOCATION & DEVICE
-        function getDeviceName() {
+        // 3. LOCATION & DEVICE & LOG
+        async function updateUserLog(u) {
+            const dev = getDevice();
+            let loc = "Không xác định";
+            if("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(async (p) => {
+                    try {
+                        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${p.coords.latitude}&lon=${p.coords.longitude}`);
+                        const d = await r.json();
+                        const addr = d.address;
+                        loc = [addr.quarter, addr.suburb, addr.district, addr.city].filter(Boolean).join(', ');
+                        document.getElementById('info-location').innerText = loc;
+                        
+                        // Save to DB
+                        setDoc(doc(db,"users",u.uid), {
+                            uid:u.uid, name:u.displayName, email:u.email, photo:u.photoURL,
+                            device: dev, location: loc, lastSeen: new Date().toISOString()
+                        }, {merge:true});
+                    } catch(e) { document.getElementById('info-location').innerText = "Lỗi lấy vị trí"; }
+                }, () => document.getElementById('info-location').innerText = "Bị chặn vị trí");
+            }
+            document.getElementById('info-device').innerText = dev;
+        }
+
+        function getDevice() {
             const ua = navigator.userAgent;
-            if (/android/i.test(ua)) return "Android Device";
-            if (/iPad|iPhone|iPod/.test(ua)) return "iOS Device";
-            if (/windows phone/i.test(ua)) return "Windows Phone";
-            if (/Win64|Win32/i.test(ua)) return "Windows PC";
-            if (/Mac/i.test(ua)) return "Macintosh";
-            return "Thiết bị lạ";
+            if(/android/i.test(ua)) return "Android";
+            if(/iPad|iPhone|iPod/.test(ua)) return "iOS";
+            if(/Win/i.test(ua)) return "Windows PC";
+            if(/Mac/i.test(ua)) return "Macbook";
+            return "Khác";
         }
-        document.getElementById('user-device').innerText = getDeviceName();
 
-        if ("geolocation" in navigator) {
-            navigator.geolocation.getCurrentPosition(async (pos) => {
-                const { latitude, longitude } = pos.coords;
-                // Reverse Geo using OSM (Free)
-                try {
-                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-                    const data = await res.json();
-                    const addr = data.display_name.split(',').slice(0, 3).join(','); // Take first 3 parts
-                    document.getElementById('user-location').innerText = addr || `${latitude}, ${longitude}`;
-                    
-                    // Update User DB if logged in
-                    if(currentUser) {
-                        updateDoc(doc(db, "users", currentUser.uid), {
-                            device: getDeviceName(),
-                            location: addr,
-                            coords: { lat: latitude, lng: longitude },
-                            lastSeen: new Date().toISOString()
-                        });
-                    }
-                } catch(e) {
-                    document.getElementById('user-location').innerText = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-                }
-            }, () => document.getElementById('user-location').innerText = "Không cho phép vị trí");
-        } else {
-            document.getElementById('user-location').innerText = "Không hỗ trợ";
+        // 4. SIDEBAR LOGIC
+        window.toggleSidebar = () => {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebar-overlay').classList.toggle('hidden');
         }
-        
-        async function logUserConnection(user) {
-             // Basic log update (Device only first, location async above)
-             await setDoc(doc(db, "users", user.uid), {
-                uid: user.uid,
-                email: user.email,
-                displayName: user.displayName,
-                photoURL: user.photoURL,
-                device: getDeviceName(),
-                lastSeen: new Date().toISOString()
-             }, { merge: true });
+        window.renderSidebar = () => {
+            const c = document.getElementById('sidebar-content');
+            const f = document.getElementById('sidebar-footer');
+            
+            // Common
+            let h = `
+                <button onclick="toggleTheme()" class="w-full text-left p-3 rounded hover:bg-slate-100 dark:hover:bg-slate-800 flex gap-3 font-bold text-sm text-slate-600 dark:text-slate-300"><i data-lucide="sun-moon" class="w-5 h-5"></i> Giao diện Sáng/Tối</button>
+                <button onclick="document.getElementById('usb-key-input').click()" class="w-full text-left p-3 rounded hover:bg-slate-100 dark:hover:bg-slate-800 flex gap-3 font-bold text-sm text-slate-600 dark:text-slate-300"><i data-lucide="usb" class="w-5 h-5"></i> Kết nối USB Key</button>
+            `;
+            // User
+            if(currentUser) {
+                h += `<button onclick="showAccModal()" class="w-full text-left p-3 rounded hover:bg-slate-100 dark:hover:bg-slate-800 flex gap-3 font-bold text-sm text-slate-600 dark:text-slate-300"><i data-lucide="user" class="w-5 h-5"></i> Tài khoản của tôi</button>`;
+            }
+            // Admin
+            if(isAdmin || isUSB) {
+                h += `<div class="border-t dark:border-white/10 my-2"></div><div class="px-3 text-[10px] font-black uppercase text-slate-400">Admin</div>`;
+                h += `<button onclick="openAdmin()" class="w-full text-left p-3 rounded hover:bg-slate-100 dark:hover:bg-slate-800 flex gap-3 font-bold text-sm text-primary"><i data-lucide="layout-dashboard" class="w-5 h-5"></i> Quản lý Profile</button>`;
+            }
+            c.innerHTML = h;
+
+            // Footer
+            if(currentUser) {
+                f.innerHTML = `<button onclick="doLogout()" class="w-full py-2 bg-red-50 text-red-500 font-bold rounded flex justify-center gap-2"><i data-lucide="log-out" class="w-4 h-4"></i> Đăng xuất</button>`;
+            } else {
+                f.innerHTML = `<button onclick="doLogin()" class="w-full py-2 bg-primary text-white font-bold rounded flex justify-center gap-2 shadow"><i data-lucide="log-in" class="w-4 h-4"></i> Đăng nhập</button>`;
+            }
+            lucide.createIcons();
         }
 
         // 5. ADMIN FUNCTIONS
-        window.openEditModal = async () => {
+        window.openAdmin = async () => {
             document.getElementById('modal-admin').classList.remove('hidden');
-            // Load Data to Form
-            document.getElementById('inp-name').value = profileData.name || '';
-            document.getElementById('inp-nickname').value = profileData.nickname || '';
-            document.getElementById('inp-bio').value = profileData.bio || '';
-            document.getElementById('preview-avatar').src = profileData.avatar || '';
-            
-            // Socials
-            if(profileData.socials) {
-                document.getElementById('inp-fb').value = profileData.socials.facebook || '';
-                document.getElementById('inp-zalo').value = profileData.socials.zalo || '';
-                document.getElementById('inp-tele').value = profileData.socials.telegram || '';
+            // Load Data
+            document.getElementById('inp-name').value = profile.name||'';
+            document.getElementById('inp-nick').value = profile.nickname||'';
+            document.getElementById('inp-bio').value = profile.bio||'';
+            document.getElementById('adm-avatar').src = profile.avatar||'';
+            if(profile.socials) {
+                document.getElementById('inp-fb').value = profile.socials.facebook||'';
+                document.getElementById('inp-zalo').value = profile.socials.zalo||'';
+                document.getElementById('inp-tele').value = profile.socials.telegram||'';
             }
-            document.getElementById('inp-email-list').value = profileData.email || '';
-            
+            document.getElementById('inp-email').value = profile.email||'';
             // Phones
-            const pDiv = document.getElementById('phone-list-editor');
-            pDiv.innerHTML = '';
-            (profileData.phones || []).forEach(p => addPhoneInput(p.number, p.carrier));
+            document.getElementById('phone-list').innerHTML='';
+            (profile.phones||[]).forEach(p=>addPhoneInput(p.num, p.car));
             
-            // Projects
-            renderAdminProjects();
-            // Banks
-            renderAdminBanks();
-            loadBankList();
-            
-            // Config
-            const us = await getDoc(doc(db, "settings", "usb_config"));
-            if(us.exists()) document.getElementById('usb-secret-val').value = us.data().secret || '';
+            // Projects & Banks Render
+            renderAdmPrj();
+            renderAdmBank();
+            // Load Bank API
+            const r=await fetch('https://api.vietqr.io/v2/banks'); const d=await r.json();
+            document.getElementById('api-banks').innerHTML = d.data.map(b=>`<option value='${JSON.stringify({short:b.shortName,logo:b.logo})}'>${b.shortName}</option>`);
+
+            const u = await getDoc(doc(db,"settings","usb_config"));
+            if(u.exists()) document.getElementById('usb-val').value = u.data().secret||'';
+        }
+
+        window.addProject = () => {
+            projects.push({
+                title: document.getElementById('prj-title').value,
+                desc: document.getElementById('prj-desc').value,
+                logo: document.getElementById('prj-logo').value,
+                cover: document.getElementById('prj-cover').value,
+                link: document.getElementById('prj-link').value,
+                code: document.getElementById('prj-code').value,
+            });
+            renderAdmPrj();
+            document.getElementById('prj-title').value='';
+        }
+        function renderAdmPrj() {
+            document.getElementById('adm-prj-list').innerHTML = projects.map((p,i)=>`
+                <div class="flex items-center justify-between p-2 border rounded bg-slate-50 text-xs">
+                    <span class="font-bold truncate w-32">${p.title}</span>
+                    <button onclick="rmPrj(${i})" class="text-red-500">Xóa</button>
+                </div>
+            `).join('');
+        }
+        window.rmPrj=(i)=>{projects.splice(i,1);renderAdmPrj();}
+
+        window.addBank=()=>{const m=JSON.parse(document.getElementById('api-banks').value);banks.push({...m,num:document.getElementById('bank-num').value,own:document.getElementById('bank-own').value});renderAdmBank();}
+        function renderAdmBank(){document.getElementById('adm-bank-list').innerHTML=banks.map((b,i)=>`<div class="flex justify-between p-2 bg-slate-50 border rounded text-xs"><span>${b.short} - ${b.num}</span><button onclick="rmBank(${i})" class="text-red-500">Xóa</button></div>`).join('')}
+        window.rmBank=(i)=>{banks.splice(i,1);renderAdmBank();}
+
+        window.loadUsers=async()=>{
+            const s=await getDocs(collection(db,"users"));
+            document.getElementById('user-list').innerHTML = s.docs.map(d=>{
+                const u=d.data();
+                return `<div class="p-2 border rounded bg-slate-50 text-xs"><div class="font-bold flex gap-2"><img src="${u.photo}" class="w-4 h-4 rounded-full">${u.name}</div><div class="text-slate-500">${u.device||'-'} • ${u.location||'-'}</div></div>`;
+            }).join('');
         }
 
         window.saveProfile = async () => {
             const btn = document.querySelector('#modal-admin button.bg-primary');
             btn.innerText = "Đang lưu...";
             try {
-                // Upload Avatar if Changed
-                let avatarUrl = profileData.avatar;
-                if(croppedAvatarBase64 && ghConfig.token) {
-                    const content = croppedAvatarBase64.split(',')[1];
-                    const url = `https://api.github.com/repos/${ghConfig.owner}/${ghConfig.repo}/contents/avatars/${Date.now()}.png`;
-                    const res = await fetch(url, {
-                        method: 'PUT',
-                        headers: { 'Authorization': `token ${ghConfig.token}`, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message: "update avatar", content: content })
-                    });
-                    if(res.ok) {
-                        const d = await res.json();
-                        avatarUrl = d.content.download_url;
-                    }
+                // Upload avatar
+                let avt = profile.avatar;
+                if(newAvatar && ghCfg.token) {
+                    const content = newAvatar.split(',')[1];
+                    const url = `https://api.github.com/repos/${ghCfg.owner}/${ghCfg.repo}/contents/avatars/${Date.now()}.png`;
+                    const r = await fetch(url, { method:'PUT', headers:{'Authorization':`token ${ghCfg.token}`,'Content-Type':'application/json'}, body:JSON.stringify({message:"up",content})});
+                    if(r.ok) { const dd=await r.json(); avt=dd.content.download_url; }
                 }
 
-                // Phones
-                const phones = Array.from(document.querySelectorAll('.phone-row')).map(r => ({
-                    carrier: r.querySelector('select').value,
-                    number: r.querySelector('input').value
-                })).filter(x => x.number);
+                const ph = Array.from(document.querySelectorAll('.ph-row')).map(r=>({car:r.children[0].value,num:r.children[1].value})).filter(x=>x.num);
 
-                const newData = {
+                await setDoc(mainRef, {
                     name: document.getElementById('inp-name').value,
-                    nickname: document.getElementById('inp-nickname').value,
+                    nickname: document.getElementById('inp-nick').value,
                     bio: document.getElementById('inp-bio').value,
-                    avatar: avatarUrl,
-                    email: document.getElementById('inp-email-list').value,
+                    email: document.getElementById('inp-email').value,
+                    avatar: avt,
                     socials: {
                         facebook: document.getElementById('inp-fb').value,
                         zalo: document.getElementById('inp-zalo').value,
                         telegram: document.getElementById('inp-tele').value
                     },
-                    phones: phones,
-                    banks: listBanks,
-                    projects: listProjects
-                };
+                    phones: ph,
+                    projects: projects,
+                    banks: banks
+                }, {merge:true});
                 
-                // Config Save
-                const tk = document.getElementById('gh-token').value;
-                if(tk) await setDoc(doc(db, "settings", "github_config"), { 
-                    token: tk, 
-                    owner: document.getElementById('gh-owner').value, 
-                    repo: document.getElementById('gh-repo').value 
-                });
+                // Save GH Config
+                if(document.getElementById('gh-token').value) {
+                    await setDoc(doc(db,"settings","github_config"), {
+                        token: document.getElementById('gh-token').value,
+                        owner: document.getElementById('gh-owner').value,
+                        repo: document.getElementById('gh-repo').value
+                    });
+                }
 
-                await setDoc(profileRef, newData, { merge: true });
-                showToast("Đã lưu thành công!");
-                window.closeModal('modal-admin');
-            } catch(e) {
-                alert("Lỗi: " + e.message);
-            } finally {
-                btn.innerText = "Lưu Tất Cả";
+                toast("Đã lưu thành công!");
+                closeModal('modal-admin');
+            } catch(e) { alert("Lỗi lưu: "+e.message); }
+            btn.innerText = "Lưu Thay Đổi";
+        }
+
+        // 6. UTILS
+        window.addPhoneInput = (n='',c='Viettel') => {
+            const d=document.createElement('div'); d.className='ph-row flex gap-1 mb-1';
+            d.innerHTML=`<select class="w-20 border rounded text-xs p-1"><option>Viettel</option><option>Vina</option><option>Mobi</option></select><input class="flex-1 border rounded text-xs p-1" value="${n}"><button onclick="this.parentElement.remove()" class="text-red-500 text-xs">x</button>`;
+            d.children[0].value=c; document.getElementById('phone-list').appendChild(d);
+        }
+        window.switchTab = (t) => { document.querySelectorAll('.tab-content').forEach(e=>e.classList.add('hidden')); document.getElementById('tab-'+t).classList.remove('hidden'); document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('bg-white','shadow-sm')); event.target.classList.add('bg-white','shadow-sm'); }
+        
+        window.showAccModal = () => {
+            document.getElementById('modal-account').classList.remove('hidden');
+            document.getElementById('acc-img').src=currentUser.photoURL;
+            document.getElementById('acc-name').innerText=currentUser.displayName;
+            document.getElementById('acc-email').innerText=currentUser.email;
+            document.getElementById('acc-uid').innerText=currentUser.uid;
+            document.getElementById('acc-date').innerText=new Date(currentUser.metadata.creationTime).toLocaleDateString('vi');
+        }
+
+        window.showContactModal = (t) => {
+            document.getElementById('modal-contact').classList.remove('hidden');
+            const l=document.getElementById('contact-list'); l.innerHTML='';
+            document.getElementById('contact-title').innerText = t==='phone' ? "Số điện thoại" : "Email";
+            if(t==='phone') {
+                (profile.phones||[]).forEach(p => l.innerHTML+=`<a href="tel:${p.num}" class="block p-3 bg-slate-50 dark:bg-slate-800 rounded font-bold flex justify-between"><span>${p.car}</span><span>${p.num}</span></a>`);
+            } else {
+                (profile.email||'').split(',').forEach(e => l.innerHTML+=`<a href="mailto:${e.trim()}" class="block p-3 bg-slate-50 dark:bg-slate-800 rounded font-bold">${e}</a>`);
             }
         }
 
-        // Project Manager Logic
-        window.addProject = () => {
-            listProjects.push({
-                title: document.getElementById('prj-title').value,
-                desc: document.getElementById('prj-desc').value,
-                logo: document.getElementById('prj-logo').value,
-                cover: document.getElementById('prj-cover').value,
-                refLink: document.getElementById('prj-ref-link').value,
-                refCode: document.getElementById('prj-ref-code').value,
-            });
-            renderAdminProjects();
-            // Clear inputs
-            document.querySelectorAll('#tab-projects input, #tab-projects textarea').forEach(i => i.value = '');
-        }
-        function renderAdminProjects() {
-            document.getElementById('admin-project-list').innerHTML = listProjects.map((p, i) => `
-                <div class="flex items-center gap-2 p-2 bg-slate-100 rounded border">
-                    <img src="${p.logo}" class="w-8 h-8 rounded bg-white">
-                    <div class="flex-1 min-w-0">
-                        <p class="font-bold text-xs truncate">${p.title}</p>
-                    </div>
-                    <button onclick="removeProject(${i})" class="text-red-500 text-xs font-bold">Xóa</button>
-                </div>
-            `).join('');
-        }
-        window.removeProject = (i) => { listProjects.splice(i,1); renderAdminProjects(); }
-
-        // User Manager Logic
-        window.loadManager = async () => {
-            const list = document.getElementById('manager-list');
-            list.innerHTML = "Loading...";
-            const snap = await getDocs(collection(db, "users"));
-            list.innerHTML = '';
-            snap.forEach(d => {
-                const u = d.data();
-                list.innerHTML += `
-                    <div class="p-3 bg-slate-100 dark:bg-slate-800 rounded border dark:border-white/10 text-xs">
-                        <div class="flex gap-2 items-center mb-1">
-                            <img src="${u.photoURL}" class="w-6 h-6 rounded-full">
-                            <span class="font-bold">${u.displayName}</span>
-                        </div>
-                        <p>📧 ${u.email}</p>
-                        <p>📱 ${u.device || 'N/A'}</p>
-                        <p>📍 ${u.location || 'N/A'}</p>
-                        <p class="text-slate-400 italic mt-1">Last seen: ${new Date(u.lastSeen).toLocaleString('vi-VN')}</p>
-                    </div>
-                `;
-            });
+        window.showQR = (l) => {
+            if(!l) return;
+            document.getElementById('modal-qr').classList.remove('hidden');
+            document.getElementById('qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(l)}`;
         }
 
-        // 6. UTILS & OTHERS
-        window.addPhoneInput = (num='', car='Viettel') => {
-            const div = document.createElement('div');
-            div.className = 'phone-row flex gap-2';
-            div.innerHTML = `
-                <select class="inp w-24 p-1 text-xs"><option>Viettel</option><option>Vina</option><option>Mobi</option></select>
-                <input type="text" class="inp flex-1 p-1 text-xs" value="${num}">
-                <button onclick="this.parentElement.remove()" class="text-red-500">x</button>
-            `;
-            div.querySelector('select').value = car;
-            document.getElementById('phone-list-editor').appendChild(div);
+        window.toggleFollow = async () => {
+            if(!currentUser) return doLogin();
+            const uid=currentUser.uid;
+            const f=profile.followers||[];
+            if(f.includes(uid)) await updateDoc(mainRef, {followers:arrayRemove(uid)});
+            else await updateDoc(mainRef, {followers:arrayUnion(uid)});
         }
-
-        window.showQR = (url) => {
-            if(!url) return;
-            // Simple Alert or Modal override for QR
-            const api = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
-            const w = window.open("", "_blank", "width=300,height=300");
-            w.document.write(`<img src="${api}" style="width:100%">`);
+        function checkFollow(){
+            const btn=document.getElementById('follow-btn');
+            if(currentUser && (profile.followers||[]).includes(currentUser.uid)) {
+                btn.innerText="Đang theo dõi"; btn.classList.add('bg-green-600');
+            } else { btn.innerText="Theo dõi"; btn.classList.remove('bg-green-600'); }
         }
-
-        // Helper functions
-        window.toggleTheme = () => { document.documentElement.classList.toggle('dark'); localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light'; }
-        if(localStorage.theme === 'dark') document.documentElement.classList.add('dark');
-        
-        window.showAccountModal = () => {
-            if(!currentUser) return;
-            document.getElementById('modal-account').classList.remove('hidden');
-            document.getElementById('acc-avatar').src = currentUser.photoURL;
-            document.getElementById('acc-name').innerText = currentUser.displayName;
-            document.getElementById('acc-email').innerText = currentUser.email;
-            document.getElementById('acc-uid').innerText = currentUser.uid;
-            document.getElementById('acc-date').innerText = currentUser.metadata.creationTime ? new Date(currentUser.metadata.creationTime).toLocaleDateString('vi-VN') : '---';
-        }
-
-        window.copyToClip = (t) => { navigator.clipboard.writeText(t); showToast('Đã copy!'); }
-        window.showToast = (m) => { document.getElementById('toast-msg').innerText = m; document.getElementById('toast').classList.remove('translate-y-20', 'opacity-0'); setTimeout(()=>document.getElementById('toast').classList.add('translate-y-20', 'opacity-0'), 2000); }
-        window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
-        window.switchTab = (t) => { document.querySelectorAll('.tab-content').forEach(e=>e.classList.add('hidden')); document.getElementById('tab-'+t).classList.remove('hidden'); document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('bg-white','dark:bg-white/5')); event.target.classList.add('bg-white','dark:bg-white/5'); }
 
         window.doLogin = () => signInWithPopup(auth, provider);
         window.doLogout = () => signOut(auth).then(()=>location.reload());
-
-        // USB Key Handler
-        document.getElementById('usb-key-input').addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if(!file) return;
-            const reader = new FileReader();
-            reader.onload = async (evt) => {
-                try {
-                    const json = JSON.parse(evt.target.result);
-                    const snap = await getDoc(doc(db, "settings", "usb_config"));
-                    if(snap.exists() && snap.data().secret === json.key) {
-                        isUSBAdmin = true;
-                        showToast("USB Key xác thực thành công!");
-                        renderSidebar();
-                    } else showToast("Key sai!");
-                } catch(e) { showToast("Lỗi file Key"); }
-            };
-            reader.readAsText(file);
-        });
-        window.saveUSBConfig = async () => {
-             const v = document.getElementById('usb-secret-val').value;
-             await setDoc(doc(db,"settings","usb_config"), {secret: v});
-             showToast("Đã lưu USB Secret");
+        
+        window.showMsgModal = () => { document.getElementById('modal-msg').classList.remove('hidden'); if(currentUser) { document.getElementById('msg-name').value=currentUser.displayName; } }
+        window.toggleAnon = () => { if(document.getElementById('msg-anon').checked) document.getElementById('msg-name').value="Ẩn danh"; }
+        window.sendMsg = async () => {
+            const c=document.getElementById('msg-content').value; if(!c) return;
+            await addDoc(collection(db,"messages"), { content:c, name:document.getElementById('msg-name').value, email:document.getElementById('msg-email').value, timestamp:new Date().toISOString() });
+            toast("Đã gửi!"); closeModal('modal-msg');
         }
 
-        // Banks Helper
-        async function loadBankList() { try{const r=await fetch('https://api.vietqr.io/v2/banks');const d=await r.json();document.getElementById('api-bank-list').innerHTML=d.data.map(b=>`<option value='${JSON.stringify({shortName:b.shortName,logo:b.logo})}'>${b.shortName}</option>`).join('')}catch(e){} }
-        window.addBank=()=>{const m=JSON.parse(document.getElementById('api-bank-list').value);listBanks.push({...m,number:document.getElementById('bank-acc-num').value,owner:document.getElementById('bank-acc-name').value});renderAdminBanks();}
-        function renderAdminBanks(){document.getElementById('admin-bank-list').innerHTML=listBanks.map((b,i)=>`<div class="flex justify-between bg-slate-100 p-2 rounded text-xs"><span>${b.shortName} - ${b.number}</span><button onclick="listBanks.splice(${i},1);renderAdminBanks()" class="text-red-500">Xóa</button></div>`).join('')}
-        async function loadGithubConfig(){const s=await getDoc(doc(db,"settings","github_config"));if(s.exists()){ghConfig=s.data();document.getElementById('gh-token').value=ghConfig.token||'';document.getElementById('gh-owner').value=ghConfig.owner||'';document.getElementById('gh-repo').value=ghConfig.repo||'';}}
+        // USB Key
+        document.getElementById('usb-key-input').onchange = (e) => {
+            const f=e.target.files[0]; if(!f) return;
+            const r=new FileReader(); r.onload=async(ev)=>{
+                try {
+                    const j=JSON.parse(ev.target.result);
+                    const s=await getDoc(doc(db,"settings","usb_config"));
+                    if(s.exists() && s.data().secret===j.key) { isUSB=true; toast("USB Valid!"); renderSidebar(); }
+                    else toast("Key sai!");
+                } catch(err){toast("Lỗi file");}
+            }; r.readAsText(f);
+        }
+        window.saveUSB = async() => { await setDoc(doc(db,"settings","usb_config"),{secret:document.getElementById('usb-val').value}); toast("Lưu Key OK"); }
 
-        // Image Crop
+        // Helper
+        window.toggleTheme = () => { document.documentElement.classList.toggle('dark'); }
+        window.copyTxt = (t) => { navigator.clipboard.writeText(t); toast("Đã sao chép"); }
+        window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
+        function toast(m) { const t=document.getElementById('toast'); t.innerText=m; t.classList.remove('translate-y-20','opacity-0'); setTimeout(()=>t.classList.add('translate-y-20','opacity-0'),2000); }
+        async function loadGhConfig(){ const s=await getDoc(doc(db,"settings","github_config")); if(s.exists()) ghCfg=s.data(); document.getElementById('gh-token').value=ghCfg.token||''; document.getElementById('gh-owner').value=ghCfg.owner||''; document.getElementById('gh-repo').value=ghCfg.repo||''; }
+
+        // Crop
         document.getElementById('inp-avatar').onchange = (e) => {
-            const f = e.target.files[0];
-            const r = new FileReader();
-            r.onload = (ev) => {
-                document.getElementById('modal-crop').classList.remove('hidden');
-                document.getElementById('image-to-crop').src = ev.target.result;
-                if(cropper) cropper.destroy();
-                cropper = new Cropper(document.getElementById('image-to-crop'), { aspectRatio:1, viewMode:1 });
-            }
+            const f=e.target.files[0]; const r=new FileReader();
+            r.onload=(ev)=>{ document.getElementById('modal-crop').classList.remove('hidden'); document.getElementById('crop-img').src=ev.target.result; if(cropper) cropper.destroy(); cropper=new Cropper(document.getElementById('crop-img'),{aspectRatio:1,viewMode:1}); };
             if(f) r.readAsDataURL(f);
         }
-        window.confirmCrop = () => {
-            if(!cropper) return;
-            croppedAvatarBase64 = cropper.getCroppedCanvas({width:400,height:400}).toDataURL();
-            document.getElementById('preview-avatar').src = croppedAvatarBase64;
-            window.closeModal('modal-crop');
-        }
-
-        // Contact & Messages
-        window.showContactModal = (t) => {
-            document.getElementById('modal-contact').classList.remove('hidden');
-            const l = document.getElementById('contact-list');
-            if(t==='phone') {
-                document.getElementById('contact-title').innerText = "Số điện thoại";
-                l.innerHTML = (profileData.phones||[]).map(p => `<a href="tel:${p.number}" class="block p-3 bg-slate-50 rounded flex justify-between font-bold"><span>${p.carrier}</span><span>${p.number}</span></a>`).join('');
-            } else {
-                document.getElementById('contact-title').innerText = "Email";
-                l.innerHTML = (profileData.email||"").split(',').map(e=> `<a href="mailto:${e.trim()}" class="block p-3 bg-slate-50 rounded font-bold">${e}</a>`).join('');
-            }
-        }
-        window.showContactForm = () => { document.getElementById('modal-send-msg').classList.remove('hidden'); if(currentUser){document.getElementById('msg-name').value=currentUser.displayName;document.getElementById('msg-email-group').classList.add('hidden');} }
-        window.toggleAnon = () => { if(document.getElementById('msg-anon').checked){document.getElementById('msg-name').disabled=true;document.getElementById('msg-name').value="Ẩn danh";}else{document.getElementById('msg-name').disabled=false;if(currentUser)document.getElementById('msg-name').value=currentUser.displayName;} }
-        window.sendContact = async () => {
-            const c = document.getElementById('msg-content').value;
-            if(!c) return showToast("Nhập nội dung!");
-            const isAnon = document.getElementById('msg-anon').checked;
-            await addDoc(collection(db,"messages"), {
-                content: c, timestamp: new Date().toISOString(),
-                name: isAnon ? "Ẩn danh" : document.getElementById('msg-name').value,
-                email: isAnon ? "" : (currentUser?currentUser.email:document.getElementById('msg-email').value)
-            });
-            showToast("Đã gửi tin!"); window.closeModal('modal-send-msg');
-        }
-        window.loadAdminMessages = async () => {
-             const q = query(collection(db,"messages"), orderBy("timestamp","desc"), limit(20));
-             const s = await getDocs(q);
-             document.getElementById('admin-messages-list').innerHTML = s.docs.map(d=>{const m=d.data(); return `<div class="bg-slate-100 p-2 rounded text-xs mb-2"><b>${m.name}</b> (${m.email||'--'})<br>${m.content}<br><i class="text-slate-400">${new Date(m.timestamp).toLocaleString()}</i></div>`}).join('');
-        }
-
-        // Init Scroll Reveal
-        function initScrollReveal() {
-            const obs = new IntersectionObserver((e) => e.forEach(en => { if(en.isIntersecting) en.target.classList.add('active') }));
-            document.querySelectorAll('.reveal-on-scroll').forEach(el => obs.observe(el));
-        }
+        window.confirmCrop = () => { newAvatar=cropper.getCroppedCanvas({width:400,height:400}).toDataURL(); document.getElementById('adm-avatar').src=newAvatar; closeModal('modal-crop'); }
+        function initScroll() { const obs=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('active')})); document.querySelectorAll('.reveal-on-scroll').forEach(el=>obs.observe(el)); }
     </script>
-    <style>
-        .inp { width: 100%; padding: 0.5rem; border-radius: 0.5rem; border: 1px solid #cbd5e1; background: #f8fafc; outline: none; font-size: 0.875rem; }
-        .dark .inp { background: #1e293b; border-color: rgba(255,255,255,0.1); color: white; }
-        .lbl { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #64748b; display: block; margin-bottom: 0.25rem; }
-        .tab-btn.active { background-color: white; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); color: #6366f1; }
-        .dark .tab-btn.active { background-color: rgba(255,255,255,0.05); color: white; }
-    </style>
 </body>
 </html>
