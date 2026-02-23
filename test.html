@@ -1,244 +1,904 @@
-
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" class="light">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auto Detect All Wallets (Zero Errors)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bmass Profile</title>
+    
+    <!-- SEO -->
+    <meta name="description" id="meta-desc" content="Profile cá nhân">
+    <link rel="icon" id="meta-icon" href="https://hdd.io.vn/img/bmassloadings.png" type="image/png">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Profile Cá Nhân">
+    <meta property="og:image" content="https://hdd.io.vn/img/bmasslogos.png">
+    <meta name="theme-color" content="#6366f1">
+    
+    <!-- Tailwind & Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { 
+                extend: { 
+                    colors: { primary: '#6366f1', secondary: '#ec4899', dark: '#0f172a' },
+                    animation: { 'blob': 'blob 7s infinite', 'bounce-slow': 'bounce 2s infinite' },
+                    keyframes: {
+                        blob: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                            '100%': { transform: 'translate(0px, 0px) scale(1)' }
+                        }
+                    }
+                } 
+            }
+        }
+    </script>
     <style>
-        body {
-            background-color: #121212;
-            color: #ffffff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 50px 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .container {
-            max-width: 600px;
-            width: 100%;
-            background: #1e1e1e;
-            padding: 30px;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            border: 1px solid #333;
-        }
-
-        h2 { text-align: center; margin-bottom: 5px; color: #4facfe; }
-        p.subtitle { text-align: center; color: #888; margin-bottom: 30px; font-size: 14px; }
-
-        .wallet-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .wallet-btn {
-            background-color: #2a2a2a;
-            border: 1px solid #444;
-            color: white;
-            padding: 15px 20px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            transition: all 0.2s;
-        }
-
-        .wallet-btn:hover {
-            background-color: #333;
-            border-color: #4facfe;
-            transform: translateY(-2px);
-        }
-
-        .wallet-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .wallet-icon {
-            width: 35px;
-            height: 35px;
-            border-radius: 8px;
-            object-fit: contain;
-        }
-
-        /* Vùng hiển thị sau khi kết nối */
-        #connected-area {
-            display: none;
-            text-align: center;
-            animation: fadeIn 0.5s;
-        }
-
-        .address-box {
-            background: #0d1117;
-            border: 1px solid #30363d;
-            padding: 15px;
-            border-radius: 10px;
-            color: #58a6ff;
-            font-family: monospace;
-            font-size: 16px;
-            margin: 20px 0;
-            word-break: break-all;
-        }
-
-        .disconnect-btn {
-            background: #da3633;
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 15px;
-        }
-
-        .disconnect-btn:hover { background: #b32d2a; }
-
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        #empty-msg {
-            text-align: center;
-            color: #f39c12;
-            padding: 20px;
-            background: rgba(243, 156, 18, 0.1);
-            border-radius: 8px;
-            display: none;
-        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; transition: background 0.3s; } 
+        .dark body { background-color: #020617; color: #e2e8f0; }
+        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); }
+        .dark .glass { background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.05); }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #334155; }
+        .sidebar-transition { transition: transform 0.3s ease-in-out; }
+        .reveal-on-scroll { opacity: 0; transform: translateY(30px); transition: all 0.8s cubic-bezier(0.5, 0, 0, 1); }
+        .reveal-on-scroll.active { opacity: 1; transform: translateY(0); }
     </style>
 </head>
-<body>
+<body class="min-h-screen relative overflow-x-hidden pb-10">
 
-    <div class="container">
-        <!-- Vùng Danh sách Ví -->
-        <div id="selection-area">
-            <h2>Kết Nối Ví Web3</h2>
-            <p class="subtitle">Tự động phát hiện mọi ví Extension trên trình duyệt</p>
-            
-            <div id="empty-msg">
-                Đang quét... Nếu không thấy gì, vui lòng cài đặt ít nhất 1 ví extension (MetaMask, OKX, Trust...) vào trình duyệt và tải lại trang.
+    <!-- Background Blob -->
+    <div class="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
+        <div class="absolute top-0 left-1/4 w-96 h-96 bg-primary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
+        <div class="absolute top-0 right-1/4 w-96 h-96 bg-secondary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
+    </div>
+
+    <!-- Loading -->
+    <div id="global-loading" class="fixed inset-0 bg-white dark:bg-slate-950 z-[900] flex flex-col items-center justify-center transition-opacity duration-300">
+        <img src="https://hdd.io.vn/img/bmassloadings.png" class="w-20 h-20 mb-4 animate-bounce-slow drop-shadow-2xl">
+    </div>
+
+    <!-- USB Input Hidden -->
+    <input type="file" id="usb-key-input" class="hidden" accept=".json,.txt">
+
+    <!-- HEADER / MENU BUTTON -->
+    <div class="fixed top-4 left-4 z-50">
+        <button onclick="window.toggleSidebar()" class="p-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur rounded-full shadow-lg border border-slate-200 dark:border-slate-700 hover:scale-105 transition">
+            <i data-lucide="menu" class="w-6 h-6 text-slate-800 dark:text-white"></i>
+        </button>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div id="sidebar-overlay" onclick="window.toggleSidebar()" class="fixed inset-0 bg-black/50 z-[90] hidden backdrop-blur-sm transition-opacity"></div>
+    <aside id="sidebar" class="fixed top-0 left-0 h-full w-72 bg-white dark:bg-slate-950 z-[100] shadow-2xl transform -translate-x-full sidebar-transition flex flex-col border-r dark:border-white/5">
+        <!-- Sidebar Header -->
+        <div class="p-6 border-b dark:border-white/5 flex items-center justify-between">
+            <span class="font-black text-xl tracking-tighter text-primary">MENU</span>
+            <button onclick="window.toggleSidebar()" class="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        
+        <!-- Sidebar Body -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-2" id="sidebar-content">
+            <!-- Dynamic Content Injected JS -->
+        </div>
+
+        <!-- Sidebar Footer -->
+        <div class="p-4 border-t dark:border-white/5">
+            <div id="auth-btn-area"></div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="max-w-4xl mx-auto px-4 pt-20 space-y-6">
+
+        <!-- HEADER CARD -->
+        <div class="glass rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row items-center md:items-start gap-6 relative overflow-hidden reveal-on-scroll">
+            <div class="relative group">
+                <div class="absolute -inset-1 bg-gradient-to-r from-primary to-secondary rounded-full blur opacity-25"></div>
+                <img id="profile-avatar" src="https://ui-avatars.com/api/?name=U" class="relative w-32 h-32 sm:w-40 sm:h-40 rounded-full object-cover border-4 border-white dark:border-slate-800 shadow-xl">
+                <div id="online-indicator" class="absolute bottom-2 right-2 w-5 h-5 bg-green-500 border-4 border-white dark:border-slate-800 rounded-full"></div>
             </div>
 
-            <div class="wallet-list" id="wallet-container">
-                <!-- Javascript sẽ tự động thêm ví vào đây -->
+            <div class="flex-1 text-center md:text-left space-y-2 z-10">
+                <h1 id="profile-name" class="text-3xl sm:text-4xl font-black tracking-tight text-slate-800 dark:text-white">Loading...</h1>
+                <span id="profile-nickname-badge" class="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider hidden"></span>
+                <p id="profile-bio" class="text-slate-500 dark:text-slate-400 font-medium max-w-lg mx-auto md:mx-0 py-2">...</p>
+
+                <!-- Stats -->
+                <div class="flex flex-wrap items-center justify-center md:justify-start gap-4">
+                    <div class="flex items-center gap-1.5 text-sm font-bold text-slate-700 dark:text-slate-300">
+                        <i data-lucide="users" class="w-4 h-4 text-primary"></i> <span id="stat-followers">0</span> Follower
+                    </div>
+                    <div class="flex items-center gap-1.5 text-sm font-bold text-slate-700 dark:text-slate-300">
+                        <i data-lucide="eye" class="w-4 h-4 text-secondary"></i> <span id="stat-views">0</span> View
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex flex-wrap justify-center md:justify-start gap-3 mt-4">
+                    <button id="follow-btn" onclick="window.toggleFollow()" class="px-6 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl font-bold text-sm shadow-lg hover:scale-105 transition flex items-center gap-2">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i> Theo dõi
+                    </button>
+                    <button onclick="window.showContactModal('phone')" class="p-2.5 bg-white dark:bg-slate-800 border dark:border-white/10 rounded-xl hover:text-primary transition shadow-sm"><i data-lucide="phone" class="w-5 h-5"></i></button>
+                    <button onclick="window.showContactModal('email')" class="p-2.5 bg-white dark:bg-slate-800 border dark:border-white/10 rounded-xl hover:text-secondary transition shadow-sm"><i data-lucide="mail" class="w-5 h-5"></i></button>
+                </div>
             </div>
         </div>
 
-        <!-- Vùng Đã Kết Nối -->
-        <div id="connected-area">
-            <h2 id="connected-name">Đã kết nối MetaMask</h2>
-            <img id="connected-icon" src="" style="width: 60px; height: 60px; border-radius: 12px; margin-top: 10px;">
-            <div class="address-box" id="wallet-address">0x...</div>
-            <button class="disconnect-btn" onclick="disconnectWallet()">Ngắt kết nối</button>
+        <!-- SOCIALS -->
+        <div id="social-grid" class="flex flex-wrap justify-center gap-4 reveal-on-scroll"></div>
+
+        <!-- PROJECTS SECTION (NEW) -->
+        <div id="projects-section" class="glass p-6 sm:p-8 rounded-3xl reveal-on-scroll hidden">
+            <h3 class="font-black uppercase text-sm tracking-widest text-slate-400 mb-6 flex items-center gap-2">
+                <i data-lucide="folder-kanban" class="w-4 h-4"></i> Dự án
+            </h3>
+            <div id="project-list" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+        </div>
+
+        <!-- BANKING -->
+        <div class="glass p-6 rounded-3xl space-y-4 reveal-on-scroll">
+            <h3 class="font-black uppercase text-sm tracking-widest text-slate-400 flex items-center gap-2">
+                <i data-lucide="credit-card" class="w-4 h-4"></i> Ngân hàng
+            </h3>
+            <div id="bank-list" class="space-y-3"></div>
+        </div>
+
+        <!-- CONNECTION INFO (NEW: Address & Device) -->
+        <div class="glass mt-8 p-4 rounded-2xl text-center space-y-2 reveal-on-scroll">
+            <div class="flex items-center justify-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-widest">
+                <i data-lucide="globe" class="w-3 h-3"></i> Thông tin truy cập
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div class="bg-white/50 dark:bg-slate-800/50 p-2 rounded-lg">
+                    <span class="block text-slate-400 text-xs mb-1">Thiết bị</span>
+                    <span id="user-device" class="font-bold text-primary">Đang kiểm tra...</span>
+                </div>
+                <div class="bg-white/50 dark:bg-slate-800/50 p-2 rounded-lg">
+                    <span class="block text-slate-400 text-xs mb-1">Vị trí (Ước tính)</span>
+                    <span id="user-location" class="font-bold text-slate-700 dark:text-white">Đang tải...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- MESSAGE BTN -->
+        <div class="flex justify-center mt-8 pb-8 reveal-on-scroll">
+            <button onclick="window.showContactForm()" class="w-full max-w-md px-6 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:-translate-y-1 transition flex items-center justify-center gap-3">
+                <i data-lucide="send" class="w-6 h-6"></i> Gửi tin nhắn cho tôi
+            </button>
+        </div>
+    </main>
+
+    <!-- MODALS AREA -->
+
+    <!-- Account Details Modal -->
+    <div id="modal-account" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6 shadow-2xl relative animate-fade-in">
+            <button onclick="window.closeModal('modal-account')" class="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
+            <div class="text-center mb-6">
+                <img id="acc-avatar" src="" class="w-20 h-20 rounded-full mx-auto mb-3 border-2 border-primary">
+                <h3 id="acc-name" class="font-bold text-xl">Name</h3>
+                <p id="acc-email" class="text-sm text-slate-500">email@example.com</p>
+            </div>
+            <div class="space-y-3 text-sm">
+                <div class="flex justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded">
+                    <span class="text-slate-500">UID</span>
+                    <span id="acc-uid" class="font-mono font-bold truncate max-w-[150px]">...</span>
+                </div>
+                 <div class="flex justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded">
+                    <span class="text-slate-500">Tham gia</span>
+                    <span id="acc-date" class="font-bold">...</span>
+                </div>
+            </div>
         </div>
     </div>
 
-    <script>
-        // Mảng lưu trữ tất cả các ví mà trình duyệt tìm thấy
-        let detectedWallets = [];
+    <!-- Contact View Modal -->
+    <div id="modal-contact" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="contact-title" class="font-bold text-lg">Liên hệ</h3>
+                <button onclick="window.closeModal('modal-contact')" class="p-2 rounded-full hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div id="contact-list" class="space-y-3"></div>
+        </div>
+    </div>
 
-        // 1. Lắng nghe sự kiện EIP-6963 (Chuẩn mới nhất của Web3 để các ví tự báo cáo sự tồn tại của chúng)
-        window.addEventListener("eip6963:announceProvider", (event) => {
-            const providerDetail = event.detail;
-            
-            // Tránh trùng lặp nếu ví báo cáo nhiều lần
-            const exists = detectedWallets.find(w => w.info.uuid === providerDetail.info.uuid);
-            if (!exists) {
-                detectedWallets.push(providerDetail);
-                renderWallets();
+    <!-- Send Msg Modal -->
+    <div id="modal-send-msg" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
+            <button onclick="window.closeModal('modal-send-msg')" class="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
+            <h3 class="font-bold text-lg mb-4">Gửi tin nhắn</h3>
+            <form id="contact-form" class="space-y-4">
+                <input type="text" id="msg-name" class="inp" placeholder="Tên của bạn">
+                <div id="msg-email-group"><input type="email" id="msg-email" class="inp" placeholder="Email liên hệ"></div>
+                <textarea id="msg-content" rows="4" class="inp" placeholder="Nội dung..."></textarea>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="msg-anon" onchange="toggleAnon()" class="w-4 h-4"> <label for="msg-anon" class="text-sm">Gửi ẩn danh</label>
+                </div>
+                <button type="button" onclick="window.sendContact()" class="w-full py-2 bg-primary text-white font-bold rounded-xl shadow">Gửi đi</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Edit Modal (Full Screen) -->
+    <div id="modal-admin" class="fixed inset-0 bg-black/80 z-[300] hidden flex items-center justify-center sm:p-4">
+        <div class="bg-white dark:bg-slate-900 w-full h-full sm:h-[90vh] sm:rounded-2xl sm:max-w-5xl shadow-2xl flex flex-col overflow-hidden">
+            <div class="p-4 border-b dark:border-white/10 flex justify-between items-center bg-slate-50 dark:bg-slate-950">
+                <h3 class="font-black uppercase text-primary">Admin Panel</h3>
+                <button onclick="window.closeModal('modal-admin')" class="p-2 bg-slate-200 dark:bg-slate-800 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="flex-1 flex flex-col sm:flex-row overflow-hidden">
+                <!-- Sidebar tabs -->
+                <div class="w-full sm:w-48 bg-slate-50 dark:bg-slate-950 border-r dark:border-white/5 p-2 flex sm:flex-col gap-2 overflow-x-auto shrink-0">
+                    <button onclick="window.switchTab('general')" class="tab-btn active p-3 rounded-lg text-left text-xs font-bold uppercase hover:bg-white dark:hover:bg-white/5">Thông tin chung</button>
+                    <button onclick="window.switchTab('projects')" class="tab-btn p-3 rounded-lg text-left text-xs font-bold uppercase hover:bg-white dark:hover:bg-white/5">Dự án</button>
+                    <button onclick="window.switchTab('bank')" class="tab-btn p-3 rounded-lg text-left text-xs font-bold uppercase hover:bg-white dark:hover:bg-white/5">Ngân hàng</button>
+                    <button onclick="window.switchTab('users')" class="tab-btn p-3 rounded-lg text-left text-xs font-bold uppercase hover:bg-white dark:hover:bg-white/5 text-blue-500">QL Người dùng</button>
+                    <button onclick="window.switchTab('messages')" class="tab-btn p-3 rounded-lg text-left text-xs font-bold uppercase hover:bg-white dark:hover:bg-white/5 text-green-500">Tin nhắn</button>
+                    <button onclick="window.switchTab('config')" class="tab-btn p-3 rounded-lg text-left text-xs font-bold uppercase hover:bg-white dark:hover:bg-white/5 text-red-500">Cấu hình</button>
+                </div>
+
+                <!-- Content -->
+                <div class="flex-1 overflow-y-auto p-6 bg-white dark:bg-slate-900 relative">
+                    <!-- General -->
+                    <div id="tab-general" class="tab-content space-y-4">
+                        <div class="flex gap-4 items-center">
+                            <img id="preview-avatar" src="" class="w-20 h-20 rounded-full border">
+                            <label class="cursor-pointer bg-slate-100 px-4 py-2 rounded font-bold text-sm">Tải ảnh mới <input type="file" id="inp-avatar" class="hidden"></label>
+                        </div>
+                        <input type="text" id="inp-name" class="inp" placeholder="Họ tên">
+                        <input type="text" id="inp-nickname" class="inp" placeholder="Biệt danh">
+                        <textarea id="inp-bio" rows="3" class="inp" placeholder="Tiểu sử"></textarea>
+                        
+                        <label class="lbl mt-4">Liên hệ & MXH</label>
+                        <input type="text" id="inp-fb" class="inp" placeholder="Link Facebook">
+                        <input type="text" id="inp-zalo" class="inp" placeholder="SĐT Zalo">
+                        <input type="text" id="inp-tele" class="inp" placeholder="Username Telegram">
+                        <input type="text" id="inp-email-list" class="inp" placeholder="Email (cách nhau dấu phẩy)">
+                        
+                        <div id="phone-list-editor" class="space-y-2"></div>
+                        <button type="button" onclick="addPhoneInput()" class="text-xs text-primary font-bold">+ Thêm SĐT</button>
+                    </div>
+
+                    <!-- Projects -->
+                    <div id="tab-projects" class="tab-content hidden space-y-4">
+                        <div class="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl space-y-3 border dark:border-white/10">
+                            <h4 class="font-bold text-sm">Thêm dự án mới</h4>
+                            <input type="text" id="prj-title" class="inp" placeholder="Tên dự án">
+                            <textarea id="prj-desc" class="inp" placeholder="Mô tả ngắn" rows="2"></textarea>
+                            <div class="grid grid-cols-2 gap-2">
+                                <input type="text" id="prj-logo" class="inp" placeholder="Link Logo">
+                                <input type="text" id="prj-cover" class="inp" placeholder="Link ảnh bìa">
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <input type="text" id="prj-ref-link" class="inp" placeholder="Link Ref (Tham gia)">
+                                <input type="text" id="prj-ref-code" class="inp" placeholder="Mã Ref">
+                            </div>
+                            <button onclick="addProject()" class="w-full bg-primary text-white py-2 rounded-lg font-bold shadow">Thêm vào danh sách</button>
+                        </div>
+                        <div id="admin-project-list" class="space-y-3"></div>
+                    </div>
+
+                    <!-- Banks -->
+                    <div id="tab-bank" class="tab-content hidden space-y-4">
+                        <div class="flex gap-2">
+                            <select id="api-bank-list" class="inp w-1/2"></select>
+                            <input type="text" id="bank-acc-num" placeholder="Số tài khoản" class="inp w-1/2">
+                        </div>
+                        <input type="text" id="bank-acc-name" placeholder="Tên chủ thẻ" class="inp">
+                        <button onclick="addBank()" class="w-full bg-primary text-white py-2 rounded-lg font-bold">Thêm Ngân hàng</button>
+                        <div id="admin-bank-list" class="space-y-2 mt-4"></div>
+                    </div>
+
+                    <!-- User Manager -->
+                    <div id="tab-users" class="tab-content hidden space-y-4">
+                        <button onclick="loadManager()" class="text-xs bg-slate-200 px-3 py-1 rounded">Làm mới</button>
+                        <div id="manager-list" class="space-y-3"></div>
+                    </div>
+
+                    <!-- Messages -->
+                    <div id="tab-messages" class="tab-content hidden space-y-4">
+                         <button onclick="loadAdminMessages()" class="text-xs bg-slate-200 px-3 py-1 rounded">Làm mới</button>
+                         <div id="admin-messages-list" class="space-y-3"></div>
+                    </div>
+                    
+                    <!-- Config -->
+                    <div id="tab-config" class="tab-content hidden space-y-4">
+                        <div class="p-4 bg-red-50 rounded-xl space-y-2">
+                             <h4 class="font-bold text-red-500">GitHub (Chứa ảnh)</h4>
+                             <input type="password" id="gh-token" class="inp" placeholder="Token">
+                             <input type="text" id="gh-owner" class="inp" placeholder="Username">
+                             <input type="text" id="gh-repo" class="inp" placeholder="Repo">
+                        </div>
+                        <div class="p-4 bg-blue-50 rounded-xl space-y-2">
+                            <h4 class="font-bold text-blue-500">USB Key Secret</h4>
+                            <input type="text" id="usb-secret-val" class="inp" placeholder="Nhập mã bí mật">
+                            <button onclick="saveUSBConfig()" class="bg-blue-500 text-white px-4 py-1 rounded text-xs">Lưu Key</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 bg-white dark:bg-slate-900 border-t flex justify-end gap-3">
+                <button onclick="window.saveProfile()" class="px-6 py-2 bg-primary text-white rounded-xl font-bold shadow-lg">Lưu Tất Cả</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Crop Modal -->
+    <div id="modal-crop" class="fixed inset-0 bg-black z-[500] hidden flex flex-col justify-center">
+        <div class="h-3/4"><img id="image-to-crop" src="" class="max-w-full max-h-full block mx-auto"></div>
+        <div class="bg-slate-900 p-4 flex justify-between text-white">
+            <button onclick="window.closeModal('modal-crop')">Hủy</button>
+            <button onclick="window.confirmCrop()" class="font-bold text-primary">Cắt & Dùng</button>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 z-[1000] translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white px-6 py-3 rounded-xl shadow-2xl font-bold flex gap-2">
+        <i data-lucide="check-circle" class="w-5 h-5 text-green-500"></i> <span id="toast-msg">OK</span>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc, updateDoc, getDoc, arrayUnion, arrayRemove, increment, collection, getDocs, addDoc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // CONFIG FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE", 
+            authDomain: "profile-d1214.firebaseapp.com",
+            projectId: "profile-d1214",
+            storageBucket: "profile-d1214.firebasestorage.app",
+            messagingSenderId: "914980131889",
+            appId: "1:914980131889:web:72f8da15c42dbee671b110"
+        };
+        const ADMIN_EMAILS = ["sonlyhongduc@gmail.com"];
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+        const profileRef = doc(db, "profile_data", "main");
+
+        let currentUser = null;
+        let isAdmin = false;
+        let isUSBAdmin = false;
+        let profileData = {};
+        let listBanks = [];
+        let listProjects = [];
+        let cropper = null;
+        let croppedAvatarBase64 = null;
+        let ghConfig = {};
+
+        // 1. INIT & AUTH
+        onAuthStateChanged(auth, async (user) => {
+            currentUser = user;
+            renderSidebar(); 
+            checkFollowStatus();
+
+            if(user) {
+                // Log device info & location for User
+                logUserConnection(user);
+                
+                const adminRef = doc(db, "settings", "admins");
+                const s = await getDoc(adminRef);
+                const admins = s.exists() ? s.data().emails : [];
+                isAdmin = ADMIN_EMAILS.includes(user.email) || (admins && admins.includes(user.email));
+                if(isAdmin) loadGithubConfig();
+            } else {
+                isAdmin = false;
+            }
+            renderSidebar(); // Re-render sidebar with new permissions
+        });
+
+        // 2. FETCH DATA & RENDER
+        onSnapshot(profileRef, (docSnap) => {
+            document.getElementById('global-loading').classList.add('opacity-0', 'pointer-events-none');
+            if (docSnap.exists()) {
+                profileData = docSnap.data();
+                renderProfile();
+                
+                // FIX VIEW COUNT: Increment only once per session
+                if (!sessionStorage.getItem('viewed')) {
+                    updateDoc(profileRef, { views: increment(1) });
+                    sessionStorage.setItem('viewed', 'true');
+                }
             }
         });
 
-        // 2. Phát tín hiệu yêu cầu các ví đang cài trên máy "lên tiếng"
-        window.dispatchEvent(new Event("eip6963:requestProvider"));
-
-        // 3. Hiển thị các ví tìm được ra giao diện
-        function renderWallets() {
-            const container = document.getElementById('wallet-container');
-            const emptyMsg = document.getElementById('empty-msg');
-            
-            container.innerHTML = ''; // Xóa rỗng để vẽ lại
-
-            if (detectedWallets.length === 0) {
-                emptyMsg.style.display = 'block';
-                return;
+        function renderProfile() {
+            // Header
+            document.title = profileData.name || "Profile";
+            document.getElementById('profile-name').innerText = profileData.name || "No Name";
+            document.getElementById('profile-bio').innerText = profileData.bio || "";
+            document.getElementById('stat-followers').innerText = (profileData.followers || []).length;
+            document.getElementById('stat-views').innerText = profileData.views || 0;
+            if(profileData.avatar) {
+                document.getElementById('profile-avatar').src = profileData.avatar;
+                document.getElementById('meta-icon').href = profileData.avatar;
+            }
+            if(profileData.nickname) {
+                const b = document.getElementById('profile-nickname-badge');
+                b.innerText = profileData.nickname;
+                b.classList.remove('hidden');
             }
 
-            emptyMsg.style.display = 'none';
+            // Socials
+            let html = '';
+            const socialMap = {
+                facebook: { icon: 'facebook', color: 'text-blue-600' },
+                zalo: { icon: 'phone', color: 'text-blue-500' },
+                telegram: { icon: 'send', color: 'text-sky-500' },
+            };
+            if(profileData.socials) {
+                Object.keys(profileData.socials).forEach(k => {
+                    const v = profileData.socials[k];
+                    if(v) {
+                        let link = v;
+                        if(k==='zalo') link = `https://zalo.me/${v}`;
+                        if(k==='telegram') link = `https://t.me/${v}`;
+                        html += `<a href="${link}" target="_blank" class="p-3 bg-white dark:bg-slate-800 rounded-full shadow hover:-translate-y-1 transition ${socialMap[k]?.color || ''}"><i data-lucide="${socialMap[k]?.icon || 'link'}" class="w-5 h-5"></i></a>`;
+                    }
+                });
+            }
+            document.getElementById('social-grid').innerHTML = html;
 
-            detectedWallets.forEach((wallet) => {
-                // Ví tự cung cấp Tên (wallet.info.name) và Icon (wallet.info.icon)
-                const btnHTML = `
-                    <button class="wallet-btn" onclick="connectWallet('${wallet.info.uuid}')">
-                        <div class="wallet-info">
-                            <img src="${wallet.info.icon}" class="wallet-icon" alt="${wallet.info.name}">
-                            <span>${wallet.info.name}</span>
+            // Projects
+            const prjSection = document.getElementById('projects-section');
+            const prjList = document.getElementById('project-list');
+            listProjects = profileData.projects || [];
+            if(listProjects.length > 0) {
+                prjSection.classList.remove('hidden');
+                prjList.innerHTML = listProjects.map(p => `
+                    <div class="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow border dark:border-white/5 flex flex-col">
+                        <div class="h-32 bg-gray-200 relative">
+                            ${p.cover ? `<img src="${p.cover}" class="w-full h-full object-cover">` : ''}
+                            <div class="absolute -bottom-6 left-4">
+                                <img src="${p.logo || 'https://via.placeholder.com/50'}" class="w-12 h-12 rounded-lg border-2 border-white shadow bg-white object-contain">
+                            </div>
                         </div>
-                        <span style="color: #4facfe;">Kết nối &rarr;</span>
+                        <div class="pt-8 p-4 flex-1 flex flex-col">
+                            <h4 class="font-bold text-lg">${p.title}</h4>
+                            <p class="text-xs text-slate-500 line-clamp-2 mb-3 flex-1">${p.desc}</p>
+                            <div class="flex gap-2 mt-auto">
+                                <a href="${p.refLink}" target="_blank" class="flex-1 bg-primary text-white text-xs font-bold py-2 rounded-lg text-center hover:opacity-90">Tham gia ngay</a>
+                                <button onclick="window.copyToClip('${p.refCode}')" class="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg" title="Copy mã Ref"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                                <button onclick="window.showQR('${p.refLink}')" class="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg"><i data-lucide="qr-code" class="w-4 h-4"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                prjSection.classList.add('hidden');
+            }
+
+            // Banks
+            listBanks = profileData.banks || [];
+            document.getElementById('bank-list').innerHTML = listBanks.map(b => `
+                <div class="p-3 bg-white dark:bg-slate-900 rounded-xl flex items-center justify-between border shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <img src="${b.logo}" class="w-10 h-10 object-contain p-1 border rounded bg-white">
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase">${b.shortName}</p>
+                            <p class="font-mono font-bold text-slate-800 dark:text-white">${b.number}</p>
+                            <p class="text-[10px] text-slate-500 uppercase">${b.owner}</p>
+                        </div>
+                    </div>
+                    <button onclick="window.copyToClip('${b.number}')" class="p-2 bg-slate-100 dark:bg-slate-800 rounded hover:text-primary"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                </div>
+            `).join('');
+
+            checkFollowStatus();
+            lucide.createIcons();
+            initScrollReveal();
+        }
+
+        // 3. SIDEBAR & NAVIGATION
+        window.toggleSidebar = () => {
+            const sb = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if(sb.classList.contains('-translate-x-full')) {
+                sb.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                sb.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        function renderSidebar() {
+            const content = document.getElementById('sidebar-content');
+            const authArea = document.getElementById('auth-btn-area');
+            
+            let html = '';
+            
+            // Common items
+            html += `
+                <button onclick="window.toggleTheme()" class="w-full text-left p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-3 font-bold text-sm text-slate-600 dark:text-slate-300">
+                    <i data-lucide="sun-moon" class="w-5 h-5"></i> Giao diện Sáng/Tối
+                </button>
+                <button onclick="document.getElementById('usb-key-input').click()" class="w-full text-left p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-3 font-bold text-sm text-slate-600 dark:text-slate-300">
+                    <i data-lucide="usb" class="w-5 h-5"></i> Kết nối USB Key
+                </button>
+            `;
+
+            // User Items
+            if (currentUser) {
+                html += `
+                    <button onclick="window.showAccountModal()" class="w-full text-left p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-3 font-bold text-sm text-slate-600 dark:text-slate-300">
+                        <i data-lucide="user" class="w-5 h-5"></i> Tài khoản
                     </button>
                 `;
-                container.innerHTML += btnHTML;
+            }
+
+            // Admin Items
+            if (isAdmin || isUSBAdmin) {
+                html += `<div class="my-2 border-t dark:border-white/10"></div>`;
+                html += `
+                    <div class="px-3 text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Admin</div>
+                    <button onclick="window.openEditModal()" class="w-full text-left p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-3 font-bold text-sm text-primary">
+                        <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Quản lý & Chỉnh sửa
+                    </button>
+                `;
+            }
+
+            content.innerHTML = html;
+
+            // Auth Button
+            if (currentUser) {
+                authArea.innerHTML = `
+                    <button onclick="window.doLogout()" class="w-full py-3 bg-red-50 text-red-500 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-red-100">
+                        <i data-lucide="log-out" class="w-4 h-4"></i> Đăng xuất
+                    </button>
+                `;
+            } else {
+                authArea.innerHTML = `
+                    <button onclick="window.doLogin()" class="w-full py-3 bg-primary text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow hover:opacity-90">
+                        <i data-lucide="log-in" class="w-4 h-4"></i> Đăng nhập
+                    </button>
+                `;
+            }
+            lucide.createIcons();
+        }
+
+        // 4. LOGIC: LOCATION & DEVICE
+        function getDeviceName() {
+            const ua = navigator.userAgent;
+            if (/android/i.test(ua)) return "Android Device";
+            if (/iPad|iPhone|iPod/.test(ua)) return "iOS Device";
+            if (/windows phone/i.test(ua)) return "Windows Phone";
+            if (/Win64|Win32/i.test(ua)) return "Windows PC";
+            if (/Mac/i.test(ua)) return "Macintosh";
+            return "Thiết bị lạ";
+        }
+        document.getElementById('user-device').innerText = getDeviceName();
+
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const { latitude, longitude } = pos.coords;
+                // Reverse Geo using OSM (Free)
+                try {
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+                    const data = await res.json();
+                    const addr = data.display_name.split(',').slice(0, 3).join(','); // Take first 3 parts
+                    document.getElementById('user-location').innerText = addr || `${latitude}, ${longitude}`;
+                    
+                    // Update User DB if logged in
+                    if(currentUser) {
+                        updateDoc(doc(db, "users", currentUser.uid), {
+                            device: getDeviceName(),
+                            location: addr,
+                            coords: { lat: latitude, lng: longitude },
+                            lastSeen: new Date().toISOString()
+                        });
+                    }
+                } catch(e) {
+                    document.getElementById('user-location').innerText = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+                }
+            }, () => document.getElementById('user-location').innerText = "Không cho phép vị trí");
+        } else {
+            document.getElementById('user-location').innerText = "Không hỗ trợ";
+        }
+        
+        async function logUserConnection(user) {
+             // Basic log update (Device only first, location async above)
+             await setDoc(doc(db, "users", user.uid), {
+                uid: user.uid,
+                email: user.email,
+                displayName: user.displayName,
+                photoURL: user.photoURL,
+                device: getDeviceName(),
+                lastSeen: new Date().toISOString()
+             }, { merge: true });
+        }
+
+        // 5. ADMIN FUNCTIONS
+        window.openEditModal = async () => {
+            document.getElementById('modal-admin').classList.remove('hidden');
+            // Load Data to Form
+            document.getElementById('inp-name').value = profileData.name || '';
+            document.getElementById('inp-nickname').value = profileData.nickname || '';
+            document.getElementById('inp-bio').value = profileData.bio || '';
+            document.getElementById('preview-avatar').src = profileData.avatar || '';
+            
+            // Socials
+            if(profileData.socials) {
+                document.getElementById('inp-fb').value = profileData.socials.facebook || '';
+                document.getElementById('inp-zalo').value = profileData.socials.zalo || '';
+                document.getElementById('inp-tele').value = profileData.socials.telegram || '';
+            }
+            document.getElementById('inp-email-list').value = profileData.email || '';
+            
+            // Phones
+            const pDiv = document.getElementById('phone-list-editor');
+            pDiv.innerHTML = '';
+            (profileData.phones || []).forEach(p => addPhoneInput(p.number, p.carrier));
+            
+            // Projects
+            renderAdminProjects();
+            // Banks
+            renderAdminBanks();
+            loadBankList();
+            
+            // Config
+            const us = await getDoc(doc(db, "settings", "usb_config"));
+            if(us.exists()) document.getElementById('usb-secret-val').value = us.data().secret || '';
+        }
+
+        window.saveProfile = async () => {
+            const btn = document.querySelector('#modal-admin button.bg-primary');
+            btn.innerText = "Đang lưu...";
+            try {
+                // Upload Avatar if Changed
+                let avatarUrl = profileData.avatar;
+                if(croppedAvatarBase64 && ghConfig.token) {
+                    const content = croppedAvatarBase64.split(',')[1];
+                    const url = `https://api.github.com/repos/${ghConfig.owner}/${ghConfig.repo}/contents/avatars/${Date.now()}.png`;
+                    const res = await fetch(url, {
+                        method: 'PUT',
+                        headers: { 'Authorization': `token ${ghConfig.token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: "update avatar", content: content })
+                    });
+                    if(res.ok) {
+                        const d = await res.json();
+                        avatarUrl = d.content.download_url;
+                    }
+                }
+
+                // Phones
+                const phones = Array.from(document.querySelectorAll('.phone-row')).map(r => ({
+                    carrier: r.querySelector('select').value,
+                    number: r.querySelector('input').value
+                })).filter(x => x.number);
+
+                const newData = {
+                    name: document.getElementById('inp-name').value,
+                    nickname: document.getElementById('inp-nickname').value,
+                    bio: document.getElementById('inp-bio').value,
+                    avatar: avatarUrl,
+                    email: document.getElementById('inp-email-list').value,
+                    socials: {
+                        facebook: document.getElementById('inp-fb').value,
+                        zalo: document.getElementById('inp-zalo').value,
+                        telegram: document.getElementById('inp-tele').value
+                    },
+                    phones: phones,
+                    banks: listBanks,
+                    projects: listProjects
+                };
+                
+                // Config Save
+                const tk = document.getElementById('gh-token').value;
+                if(tk) await setDoc(doc(db, "settings", "github_config"), { 
+                    token: tk, 
+                    owner: document.getElementById('gh-owner').value, 
+                    repo: document.getElementById('gh-repo').value 
+                });
+
+                await setDoc(profileRef, newData, { merge: true });
+                showToast("Đã lưu thành công!");
+                window.closeModal('modal-admin');
+            } catch(e) {
+                alert("Lỗi: " + e.message);
+            } finally {
+                btn.innerText = "Lưu Tất Cả";
+            }
+        }
+
+        // Project Manager Logic
+        window.addProject = () => {
+            listProjects.push({
+                title: document.getElementById('prj-title').value,
+                desc: document.getElementById('prj-desc').value,
+                logo: document.getElementById('prj-logo').value,
+                cover: document.getElementById('prj-cover').value,
+                refLink: document.getElementById('prj-ref-link').value,
+                refCode: document.getElementById('prj-ref-code').value,
+            });
+            renderAdminProjects();
+            // Clear inputs
+            document.querySelectorAll('#tab-projects input, #tab-projects textarea').forEach(i => i.value = '');
+        }
+        function renderAdminProjects() {
+            document.getElementById('admin-project-list').innerHTML = listProjects.map((p, i) => `
+                <div class="flex items-center gap-2 p-2 bg-slate-100 rounded border">
+                    <img src="${p.logo}" class="w-8 h-8 rounded bg-white">
+                    <div class="flex-1 min-w-0">
+                        <p class="font-bold text-xs truncate">${p.title}</p>
+                    </div>
+                    <button onclick="removeProject(${i})" class="text-red-500 text-xs font-bold">Xóa</button>
+                </div>
+            `).join('');
+        }
+        window.removeProject = (i) => { listProjects.splice(i,1); renderAdminProjects(); }
+
+        // User Manager Logic
+        window.loadManager = async () => {
+            const list = document.getElementById('manager-list');
+            list.innerHTML = "Loading...";
+            const snap = await getDocs(collection(db, "users"));
+            list.innerHTML = '';
+            snap.forEach(d => {
+                const u = d.data();
+                list.innerHTML += `
+                    <div class="p-3 bg-slate-100 dark:bg-slate-800 rounded border dark:border-white/10 text-xs">
+                        <div class="flex gap-2 items-center mb-1">
+                            <img src="${u.photoURL}" class="w-6 h-6 rounded-full">
+                            <span class="font-bold">${u.displayName}</span>
+                        </div>
+                        <p>📧 ${u.email}</p>
+                        <p>📱 ${u.device || 'N/A'}</p>
+                        <p>📍 ${u.location || 'N/A'}</p>
+                        <p class="text-slate-400 italic mt-1">Last seen: ${new Date(u.lastSeen).toLocaleString('vi-VN')}</p>
+                    </div>
+                `;
             });
         }
 
-        // 4. Xử lý khi bấm nút Kết nối
-        async function connectWallet(uuid) {
-            // Tìm đúng ví dựa vào UUID
-            const wallet = detectedWallets.find(w => w.info.uuid === uuid);
-            if (!wallet) return;
+        // 6. UTILS & OTHERS
+        window.addPhoneInput = (num='', car='Viettel') => {
+            const div = document.createElement('div');
+            div.className = 'phone-row flex gap-2';
+            div.innerHTML = `
+                <select class="inp w-24 p-1 text-xs"><option>Viettel</option><option>Vina</option><option>Mobi</option></select>
+                <input type="text" class="inp flex-1 p-1 text-xs" value="${num}">
+                <button onclick="this.parentElement.remove()" class="text-red-500">x</button>
+            `;
+            div.querySelector('select').value = car;
+            document.getElementById('phone-list-editor').appendChild(div);
+        }
 
-            try {
-                // Gọi hàm eth_requestAccounts để xin quyền kết nối
-                const accounts = await wallet.provider.request({ method: 'eth_requestAccounts' });
-                const address = accounts[0];
+        window.showQR = (url) => {
+            if(!url) return;
+            // Simple Alert or Modal override for QR
+            const api = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+            const w = window.open("", "_blank", "width=300,height=300");
+            w.document.write(`<img src="${api}" style="width:100%">`);
+        }
 
-                // Hiển thị UI thành công
-                showConnectedUI(wallet.info, address);
+        // Helper functions
+        window.toggleTheme = () => { document.documentElement.classList.toggle('dark'); localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light'; }
+        if(localStorage.theme === 'dark') document.documentElement.classList.add('dark');
+        
+        window.showAccountModal = () => {
+            if(!currentUser) return;
+            document.getElementById('modal-account').classList.remove('hidden');
+            document.getElementById('acc-avatar').src = currentUser.photoURL;
+            document.getElementById('acc-name').innerText = currentUser.displayName;
+            document.getElementById('acc-email').innerText = currentUser.email;
+            document.getElementById('acc-uid').innerText = currentUser.uid;
+            document.getElementById('acc-date').innerText = currentUser.metadata.creationTime ? new Date(currentUser.metadata.creationTime).toLocaleDateString('vi-VN') : '---';
+        }
 
-            } catch (error) {
-                console.error("Lỗi kết nối:", error);
-                if (error.code === 4001) {
-                    alert("Bạn đã từ chối yêu cầu kết nối trên ví!");
-                } else {
-                    alert("Có lỗi xảy ra: " + error.message);
-                }
+        window.copyToClip = (t) => { navigator.clipboard.writeText(t); showToast('Đã copy!'); }
+        window.showToast = (m) => { document.getElementById('toast-msg').innerText = m; document.getElementById('toast').classList.remove('translate-y-20', 'opacity-0'); setTimeout(()=>document.getElementById('toast').classList.add('translate-y-20', 'opacity-0'), 2000); }
+        window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
+        window.switchTab = (t) => { document.querySelectorAll('.tab-content').forEach(e=>e.classList.add('hidden')); document.getElementById('tab-'+t).classList.remove('hidden'); document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('bg-white','dark:bg-white/5')); event.target.classList.add('bg-white','dark:bg-white/5'); }
+
+        window.doLogin = () => signInWithPopup(auth, provider);
+        window.doLogout = () => signOut(auth).then(()=>location.reload());
+
+        // USB Key Handler
+        document.getElementById('usb-key-input').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = async (evt) => {
+                try {
+                    const json = JSON.parse(evt.target.result);
+                    const snap = await getDoc(doc(db, "settings", "usb_config"));
+                    if(snap.exists() && snap.data().secret === json.key) {
+                        isUSBAdmin = true;
+                        showToast("USB Key xác thực thành công!");
+                        renderSidebar();
+                    } else showToast("Key sai!");
+                } catch(e) { showToast("Lỗi file Key"); }
+            };
+            reader.readAsText(file);
+        });
+        window.saveUSBConfig = async () => {
+             const v = document.getElementById('usb-secret-val').value;
+             await setDoc(doc(db,"settings","usb_config"), {secret: v});
+             showToast("Đã lưu USB Secret");
+        }
+
+        // Banks Helper
+        async function loadBankList() { try{const r=await fetch('https://api.vietqr.io/v2/banks');const d=await r.json();document.getElementById('api-bank-list').innerHTML=d.data.map(b=>`<option value='${JSON.stringify({shortName:b.shortName,logo:b.logo})}'>${b.shortName}</option>`).join('')}catch(e){} }
+        window.addBank=()=>{const m=JSON.parse(document.getElementById('api-bank-list').value);listBanks.push({...m,number:document.getElementById('bank-acc-num').value,owner:document.getElementById('bank-acc-name').value});renderAdminBanks();}
+        function renderAdminBanks(){document.getElementById('admin-bank-list').innerHTML=listBanks.map((b,i)=>`<div class="flex justify-between bg-slate-100 p-2 rounded text-xs"><span>${b.shortName} - ${b.number}</span><button onclick="listBanks.splice(${i},1);renderAdminBanks()" class="text-red-500">Xóa</button></div>`).join('')}
+        async function loadGithubConfig(){const s=await getDoc(doc(db,"settings","github_config"));if(s.exists()){ghConfig=s.data();document.getElementById('gh-token').value=ghConfig.token||'';document.getElementById('gh-owner').value=ghConfig.owner||'';document.getElementById('gh-repo').value=ghConfig.repo||'';}}
+
+        // Image Crop
+        document.getElementById('inp-avatar').onchange = (e) => {
+            const f = e.target.files[0];
+            const r = new FileReader();
+            r.onload = (ev) => {
+                document.getElementById('modal-crop').classList.remove('hidden');
+                document.getElementById('image-to-crop').src = ev.target.result;
+                if(cropper) cropper.destroy();
+                cropper = new Cropper(document.getElementById('image-to-crop'), { aspectRatio:1, viewMode:1 });
+            }
+            if(f) r.readAsDataURL(f);
+        }
+        window.confirmCrop = () => {
+            if(!cropper) return;
+            croppedAvatarBase64 = cropper.getCroppedCanvas({width:400,height:400}).toDataURL();
+            document.getElementById('preview-avatar').src = croppedAvatarBase64;
+            window.closeModal('modal-crop');
+        }
+
+        // Contact & Messages
+        window.showContactModal = (t) => {
+            document.getElementById('modal-contact').classList.remove('hidden');
+            const l = document.getElementById('contact-list');
+            if(t==='phone') {
+                document.getElementById('contact-title').innerText = "Số điện thoại";
+                l.innerHTML = (profileData.phones||[]).map(p => `<a href="tel:${p.number}" class="block p-3 bg-slate-50 rounded flex justify-between font-bold"><span>${p.carrier}</span><span>${p.number}</span></a>`).join('');
+            } else {
+                document.getElementById('contact-title').innerText = "Email";
+                l.innerHTML = (profileData.email||"").split(',').map(e=> `<a href="mailto:${e.trim()}" class="block p-3 bg-slate-50 rounded font-bold">${e}</a>`).join('');
             }
         }
-
-        // 5. Cập nhật Giao diện Đã kết nối
-        function showConnectedUI(walletInfo, address) {
-            document.getElementById('selection-area').style.display = 'none';
-            document.getElementById('connected-area').style.display = 'block';
-
-            document.getElementById('connected-name').innerText = `Đã kết nối: ${walletInfo.name}`;
-            document.getElementById('connected-icon').src = walletInfo.icon;
-            
-            // Rút gọn địa chỉ cho đẹp (vd: 0x1234...abcd)
-            // const shortAddress = address.slice(0, 6) + "..." + address.slice(-4);
-            // In ra full địa chỉ theo yêu cầu của bạn:
-            document.getElementById('wallet-address').innerText = address;
+        window.showContactForm = () => { document.getElementById('modal-send-msg').classList.remove('hidden'); if(currentUser){document.getElementById('msg-name').value=currentUser.displayName;document.getElementById('msg-email-group').classList.add('hidden');} }
+        window.toggleAnon = () => { if(document.getElementById('msg-anon').checked){document.getElementById('msg-name').disabled=true;document.getElementById('msg-name').value="Ẩn danh";}else{document.getElementById('msg-name').disabled=false;if(currentUser)document.getElementById('msg-name').value=currentUser.displayName;} }
+        window.sendContact = async () => {
+            const c = document.getElementById('msg-content').value;
+            if(!c) return showToast("Nhập nội dung!");
+            const isAnon = document.getElementById('msg-anon').checked;
+            await addDoc(collection(db,"messages"), {
+                content: c, timestamp: new Date().toISOString(),
+                name: isAnon ? "Ẩn danh" : document.getElementById('msg-name').value,
+                email: isAnon ? "" : (currentUser?currentUser.email:document.getElementById('msg-email').value)
+            });
+            showToast("Đã gửi tin!"); window.closeModal('modal-send-msg');
+        }
+        window.loadAdminMessages = async () => {
+             const q = query(collection(db,"messages"), orderBy("timestamp","desc"), limit(20));
+             const s = await getDocs(q);
+             document.getElementById('admin-messages-list').innerHTML = s.docs.map(d=>{const m=d.data(); return `<div class="bg-slate-100 p-2 rounded text-xs mb-2"><b>${m.name}</b> (${m.email||'--'})<br>${m.content}<br><i class="text-slate-400">${new Date(m.timestamp).toLocaleString()}</i></div>`}).join('');
         }
 
-        // 6. Nút Ngắt kết nối (Chỉ là ẩn UI đi, Web3 không có hàm disconnect từ phía web)
-        function disconnectWallet() {
-            document.getElementById('selection-area').style.display = 'block';
-            document.getElementById('connected-area').style.display = 'none';
+        // Init Scroll Reveal
+        function initScrollReveal() {
+            const obs = new IntersectionObserver((e) => e.forEach(en => { if(en.isIntersecting) en.target.classList.add('active') }));
+            document.querySelectorAll('.reveal-on-scroll').forEach(el => obs.observe(el));
         }
-
-        // Xử lý trường hợp load trang 1 giây mà chưa quét được ví nào (Do chưa cài extension)
-        setTimeout(() => {
-            if (detectedWallets.length === 0) {
-                document.getElementById('empty-msg').style.display = 'block';
-            }
-        }, 1000);
-
     </script>
+    <style>
+        .inp { width: 100%; padding: 0.5rem; border-radius: 0.5rem; border: 1px solid #cbd5e1; background: #f8fafc; outline: none; font-size: 0.875rem; }
+        .dark .inp { background: #1e293b; border-color: rgba(255,255,255,0.1); color: white; }
+        .lbl { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #64748b; display: block; margin-bottom: 0.25rem; }
+        .tab-btn.active { background-color: white; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); color: #6366f1; }
+        .dark .tab-btn.active { background-color: rgba(255,255,255,0.05); color: white; }
+    </style>
 </body>
 </html>
