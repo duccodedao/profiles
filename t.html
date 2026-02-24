@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro SpeedTest - Kiểm tra tốc độ mạng</title>
+    
+    <!-- Google Fonts: 'Outfit' cho giao diện hiện đại -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* =========================================
+           CSS VARIABLES & RESET
+           ========================================= */
+        :root {
+            --primary: #6366f1;
+            --secondary: #ec4899;
+            --accent: #06b6d4;
+            --bg-light: #f3f4f6;
+            --text-light: #1f2937;
+            --glass-light: rgba(255, 255, 255, 0.7);
+            --glass-border-light: rgba(255, 255, 255, 0.5);
+            
+            --bg-dark: #0f172a;
+            --text-dark: #f8fafc;
+            --glass-dark: rgba(15, 23, 42, 0.6);
+            --glass-border-dark: rgba(255, 255, 255, 0.1);
+
+            --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Dark Mode Theme */
+        body.dark-mode {
+            --bg-color: var(--bg-dark);
+            --text-color: var(--text-dark);
+            --glass-bg: var(--glass-dark);
+            --glass-border: var(--glass-border-dark);
+        }
+
+        /* Light Mode Theme (Default) */
+        body {
+            --bg-color: var(--bg-light);
+            --text-color: var(--text-light);
+            --glass-bg: var(--glass-light);
+            --glass-border: var(--glass-border-light);
+
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            transition: var(--transition);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* Animated Background Blob */
+        .bg-shape {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: -1;
+            animation: moveShape 10s infinite alternate;
+        }
+        .shape-1 { top: -10%; left: -10%; width: 500px; height: 500px; background: var(--primary); opacity: 0.4; }
+        .shape-2 { bottom: -10%; right: -10%; width: 400px; height: 400px; background: var(--secondary); opacity: 0.4; animation-delay: -5s; }
+        .shape-3 { top: 40%; left: 40%; width: 300px; height: 300px; background: var(--accent); opacity: 0.3; animation-duration: 15s; }
+
+        @keyframes moveShape {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(30px, 50px) scale(1.1); }
+        }
+
+        /* =========================================
+           MAIN CONTAINER & GLASSMORPHISM
+           ========================================= */
+        .app-container {
+            width: 90%;
+            max-width: 1000px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            position: relative;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        h1 { margin: 0; font-size: 1.5rem; background: linear-gradient(to right, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .controls { display: flex; gap: 10px; }
+        .btn-icon {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--glass-border);
+            color: var(--text-color);
+            padding: 8px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .btn-icon:hover { background: rgba(255,255,255,0.2); transform: translateY(-2px); }
+
+        /* =========================================
+           GAUGE & VISUALIZER
+           ========================================= */
+        .main-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 2rem 0;
+        }
+
+        /* Circular Progress Gauge */
+        .gauge-container {
+            position: relative;
+            width: 280px;
+            height: 280px;
+        }
+        
+        svg.gauge {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        circle {
+            fill: none;
+            stroke-width: 15;
+            stroke-linecap: round;
+        }
+
+        .circle-bg { stroke: rgba(128, 128, 128, 0.2); }
+        .circle-progress {
+            stroke: url(#gradient);
+            stroke-dasharray: 816; /* 2 * PI * r (r=130) approx */
+            stroke-dashoffset: 816;
+            transition: stroke-dashoffset 0.5s ease-out;
+        }
+
+        /* Center Text inside Gauge */
+        .gauge-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        
+        .speed-value {
+            font-size: 4rem;
+            font-weight: 700;
+            line-height: 1;
+            display: block;
+        }
+        .speed-unit { font-size: 1.2rem; opacity: 0.7; }
+        .status-text { 
+            margin-top: 10px; 
+            font-size: 0.9rem; 
+            font-weight: 500;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Realtime Graph Canvas */
+        canvas#realtimeChart {
+            width: 100%;
+            height: 60px;
+            margin-top: 1rem;
+        }
+
+        /* =========================================
+           STATS GRID
+           ========================================= */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            text-align: center;
+            transition: var(--transition);
+        }
+        
+        .stat-card.active {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--primary);
+            transform: scale(1.05);
+        }
+
+        .stat-label { font-size: 0.8rem; opacity: 0.6; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .stat-value { font-size: 1.5rem; font-weight: 600; margin-top: 5px; }
+        .stat-unit { font-size: 0.8rem; opacity: 0.5; }
+
+        /* =========================================
+           ACTION AREA & NETWORK INFO
+           ========================================= */
+        .action-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        /* New Network Info Box */
+        .network-details {
+            display: flex;
+            gap: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            padding: 10px 25px;
+            border-radius: 15px;
+            font-size: 0.95rem;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .detail-item svg {
+            color: var(--secondary);
+            opacity: 0.8;
+        }
+        
+        .detail-label { opacity: 0.6; margin-right: 5px; }
+        .detail-value { font-weight: 600; color: var(--text-color); }
+
+        /* Start Button */
+        .btn-start {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            color: white;
+            padding: 1rem 3rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            font-family: inherit;
+        }
+
+        .btn-start::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 300%; height: 300%;
+            background: rgba(255,255,255,0.3);
+            transform: translate(-50%, -50%) scale(0);
+            border-radius: 50%;
+            transition: transform 0.6s;
+        }
+
+        .btn-start:active::after { transform: translate(-50%, -50%) scale(1); }
+        .btn-start:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6); }
+        .btn-start:disabled { background: #9ca3af; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .server-info {
+            font-size: 0.85rem;
+            opacity: 0.5;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: -10px;
+        }
+
+        /* Rating Badge */
+        .rating-badge {
+            margin-top: 10px;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            display: none;
+        }
+        .rate-excellent { background: #10b981; color: white; }
+        .rate-good { background: #3b82f6; color: white; }
+        .rate-average { background: #f59e0b; color: white; }
+        .rate-poor { background: #ef4444; color: white; }
+
+        /* =========================================
+           HISTORY MODAL
+           ========================================= */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .modal.open { opacity: 1; pointer-events: auto; }
+        
+        .modal-content {
+            background: var(--bg-color);
+            padding: 2rem;
+            border-radius: 16px;
+            width: 90%; max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            color: var(--text-color);
+        }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid rgba(128,128,128,0.2); }
+        th { color: var(--primary); }
+
+        /* =========================================
+           RESPONSIVE
+           ========================================= */
+        @media (max-width: 768px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .gauge-container { width: 220px; height: 220px; }
+            .speed-value { font-size: 3rem; }
+        }
+        @media (max-width: 480px) {
+            .app-container { padding: 1.5rem; }
+            .gauge-container { width: 180px; height: 180px; }
+            .speed-value { font-size: 2.5rem; }
+            .network-details { flex-direction: column; align-items: flex-start; gap: 10px; width: 100%; box-sizing: border-box;}
+        }
+    </style>
+</head>
+<body class="dark-mode">
+
+    <!-- Background Animation Elements -->
+    <div class="bg-shape shape-1"></div>
+    <div class="bg-shape shape-2"></div>
+    <div class="bg-shape shape-3"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+                <h1>SpeedTest Pro</h1>
+            </div>
+            <div class="controls">
+                <button class="btn-icon" id="toggleTheme" title="Chế độ Sáng/Tối">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                </button>
+                <button class="btn-icon" id="toggleHistory" title="Lịch sử">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3"></path><circle cx="12" cy="12" r="10"></circle></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Gauge Area -->
+        <div class="main-display">
+            <div class="gauge-container">
+                <svg class="gauge" viewBox="0 0 300 300">
+                    <defs>
+                        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color: var(--primary)" />
+                            <stop offset="100%" style="stop-color: var(--accent)" />
+                        </linearGradient>
+                    </defs>
+                    <circle class="circle-bg" cx="150" cy="150" r="130"></circle>
+                    <circle class="circle-progress" id="progressCircle" cx="150" cy="150" r="130"></circle>
+                </svg>
+                <div class="gauge-content">
+                    <span class="speed-value" id="mainSpeed">0.0</span>
+                    <span class="speed-unit">Mbps</span>
+                    <div class="status-text" id="statusText">Ready</div>
+                    <div id="networkRating" class="rating-badge"></div>
+                </div>
+            </div>
+            <!-- Canvas for Realtime Graph -->
+            <canvas id="realtimeChart"></canvas>
+        </div>
+
+        <!-- Statistics Grid -->
+        <div class="stats-grid">
+            <div class="stat-card" id="card-ping">
+                <div class="stat-label">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                    Ping
+                </div>
+                <div class="stat-value" id="val-ping">--</div>
+                <div class="stat-unit">ms</div>
+            </div>
+            <div class="stat-card" id="card-jitter">
+                <div class="stat-label">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                    Jitter
+                </div>
+                <div class="stat-value" id="val-jitter">--</div>
+                <div class="stat-unit">ms</div>
+            </div>
+            <div class="stat-card" id="card-download">
+                <div class="stat-label">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Download
+                </div>
+                <div class="stat-value" id="val-download">--</div>
+                <div class="stat-unit">Mbps</div>
+            </div>
+            <div class="stat-card" id="card-upload">
+                <div class="stat-label">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    Upload
+                </div>
+                <div class="stat-value" id="val-upload">--</div>
+                <div class="stat-unit">Mbps</div>
+            </div>
+        </div>
+
+        <!-- Action & Server Info -->
+        <div class="action-area">
+            
+            <!-- NEW: Network Details Section -->
+            <div class="network-details">
+                <div class="detail-item">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    <span class="detail-label">Nhà mạng:</span>
+                    <span class="detail-value" id="display-isp">Đang tải...</span>
+                </div>
+                <div class="detail-item">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                    <span class="detail-label">Vị trí:</span>
+                    <span class="detail-value" id="display-location">Đang tải...</span>
+                </div>
+            </div>
+
+            <button class="btn-start" id="startBtn">Bắt đầu đo</button>
+            
+            <div class="server-info">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                <span>Server đích: </span>
+                <span id="serverName">Đang tìm server...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div class="modal" id="historyModal">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>Lịch sử kiểm tra</h2>
+                <button class="btn-icon" onclick="document.getElementById('historyModal').classList.remove('open')">✕</button>
+            </div>
+            <table id="historyTable">
+                <thead>
+                    <tr>
+                        <th>Ngày</th>
+                        <th>Ping</th>
+                        <th>Down</th>
+                        <th>Up</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- JS will fill this -->
+                </tbody>
+            </table>
+            <div style="margin-top: 1rem; text-align: right;">
+                <button onclick="localStorage.removeItem('speedTestHistory'); renderHistory();" style="background:none; border:none; color: var(--secondary); cursor: pointer;">Xóa lịch sử</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * LOGIC CHÍNH CỦA ỨNG DỤNG
+         */
+
+        const UI = {
+            btnStart: document.getElementById('startBtn'),
+            mainSpeed: document.getElementById('mainSpeed'),
+            statusText: document.getElementById('statusText'),
+            serverName: document.getElementById('serverName'),
+            progressCircle: document.getElementById('progressCircle'),
+            chartCanvas: document.getElementById('realtimeChart'),
+            ratingBadge: document.getElementById('networkRating'),
+            // UI mới cho ISP và Location
+            displayISP: document.getElementById('display-isp'),
+            displayLocation: document.getElementById('display-location'),
+            cards: {
+                ping: document.getElementById('card-ping'),
+                jitter: document.getElementById('card-jitter'),
+                download: document.getElementById('card-download'),
+                upload: document.getElementById('card-upload'),
+            },
+            vals: {
+                ping: document.getElementById('val-ping'),
+                jitter: document.getElementById('val-jitter'),
+                download: document.getElementById('val-download'),
+                upload: document.getElementById('val-upload'),
+            }
+        };
+
+        const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * 130;
+        
+        // Mock Server Data (Destination)
+        const SERVERS = [
+            "VNPT - Hanoi [15km]",
+            "Viettel - Ho Chi Minh [5km]",
+            "FPT Telecom - Da Nang [450km]",
+            "CMC Telecom - Hanoi [12km]"
+        ];
+
+        let isTesting = false;
+        let chartCtx = UI.chartCanvas.getContext('2d');
+        let chartData = [];
+
+        // --- INIT ---
+        window.addEventListener('DOMContentLoaded', () => {
+            UI.progressCircle.style.strokeDasharray = CIRCLE_CIRCUMFERENCE;
+            UI.progressCircle.style.strokeDashoffset = CIRCLE_CIRCUMFERENCE; 
+            UI.serverName.innerText = SERVERS[Math.floor(Math.random() * SERVERS.length)];
+            setupTheme();
+            renderHistory();
+            
+            // Gọi hàm lấy thông tin nhà mạng thực tế
+            getNetworkInfo();
+        });
+
+        // --- FUNCTION: Lấy thông tin Nhà mạng & Vị trí thực (API) ---
+        async function getNetworkInfo() {
+            try {
+                // Sử dụng ipapi.co (Miễn phí, không cần key cho lượng dùng thấp)
+                const response = await fetch('https://ipapi.co/json/');
+                
+                if (!response.ok) throw new Error('Network error');
+                
+                const data = await response.json();
+                
+                // Cập nhật giao diện
+                UI.displayISP.innerText = data.org || data.isp || "Không xác định";
+                UI.displayLocation.innerText = `${data.city}, ${data.country_name}`;
+                
+            } catch (error) {
+                console.error("Không thể lấy thông tin IP:", error);
+                UI.displayISP.innerText = "Ẩn danh / Lỗi";
+                UI.displayLocation.innerText = "Không xác định";
+            }
+        }
+
+        // --- BUTTON EVENTS ---
+        UI.btnStart.addEventListener('click', startSpeedTest);
+        document.getElementById('toggleHistory').addEventListener('click', () => {
+            document.getElementById('historyModal').classList.add('open');
+            renderHistory();
+        });
+
+        // --- THEME LOGIC ---
+        function setupTheme() {
+            const isDark = localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if(isDark) document.body.classList.add('dark-mode');
+            else document.body.classList.remove('dark-mode');
+
+            document.getElementById('toggleTheme').addEventListener('click', () => {
+                document.body.classList.toggle('dark-mode');
+                localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+            });
+        }
+
+        // --- GAUGE ANIMATION ---
+        function setGaugeValue(percent) {
+            const offset = CIRCLE_CIRCUMFERENCE - (percent / 100) * CIRCLE_CIRCUMFERENCE;
+            UI.progressCircle.style.strokeDashoffset = offset;
+        }
+
+        // --- CHART LOGIC ---
+        function resetChart() {
+            chartData = [];
+            UI.chartCanvas.width = UI.chartCanvas.offsetWidth;
+            UI.chartCanvas.height = UI.chartCanvas.offsetHeight;
+        }
+
+        function pushChartData(value) {
+            chartData.push(value);
+            if (chartData.length > 50) chartData.shift(); 
+            drawChart();
+        }
+
+        function drawChart() {
+            const w = UI.chartCanvas.width;
+            const h = UI.chartCanvas.height;
+            chartCtx.clearRect(0, 0, w, h);
+            
+            if (chartData.length < 2) return;
+
+            chartCtx.beginPath();
+            const maxVal = Math.max(...chartData, 10);
+            const stepX = w / (chartData.length - 1);
+
+            chartCtx.moveTo(0, h - (chartData[0] / maxVal) * h);
+
+            for (let i = 1; i < chartData.length; i++) {
+                const x = i * stepX;
+                const y = h - (chartData[i] / maxVal) * h;
+                chartCtx.lineTo(x, y);
+            }
+
+            chartCtx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--accent');
+            chartCtx.lineWidth = 2;
+            chartCtx.lineJoin = 'round';
+            chartCtx.stroke();
+        }
+
+        // --- CORE TEST LOGIC (SIMULATION) ---
+        // Lưu ý: Đây là giả lập để demo UI. Để test thật cần Backend.
+        async function startSpeedTest() {
+            if (isTesting) return;
+            isTesting = true;
+            UI.btnStart.disabled = true;
+            UI.ratingBadge.style.display = 'none';
+            resetChart();
+            resetValues();
+
+            // 1. PING TEST
+            activateCard('ping');
+            UI.statusText.innerText = 'Đang đo Ping...';
+            const pingResult = await simulatePhase(10, 40, 2000, false);
+            UI.vals.ping.innerText = pingResult.final.toFixed(0);
+            
+            // 2. JITTER TEST
+            activateCard('jitter');
+            UI.statusText.innerText = 'Đang đo Jitter...';
+            const jitterResult = await simulatePhase(1, 10, 1500, false);
+            UI.vals.jitter.innerText = jitterResult.final.toFixed(0);
+
+            // 3. DOWNLOAD TEST
+            activateCard('download');
+            UI.statusText.innerText = 'Đang tải xuống...';
+            const downloadResult = await simulatePhase(5, 150, 5000, true); 
+            UI.vals.download.innerText = downloadResult.final.toFixed(1);
+
+            // 4. UPLOAD TEST
+            activateCard('upload');
+            UI.statusText.innerText = 'Đang tải lên...';
+            const uploadResult = await simulatePhase(5, 80, 4000, true);
+            UI.vals.upload.innerText = uploadResult.final.toFixed(1);
+
+            // FINISH
+            finishTest(pingResult.final, downloadResult.final, uploadResult.final);
+        }
+
+        function resetValues() {
+            UI.vals.ping.innerText = '--';
+            UI.vals.jitter.innerText = '--';
+            UI.vals.download.innerText = '--';
+            UI.vals.upload.innerText = '--';
+            UI.mainSpeed.innerText = '0.0';
+            setGaugeValue(0);
+            Object.values(UI.cards).forEach(c => c.classList.remove('active'));
+        }
+
+        function activateCard(type) {
+            Object.values(UI.cards).forEach(c => c.classList.remove('active'));
+            UI.cards[type].classList.add('active');
+        }
+
+        function simulatePhase(minVal, maxVal, duration, updateMainSpeed) {
+            return new Promise(resolve => {
+                const startTime = Date.now();
+                let currentValue = minVal;
+                
+                const interval = setInterval(() => {
+                    const elapsed = Date.now() - startTime;
+                    const progress = elapsed / duration;
+                    const randomFluctuation = (Math.random() - 0.5) * (maxVal * 0.1);
+                    
+                    if (progress < 0.2) {
+                        currentValue += (maxVal - currentValue) * 0.1; 
+                    } else {
+                        currentValue = maxVal + randomFluctuation;
+                    }
+
+                    if (currentValue < 0) currentValue = 0;
+
+                    if (updateMainSpeed) {
+                        UI.mainSpeed.innerText = currentValue.toFixed(1);
+                        setGaugeValue((currentValue / 200) * 100); 
+                        pushChartData(currentValue);
+                    }
+
+                    if (elapsed >= duration) {
+                        clearInterval(interval);
+                        resolve({ final: currentValue });
+                    }
+                }, 50);
+            });
+        }
+
+        function finishTest(ping, down, up) {
+            isTesting = false;
+            UI.btnStart.disabled = false;
+            UI.statusText.innerText = 'Hoàn tất';
+            UI.btnStart.innerText = 'Đo lại';
+            Object.values(UI.cards).forEach(c => c.classList.remove('active'));
+            setGaugeValue(0);
+
+            let rating = '';
+            let ratingClass = '';
+            if (down > 100) { rating = 'Rất Tốt'; ratingClass = 'rate-excellent'; }
+            else if (down > 50) { rating = 'Tốt'; ratingClass = 'rate-good'; }
+            else if (down > 20) { rating = 'Trung Bình'; ratingClass = 'rate-average'; }
+            else { rating = 'Kém'; ratingClass = 'rate-poor'; }
+
+            UI.ratingBadge.innerText = rating;
+            UI.ratingBadge.className = 'rating-badge ' + ratingClass;
+            UI.ratingBadge.style.display = 'inline-block';
+
+            saveHistory({
+                date: new Date().toLocaleString('vi-VN'),
+                ping: ping.toFixed(0),
+                down: down.toFixed(1),
+                up: up.toFixed(1)
+            });
+        }
+
+        // --- HISTORY MANAGEMENT ---
+        function saveHistory(result) {
+            let history = JSON.parse(localStorage.getItem('speedTestHistory') || '[]');
+            history.unshift(result);
+            if (history.length > 10) history.pop(); 
+            localStorage.setItem('speedTestHistory', JSON.stringify(history));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const history = JSON.parse(localStorage.getItem('speedTestHistory') || '[]');
+            const tbody = document.querySelector('#historyTable tbody');
+            tbody.innerHTML = '';
+            
+            if (history.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; opacity:0.5;">Chưa có dữ liệu</td></tr>';
+                return;
+            }
+
+            history.forEach(item => {
+                const row = `
+                    <tr>
+                        <td style="font-size: 0.8rem">${item.date}</td>
+                        <td>${item.ping} <span style="font-size:0.7em">ms</span></td>
+                        <td style="color: var(--accent)">${item.down}</td>
+                        <td style="color: var(--secondary)">${item.up}</td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        window.addEventListener('resize', () => {
+            if(!isTesting) resetChart();
+        });
+    </script>
+</body>
+</html>
