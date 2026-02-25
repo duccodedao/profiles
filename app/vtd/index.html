@@ -338,10 +338,12 @@
                             </button>
                         </div>
 
-                        <!-- NEW: Notification Permission Toggle (Placeholder/Instruction) -->
-                        <button onclick="window.requestNotificationPermission()" class="w-full py-3 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white rounded-xl font-bold text-xs uppercase shadow-sm hover:bg-slate-300 transition flex items-center justify-center gap-2">
-                            <i data-lucide="bell" class="w-4 h-4"></i> THÔNG BÁO
+                        <!-- **FIX START**: Notification Permission Button Updated -->
+                        <button id="notification-permission-btn" onclick="window.requestNotificationPermission()" class="w-full py-3 rounded-xl font-bold text-xs uppercase shadow-sm transition flex items-center justify-center gap-2 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white hover:bg-slate-300">
+                            <i data-lucide="bell" class="w-4 h-4"></i>
+                            <span id="notification-permission-text">BẬT THÔNG BÁO</span>
                         </button>
+                        <!-- **FIX END** -->
                         
                         <!-- NEW: Symmetrical Logout and Help Buttons -->
                         <div class="grid grid-cols-2 gap-4">
@@ -975,11 +977,51 @@
             }, 60000); // 60 more seconds
         };
         
-        // --- BROWSER NOTIFICATION LOGIC (NEW / MODIFIED) ---
-        // SỬA ĐỔI: Cập nhật hàm requestNotificationPermission
+        // --- **FIX START**: BROWSER NOTIFICATION LOGIC (REFACTORED) ---
+        /**
+         * Renders the notification button based on the current permission state.
+         */
+        function renderNotificationButton() {
+            const btn = document.getElementById('notification-permission-btn');
+            const textSpan = document.getElementById('notification-permission-text');
+
+            if (!("Notification" in window) || !btn || !textSpan) {
+                if (btn) btn.style.display = 'none'; // Hide if not supported
+                return;
+            }
+
+            const permission = Notification.permission;
+            
+            // Reset styles
+            btn.disabled = false;
+            btn.classList.remove('bg-green-500', 'text-white', 'bg-red-500', 'opacity-70', 'cursor-not-allowed', 'bg-slate-200', 'dark:bg-slate-700');
+
+            if (permission === 'granted') {
+                textSpan.innerText = 'ĐÃ BẬT THÔNG BÁO';
+                btn.classList.add('bg-green-500', 'text-white', 'cursor-not-allowed');
+                btn.disabled = true;
+            } else if (permission === 'denied') {
+                textSpan.innerText = 'THÔNG BÁO ĐÃ BỊ CHẶN';
+                btn.classList.add('bg-red-500', 'text-white', 'opacity-70', 'cursor-not-allowed');
+                btn.disabled = true;
+            } else { // 'default'
+                textSpan.innerText = 'BẬT THÔNG BÁO';
+                btn.classList.add('bg-slate-200', 'dark:bg-slate-700');
+            }
+        }
+
+        /**
+         * Requests notification permission from the user.
+         */
         window.requestNotificationPermission = () => {
             if (!("Notification" in window)) {
                 showToast("Trình duyệt này không hỗ trợ thông báo.", true);
+                return;
+            }
+
+            // Do not ask if already granted or denied
+            if (Notification.permission !== 'default') {
+                showToast("Quyền thông báo đã được thiết lập trong trình duyệt.", Notification.permission === 'denied');
                 return;
             }
 
@@ -987,17 +1029,17 @@
             Notification.requestPermission().then((permission) => {
                 if (permission === "granted") {
                     console.log("Đã cấp quyền!");
-                    // Sau khi có quyền, gọi hàm để lấy và lưu token
-                    getAndSaveFcmToken();
+                    getAndSaveFcmToken(); // Get and save FCM token after permission is granted
                 } else {
                     console.log("Quyền nhận thông báo đã bị từ chối.");
                     showToast("Bạn đã từ chối cấp quyền thông báo.", true);
                 }
+                // ALWAYS update the button UI after the user makes a choice
+                renderNotificationButton();
             });
         };
 
         window.sendBrowserNotification = (title, body) => {
-            // This function remains for local/immediate notifications, but FCM will handle remote ones.
             if (Notification.permission === "granted") {
                 const options = {
                     body: body,
@@ -1007,6 +1049,7 @@
                 new Notification(title, options);
             }
         };
+        // --- **FIX END** ---
 
 
         // --- LANGUAGE LOGIC ---
@@ -2792,6 +2835,10 @@
             // END: Bổ sung chi tiết hiển thị cho TAB Cá Nhân
 
             document.getElementById('profile-admin-panel-btn')?.classList.toggle('hidden', !isAdmin);
+            
+            // **FIX**: Call the function to update the notification button's state
+            renderNotificationButton();
+            
             lucide.createIcons();
         }
 
@@ -2810,4 +2857,3 @@
 </script>
 </body>
 </html>
-
