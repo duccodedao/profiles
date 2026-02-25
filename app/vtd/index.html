@@ -1,4 +1,8 @@
+Chắc chắn rồi. Dưới đây là mã HTML đầy đủ, đã tích hợp sẵn các chức năng cần thiết cho Firebase Cloud Messaging (thông báo đẩy).
 
+**Quan trọng:** Bạn cần tìm và thay thế dòng chữ `PASTE_YOUR_VAPID_PUBLIC_KEY_HERE` bằng VAPID key bạn đã lấy từ Firebase Console ở bước 1 trong hướng dẫn trước.
+
+```html
 <!DOCTYPE html>
 <html lang="vi" class="light">
 <head>
@@ -764,8 +768,9 @@
 <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        // MODIFIED: Added arrayRemove and getDocs (for notification cleanup)
         import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc, arrayUnion, arrayRemove, writeBatch, increment, runTransaction, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        // BỔ SUNG: Nhập các hàm cần thiết cho Firebase Messaging
+        import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
@@ -778,12 +783,14 @@
         };
         const LOGS_COLLECTION = "activityLogs"; 
         const NOTIFY_COLLECTION = "notifications"; 
-        const USERS_COLLECTION = "users"; // NEW: For potential user listing
+        const USERS_COLLECTION = "users"; 
 
         const fbApp = initializeApp(firebaseConfig);
         const auth = getAuth(fbApp);
         const db = getFirestore(fbApp);
         const provider = new GoogleAuthProvider();
+        // BỔ SUNG: Khởi tạo Firebase Messaging
+        const messaging = getMessaging(fbApp);
 
         let currentUser = null, isAdmin = false, isSuper = false, apps = [], categories = [], deputies = [], currentFilter = 'all', searchQuery = '', viewMode = 'grid', visitStats = {};
         let appsLoaded = false; 
@@ -795,15 +802,59 @@
         let activityLogs = []; 
         let discoverApps = []; 
         let notifications = []; 
-        let allUsers = []; // NEW: Array for all users
+        let allUsers = []; 
         let unreadCount = 0; 
         let confirmActionCallback = () => {}; 
         let currentMobileTab = 'app'; 
         let currentLang = 'vi'; 
-        let toastTimeout = null; // NEW: Toast timer
-        let toastTouchStartY = 0; // NEW: Toast swipe detection
-        let catToDeleteId = null; // NEW: For category migrate logic
-        let loadingTimeout = null; // NEW: Loading timeout timer
+        let toastTimeout = null; 
+        let toastTouchStartY = 0; 
+        let catToDeleteId = null; 
+        let loadingTimeout = null; 
+
+        // BỔ SUNG: Hàm lấy và lưu FCM Token vào Firestore
+        /**
+         * Lấy token FCM của thiết bị và lưu vào collection 'fcmTokens'.
+         * Cần cấp quyền nhận thông báo trước khi gọi hàm này.
+         */
+        async function getAndSaveFcmToken() {
+            try {
+                // !!! QUAN TRỌNG: Dán VAPID key bạn đã lấy ở Firebase Console vào đây
+                const VAPID_KEY = "PASTE_YOUR_VAPID_PUBLIC_KEY_HERE";
+                
+                const currentToken = await getToken(messaging, { vapidKey: VAPID_KEY });
+
+                if (currentToken) {
+                    console.log('FCM Token của bạn:', currentToken);
+                    // Lưu token vào Firestore để backend có thể gửi thông báo
+                    // Dùng chính token làm ID của document để tránh trùng lặp
+                    await setDoc(doc(db, "fcmTokens", currentToken), {
+                        uid: currentUser ? currentUser.uid : 'anonymous',
+                        createdAt: new Date().toISOString()
+                    });
+                    showToast("Đã bật thông báo đẩy thành công!");
+                } else {
+                    // Tình huống này xảy ra nếu người dùng chưa cấp quyền
+                    console.log('Không thể lấy token. Hãy yêu cầu quyền nhận thông báo.');
+                    showToast("Không thể đăng ký nhận thông báo. Vui lòng cấp quyền trong cài đặt trình duyệt.", true);
+                }
+            } catch (err) {
+                console.error('Đã xảy ra lỗi khi lấy token:', err);
+                showToast("Lỗi khi đăng ký nhận thông báo đẩy. Chi tiết xem ở Console.", true);
+            }
+        }
+
+        // BỔ SUNG: Lắng nghe thông báo khi người dùng đang ở trên trang (foreground)
+        onMessage(messaging, (payload) => {
+            console.log('Nhận được thông báo (foreground):', payload);
+            
+            const title = payload.notification.title;
+            const body = payload.notification.body;
+            
+            // Hiển thị thông báo bằng hàm toast có sẵn của bạn
+            // Tham số thứ 3 (isLong) để toast hiển thị lâu hơn
+            showToast(`**${title}**\n${body}`, false, true);
+        });
 
         // BỔ SUNG: Dữ liệu mô phỏng Cài đặt Quyền riêng tư của Trình duyệt (Issue #1)
         const PRIVACY_SETTINGS = [
@@ -928,33 +979,29 @@
             }, 60000); // 60 more seconds
         };
         
-        // --- BROWSER NOTIFICATION LOGIC (NEW) ---
+        // --- BROWSER NOTIFICATION LOGIC (NEW / MODIFIED) ---
+        // SỬA ĐỔI: Cập nhật hàm requestNotificationPermission
         window.requestNotificationPermission = () => {
             if (!("Notification" in window)) {
                 showToast("Trình duyệt này không hỗ trợ thông báo.", true);
                 return;
             }
 
-            if (Notification.permission === "granted") {
-                showToast("Bạn đã cấp quyền thông báo!", false);
-                return;
-            }
-
-            if (Notification.permission !== "denied") {
-                Notification.requestPermission().then(permission => {
-                    if (permission === "granted") {
-                        showToast("Đã cấp quyền thông báo thành công!", false);
-                        window.sendBrowserNotification('Hub Portal Vĩnh Trạch Đông', 'Thông báo trình duyệt đã được kích hoạt.');
-                    } else {
-                        showToast("Bạn đã từ chối cấp quyền thông báo.", true);
-                    }
-                });
-            } else {
-                showToast("Bạn đã chặn thông báo. Vui lòng bật lại trong cài đặt trình duyệt.", true);
-            }
+            console.log("Đang yêu cầu quyền nhận thông báo...");
+            Notification.requestPermission().then((permission) => {
+                if (permission === "granted") {
+                    console.log("Đã cấp quyền!");
+                    // Sau khi có quyền, gọi hàm để lấy và lưu token
+                    getAndSaveFcmToken();
+                } else {
+                    console.log("Quyền nhận thông báo đã bị từ chối.");
+                    showToast("Bạn đã từ chối cấp quyền thông báo.", true);
+                }
+            });
         };
 
         window.sendBrowserNotification = (title, body) => {
+            // This function remains for local/immediate notifications, but FCM will handle remote ones.
             if (Notification.permission === "granted") {
                 const options = {
                     body: body,
@@ -989,13 +1036,6 @@
 
 
         // --- CUSTOM CONFIRMATION MODAL LOGIC (NEW) ---
-        /**
-         * Shows a custom confirmation modal.
-         * @param {string} title The modal title.
-         * @param {string} message The confirmation message.
-         * @param {function} callback The function to execute if confirmed.
-         * @param {string} confirmText Text for the confirm button.
-         */
         window.showConfirm = (title, message, callback, confirmText = 'XÁC NHẬN') => {
             if (!isAdmin) return; 
             document.getElementById('confirm-modal-title').innerText = title;
@@ -2771,6 +2811,7 @@
         }
         
         trackVisit();
-    </script>
+</script>
 </body>
 </html>
+```
