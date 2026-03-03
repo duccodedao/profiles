@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photobooth Cá Nhân</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        /* Views */
+        .view {
+            display: none; /* Hide all views by default */
+        }
+        .view.active {
+            display: block; /* Show only the active view */
+        }
+
+        /* Header & Navigation */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+        }
+        #user-info {
+            font-size: 0.9em;
+        }
+        #admin-link, #logout-button {
+            margin-left: 15px;
+        }
+
+        /* Buttons */
+        button, .button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        button:hover, .button:hover {
+            background-color: #0056b3;
+        }
+        button.secondary {
+            background-color: #6c757d;
+        }
+        button.secondary:hover {
+            background-color: #5a6268;
+        }
+        #login-button {
+            font-size: 1.2em;
+            padding: 15px 30px;
+        }
+        
+        /* Photobooth View */
+        #webcam-container {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
+        }
+        #webcam {
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        #capture-button {
+            margin-top: 20px;
+            font-size: 1.2em;
+            padding: 15px 30px;
+        }
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Result View */
+        #qr-code {
+            margin: 20px auto;
+            padding: 10px;
+            background: white;
+            display: inline-block;
+        }
+        #result-links a {
+            margin: 0 10px;
+        }
+
+        /* Admin View */
+        .admin-section {
+            text-align: left;
+            margin-top: 30px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+        h2, h3 {
+            color: #007bff;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        #photo-history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        #photo-history-table th, #photo-history-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        #photo-history-table th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <!-- Header: Visible when logged in -->
+        <div class="header" id="app-header" style="display: none;">
+            <div id="user-info"></div>
+            <div>
+                <a href="#" id="admin-link" class="button secondary" style="display: none;">Admin Dashboard</a>
+                <button id="logout-button" class="secondary">Đăng xuất</button>
+            </div>
+        </div>
+
+        <!-- View 1: Login -->
+        <div id="login-view" class="view active">
+            <h1>Chào mừng đến với Photobooth</h1>
+            <p>Đăng nhập để bắt đầu chụp ảnh</p>
+            <button id="login-button">Đăng nhập với Google</button>
+        </div>
+
+        <!-- View 2: Photobooth -->
+        <div id="photobooth-view" class="view">
+            <h1>Sẵn sàng tạo dáng!</h1>
+            <div id="webcam-container">
+                <video id="webcam" autoplay playsinline></video>
+                <canvas id="canvas" style="display:none;"></canvas>
+            </div>
+            <button id="capture-button">Chụp ảnh</button>
+        </div>
+
+        <!-- View 3: Result -->
+        <div id="result-view" class="view">
+            <h2>Ảnh của bạn đã sẵn sàng!</h2>
+            <p>Quét mã QR hoặc dùng link bên dưới để tải ảnh.</p>
+            <div id="qr-code"></div>
+            <div id="result-links">
+                <a id="view-link" href="#" target="_blank" class="button">Xem ảnh</a>
+                <a id="download-link" href="#" download="photobooth.jpg" class="button">Tải xuống</a>
+            </div>
+            <br>
+            <button id="take-another-button" class="secondary" style="margin-top: 20px;">Chụp lại tấm khác</button>
+        </div>
+
+        <!-- View 4: Admin Dashboard -->
+        <div id="admin-view" class="view">
+            <h1>Admin Dashboard</h1>
+            <button id="back-to-photobooth-button">Quay lại Photobooth</button>
+            
+            <div class="admin-section">
+                <h3>Cấu hình GitHub</h3>
+                <p style="color: red; font-weight: bold;">CẢNH BÁO: API Key sẽ được lưu trên trình duyệt của bạn. Không sử dụng trên máy tính công cộng.</p>
+                <div class="form-group">
+                    <label for="github-owner">Chủ sở hữu (Username/Organization)</label>
+                    <input type="text" id="github-owner" placeholder="ví dụ: myusername">
+                </div>
+                <div class="form-group">
+                    <label for="github-repo">Tên Kho lưu trữ (Repository)</label>
+                    <input type="text" id="github-repo" placeholder="ví dụ: photobooth-images">
+                </div>
+                <div class="form-group">
+                    <label for="github-token">GitHub Personal Access Token</label>
+                    <input type="password" id="github-token">
+                </div>
+                <button id="save-config-button">Lưu cấu hình</button>
+                <p id="config-status" style="color: green;"></p>
+            </div>
+
+            <div class="admin-section">
+                <h3>Lịch sử Chụp ảnh</h3>
+                <table id="photo-history-table">
+                    <thead>
+                        <tr>
+                            <th>Người dùng</th>
+                            <th>Thời gian</th>
+                            <th>Ảnh</th>
+                        </tr>
+                    </thead>
+                    <tbody id="photo-history-body">
+                        <!-- Data will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Loading Indicator -->
+        <div id="loader" class="loader" style="display: none;"></div>
+        
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    
+    <!-- QR Code Generator -->
+    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+
+    <script>
+        // ============== CONFIGURATION ==============
+        // IMPORTANT: Replace with your Firebase project configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
+            authDomain: "profile-d1214.firebaseapp.com",
+            projectId: "profile-d1214",
+            storageBucket: "profile-d1214.appspot.com",
+            messagingSenderId: "914980131889",
+            appId: "1:914980131889:web:72f8da15c42dbee671b110",
+        };
+
+        // IMPORTANT: Replace with the email of the admin user
+        const ADMIN_EMAIL = "your-admin-email@gmail.com"; 
+
+        // ============== INITIALIZATION ==============
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const provider = new firebase.auth.GoogleAuthProvider();
+
+        // ============== DOM ELEMENTS ==============
+        const views = {
+            login: document.getElementById('login-view'),
+            photobooth: document.getElementById('photobooth-view'),
+            result: document.getElementById('result-view'),
+            admin: document.getElementById('admin-view'),
+        };
+        const appHeader = document.getElementById('app-header');
+        const userInfo = document.getElementById('user-info');
+        const adminLink = document.getElementById('admin-link');
+        const loader = document.getElementById('loader');
+
+        const webcamElement = document.getElementById('webcam');
+        const canvasElement = document.getElementById('canvas');
+        const qrCodeElement = document.getElementById('qr-code');
+
+        let currentUser = null;
+        let webcamStream = null;
+
+        // ============== VIEW MANAGEMENT ==============
+        function showView(viewName) {
+            // Hide all views and the loader
+            Object.values(views).forEach(view => view.classList.remove('active'));
+            loader.style.display = 'none';
+
+            // Show the requested view
+            if (views[viewName]) {
+                views[viewName].classList.add('active');
+            }
+        }
+        
+        // ============== AUTHENTICATION ==============
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                userInfo.textContent = `Xin chào, ${user.displayName}`;
+                appHeader.style.display = 'flex';
+                
+                // Check if the user is an admin
+                if (user.email === ADMIN_EMAIL) {
+                    adminLink.style.display = 'inline-block';
+                } else {
+                    adminLink.style.display = 'none';
+                }
+
+                loadGitHubConfig(); // Load config for admin view
+                startWebcam();
+                showView('photobooth');
+            } else {
+                currentUser = null;
+                appHeader.style.display = 'none';
+                stopWebcam();
+                showView('login');
+            }
+        });
+
+        document.getElementById('login-button').addEventListener('click', () => {
+            auth.signInWithPopup(provider).catch(error => console.error("Login failed:", error));
+        });
+
+        document.getElementById('logout-button').addEventListener('click', () => {
+            auth.signOut();
+        });
+
+        // ============== WEBCAM & CAPTURE ==============
+        async function startWebcam() {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                try {
+                    webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    webcamElement.srcObject = webcamStream;
+                } catch (error) {
+                    console.error("Error accessing webcam:", error);
+                    alert("Không thể truy cập webcam. Vui lòng cấp quyền và thử lại.");
+                }
+            }
+        }
+
+        function stopWebcam() {
+            if (webcamStream) {
+                webcamStream.getTracks().forEach(track => track.stop());
+            }
+        }
+
+        document.getElementById('capture-button').addEventListener('click', async () => {
+            loader.style.display = 'block';
+            
+            // Draw image to canvas
+            const context = canvasElement.getContext('2d');
+            canvasElement.width = webcamElement.videoWidth;
+            canvasElement.height = webcamElement.videoHeight;
+            context.drawImage(webcamElement, 0, 0, canvasElement.width, canvasElement.height);
+            
+            const imageDataUrl = canvasElement.toDataURL('image/jpeg');
+
+            await uploadImage(imageDataUrl);
+
+            loader.style.display = 'none';
+        });
+
+        // ============== GITHUB & FIRESTORE LOGIC ==============
+        async function uploadImage(imageDataUrl) {
+            const config = getGitHubConfig();
+            if (!config.owner || !config.repo || !config.token) {
+                alert("Chưa cấu hình GitHub. Vui lòng vào trang Admin để thiết lập.");
+                return;
+            }
+
+            const base64Content = imageDataUrl.split(';base64,').pop();
+            const fileName = `${Date.now()}_${currentUser.uid}.jpg`;
+            const filePath = `images/${fileName}`;
+
+            const GITHUB_API_URL = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${filePath}`;
+
+            try {
+                const response = await fetch(GITHUB_API_URL, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${config.token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: `Photobooth upload by ${currentUser.email}`,
+                        content: base64Content,
+                    }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`GitHub API Error: ${errorData.message}`);
+                }
+
+                const data = await response.json();
+                const downloadUrl = data.content.download_url;
+
+                // Save to Firestore
+                await db.collection('photos').add({
+                    userId: currentUser.uid,
+                    userEmail: currentUser.email,
+                    downloadUrl: downloadUrl,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                displayResult(downloadUrl);
+
+            } catch (error) {
+                console.error("Upload failed:", error);
+                alert(`Tải ảnh lên thất bại: ${error.message}`);
+            }
+        }
+
+        function displayResult(url) {
+            qrCodeElement.innerHTML = ''; // Clear previous QR code
+            new QRCode(qrCodeElement, {
+                text: url,
+                width: 200,
+                height: 200,
+            });
+            document.getElementById('view-link').href = url;
+            document.getElementById('download-link').href = url;
+            showView('result');
+        }
+        
+        document.getElementById('take-another-button').addEventListener('click', () => {
+             showView('photobooth');
+        });
+
+        // ============== ADMIN PANEL ==============
+        adminLink.addEventListener('click', () => {
+            showView('admin');
+            loadAllPhotos();
+        });
+
+        document.getElementById('back-to-photobooth-button').addEventListener('click', () => {
+            showView('photobooth');
+        });
+        
+        // GitHub Config
+        const ghOwnerInput = document.getElementById('github-owner');
+        const ghRepoInput = document.getElementById('github-repo');
+        const ghTokenInput = document.getElementById('github-token');
+
+        function saveGitHubConfig() {
+            const config = {
+                owner: ghOwnerInput.value.trim(),
+                repo: ghRepoInput.value.trim(),
+                token: ghTokenInput.value.trim(),
+            };
+            // WARNING: Storing token in localStorage is INSECURE. For demo purposes only.
+            localStorage.setItem('githubConfig', JSON.stringify(config));
+            document.getElementById('config-status').textContent = "Đã lưu thành công!";
+            setTimeout(() => { document.getElementById('config-status').textContent = ""}, 3000);
+        }
+        
+        function loadGitHubConfig() {
+            const config = getGitHubConfig();
+            ghOwnerInput.value = config.owner || '';
+            ghRepoInput.value = config.repo || '';
+            ghTokenInput.value = config.token || '';
+        }
+
+        function getGitHubConfig() {
+             const savedConfig = localStorage.getItem('githubConfig');
+             return savedConfig ? JSON.parse(savedConfig) : {};
+        }
+
+        document.getElementById('save-config-button').addEventListener('click', saveGitHubConfig);
+
+        // Photo History
+        async function loadAllPhotos() {
+            const historyBody = document.getElementById('photo-history-body');
+            historyBody.innerHTML = '<tr><td colspan="3">Đang tải...</td></tr>';
+
+            try {
+                const snapshot = await db.collection('photos').orderBy('timestamp', 'desc').get();
+                if (snapshot.empty) {
+                    historyBody.innerHTML = '<tr><td colspan="3">Chưa có ảnh nào được chụp.</td></tr>';
+                    return;
+                }
+
+                let html = '';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const date = data.timestamp ? data.timestamp.toDate().toLocaleString('vi-VN') : 'Không rõ';
+                    html += `
+                        <tr>
+                            <td>${data.userEmail}</td>
+                            <td>${date}</td>
+                            <td><a href="${data.downloadUrl}" target="_blank">Xem ảnh</a></td>
+                        </tr>
+                    `;
+                });
+                historyBody.innerHTML = html;
+            } catch (error) {
+                console.error("Error loading photo history:", error);
+                historyBody.innerHTML = '<tr><td colspan="3">Lỗi khi tải lịch sử.</td></tr>';
+            }
+        }
+
+    </script>
+</body>
+</html>
