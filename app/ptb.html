@@ -3,252 +3,298 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Photobooth Cá Nhân</title>
+    <title>Photobooth Pro</title>
     <style>
-        /* General Styles */
+        @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700&display=swap');
+
+        :root {
+            --primary-color: #4f46e5;
+            --secondary-color: #10b981;
+            --background-color: #f3f4f6;
+            --surface-color: #ffffff;
+            --text-color: #1f2937;
+            --light-text-color: #6b7280;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f0f2f5;
-            color: #333;
+            font-family: 'Be Vietnam Pro', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
             margin: 0;
-            padding: 20px;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            padding: 1rem;
             box-sizing: border-box;
         }
 
         .container {
             width: 100%;
-            max-width: 800px;
-            background-color: #fff;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            max-width: 900px;
+            background-color: var(--surface-color);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            overflow: hidden;
+        }
+
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* Login View */
+        #login-view {
+            padding: 4rem 2rem;
             text-align: center;
         }
-
-        /* Views */
-        .view {
-            display: none; /* Hide all views by default */
+        #login-view h1 {
+            font-size: 2.25rem;
+            color: var(--primary-color);
         }
-        .view.active {
-            display: block; /* Show only the active view */
+        #login-button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 1rem 2.5rem;
+            border-radius: 9999px;
+            cursor: pointer;
+            font-size: 1.125rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+        #login-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
         }
 
-        /* Header & Navigation */
-        .header {
+        /* App Layout */
+        #app-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 15px;
+            padding: 1rem 1.5rem;
+            background-color: var(--surface-color);
+            border-bottom: 1px solid #e5e7eb;
         }
-        #user-info {
-            font-size: 0.9em;
-        }
-        #admin-link, #logout-button {
-            margin-left: 15px;
-        }
-
-        /* Buttons */
-        button, .button {
-            background-color: #007bff;
+        #logout-button {
+            background-color: #ef4444;
             color: white;
             border: none;
-            padding: 12px 20px;
-            border-radius: 5px;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 1em;
+            font-weight: 500;
             transition: background-color 0.2s;
-            text-decoration: none;
-            display: inline-block;
         }
-        button:hover, .button:hover {
-            background-color: #0056b3;
-        }
-        button.secondary {
-            background-color: #6c757d;
-        }
-        button.secondary:hover {
-            background-color: #5a6268;
-        }
-        #login-button {
-            font-size: 1.2em;
-            padding: 15px 30px;
-        }
-        
+        #logout-button:hover { background-color: #dc2626; }
+
         /* Photobooth View */
-        #webcam-container {
+        #photobooth-view {
+            display: flex;
+            gap: 1.5rem;
+            padding: 1.5rem;
+        }
+        .main-panel {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .sidebar {
+            width: 250px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .controls-group {
+            background-color: #f9fafb;
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+        }
+        .controls-group h3 {
+            margin: 0 0 1rem 0;
+            font-size: 1rem;
+            font-weight: 700;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 0.5rem;
+        }
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+        }
+        .option-button {
+            width: 100%;
+            height: 50px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            background-size: cover;
+            background-position: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .option-button:hover { border-color: var(--primary-color); }
+        .option-button.active {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.4);
+        }
+        .option-button .name {
+            position: absolute;
+            bottom: -1.2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.75rem;
+            color: var(--light-text-color);
+        }
+
+        #canvas-container {
             position: relative;
             width: 100%;
             max-width: 640px;
-            margin: 0 auto;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
         }
-        #webcam {
+        #main-canvas {
+            display: block;
             width: 100%;
-            border-radius: 8px;
-            border: 1px solid #ddd;
+            height: auto;
         }
         #capture-button {
-            margin-top: 20px;
-            font-size: 1.2em;
-            padding: 15px 30px;
-        }
-        .loader {
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #3498db;
+            margin-top: 1.5rem;
+            background-color: var(--secondary-color);
+            width: 80px;
+            height: 80px;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
+            border: 5px solid white;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+            cursor: pointer;
+            transition: all 0.2s;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        #capture-button:hover { transform: scale(1.1); }
+        
+        /* Result & Loading View */
+        #result-view, #loading-view {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
         }
-
-        /* Result View */
+        .result-modal {
+            background-color: var(--surface-color);
+            padding: 2rem;
+            border-radius: 16px;
+            text-align: center;
+            max-width: 400px;
+        }
         #qr-code {
-            margin: 20px auto;
+            margin: 1.5rem auto;
             padding: 10px;
             background: white;
             display: inline-block;
+            border-radius: 8px;
         }
-        #result-links a {
-            margin: 0 10px;
+        .result-buttons { display: flex; gap: 1rem; justify-content: center; }
+        .result-buttons a, .result-buttons button {
+            background-color: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+            border: none;
+            cursor: pointer;
         }
-
-        /* Admin View */
-        .admin-section {
-            text-align: left;
-            margin-top: 30px;
-            border-top: 1px solid #eee;
-            padding-top: 20px;
+        .result-buttons .secondary { background-color: #6b7280; }
+        
+        /* Loader */
+        .loader {
+            width: 60px;
+            height: 60px;
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
-        h2, h3 {
-            color: #007bff;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        .form-group input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        #photo-history-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        #photo-history-table th, #photo-history-table td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        #photo-history-table th {
-            background-color: #f2f2f2;
-        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
     <div class="container">
-
-        <!-- Header: Visible when logged in -->
-        <div class="header" id="app-header" style="display: none;">
-            <div id="user-info"></div>
-            <div>
-                <a href="#" id="admin-link" class="button secondary" style="display: none;">Admin Dashboard</a>
-                <button id="logout-button" class="secondary">Đăng xuất</button>
-            </div>
-        </div>
-
-        <!-- View 1: Login -->
+        <!-- Login View -->
         <div id="login-view" class="view active">
-            <h1>Chào mừng đến với Photobooth</h1>
-            <p>Đăng nhập để bắt đầu chụp ảnh</p>
-            <button id="login-button">Đăng nhập với Google</button>
+            <h1>Photobooth Pro</h1>
+            <p>Trải nghiệm chụp ảnh sáng tạo và hiện đại.</p>
+            <button id="login-button">
+                <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" fill="white"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/><path d="M1 1h22v22H1z" fill="none"/></svg>
+                <span>Đăng nhập với Google</span>
+            </button>
         </div>
 
-        <!-- View 2: Photobooth -->
-        <div id="photobooth-view" class="view">
-            <h1>Sẵn sàng tạo dáng!</h1>
-            <div id="webcam-container">
-                <video id="webcam" autoplay playsinline></video>
-                <canvas id="canvas" style="display:none;"></canvas>
-            </div>
-            <button id="capture-button">Chụp ảnh</button>
-        </div>
-
-        <!-- View 3: Result -->
-        <div id="result-view" class="view">
-            <h2>Ảnh của bạn đã sẵn sàng!</h2>
-            <p>Quét mã QR hoặc dùng link bên dưới để tải ảnh.</p>
-            <div id="qr-code"></div>
-            <div id="result-links">
-                <a id="view-link" href="#" target="_blank" class="button">Xem ảnh</a>
-                <a id="download-link" href="#" download="photobooth.jpg" class="button">Tải xuống</a>
-            </div>
-            <br>
-            <button id="take-another-button" class="secondary" style="margin-top: 20px;">Chụp lại tấm khác</button>
-        </div>
-
-        <!-- View 4: Admin Dashboard -->
-        <div id="admin-view" class="view">
-            <h1>Admin Dashboard</h1>
-            <button id="back-to-photobooth-button">Quay lại Photobooth</button>
+        <!-- App View -->
+        <div id="app-view" class="view">
+            <header id="app-header">
+                <div id="user-info"></div>
+                <button id="logout-button">Đăng xuất</button>
+            </header>
             
-            <div class="admin-section">
-                <h3>Cấu hình GitHub</h3>
-                <p style="color: red; font-weight: bold;">CẢNH BÁO: API Key sẽ được lưu trên trình duyệt của bạn. Không sử dụng trên máy tính công cộng.</p>
-                <div class="form-group">
-                    <label for="github-owner">Chủ sở hữu (Username/Organization)</label>
-                    <input type="text" id="github-owner" placeholder="ví dụ: myusername">
+            <main id="photobooth-view">
+                <div class="sidebar">
+                    <div class="controls-group">
+                        <h3>Filters</h3>
+                        <div id="filters-container" class="options-grid"></div>
+                    </div>
+                    <div class="controls-group">
+                        <h3>Phụ kiện</h3>
+                        <div id="accessories-container" class="options-grid"></div>
+                    </div>
+                    <div class="controls-group">
+                        <h3>Khung ảnh</h3>
+                        <div id="frames-container" class="options-grid"></div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="github-repo">Tên Kho lưu trữ (Repository)</label>
-                    <input type="text" id="github-repo" placeholder="ví dụ: photobooth-images">
-                </div>
-                <div class="form-group">
-                    <label for="github-token">GitHub Personal Access Token</label>
-                    <input type="password" id="github-token">
-                </div>
-                <button id="save-config-button">Lưu cấu hình</button>
-                <p id="config-status" style="color: green;"></p>
-            </div>
 
-            <div class="admin-section">
-                <h3>Lịch sử Chụp ảnh</h3>
-                <table id="photo-history-table">
-                    <thead>
-                        <tr>
-                            <th>Người dùng</th>
-                            <th>Thời gian</th>
-                            <th>Ảnh</th>
-                        </tr>
-                    </thead>
-                    <tbody id="photo-history-body">
-                        <!-- Data will be loaded here -->
-                    </tbody>
-                </table>
+                <div class="main-panel">
+                    <div id="canvas-container">
+                        <canvas id="main-canvas"></canvas>
+                        <video id="webcam" autoplay playsinline muted style="display:none;"></video>
+                    </div>
+                    <button id="capture-button" title="Chụp ảnh"></button>
+                </div>
+            </main>
+        </div>
+
+        <!-- Result View -->
+        <div id="result-view" class="view">
+             <div class="result-modal">
+                <h2>Ảnh của bạn đã sẵn sàng!</h2>
+                <div id="qr-code"></div>
+                <div class="result-buttons">
+                    <a id="download-link" href="#" download="photobooth-pro.jpg" class="primary">Tải xuống</a>
+                    <button id="take-another-button" class="secondary">Chụp lại</button>
+                </div>
             </div>
         </div>
         
-        <!-- Loading Indicator -->
-        <div id="loader" class="loader" style="display: none;"></div>
-        
+        <!-- Loading View -->
+        <div id="loading-view" class="view">
+            <div class="loader"></div>
+        </div>
     </div>
 
     <!-- Firebase SDKs -->
@@ -261,7 +307,6 @@
 
     <script>
         // ============== CONFIGURATION ==============
-        // IMPORTANT: Replace with your Firebase project configuration
         const firebaseConfig = {
             apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
             authDomain: "profile-d1214.firebaseapp.com",
@@ -271,88 +316,101 @@
             appId: "1:914980131889:web:72f8da15c42dbee671b110",
         };
 
-        // IMPORTANT: Replace with the email of the admin user
-        const ADMIN_EMAIL = "your-admin-email@gmail.com"; 
-
         // ============== INITIALIZATION ==============
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
         const provider = new firebase.auth.GoogleAuthProvider();
 
+        let currentUser = null;
+        let webcamStream = null;
+        let animationFrameId = null;
+
+        // ============== ASSETS (Base64 encoded to keep in one file) ==============
+        const assets = {
+            accessories: {
+                none: { name: 'Không', src: ''},
+                glasses: { name: 'Kính', src: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAABACAQAAAC2G0TOAAADGElEQVR42u3bXXLVMAAAYG3aTu2kdtI6aZ20TtpJ7aR2Erfpk+Qi4sA+d4Bf8B+SiyRJLglgZ5B8Y4iIqJmYSAcREVEzMbECEBERkS6gERERGREtICIiI7QEiIiIyBpqAREZEdECIiIjoAVIRESkC2gERGRERAsgIiIjtAAREZGSgEZERGREdACIjIjIAQ0gIiIj0gVEZEREiyAiIiI7QAMgIiIiHUBEJiY9QEZGRLSAiIiI7AEtICIiIksgIiIjsgY0gIiIjEgXEJGRERYBREQkNkBDiIjISDQBETIi0gWkERERGRGNAiIiIjJAQ4iIiEj8gEREJiYgIiMivUBFRERkRDT4gERERkR7gUREJiYgIiMivUBCRERkRCSAiIiMkB4gIiIiS+ADGhGRERFdgYjIxAREZESkF+gERERkRCSABkREREZAC4iITExARERGSg8QEZGSQANAZGRETQiIyMQERGRERMsIiIjIAQ2IyIjIAX4gIiMjJAtoREREZAG/QEVEZGREMgVERGQA0gVEZEREb6AiIiKyB5SABkRkREQL+ICIjIzQEiAiIiL+Bw2IyIjIAf4gIiMjPANAZGRETQiIyMQERGRERAsgIiIjtAAREZGSgEZERGREdACIjIjIAQ0gIiIj0gVEZEREiyAiIiI7QAMgIiIiHUBEJiY9QEZGRLSAiIiI7AEtICIiIksgIiIjsgY0gIiIjEgXEJGRERYBREQkNkBDiIjISDQBETIi0gWkERERGRGNAiIiIjJAQ4iIiEj8gEREJiYgIiMivUBFRERkRDT4gERERkR7gUREJiYgIiMivUBCRERkRCSAiIiMkB4gIiIiS+ADGhGRERFdgYjIxAREZESkF+gERERkRCSABkREREZAC4iITExARERGSg8QEZGSQANAZGRETQiIyMQERGRERMsIiIjIAQ2IyIjIAX4gIiMjJAtoREREZAG/QEVEZGREMgVERGQA0gVEZEREb6AiIiKyB5SABkRkREQL+ICIjIzQEiAiIiJ/A1o/2/4D0L4KAAAAAElFTkSuQmCC'},
+                crown: { name: 'Vương miện', src: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAAA8AQMAAADLIO4bAAAABlBMVEUAAAD/zgD//+T2GvAAAAAJcEhZcwAACxMAAAsTAQCanBgAAAFTSURBVAiZ7dXBdoMgEIXhBQhtQ0gX0MX0C13ClS7hKlfQxXQJ7YBCaBvC789kYmIH5wT+I3k+EDg0aUqSH/kI0G4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A6ANiByyI9w/w7gHVAcvjKADqCgVz+XAEyAnl7+aAIwA/l9+SMJwAzk5+WfJwD7kJ+X/5wBHAd5d/m3CcBjyL/Lr00ApsG0LdO2TdO2/WkY0G4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A6ANiByyI9w/w7gHVAcvjKADqCgVz+XAEyAnl7+aAIwA/l9+SMJwAzk5+WfJwD7kJ+X/5wBHAd5d/m3CcBjyL/Lr00ApsG0LdO2TdO2/WkY0G4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A4A0A6ANiByyI9w/w7gHVAcvjKADqCgVz+XAEyAnl7+aAIwA/l9+SMJwAzk5+WfJwD7kJ+X/5wBHAd5d/m3CcBjyL/Lr00ApsG0LdO2TdO2/WkY0H4D+AGUuTf23yMr+gAAAABJRU5ErkJggg=='}
+            },
+            filters: {
+                none: { name: 'Gốc', style: 'none' },
+                beautify: { name: 'Làm đẹp', style: 'brightness(1.1) contrast(1.1) saturate(1.1)' },
+                vintage: { name: 'Vintage', style: 'sepia(0.6) contrast(0.9) brightness(1.05)' },
+                bw: { name: 'Đen trắng', style: 'grayscale(1)'}
+            },
+            frames: {
+                none: { name: 'Không', src: ''},
+                classic: { name: 'Cổ điển', src: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAyAAAAJAAQMAAAD7zVfAAAAABlBMVEUAAAD///+l2Z/dAAAAAXRSTlMAQObYZgAAAFRJREFUeN7t0AEBAAAAIqD/r25IQAEAQH8gAIAAASBAgAABAkCAAAEiQIAAASBAgAABAkCAAAECAgQIECBAgAABAkCAAIGAAAEgQIAAAYGAACDAgQI5gUDA3Q+VSQAAAABJRU5ErkJggg=='},
+                polaroid: { name: 'Polaroid', src: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAyAAAAJAAQMAAAD7zVfAAAAABlBMVEUAAAD///+l2Z/dAAAAAXRSTlMAQObYZgAAAHBJREFUeN7t0AENAAAMwqD/qc+0AmEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABO4wA0AAEAARESAAAAAElFTkSuQmCC'}
+            }
+        };
+        const preloadedImages = {};
+
         // ============== DOM ELEMENTS ==============
         const views = {
             login: document.getElementById('login-view'),
-            photobooth: document.getElementById('photobooth-view'),
+            app: document.getElementById('app-view'),
             result: document.getElementById('result-view'),
-            admin: document.getElementById('admin-view'),
+            loading: document.getElementById('loading-view'),
         };
-        const appHeader = document.getElementById('app-header');
         const userInfo = document.getElementById('user-info');
-        const adminLink = document.getElementById('admin-link');
-        const loader = document.getElementById('loader');
-
         const webcamElement = document.getElementById('webcam');
-        const canvasElement = document.getElementById('canvas');
+        const canvasElement = document.getElementById('main-canvas');
+        const ctx = canvasElement.getContext('2d');
         const qrCodeElement = document.getElementById('qr-code');
 
-        let currentUser = null;
-        let webcamStream = null;
+        let activeOptions = {
+            filter: 'none',
+            accessory: 'none',
+            frame: 'none'
+        };
 
         // ============== VIEW MANAGEMENT ==============
         function showView(viewName) {
-            // Hide all views and the loader
             Object.values(views).forEach(view => view.classList.remove('active'));
-            loader.style.display = 'none';
-
-            // Show the requested view
             if (views[viewName]) {
                 views[viewName].classList.add('active');
             }
         }
-        
+
         // ============== AUTHENTICATION ==============
         auth.onAuthStateChanged(user => {
             if (user) {
                 currentUser = user;
                 userInfo.textContent = `Xin chào, ${user.displayName}`;
-                appHeader.style.display = 'flex';
-                
-                // Check if the user is an admin
-                if (user.email === ADMIN_EMAIL) {
-                    adminLink.style.display = 'inline-block';
-                } else {
-                    adminLink.style.display = 'none';
-                }
-
-                loadGitHubConfig(); // Load config for admin view
+                showView('app');
                 startWebcam();
-                showView('photobooth');
             } else {
                 currentUser = null;
-                appHeader.style.display = 'none';
-                stopWebcam();
                 showView('login');
+                stopWebcam();
             }
         });
 
         document.getElementById('login-button').addEventListener('click', () => {
             auth.signInWithPopup(provider).catch(error => console.error("Login failed:", error));
         });
-
         document.getElementById('logout-button').addEventListener('click', () => {
             auth.signOut();
         });
 
-        // ============== WEBCAM & CAPTURE ==============
+        // ============== WEBCAM & CANVAS DRAWING LOOP ==============
         async function startWebcam() {
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 try {
-                    webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    webcamStream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { width: 1280, height: 720 } 
+                    });
                     webcamElement.srcObject = webcamStream;
+                    webcamElement.onloadedmetadata = () => {
+                        canvasElement.width = webcamElement.videoWidth;
+                        canvasElement.height = webcamElement.videoHeight;
+                        drawLoop();
+                    };
                 } catch (error) {
                     console.error("Error accessing webcam:", error);
-                    alert("Không thể truy cập webcam. Vui lòng cấp quyền và thử lại.");
+                    alert("Không thể truy cập webcam. Vui lòng cấp quyền.");
                 }
             }
         }
@@ -361,163 +419,190 @@
             if (webcamStream) {
                 webcamStream.getTracks().forEach(track => track.stop());
             }
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
         }
 
-        document.getElementById('capture-button').addEventListener('click', async () => {
-            loader.style.display = 'block';
+        function drawLoop() {
+            ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+            // Apply filter
+            ctx.filter = assets.filters[activeOptions.filter].style;
             
-            // Draw image to canvas
-            const context = canvasElement.getContext('2d');
-            canvasElement.width = webcamElement.videoWidth;
-            canvasElement.height = webcamElement.videoHeight;
-            context.drawImage(webcamElement, 0, 0, canvasElement.width, canvasElement.height);
+            // Draw webcam feed
+            ctx.drawImage(webcamElement, 0, 0, canvasElement.width, canvasElement.height);
             
-            const imageDataUrl = canvasElement.toDataURL('image/jpeg');
+            // Reset filter before drawing overlays
+            ctx.filter = 'none';
 
-            await uploadImage(imageDataUrl);
-
-            loader.style.display = 'none';
-        });
-
-        // ============== GITHUB & FIRESTORE LOGIC ==============
-        async function uploadImage(imageDataUrl) {
-            const config = getGitHubConfig();
-            if (!config.owner || !config.repo || !config.token) {
-                alert("Chưa cấu hình GitHub. Vui lòng vào trang Admin để thiết lập.");
-                return;
+            // Draw accessory
+            if (activeOptions.accessory !== 'none' && preloadedImages[activeOptions.accessory]) {
+                const img = preloadedImages[activeOptions.accessory];
+                const w = canvasElement.width * 0.3; // Accessory width is 30% of canvas width
+                const h = (img.height / img.width) * w;
+                const x = (canvasElement.width - w) / 2; // Centered
+                const y = (canvasElement.height * 0.15) - (h / 2); // 15% from top
+                ctx.drawImage(img, x, y, w, h);
             }
 
+            // Draw frame
+            if (activeOptions.frame !== 'none' && preloadedImages[activeOptions.frame]) {
+                const img = preloadedImages[activeOptions.frame];
+                ctx.drawImage(img, 0, 0, canvasElement.width, canvasElement.height);
+            }
+
+            animationFrameId = requestAnimationFrame(drawLoop);
+        }
+
+        // ============== CAPTURE & UPLOAD ==============
+        document.getElementById('capture-button').addEventListener('click', async () => {
+            showView('loading');
+            
+            // Get final image from canvas
+            const imageDataUrl = canvasElement.toDataURL('image/jpeg', 0.9);
+
+            try {
+                const downloadUrl = await uploadToGitHub(imageDataUrl);
+                await saveToFirestore(downloadUrl);
+                displayResult(downloadUrl);
+            } catch (error) {
+                console.error(error);
+                alert(`Tải ảnh lên thất bại: ${error.message}`);
+                showView('app'); // Go back to app on failure
+            }
+        });
+        
+        async function uploadToGitHub(imageDataUrl) {
+            const config = getGitHubConfig();
+            if (!config.owner || !config.repo || !config.token) {
+                throw new Error("Chưa cấu hình GitHub! Hãy mở console (F12) và chạy lệnh configureGitHub('owner', 'repo', 'token')");
+            }
             const base64Content = imageDataUrl.split(';base64,').pop();
             const fileName = `${Date.now()}_${currentUser.uid}.jpg`;
             const filePath = `images/${fileName}`;
-
             const GITHUB_API_URL = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${filePath}`;
 
-            try {
-                const response = await fetch(GITHUB_API_URL, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `token ${config.token}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        message: `Photobooth upload by ${currentUser.email}`,
-                        content: base64Content,
-                    }),
-                });
+            const response = await fetch(GITHUB_API_URL, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${config.token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: `Photobooth upload by ${currentUser.email}`,
+                    content: base64Content,
+                }),
+            });
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(`GitHub API Error: ${errorData.message}`);
-                }
-
-                const data = await response.json();
-                const downloadUrl = data.content.download_url;
-
-                // Save to Firestore
-                await db.collection('photos').add({
-                    userId: currentUser.uid,
-                    userEmail: currentUser.email,
-                    downloadUrl: downloadUrl,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                });
-
-                displayResult(downloadUrl);
-
-            } catch (error) {
-                console.error("Upload failed:", error);
-                alert(`Tải ảnh lên thất bại: ${error.message}`);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`GitHub API Error: ${errorData.message}`);
             }
+            const data = await response.json();
+            return data.content.download_url;
         }
 
-        function displayResult(url) {
-            qrCodeElement.innerHTML = ''; // Clear previous QR code
-            new QRCode(qrCodeElement, {
-                text: url,
-                width: 200,
-                height: 200,
+        async function saveToFirestore(downloadUrl) {
+            return db.collection('photos').add({
+                userId: currentUser.uid,
+                userEmail: currentUser.email,
+                downloadUrl: downloadUrl,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
-            document.getElementById('view-link').href = url;
+        }
+
+        // ============== RESULT DISPLAY ==============
+        function displayResult(url) {
+            qrCodeElement.innerHTML = ''; // Clear previous QR
+            new QRCode(qrCodeElement, { text: url, width: 200, height: 200 });
             document.getElementById('download-link').href = url;
             showView('result');
         }
-        
+
         document.getElementById('take-another-button').addEventListener('click', () => {
-             showView('photobooth');
+             showView('app');
         });
 
-        // ============== ADMIN PANEL ==============
-        adminLink.addEventListener('click', () => {
-            showView('admin');
-            loadAllPhotos();
-        });
-
-        document.getElementById('back-to-photobooth-button').addEventListener('click', () => {
-            showView('photobooth');
-        });
-        
-        // GitHub Config
-        const ghOwnerInput = document.getElementById('github-owner');
-        const ghRepoInput = document.getElementById('github-repo');
-        const ghTokenInput = document.getElementById('github-token');
-
-        function saveGitHubConfig() {
-            const config = {
-                owner: ghOwnerInput.value.trim(),
-                repo: ghRepoInput.value.trim(),
-                token: ghTokenInput.value.trim(),
+        // ============== DYNAMIC UI BUILDER ==============
+        function buildOptionsUI() {
+            const containers = {
+                filters: document.getElementById('filters-container'),
+                accessories: document.getElementById('accessories-container'),
+                frames: document.getElementById('frames-container'),
             };
-            // WARNING: Storing token in localStorage is INSECURE. For demo purposes only.
-            localStorage.setItem('githubConfig', JSON.stringify(config));
-            document.getElementById('config-status').textContent = "Đã lưu thành công!";
-            setTimeout(() => { document.getElementById('config-status').textContent = ""}, 3000);
+
+            ['filters', 'accessories', 'frames'].forEach(type => {
+                const container = containers[type];
+                const options = assets[type];
+                container.innerHTML = '';
+                
+                Object.keys(options).forEach(key => {
+                    const option = options[key];
+                    const btn = document.createElement('button');
+                    btn.className = 'option-button';
+                    btn.dataset.type = type.slice(0, -1); // 'filter' or 'accessory'
+                    btn.dataset.key = key;
+                    
+                    if (option.src) {
+                        btn.style.backgroundImage = `url(${option.src})`;
+                    } else if (type === 'filters') {
+                         btn.textContent = option.name;
+                         btn.style.fontSize = '0.7rem';
+                         btn.style.textAlign = 'center';
+                    }
+
+                    if (activeOptions[btn.dataset.type] === key) {
+                        btn.classList.add('active');
+                    }
+
+                    btn.addEventListener('click', (e) => {
+                        const clickedBtn = e.currentTarget;
+                        const type = clickedBtn.dataset.type;
+                        const key = clickedBtn.dataset.key;
+                        
+                        activeOptions[type] = key;
+                        
+                        // Update UI
+                        container.querySelectorAll('.option-button').forEach(b => b.classList.remove('active'));
+                        clickedBtn.classList.add('active');
+                    });
+                    
+                    container.appendChild(btn);
+                });
+            });
         }
         
-        function loadGitHubConfig() {
-            const config = getGitHubConfig();
-            ghOwnerInput.value = config.owner || '';
-            ghRepoInput.value = config.repo || '';
-            ghTokenInput.value = config.token || '';
+        // ============== GITHUB CONFIG (Insecure - For Demo Only) ==============
+        function configureGitHub(owner, repo, token) {
+            const config = { owner, repo, token };
+            localStorage.setItem('githubConfig', JSON.stringify(config));
+            console.log("Cấu hình GitHub đã được lưu vào localStorage. Sẵn sàng để upload!", config);
+            alert("Cấu hình GitHub đã được lưu!");
         }
 
         function getGitHubConfig() {
-             const savedConfig = localStorage.getItem('githubConfig');
-             return savedConfig ? JSON.parse(savedConfig) : {};
+            const savedConfig = localStorage.getItem('githubConfig');
+            return savedConfig ? JSON.parse(savedConfig) : {};
         }
 
-        document.getElementById('save-config-button').addEventListener('click', saveGitHubConfig);
-
-        // Photo History
-        async function loadAllPhotos() {
-            const historyBody = document.getElementById('photo-history-body');
-            historyBody.innerHTML = '<tr><td colspan="3">Đang tải...</td></tr>';
-
-            try {
-                const snapshot = await db.collection('photos').orderBy('timestamp', 'desc').get();
-                if (snapshot.empty) {
-                    historyBody.innerHTML = '<tr><td colspan="3">Chưa có ảnh nào được chụp.</td></tr>';
-                    return;
+        // ============== PRELOAD IMAGES & INITIALIZE APP ==============
+        function preloadAssets() {
+            const allImages = { ...assets.accessories, ...assets.frames };
+            Object.keys(allImages).forEach(key => {
+                const asset = allImages[key];
+                if (asset.src) {
+                    const img = new Image();
+                    img.src = asset.src;
+                    preloadedImages[key] = img;
                 }
-
-                let html = '';
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    const date = data.timestamp ? data.timestamp.toDate().toLocaleString('vi-VN') : 'Không rõ';
-                    html += `
-                        <tr>
-                            <td>${data.userEmail}</td>
-                            <td>${date}</td>
-                            <td><a href="${data.downloadUrl}" target="_blank">Xem ảnh</a></td>
-                        </tr>
-                    `;
-                });
-                historyBody.innerHTML = html;
-            } catch (error) {
-                console.error("Error loading photo history:", error);
-                historyBody.innerHTML = '<tr><td colspan="3">Lỗi khi tải lịch sử.</td></tr>';
-            }
+            });
         }
+        
+        // Run on start
+        preloadAssets();
+        buildOptionsUI();
 
     </script>
 </body>
-</html>
+</html>```
