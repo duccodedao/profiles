@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="vi" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trình Quản Lý Mật Khẩu An Toàn</title>
+    
+    <!-- SEO & PWA Meta Tags -->
+    <meta name="description" content="Một trình quản lý mật khẩu an toàn, hiện đại sử dụng Firebase.">
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/876/876219.png" type="image/png">
+    <meta name="theme-color" content="#4f46e5">
+
+    <!-- Thư viện CSS và JS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --secondary: #0ea5e9;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --dark-bg: #0f172a;
+            --light-bg: #f1f5f9;
+        }
+
+        /* Gradient Background */
+        body {
+            font-family: 'Be Vietnam Pro', sans-serif;
+            background-color: var(--light-bg);
+            background-image: radial-gradient(circle at 1px 1px, rgba(0,0,0,0.03) 1px, transparent 0);
+            background-size: 20px 20px;
+            transition: background-color 0.3s ease-in-out;
+        }
+
+        .dark body {
+            background-color: var(--dark-bg);
+            background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0);
+        }
+
+        /* Glassmorphism Effect for Header */
+        .glass-header {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        .dark .glass-header {
+            background: rgba(15, 23, 42, 0.8);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* Animation */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        /* SweetAlert Dark Mode Customization */
+        .dark .swal2-popup {
+            background-color: #1e293b !important;
+            color: #e2e8f0 !important;
+        }
+        .dark .swal2-title { color: #f1f5f9 !important; }
+        .dark .swal2-html-container { color: #94a3b8 !important; }
+        .dark .swal2-confirm { background-color: var(--primary) !important; }
+        .dark .swal2-cancel { background-color: #475569 !important; }
+
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 dark:text-slate-200">
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm z-[100] flex items-center justify-center transition-opacity duration-300">
+        <div class="flex flex-col items-center gap-4">
+            <svg class="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">Đang tải dữ liệu...</p>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="sticky top-0 z-50 glass-header">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-primary/10 text-primary flex items-center justify-center rounded-lg">
+                        <i data-lucide="key-round"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold tracking-tight">Password Manager</h1>
+                        <span id="user-role" class="text-xs font-bold text-slate-500 uppercase">Guest</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="toggleTheme()" class="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                        <i data-lucide="sun" class="w-5 h-5 hidden dark:block text-amber-400"></i>
+                        <i data-lucide="moon" class="w-5 h-5 dark:hidden text-slate-600"></i>
+                    </button>
+                    <div id="auth-container">
+                        <button onclick="authManager.login()" class="px-4 py-2 bg-primary text-white text-sm font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition-all">Đăng Nhập</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div id="app-content" class="hidden">
+            <!-- Action Bar -->
+            <div class="bg-white dark:bg-slate-800/50 p-4 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 mb-8 fade-in">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div class="relative w-full md:w-1/2 lg:w-1/3">
+                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"></i>
+                        <input type="text" id="search-input" placeholder="Tìm theo website hoặc tài khoản..." class="w-full pl-10 pr-4 py-2.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary outline-none transition">
+                    </div>
+                    <div id="admin-actions" class="hidden flex-shrink-0 flex items-center flex-wrap justify-center gap-2">
+                         <button onclick="uiManager.openModal()" class="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition-all">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            Thêm Mới
+                        </button>
+                        <button onclick="excelManager.exportToExcel()" class="flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white text-sm font-semibold rounded-lg shadow-md hover:bg-green-700 transition-all">
+                            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                            Export Excel
+                        </button>
+                         <label for="import-excel" class="cursor-pointer flex items-center gap-2 px-4 py-2.5 bg-sky-500 text-white text-sm font-semibold rounded-lg shadow-md hover:bg-sky-600 transition-all">
+                            <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                            Import Excel
+                        </label>
+                        <input type="file" id="import-excel" class="hidden" accept=".xlsx, .xls" onchange="excelManager.importFromExcel(event)">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="bg-white dark:bg-slate-800/50 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden fade-in" style="animation-delay: 0.1s;">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-slate-50 dark:bg-slate-900/50 text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 min-w-[200px]">Website</th>
+                                <th scope="col" class="px-6 py-3 min-w-[200px]">Tài khoản</th>
+                                <th scope="col" class="px-6 py-3 min-w-[250px]">Mật khẩu</th>
+                                <th scope="col" class="px-6 py-3 text-center">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody id="password-table-body">
+                            <!-- Rows will be injected by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                 <!-- Empty State -->
+                <div id="empty-state" class="hidden text-center p-16">
+                    <i data-lucide="database-zap" class="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto"></i>
+                    <h3 class="mt-4 text-lg font-semibold text-slate-700 dark:text-slate-300">Chưa có dữ liệu</h3>
+                    <p class="mt-1 text-sm text-slate-500">Hãy bắt đầu bằng cách thêm một tài khoản mới.</p>
+                </div>
+                <!-- Pagination -->
+                <div id="pagination-controls" class="p-4 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add/Edit Modal -->
+    <div id="form-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg shadow-2xl m-4 transform transition-all opacity-0 -translate-y-4" id="modal-content">
+            <form id="password-form" class="space-y-6">
+                <div class="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+                    <h3 id="modal-title" class="text-lg font-bold">Thêm Tài Khoản Mới</h3>
+                    <button type="button" onclick="uiManager.closeModal()" class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div class="px-6 space-y-4">
+                    <input type="hidden" id="entry-id">
+                    <div>
+                        <label for="website" class="text-sm font-medium text-slate-700 dark:text-slate-300">Website URL</label>
+                        <div class="relative mt-1">
+                             <i data-lucide="globe" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"></i>
+                            <input type="url" id="website" required class="w-full pl-10 pr-4 py-2.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary outline-none transition" placeholder="https://example.com">
+                        </div>
+                    </div>
+                     <div>
+                        <label for="account" class="text-sm font-medium text-slate-700 dark:text-slate-300">Tài khoản (Email, Username)</label>
+                         <div class="relative mt-1">
+                             <i data-lucide="user" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"></i>
+                            <input type="text" id="account" required class="w-full pl-10 pr-4 py-2.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary outline-none transition" placeholder="example@email.com">
+                        </div>
+                    </div>
+                     <div>
+                        <label for="password" class="text-sm font-medium text-slate-700 dark:text-slate-300">Mật khẩu</label>
+                         <div class="relative mt-1">
+                             <i data-lucide="lock" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"></i>
+                            <input type="password" id="password" required class="w-full pl-10 pr-4 py-2.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary outline-none transition" placeholder="••••••••••••">
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-end gap-4 p-6 bg-slate-50 dark:bg-slate-900/50 rounded-b-2xl">
+                    <button type="button" onclick="document.getElementById('password-form').reset()" class="px-4 py-2.5 text-sm font-semibold rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition">Reset</button>
+                    <button type="submit" class="px-6 py-2.5 bg-primary text-white text-sm font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+<script type="module">
+    // Firebase SDKs
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // --- CẤU HÌNH ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE", // Thay thế bằng API Key của bạn
+        authDomain: "profile-d1214.firebaseapp.com", // Thay thế
+        projectId: "profile-d1214", // Thay thế
+        storageBucket: "profile-d1214.firebasestorage.app", // Thay thế
+        messagingSenderId: "914980131889", // Thay thế
+        appId: "1:914980131889:web:72f8da15c42dbee671b110" // Thay thế
+    };
+
+    // DANH SÁCH EMAIL ADMIN
+    const ADMIN_EMAILS = ["senior.dev@example.com", "admin@email.com"]; // <-- THÊM EMAIL ADMIN CỦA BẠN VÀO ĐÂY
+
+    // --- KHỞI TẠO FIREBASE ---
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+    const passwordCollection = collection(db, "password_manager");
+
+    // --- BIẾN TOÀN CỤC ---
+    let currentUser = null;
+    let isAdmin = false;
+    let allEntries = [];
+    let displayedEntries = [];
+    let currentPage = 1;
+    const itemsPerPage = 10;
+
+    // --- QUẢN LÝ UI (UI MANAGER) ---
+    const uiManager = {
+        showLoading: () => document.getElementById('loading-overlay').classList.remove('opacity-0', 'pointer-events-none'),
+        hideLoading: () => document.getElementById('loading-overlay').classList.add('opacity-0', 'pointer-events-none'),
+        
+        openModal: (entry = null) => {
+            const modal = document.getElementById('form-modal');
+            const content = document.getElementById('modal-content');
+            const form = document.getElementById('password-form');
+            form.reset();
+            
+            document.getElementById('modal-title').textContent = entry ? 'Chỉnh Sửa Tài Khoản' : 'Thêm Tài Khoản Mới';
+            if(entry) {
+                document.getElementById('entry-id').value = entry.id;
+                document.getElementById('website').value = entry.website;
+                document.getElementById('account').value = entry.account;
+                document.getElementById('password').value = entry.password;
+            } else {
+                document.getElementById('entry-id').value = '';
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('opacity-0', '-translate-y-4');
+            }, 10);
+        },
+
+        closeModal: () => {
+            const modal = document.getElementById('form-modal');
+            const content = document.getElementById('modal-content');
+            content.classList.add('opacity-0', '-translate-y-4');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        },
+
+        showToast: (message, isError = false) => {
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.addEventListener('mouseenter', Swal.stopTimer)
+                    toast.addEventListener('mouseleave', Swal.resumeTimer)
+                }
+            });
+
+            Toast.fire({
+                icon: isError ? 'error' : 'success',
+                title: message
+            });
+        },
+        
+        renderTable: () => {
+            const tableBody = document.getElementById('password-table-body');
+            const emptyState = document.getElementById('empty-state');
+            
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageEntries = displayedEntries.slice(startIndex, endIndex);
+
+            if (pageEntries.length === 0) {
+                tableBody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                document.getElementById('pagination-controls').classList.add('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            document.getElementById('pagination-controls').classList.remove('hidden');
+            
+            tableBody.innerHTML = pageEntries.map(entry => {
+                const domain = new URL(entry.website).hostname;
+                const favicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+
+                return `
+                    <tr class="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/20 transition-colors">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <img src="${favicon}" alt="Favicon" class="w-6 h-6 rounded-full">
+                                <div class="flex-1 min-w-0">
+                                    <a href="${entry.website}" target="_blank" class="font-semibold text-primary hover:underline truncate block">${domain}</a>
+                                </div>
+                                <a href="${entry.website}" target="_blank" class="p-2 rounded-lg text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700">
+                                    <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
+                                </a>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-2">
+                                <span class="font-mono text-slate-600 dark:text-slate-300 truncate">${entry.account}</span>
+                                <button onclick="app.copyToClipboard('${entry.account}', 'Tài khoản')" class="p-2 rounded-lg text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700">
+                                    <i data-lucide="copy" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            ${isAdmin ? `
+                            <div class="flex items-center gap-2">
+                                <input type="password" id="pass-${entry.id}" value="${entry.password}" readonly class="w-full font-mono bg-transparent border-none p-0 focus:ring-0">
+                                <button onclick="app.togglePasswordVisibility('pass-${entry.id}')" class="p-2 rounded-lg text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="app.copyToClipboard('${entry.password}', 'Mật khẩu')" class="p-2 rounded-lg text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700">
+                                    <i data-lucide="copy" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            ` : `
+                            <div class="flex items-center gap-2">
+                                <span class="font-mono text-slate-400">••••••••••••</span>
+                                <i data-lucide="eye-off" class="w-4 h-4 text-slate-400"></i>
+                            </div>
+                            `}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            ${isAdmin ? `
+                            <div class="flex items-center justify-center gap-2">
+                                <button onclick='app.editEntry("${entry.id}")' class="p-2 rounded-lg text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900/20">
+                                    <i data-lucide="edit" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick='app.confirmDelete("${entry.id}")' class="p-2 rounded-lg text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            ` : `<span class="px-2 py-1 text-xs font-semibold text-slate-500 bg-slate-100 dark:bg-slate-700 rounded-full">Read-Only</span>`}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            uiManager.renderPagination();
+            lucide.createIcons();
+        },
+        
+        renderPagination: () => {
+            const totalPages = Math.ceil(displayedEntries.length / itemsPerPage);
+            const controls = document.getElementById('pagination-controls');
+            if (totalPages <= 1) {
+                controls.innerHTML = '';
+                return;
+            }
+
+            let buttons = '';
+            for (let i = 1; i <= totalPages; i++) {
+                buttons += `<button onclick="app.changePage(${i})" class="px-3 py-1 rounded-md text-sm font-semibold ${currentPage === i ? 'bg-primary text-white' : 'hover:bg-slate-200 dark:hover:bg-slate-700'}">${i}</button>`;
+            }
+
+            controls.innerHTML = `
+                <span class="text-sm text-slate-500">Trang ${currentPage} trên ${totalPages}</span>
+                <div class="flex items-center gap-1">${buttons}</div>
+            `;
+        },
+
+        updateUIAfterAuth: () => {
+            const authContainer = document.getElementById('auth-container');
+            const roleSpan = document.getElementById('user-role');
+            const appContent = document.getElementById('app-content');
+            const adminActions = document.getElementById('admin-actions');
+            
+            if (currentUser) {
+                authContainer.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <img src="${currentUser.photoURL}" alt="Avatar" class="w-9 h-9 rounded-full border-2 border-primary/50">
+                    <div>
+                        <span class="font-semibold text-sm block">${currentUser.displayName}</span>
+                    </div>
+                    <button onclick="authManager.logout()" class="p-2 rounded-lg text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20">
+                        <i data-lucide="log-out" class="w-5 h-5"></i>
+                    </button>
+                </div>`;
+                roleSpan.textContent = isAdmin ? 'Admin' : 'User';
+                appContent.classList.remove('hidden');
+                adminActions.classList.toggle('hidden', !isAdmin);
+            } else {
+                 authContainer.innerHTML = `<button onclick="authManager.login()" class="px-4 py-2 bg-primary text-white text-sm font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition-all">Đăng Nhập</button>`;
+                 roleSpan.textContent = 'Guest';
+                 appContent.classList.add('hidden');
+            }
+            lucide.createIcons();
+        }
+    };
+    
+    // --- QUẢN LÝ XÁC THỰC (AUTH MANAGER) ---
+    const authManager = {
+        login: () => {
+            uiManager.showLoading();
+            signInWithPopup(auth, provider).catch(err => {
+                console.error("Lỗi đăng nhập:", err);
+                uiManager.showToast("Đăng nhập thất bại.", true);
+            }).finally(uiManager.hideLoading);
+        },
+        logout: () => {
+            signOut(auth).then(() => {
+                uiManager.showToast("Đăng xuất thành công!");
+            }).catch(err => {
+                console.error("Lỗi đăng xuất:", err);
+                uiManager.showToast("Đăng xuất thất bại.", true);
+            });
+        },
+        
+        init: () => {
+            onAuthStateChanged(auth, user => {
+                currentUser = user;
+                isAdmin = user && ADMIN_EMAILS.includes(user.email);
+                uiManager.updateUIAfterAuth();
+                if(user) {
+                    app.listenForChanges();
+                } else {
+                    allEntries = [];
+                    uiManager.renderTable();
+                }
+            });
+        }
+    };
+    
+    // --- QUẢN LÝ EXCEL (EXCEL MANAGER) ---
+    const excelManager = {
+        exportToExcel: () => {
+            if(!isAdmin) return;
+            const dataToExport = allEntries.map(({ website, account, password }) => ({ website, account, password }));
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Passwords");
+            XLSX.writeFile(workbook, "password_manager_export.xlsx");
+            uiManager.showToast("Xuất file Excel thành công!");
+        },
+        
+        importFromExcel: (event) => {
+            if (!isAdmin) return;
+            const file = event.target.files[0];
+            if (!file) return;
+
+            uiManager.showLoading();
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const json = XLSX.utils.sheet_to_json(worksheet);
+
+                    for (const item of json) {
+                        if (item.website && item.account && item.password) {
+                            await addDoc(passwordCollection, {
+                                website: item.website,
+                                account: item.account,
+                                password: item.password,
+                                createdAt: serverTimestamp()
+                            });
+                        }
+                    }
+                    uiManager.showToast(`Đã nhập thành công ${json.length} mục!`);
+                } catch (error) {
+                    console.error("Lỗi khi nhập Excel:", error);
+                    uiManager.showToast("Nhập file thất bại. Vui lòng kiểm tra định dạng file.", true);
+                } finally {
+                    uiManager.hideLoading();
+                    event.target.value = ''; // Reset input
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+    };
+
+    // --- ỨNG DỤNG CHÍNH (APP LOGIC) ---
+    const app = {
+        listenForChanges: () => {
+            uiManager.showLoading();
+            const q = query(passwordCollection, orderBy("createdAt", "desc"));
+            onSnapshot(q, (snapshot) => {
+                allEntries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                app.filterEntries();
+                uiManager.hideLoading();
+            }, (error) => {
+                console.error("Lỗi lắng nghe dữ liệu:", error);
+                uiManager.showToast("Không thể tải dữ liệu từ server.", true);
+                uiManager.hideLoading();
+            });
+        },
+
+        handleFormSubmit: async (e) => {
+            e.preventDefault();
+            if(!isAdmin) return;
+            
+            const id = document.getElementById('entry-id').value;
+            const data = {
+                website: document.getElementById('website').value,
+                account: document.getElementById('account').value,
+                password: document.getElementById('password').value
+            };
+            
+            uiManager.showLoading();
+            try {
+                if(id) {
+                    await updateDoc(doc(db, "password_manager", id), data);
+                    uiManager.showToast("Cập nhật thành công!");
+                } else {
+                    data.createdAt = serverTimestamp();
+                    await addDoc(passwordCollection, data);
+                    uiManager.showToast("Thêm mới thành công!");
+                }
+                uiManager.closeModal();
+            } catch(error) {
+                console.error("Lỗi lưu dữ liệu:", error);
+                uiManager.showToast("Có lỗi xảy ra, vui lòng thử lại.", true);
+            } finally {
+                uiManager.hideLoading();
+            }
+        },
+
+        editEntry: (id) => {
+            const entry = allEntries.find(e => e.id === id);
+            if(entry) uiManager.openModal(entry);
+        },
+
+        confirmDelete: (id) => {
+            Swal.fire({
+                title: 'Bạn chắc chắn chứ?',
+                text: "Hành động này không thể hoàn tác!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: 'var(--danger)',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Vâng, xóa nó!',
+                cancelButtonText: 'Hủy'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    uiManager.showLoading();
+                    try {
+                        await deleteDoc(doc(db, "password_manager", id));
+                        uiManager.showToast("Đã xóa thành công!");
+                    } catch (error) {
+                        console.error("Lỗi khi xóa:", error);
+                        uiManager.showToast("Xóa thất bại.", true);
+                    } finally {
+                        uiManager.hideLoading();
+                    }
+                }
+            })
+        },
+
+        togglePasswordVisibility: (inputId) => {
+            const input = document.getElementById(inputId);
+            const icon = input.nextElementSibling.querySelector('i');
+            if(input.type === 'password') {
+                input.type = 'text';
+                icon.setAttribute('data-lucide', 'eye-off');
+            } else {
+                input.type = 'password';
+                icon.setAttribute('data-lucide', 'eye');
+            }
+            lucide.createIcons();
+        },
+        
+        copyToClipboard: (text, type) => {
+            navigator.clipboard.writeText(text).then(() => {
+                uiManager.showToast(`Đã sao chép ${type}!`);
+            }).catch(err => {
+                uiManager.showToast(`Không thể sao chép.`, true);
+            });
+        },
+        
+        filterEntries: () => {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            if(searchTerm) {
+                displayedEntries = allEntries.filter(entry => 
+                    entry.website.toLowerCase().includes(searchTerm) || 
+                    entry.account.toLowerCase().includes(searchTerm)
+                );
+            } else {
+                displayedEntries = [...allEntries];
+            }
+            currentPage = 1;
+            uiManager.renderTable();
+        },
+        
+        changePage: (page) => {
+            currentPage = page;
+            uiManager.renderTable();
+        },
+
+        init: () => {
+            authManager.init();
+            document.getElementById('password-form').addEventListener('submit', app.handleFormSubmit);
+            document.getElementById('search-input').addEventListener('input', app.filterEntries);
+        }
+    };
+    
+    // --- THEME ---
+    const toggleTheme = () => {
+        const html = document.documentElement;
+        html.classList.toggle('dark');
+        localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+        applyTheme();
+    };
+
+    const applyTheme = () => {
+        const theme = localStorage.getItem('theme');
+        if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+        lucide.createIcons();
+    };
+
+
+    // --- KHỞI CHẠY ---
+    applyTheme();
+    app.init();
+    
+    // --- EXPOSE TO GLOBAL SCOPE ---
+    window.authManager = authManager;
+    window.uiManager = uiManager;
+    window.excelManager = excelManager;
+    window.app = app;
+    window.toggleTheme = toggleTheme;
+
+</script>
+
+</body>
+</html>
