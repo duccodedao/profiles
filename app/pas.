@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="vi" class=""> <!-- Class 'dark' sẽ được thêm bằng JavaScript -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trình Quản Lý Mật Khẩu An Toàn</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Các thư viện bên ngoài -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide-icons@0.378.0/dist/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        /* Custom styles cho hiệu ứng và các thành phần không có trong Tailwind core */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        /* Tùy chỉnh thanh cuộn */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        .dark ::-webkit-scrollbar-track { background: #2d3748; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        .dark ::-webkit-scrollbar-thumb { background: #555; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        .dark ::-webkit-scrollbar-thumb:hover { background: #444; }
+    </style>
+    <script>
+        // Cấu hình Tailwind cho Dark Mode
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-300 font-sans">
+
+    <!-- Lớp phủ Loading State -->
+    <div id="loading-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-60 z-50 flex items-center justify-center flex-col opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+        <p id="loading-message" class="mt-4 text-white text-lg">Đang tải dữ liệu...</p>
+        <button id="retry-button" class="hidden mt-4 px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md transition-transform transform hover:scale-105">Thử Lại</button>
+    </div>
+
+    <!-- Header (Glassmorphism) -->
+    <header class="sticky top-0 z-40 bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg shadow-md transition-colors duration-300">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="lock-keyhole"></i>
+                <span>Password Manager</span>
+            </h1>
+            <div class="flex items-center gap-3">
+                <button id="theme-toggle-btn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <i id="theme-icon-sun" data-lucide="sun" class="text-yellow-500"></i>
+                    <i id="theme-icon-moon" data-lucide="moon" class="text-gray-300 hidden"></i>
+                </button>
+                <div id="auth-container">
+                    <!-- Nút đăng nhập hoặc thông tin người dùng sẽ được chèn vào đây -->
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main id="main-content" class="container mx-auto p-4 md:p-6 opacity-0" style="animation: fadeIn 0.5s ease-out 200ms forwards;">
+        <!-- Khu vực điều khiển -->
+        <div id="controls-area" class="mb-6 flex flex-wrap items-center justify-between gap-4 hidden">
+            <div class="relative flex-grow max-w-lg">
+                <input type="text" id="search-input" placeholder="Tìm kiếm theo website hoặc tài khoản..." class="w-full pl-10 pr-4 py-2 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i data-lucide="search" class="w-5 h-5 text-gray-400"></i>
+                </div>
+            </div>
+            <div id="admin-controls" class="flex items-center gap-2">
+                <button id="add-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-transform transform hover:scale-105">
+                    <i data-lucide="plus-circle" class="w-5 h-5"></i> Thêm Mới
+                </button>
+                <button id="import-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-transform transform hover:scale-105">
+                    <i data-lucide="file-up" class="w-5 h-5"></i> Nhập
+                </button>
+                <input type="file" id="import-file-input" class="hidden" accept=".xlsx, .xls">
+                <button id="export-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-transform transform hover:scale-105">
+                    <i data-lucide="file-down" class="w-5 h-5"></i> Xuất
+                </button>
+            </div>
+        </div>
+
+        <!-- Bảng Dữ Liệu -->
+        <div id="data-table-container" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Website</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tài khoản</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Mật khẩu</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="password-table-body" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        <!-- Dữ liệu sẽ được chèn vào đây -->
+                    </tbody>
+                </table>
+            </div>
+            <!-- Trạng thái trống -->
+            <div id="empty-state" class="text-center p-16 hidden">
+                <i data-lucide="cloud-off" class="mx-auto h-16 w-16 text-gray-400"></i>
+                <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">Không có dữ liệu</h3>
+                <p class="mt-1 text-sm text-gray-500">Hãy bắt đầu bằng cách thêm một tài khoản mới.</p>
+            </div>
+        </div>
+        
+        <!-- Phân trang -->
+        <div id="pagination-controls" class="mt-4 flex justify-center items-center gap-2"></div>
+    </main>
+
+    <!-- Modal Thêm/Sửa -->
+    <div id="form-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md transform transition-all opacity-0 scale-95" id="modal-content">
+            <div class="flex justify-between items-center p-4 border-b dark:border-gray-700">
+                <h3 id="modal-title" class="text-lg font-bold">Thêm Tài Khoản Mới</h3>
+                <button id="close-modal-btn" class="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <form id="password-form" class="p-6 space-y-4">
+                <input type="hidden" id="entry-id">
+                <div>
+                    <label for="website-url" class="block text-sm font-medium mb-1">URL Website</label>
+                    <input type="url" id="website-url" placeholder="https://www.example.com" required class="w-full px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label for="username" class="block text-sm font-medium mb-1">Tài khoản</label>
+                    <input type="text" id="username" required class="w-full px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium mb-1">Mật khẩu</label>
+                    <div class="relative">
+                        <input type="password" id="password" required class="w-full px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button type="button" id="toggle-password-visibility" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500">
+                            <i data-lucide="eye" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex justify-end pt-4">
+                    <button type="submit" id="save-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2">
+                        <i data-lucide="save" class="w-5 h-5"></i> Lưu
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== SCRIPT SECTION ===== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { 
+            getAuth, 
+            onAuthStateChanged, 
+            GoogleAuthProvider, 
+            signInWithPopup, 
+            signOut 
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            onSnapshot, 
+            addDoc, 
+            doc, 
+            updateDoc, 
+            deleteDoc,
+            writeBatch,
+            serverTimestamp
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // ===================================================================================
+        // CẤU HÌNH FIREBASE VÀ QUẢN TRỊ VIÊN - BẮT BUỘC THAY ĐỔI
+        // ===================================================================================
+        
+        // TODO: Dán cấu hình Firebase của bạn vào đây
+             const firebaseConfig = {
+        apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
+        authDomain: "profile-d1214.firebaseapp.com",
+        projectId: "profile-d1214",
+        storageBucket: "profile-d1214.firebasestorage.app",
+        messagingSenderId: "914980131889",
+        appId: "1:914980131889:web:72f8da15c42dbee671b110",
+        measurementId: "G-C587M69LZW"
+    };
+        
+        // TODO: Thêm email của các quản trị viên vào mảng này
+        const ADMIN_EMAILS = ["admin1@example.com", "admin2@example.com"];
+        
+        // Cảnh báo bảo mật quan trọng!
+        // Việc kiểm tra ADMIN_EMAILS ở phía client (JavaScript) chỉ dùng để hiển thị/ẩn
+        // các nút trên giao diện. Nó có thể bị qua mặt.
+        // BẮT BUỘC phải thiết lập Firestore Security Rules ở phía backend để thực sự
+        // bảo vệ dữ liệu. Chỉ có những email trong danh sách admin mới được phép
+        // ghi (tạo, sửa, xóa) dữ liệu.
+        /*
+            // Ví dụ về Firestore Security Rules:
+            rules_version = '2';
+            service cloud.firestore {
+              match /databases/{database}/documents {
+                match /passwords/{docId} {
+                  allow read: if request.auth != null;
+                  allow write, update, delete: if request.auth != null && request.auth.token.email in ['admin1@example.com', 'admin2@example.com'];
+                }
+              }
+            }
+        */
+
+        // ===================================================================================
+        // KHỞI TẠO ỨNG DỤNG
+        // ===================================================================================
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+        const passwordsCollection = collection(db, 'passwords');
+
+        // ===================================================================================
+        // BIẾN TRẠNG THÁI TOÀN CỤC
+        // ===================================================================================
+
+        let currentUser = null;
+        let isAdmin = false;
+        let allPasswords = [];
+        let unsubscribe = null; // Biến để lưu hàm hủy listener của Firestore
+        let loadingTimeout;
+        
+        // Phân trang
+        let currentPage = 1;
+        const ITEMS_PER_PAGE = 10;
+        
+        // ===================================================================================
+        // LẤY CÁC PHẦN TỬ DOM
+        // ===================================================================================
+
+        const DOMElements = {
+            loadingOverlay: document.getElementById('loading-overlay'),
+            loadingMessage: document.getElementById('loading-message'),
+            retryButton: document.getElementById('retry-button'),
+            authContainer: document.getElementById('auth-container'),
+            mainContent: document.getElementById('main-content'),
+            controlsArea: document.getElementById('controls-area'),
+            adminControls: document.getElementById('admin-controls'),
+            dataTableContainer: document.getElementById('data-table-container'),
+            tableBody: document.getElementById('password-table-body'),
+            emptyState: document.getElementById('empty-state'),
+            searchInput: document.getElementById('search-input'),
+            addBtn: document.getElementById('add-btn'),
+            importBtn: document.getElementById('import-btn'),
+            importFileInput: document.getElementById('import-file-input'),
+            exportBtn: document.getElementById('export-btn'),
+            paginationControls: document.getElementById('pagination-controls'),
+            formModal: document.getElementById('form-modal'),
+            modalContent: document.getElementById('modal-content'),
+            closeModalBtn: document.getElementById('close-modal-btn'),
+            modalTitle: document.getElementById('modal-title'),
+            passwordForm: document.getElementById('password-form'),
+            entryId: document.getElementById('entry-id'),
+            websiteUrlInput: document.getElementById('website-url'),
+            usernameInput: document.getElementById('username'),
+            passwordInput: document.getElementById('password'),
+            togglePasswordVisibilityBtn: document.getElementById('toggle-password-visibility'),
+            themeToggleBtn: document.getElementById('theme-toggle-btn'),
+            themeIconSun: document.getElementById('theme-icon-sun'),
+            themeIconMoon: document.getElementById('theme-icon-moon'),
+        };
+
+        // ===================================================================================
+        // CÁC HÀM TIỆN ÍCH (UTILITIES)
+        // ===================================================================================
+
+        const showToast = (icon, title) => {
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.addEventListener('mouseenter', Swal.stopTimer);
+                    toast.addEventListener('mouseleave', Swal.resumeTimer);
+                }
+            });
+            Toast.fire({ icon, title });
+        };
+
+        const copyToClipboard = (text) => {
+            navigator.clipboard.writeText(text)
+                .then(() => showToast('success', 'Đã sao chép!'))
+                .catch(() => showToast('error', 'Sao chép thất bại!'));
+        };
+        
+        const getFaviconUrl = (url) => {
+            try {
+                const urlObj = new URL(url);
+                return `https://www.google.com/s2/favicons?sz=32&domain=${urlObj.hostname}`;
+            } catch (error) {
+                return 'https://www.google.com/s2/favicons?sz=32&domain=example.com'; // Fallback icon
+            }
+        };
+        
+        // ===================================================================================
+        // QUẢN LÝ GIAO DIỆN (UI)
+        // ===================================================================================
+
+        const toggleLoading = (show, message = 'Đang tải...', isError = false) => {
+            clearTimeout(loadingTimeout);
+            DOMElements.loadingMessage.textContent = message;
+            DOMElements.retryButton.classList.toggle('hidden', !isError);
+
+            if (show) {
+                DOMElements.loadingOverlay.classList.remove('opacity-0', 'pointer-events-none');
+            } else {
+                DOMElements.loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
+            }
+        };
+
+        const updateAuthUI = (user) => {
+            DOMElements.authContainer.innerHTML = '';
+            if (user) {
+                isAdmin = ADMIN_EMAILS.includes(user.email);
+                const userPill = `
+                    <div class="flex items-center gap-2">
+                        <img src="${user.photoURL}" alt="${user.displayName}" class="w-8 h-8 rounded-full">
+                        <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-lg flex items-center gap-1 text-sm">
+                            <i data-lucide="log-out" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                `;
+                DOMElements.authContainer.innerHTML = userPill;
+                DOMElements.mainContent.classList.remove('opacity-0');
+                DOMElements.controlsArea.classList.remove('hidden');
+                DOMElements.dataTableContainer.classList.remove('hidden');
+                DOMElements.adminControls.classList.toggle('hidden', !isAdmin);
+                fetchAndRenderPasswords();
+            } else {
+                isAdmin = false;
+                const loginButton = `
+                    <button id="login-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2">
+                        <i data-lucide="log-in" class="w-5 h-5"></i> Đăng Nhập
+                    </button>
+                `;
+                DOMElements.authContainer.innerHTML = loginButton;
+                DOMElements.mainContent.classList.add('opacity-0');
+                DOMElements.controlsArea.classList.add('hidden');
+                DOMElements.dataTableContainer.classList.add('hidden');
+                DOMElements.tableBody.innerHTML = ''; // Clear table
+                if(unsubscribe) unsubscribe(); // Hủy listener khi đăng xuất
+            }
+            lucide.createIcons(); // Khởi tạo lại icons
+        };
+
+        const renderTable = (passwordsToRender) => {
+            DOMElements.tableBody.innerHTML = '';
+            
+            if (passwordsToRender.length === 0) {
+                DOMElements.emptyState.classList.remove('hidden');
+                return;
+            }
+            DOMElements.emptyState.classList.add('hidden');
+
+            const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+            const endIndex = startIndex + ITEMS_PER_PAGE;
+            const paginatedItems = passwordsToRender.slice(startIndex, endIndex);
+
+            paginatedItems.forEach(entry => {
+                const isPasswordVisible = entry.showPassword || false;
+                const passwordDisplay = isPasswordVisible ? entry.password : '••••••••';
+                const eyeIcon = isPasswordVisible ? 'eye-off' : 'eye';
+
+                const row = `
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <img class="h-8 w-8 mr-3" src="${getFaviconUrl(entry.websiteUrl)}" alt="favicon">
+                                <a href="${entry.websiteUrl}" target="_blank" rel="noopener noreferrer" class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">${entry.websiteUrl}</a>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm">${entry.username}</span>
+                                <button class="copy-btn" data-text="${entry.username}"><i data-lucide="copy" class="w-4 h-4 text-gray-500 hover:text-blue-500"></i></button>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm font-mono password-text" data-id="${entry.id}">${passwordDisplay}</span>
+                                ${isAdmin ? `
+                                <button class="copy-btn" data-text="${entry.password}"><i data-lucide="copy" class="w-4 h-4 text-gray-500 hover:text-blue-500"></i></button>
+                                <button class="toggle-password-table" data-id="${entry.id}"><i data-lucide="${eyeIcon}" class="w-4 h-4 text-gray-500 hover:text-blue-500"></i></button>
+                                ` : ''}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                            ${isAdmin ? `
+                            <div class="flex justify-center items-center gap-2">
+                                <button class="edit-btn text-yellow-500 hover:text-yellow-700" data-id="${entry.id}"><i data-lucide="file-pen-line"></i></button>
+                                <button class="delete-btn text-red-500 hover:text-red-700" data-id="${entry.id}"><i data-lucide="trash-2"></i></button>
+                            </div>
+                            ` : '<span class="text-xs text-gray-500">Read-Only</span>'}
+                        </td>
+                    </tr>
+                `;
+                DOMElements.tableBody.innerHTML += row;
+            });
+            lucide.createIcons();
+            renderPagination(passwordsToRender.length);
+        };
+        
+        const renderPagination = (totalItems) => {
+            const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+            DOMElements.paginationControls.innerHTML = '';
+            if(totalPages <= 1) return;
+
+            for (let i = 1; i <= totalPages; i++) {
+                const button = document.createElement('button');
+                button.textContent = i;
+                button.className = `px-3 py-1 rounded-md text-sm ${currentPage === i ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'}`;
+                button.addEventListener('click', () => {
+                    currentPage = i;
+                    filterAndRender();
+                });
+                DOMElements.paginationControls.appendChild(button);
+            }
+        };
+
+        const filterAndRender = () => {
+            const searchTerm = DOMElements.searchInput.value.toLowerCase();
+            const filtered = allPasswords.filter(p => 
+                p.websiteUrl.toLowerCase().includes(searchTerm) ||
+                p.username.toLowerCase().includes(searchTerm)
+            );
+            renderTable(filtered);
+        };
+        
+        // ===================================================================================
+        // QUẢN LÝ LOGIC MODAL
+        // ===================================================================================
+
+        const openModal = (entry = null) => {
+            DOMElements.passwordForm.reset();
+            DOMElements.entryId.value = '';
+            if (entry) {
+                DOMElements.modalTitle.textContent = 'Chỉnh Sửa Tài Khoản';
+                DOMElements.entryId.value = entry.id;
+                DOMElements.websiteUrlInput.value = entry.websiteUrl;
+                DOMElements.usernameInput.value = entry.username;
+                DOMElements.passwordInput.value = entry.password;
+            } else {
+                DOMElements.modalTitle.textContent = 'Thêm Tài Khoản Mới';
+            }
+            DOMElements.formModal.classList.remove('hidden');
+            setTimeout(() => {
+                DOMElements.modalContent.classList.remove('opacity-0', 'scale-95');
+            }, 10);
+        };
+
+        const closeModal = () => {
+            DOMElements.modalContent.classList.add('opacity-0', 'scale-95');
+            setTimeout(() => {
+                DOMElements.formModal.classList.add('hidden');
+            }, 300);
+        };
+
+        // ===================================================================================
+        // TƯƠNG TÁC VỚI FIREBASE (AUTH & FIRESTORE)
+        // ===================================================================================
+
+        const handleGoogleLogin = () => {
+            signInWithPopup(auth, provider).catch(error => {
+                console.error("Lỗi đăng nhập:", error);
+                showToast('error', `Đăng nhập thất bại: ${error.message}`);
+            });
+        };
+
+        const handleLogout = () => {
+            signOut(auth).catch(error => {
+                console.error("Lỗi đăng xuất:", error);
+                showToast('error', 'Đăng xuất thất bại');
+            });
+        };
+        
+        const fetchAndRenderPasswords = () => {
+            toggleLoading(true, 'Đang tải dữ liệu...');
+            
+            // Thiết lập timeout cho quá trình tải
+            loadingTimeout = setTimeout(() => {
+                toggleLoading(true, 'Quá trình tải quá lâu. Vui lòng kiểm tra lại kết nối.', true);
+            }, 15000); // 15 giây
+
+            // Hủy listener cũ nếu có
+            if (unsubscribe) {
+                unsubscribe();
+            }
+
+            // Tạo listener mới
+            unsubscribe = onSnapshot(passwordsCollection, (querySnapshot) => {
+                allPasswords = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                currentPage = 1; // Reset về trang đầu khi có dữ liệu mới
+                filterAndRender();
+                toggleLoading(false);
+            }, (error) => {
+                console.error("Lỗi khi lấy dữ liệu: ", error);
+                toggleLoading(true, `Lỗi: ${error.message}`, true);
+            });
+        };
+
+        const handleFormSubmit = async (event) => {
+            event.preventDefault();
+            if (!isAdmin) {
+                showToast('error', 'Bạn không có quyền thực hiện hành động này.');
+                return;
+            }
+
+            const id = DOMElements.entryId.value;
+            const data = {
+                websiteUrl: DOMElements.websiteUrlInput.value,
+                username: DOMElements.usernameInput.value,
+                password: DOMElements.passwordInput.value,
+            };
+
+            try {
+                if (id) { // Update
+                    const docRef = doc(db, 'passwords', id);
+                    await updateDoc(docRef, data);
+                    showToast('success', 'Cập nhật thành công!');
+                } else { // Create
+                    await addDoc(passwordsCollection, {...data, createdAt: serverTimestamp()});
+                    showToast('success', 'Thêm mới thành công!');
+                }
+                closeModal();
+            } catch (error) {
+                console.error("Lỗi khi lưu dữ liệu: ", error);
+                showToast('error', `Lưu thất bại: ${error.message}`);
+            }
+        };
+
+        const handleDelete = (id) => {
+            Swal.fire({
+                title: 'Bạn chắc chắn muốn xóa?',
+                text: "Hành động này không thể hoàn tác!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Vâng, xóa nó!',
+                cancelButtonText: 'Hủy'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        await deleteDoc(doc(db, 'passwords', id));
+                        showToast('success', 'Đã xóa thành công.');
+                    } catch (error) {
+                        console.error("Lỗi khi xóa: ", error);
+                        showToast('error', `Xóa thất bại: ${error.message}`);
+                    }
+                }
+            })
+        };
+
+        // ===================================================================================
+        // TÍNH NĂNG NÂNG CAO (XUẤT/NHẬP EXCEL)
+        // ===================================================================================
+
+        const exportToExcel = () => {
+            if (!isAdmin) return;
+            const dataToExport = allPasswords.map(({ websiteUrl, username, password }) => ({
+                Website: websiteUrl,
+                Username: username,
+                Password: password
+            }));
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Passwords");
+            XLSX.writeFile(workbook, "passwords_export.xlsx");
+            showToast('success', 'Đã xuất dữ liệu ra file Excel.');
+        };
+        
+        const importFromExcel = (event) => {
+            if (!isAdmin) return;
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const json = XLSX.utils.sheet_to_json(worksheet);
+
+                    if (json.length === 0) {
+                        showToast('warning', 'File Excel trống hoặc không hợp lệ.');
+                        return;
+                    }
+
+                    // Sử dụng batch write để tăng hiệu suất
+                    const batch = writeBatch(db);
+                    let count = 0;
+                    json.forEach(row => {
+                        // Kiểm tra các cột cần thiết
+                        if (row.Website && row.Username && row.Password) {
+                            const newDocRef = doc(collection(db, "passwords"));
+                            batch.set(newDocRef, {
+                                websiteUrl: String(row.Website),
+                                username: String(row.Username),
+                                password: String(row.Password),
+                                createdAt: serverTimestamp()
+                            });
+                            count++;
+                        }
+                    });
+
+                    if (count > 0) {
+                        await batch.commit();
+                        showToast('success', `Đã nhập thành công ${count} mục.`);
+                    } else {
+                        showToast('error', 'Không tìm thấy dữ liệu hợp lệ trong file. Vui lòng đảm bảo có các cột "Website", "Username", "Password".');
+                    }
+                } catch (error) {
+                    console.error("Lỗi khi nhập Excel:", error);
+                    showToast('error', `Nhập thất bại: ${error.message}`);
+                } finally {
+                    // Reset input để có thể chọn lại cùng file
+                    event.target.value = '';
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        };
+        
+        // ===================================================================================
+        // QUẢN LÝ CHỦ ĐỀ (THEME)
+        // ===================================================================================
+        
+        const applyTheme = (theme) => {
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+                DOMElements.themeIconSun.classList.add('hidden');
+                DOMElements.themeIconMoon.classList.remove('hidden');
+            } else {
+                document.documentElement.classList.remove('dark');
+                DOMElements.themeIconSun.classList.remove('hidden');
+                DOMElements.themeIconMoon.classList.add('hidden');
+            }
+        };
+
+        const toggleTheme = () => {
+            const currentTheme = localStorage.getItem('theme') || 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            localStorage.setItem('theme', newTheme);
+            applyTheme(newTheme);
+        };
+
+        // ===================================================================================
+        // THIẾT LẬP CÁC EVENT LISTENERS
+        // ===================================================================================
+
+        const setupEventListeners = () => {
+            // Xác thực
+            document.body.addEventListener('click', (e) => {
+                if (e.target.closest('#login-btn')) handleGoogleLogin();
+                if (e.target.closest('#logout-btn')) handleLogout();
+            });
+            
+            // Nút Thử Lại khi tải lỗi
+            DOMElements.retryButton.addEventListener('click', fetchAndRenderPasswords);
+
+            // Tìm kiếm
+            DOMElements.searchInput.addEventListener('input', () => {
+                currentPage = 1;
+                filterAndRender();
+            });
+
+            // Tương tác bảng
+            DOMElements.tableBody.addEventListener('click', (e) => {
+                const target = e.target.closest('button');
+                if (!target) return;
+                
+                const id = target.dataset.id;
+                
+                if (target.classList.contains('copy-btn')) {
+                    copyToClipboard(target.dataset.text);
+                } else if (target.classList.contains('toggle-password-table')) {
+                    const entry = allPasswords.find(p => p.id === id);
+                    if(entry) {
+                        entry.showPassword = !entry.showPassword;
+                        filterAndRender();
+                    }
+                } else if (target.classList.contains('edit-btn')) {
+                    const entry = allPasswords.find(p => p.id === id);
+                    if (entry) openModal(entry);
+                } else if (target.classList.contains('delete-btn')) {
+                    handleDelete(id);
+                }
+            });
+
+            // Modal
+            DOMElements.addBtn.addEventListener('click', () => openModal());
+            DOMElements.closeModalBtn.addEventListener('click', closeModal);
+            DOMElements.formModal.addEventListener('click', (e) => {
+                if (e.target === DOMElements.formModal) closeModal();
+            });
+            DOMElements.passwordForm.addEventListener('submit', handleFormSubmit);
+            DOMElements.togglePasswordVisibilityBtn.addEventListener('click', () => {
+                const type = DOMElements.passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                DOMElements.passwordInput.setAttribute('type', type);
+                DOMElements.togglePasswordVisibilityBtn.innerHTML = type === 'password' ? '<i data-lucide="eye"></i>' : '<i data-lucide="eye-off"></i>';
+                lucide.createIcons();
+            });
+            
+            // Excel
+            DOMElements.exportBtn.addEventListener('click', exportToExcel);
+            DOMElements.importBtn.addEventListener('click', () => DOMElements.importFileInput.click());
+            DOMElements.importFileInput.addEventListener('change', importFromExcel);
+
+            // Theme
+            DOMElements.themeToggleBtn.addEventListener('click', toggleTheme);
+        };
+        
+        // ===================================================================================
+        // ĐIỂM KHỞI ĐẦU CỦA ỨNG DỤNG
+        // ===================================================================================
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Thiết lập chủ đề ban đầu
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            applyTheme(savedTheme);
+
+            // Thiết lập tất cả các trình lắng nghe sự kiện
+            setupEventListeners();
+            
+            // Lắng nghe thay đổi trạng thái đăng nhập
+            onAuthStateChanged(auth, (user) => {
+                currentUser = user;
+                updateAuthUI(user);
+            });
+            
+            // Khởi tạo icons
+            lucide.createIcons();
+        });
+
+    </script>
+
+</body>
+</html>
