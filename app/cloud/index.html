@@ -1,0 +1,1957 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudBox - Your Personal Cloud Storage</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide-react@0.294.0/dist/lucide-react.js"></script>
+    <script src="https://unpkg.com/lucide-icons@0.294.0"></script>
+
+    <!-- Toastify CSS for Notifications -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    
+    <!-- Chart.js for Admin Dashboard -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        /* --- CSS RESET & BASIC SETUP --- */
+        :root {
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --secondary-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --info-color: #3b82f6;
+
+            /* Light Mode */
+            --bg-main-light: #f3f4f6;
+            --bg-sidebar-light: #ffffff;
+            --bg-card-light: #ffffff;
+            --text-primary-light: #111827;
+            --text-secondary-light: #6b7280;
+            --border-color-light: #e5e7eb;
+            --glass-bg-light: rgba(255, 255, 255, 0.5);
+            --shadow-light: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+
+            /* Dark Mode */
+            --bg-main-dark: #111827;
+            --bg-sidebar-dark: #1f2937;
+            --bg-card-dark: #1f2937;
+            --text-primary-dark: #f9fafb;
+            --text-secondary-dark: #9ca3af;
+            --border-color-dark: #374151;
+            --glass-bg-dark: rgba(31, 41, 55, 0.5);
+            --shadow-dark: 0 4px 6px -1px rgb(255 255 255 / 0.05), 0 2px 4px -2px rgb(255 255 255 / 0.05);
+
+            --font-family: 'Inter', sans-serif;
+            --transition-speed: 0.3s;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-family);
+            transition: background-color var(--transition-speed), color var(--transition-speed);
+        }
+        
+        body.light-mode {
+            background-color: var(--bg-main-light);
+            color: var(--text-primary-light);
+        }
+
+        body.dark-mode {
+            background-color: var(--bg-main-dark);
+            color: var(--text-primary-dark);
+        }
+        
+        /* --- LOGIN PAGE STYLES --- */
+        #login-page {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .background-shapes div {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            animation: float 20s infinite linear;
+        }
+        .background-shapes div:nth-child(1) { width: 80px; height: 80px; top: 10%; left: 15%; animation-duration: 15s; }
+        .background-shapes div:nth-child(2) { width: 120px; height: 120px; top: 70%; left: 80%; animation-duration: 25s; }
+        .background-shapes div:nth-child(3) { width: 50px; height: 50px; top: 30%; left: 50%; animation-duration: 18s; }
+        .background-shapes div:nth-child(4) { width: 150px; height: 150px; top: 80%; left: 10%; animation-duration: 30s; }
+        .background-shapes div:nth-child(5) { width: 60px; height: 60px; top: 15%; right: 15%; animation-duration: 22s; }
+
+        @keyframes float {
+            0% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+            100% { transform: translateY(0) rotate(360deg); }
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            padding: 40px;
+            text-align: center;
+            color: white;
+            max-width: 400px;
+            width: 90%;
+            animation: fadeIn 1s ease-out;
+            z-index: 1;
+        }
+        
+        .login-card h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 800;
+        }
+        
+        .login-card p {
+            margin-bottom: 30px;
+            opacity: 0.8;
+        }
+
+        .google-login-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #fff;
+            color: #333;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .google-login-btn:hover {
+            background-color: #f1f1f1;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .google-login-btn img {
+            width: 24px;
+            height: 24px;
+            margin-right: 12px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* --- MAIN APP LAYOUT --- */
+        #app {
+            display: none; /* Hidden by default */
+            height: 100vh;
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            grid-template-rows: auto 1fr;
+            grid-template-areas:
+                "sidebar header"
+                "sidebar main";
+            transition: all var(--transition-speed);
+        }
+        
+        /* --- SIDEBAR --- */
+        #sidebar {
+            grid-area: sidebar;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            transition: background-color var(--transition-speed);
+            border-right: 1px solid var(--border-color);
+        }
+        
+        body.light-mode #sidebar { background-color: var(--bg-sidebar-light); border-right-color: var(--border-color-light); }
+        body.dark-mode #sidebar { background-color: var(--bg-sidebar-dark); border-right-color: var(--border-color-dark); }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 40px;
+            color: var(--primary-color);
+        }
+        
+        .nav-menu {
+            list-style: none;
+            flex-grow: 1;
+        }
+        
+        .nav-item a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            margin-bottom: 8px;
+            transition: all var(--transition-speed);
+        }
+        
+        body.light-mode .nav-item a { color: var(--text-secondary-light); }
+        body.dark-mode .nav-item a { color: var(--text-secondary-dark); }
+        
+        .nav-item a.active, .nav-item a:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .user-profile {
+            margin-top: auto;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .user-info img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+
+        .user-details h4 {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .user-details p {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        .storage-info {
+            font-size: 0.8rem;
+        }
+        
+        .storage-progress {
+            width: 100%;
+            height: 8px;
+            background-color: var(--border-color-light);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+
+        body.dark-mode .storage-progress { background-color: var(--border-color-dark); }
+        
+        .progress-bar {
+            height: 100%;
+            background-color: var(--primary-color);
+            border-radius: 4px;
+            transition: width var(--transition-speed);
+        }
+        
+        .bottom-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: background-color var(--transition-speed);
+        }
+
+        body.light-mode .icon-btn { color: var(--text-secondary-light); }
+        body.dark-mode .icon-btn { color: var(--text-secondary-dark); }
+        
+        body.light-mode .icon-btn:hover { background-color: var(--bg-main-light); }
+        body.dark-mode .icon-btn:hover { background-color: var(--bg-main-dark); }
+        
+        /* --- HEADER --- */
+        #header {
+            grid-area: header;
+            padding: 20px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        body.light-mode #header { border-bottom-color: var(--border-color-light); }
+        body.dark-mode #header { border-bottom-color: var(--border-color-dark); }
+        
+        .search-bar {
+            position: relative;
+            width: 40%;
+        }
+        
+        .search-bar i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.5;
+        }
+        
+        .search-bar input {
+            width: 100%;
+            padding: 12px 16px 12px 48px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            transition: all var(--transition-speed);
+        }
+
+        body.light-mode .search-bar input { background-color: var(--bg-main-light); color: var(--text-primary-light); border-color: var(--border-color-light); }
+        body.dark-mode .search-bar input { background-color: var(--bg-sidebar-dark); color: var(--text-primary-dark); border-color: var(--border-color-dark); }
+        
+        .search-bar input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+        
+        .upload-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color var(--transition-speed);
+        }
+        
+        .upload-btn:hover {
+            background-color: var(--primary-hover);
+        }
+        
+        /* --- MAIN CONTENT --- */
+        #main-content {
+            grid-area: main;
+            padding: 32px;
+            overflow-y: auto;
+        }
+        
+        .content-view {
+            display: none;
+        }
+
+        .content-view.active {
+            display: block;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        .page-header h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .view-controls button {
+            background: none;
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-left: 8px;
+            transition: all var(--transition-speed);
+        }
+
+        body.light-mode .view-controls button { color: var(--text-secondary-light); border-color: var(--border-color-light); }
+        body.dark-mode .view-controls button { color: var(--text-secondary-dark); border-color: var(--border-color-dark); }
+        
+        .view-controls button.active, .view-controls button:hover {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+        
+        /* --- STATS CARDS (DASHBOARD) --- */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .stat-card {
+            padding: 24px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+        }
+
+        body.light-mode .stat-card { background-color: var(--bg-card-light); box-shadow: var(--shadow-light); }
+        body.dark-mode .stat-card { background-color: var(--bg-card-dark); border: 1px solid var(--border-color-dark); }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-icon {
+            padding: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stat-card.files .stat-icon { background-color: rgba(79, 70, 229, 0.1); color: #4f46e5; }
+        .stat-card.images .stat-icon { background-color: rgba(16, 185, 129, 0.1); color: #10b981; }
+        .stat-card.videos .stat-icon { background-color: rgba(239, 68, 68, 0.1); color: #ef4444; }
+        .stat-card.docs .stat-icon { background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+
+        .stat-info h3 { font-size: 2rem; font-weight: 700; }
+        .stat-info p { font-size: 0.9rem; opacity: 0.7; }
+
+        /* --- FILE LIST / GRID --- */
+        #file-container.grid-view {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+        }
+        
+        .file-item {
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all var(--transition-speed);
+            position: relative;
+        }
+
+        body.light-mode .file-item { background-color: var(--bg-card-light); box-shadow: var(--shadow-light); }
+        body.dark-mode .file-item { background-color: var(--bg-card-dark); border: 1px solid var(--border-color-dark); }
+        
+        .file-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        
+        .file-thumbnail {
+            height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--bg-main-light);
+        }
+
+        body.dark-mode .file-thumbnail { background-color: var(--bg-main-dark); }
+
+        .file-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .file-thumbnail .file-icon {
+            width: 64px;
+            height: 64px;
+            opacity: 0.5;
+        }
+        
+        .file-info {
+            padding: 16px;
+        }
+
+        .file-name {
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 4px;
+        }
+        
+        .file-meta {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        .file-actions {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--glass-bg-light);
+            backdrop-filter: blur(5px);
+            border-radius: 50%;
+            opacity: 0;
+            transition: opacity var(--transition-speed);
+        }
+        body.dark-mode .file-actions { background: var(--glass-bg-dark); }
+
+        .file-item:hover .file-actions {
+            opacity: 1;
+        }
+        
+        /* --- MODALS --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            padding: 32px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 600px;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+            position: relative;
+        }
+
+        body.light-mode .modal-content { background-color: var(--bg-card-light); }
+        body.dark-mode .modal-content { background-color: var(--bg-card-dark); }
+        
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        .modal-header h3 { font-size: 1.5rem; }
+
+        .close-modal {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        /* --- UPLOAD MODAL --- */
+        #drop-zone {
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+        }
+        #drop-zone.dragover {
+            border-color: var(--primary-color);
+            background-color: rgba(79, 70, 229, 0.05);
+        }
+
+        #upload-progress-container {
+            margin-top: 24px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .progress-item {
+            margin-bottom: 12px;
+        }
+        .progress-item-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+        .progress-item-bar {
+            width: 100%;
+            height: 6px;
+            background-color: var(--border-color);
+            border-radius: 3px;
+        }
+        .progress-item-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.2s;
+        }
+        
+        /* --- SKELETON LOADER --- */
+        .skeleton {
+            animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            50% { opacity: .5; }
+        }
+        .skeleton-thumbnail { height: 150px; background-color: var(--border-color); }
+        .skeleton-text { height: 20px; width: 80%; margin: 16px; background-color: var(--border-color); border-radius: 4px; }
+        .skeleton-meta { height: 16px; width: 50%; margin: 0 16px 16px 16px; background-color: var(--border-color); border-radius: 4px; }
+
+        /* --- RESPONSIVE DESIGN --- */
+        @media (max-width: 768px) {
+            #app {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "header"
+                    "main";
+            }
+            #sidebar {
+                display: none; /* For simplicity in this single-file app. A real app would have a slide-out menu. */
+            }
+            #header {
+                padding: 16px;
+            }
+            .search-bar {
+                display: none;
+            }
+            #main-content {
+                padding: 16px;
+            }
+            .page-header h2 {
+                font-size: 1.5rem;
+            }
+        }
+        
+        /* --- ADMIN PAGE --- */
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 24px;
+        }
+        .admin-table th, .admin-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .admin-table th {
+            font-weight: 600;
+        }
+        
+        /* --- UTILITIES --- */
+        .hidden {
+            display: none !important;
+        }
+        
+    </style>
+</head>
+<body class="light-mode">
+
+    <!-- =========== LOGIN PAGE =========== -->
+    <div id="login-page">
+        <div class="background-shapes">
+            <div></div><div></div><div></div><div></div><div></div>
+        </div>
+        <div class="login-card">
+            <h1>CloudBox</h1>
+            <p>Your secure and modern personal cloud storage.</p>
+            <button id="google-login-btn" class="google-login-btn">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google Logo">
+                <span>Sign in with Google</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- =========== MAIN APPLICATION =========== -->
+    <div id="app">
+        <!-- Sidebar -->
+        <aside id="sidebar">
+            <div class="logo">
+                <i data-lucide="box"></i>
+                <span>CloudBox</span>
+            </div>
+            
+            <ul class="nav-menu">
+                <li class="nav-item"><a href="#" class="nav-link active" data-view="dashboard-view"><i data-lucide="layout-dashboard"></i> Dashboard</a></li>
+                <li class="nav-item"><a href="#" class="nav-link" data-view="files-view"><i data-lucide="files"></i> My Files</a></li>
+                <li class="nav-item"><a href="#" class="nav-link" data-view="admin-view" id="admin-nav-link" class="hidden"><i data-lucide="shield"></i> Admin Panel</a></li>
+            </ul>
+            
+            <div class="user-profile">
+                <div class="user-info">
+                    <img id="user-avatar" src="https://via.placeholder.com/40" alt="User Avatar">
+                    <div class="user-details">
+                        <h4 id="user-display-name">Loading...</h4>
+                        <p id="user-email">loading@email.com</p>
+                    </div>
+                </div>
+                <div class="storage-info">
+                    <div id="storage-status">Used 0 GB of 1 GB</div>
+                    <div class="storage-progress">
+                        <div id="storage-progress-bar" class="progress-bar" style="width: 0%;"></div>
+                    </div>
+                    <p>Account Tier: <strong id="user-tier">User</strong></p>
+                </div>
+                <div class="bottom-actions">
+                    <button class="icon-btn" id="github-backup-btn" title="GitHub Backup Settings"><i data-lucide="github"></i></button>
+                    <button class="icon-btn" id="theme-toggle-btn" title="Toggle Theme"><i data-lucide="moon"></i></button>
+                    <button class="icon-btn" id="logout-btn" title="Logout"><i data-lucide="log-out"></i></button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Header -->
+        <header id="header">
+            <div class="search-bar">
+                <i data-lucide="search"></i>
+                <input type="text" id="search-input" placeholder="Search for files...">
+            </div>
+            <button class="upload-btn" id="open-upload-modal-btn">
+                <i data-lucide="upload-cloud"></i>
+                <span>Upload File</span>
+            </button>
+        </header>
+
+        <!-- Main Content -->
+        <main id="main-content">
+            <!-- Dashboard View -->
+            <div id="dashboard-view" class="content-view active">
+                <div class="page-header">
+                    <h2>Dashboard</h2>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card files">
+                        <div class="stat-icon"><i data-lucide="file"></i></div>
+                        <div class="stat-info"><h3 id="stat-total-files">0</h3><p>Total Files</p></div>
+                    </div>
+                    <div class="stat-card images">
+                        <div class="stat-icon"><i data-lucide="image"></i></div>
+                        <div class="stat-info"><h3 id="stat-total-images">0</h3><p>Images</p></div>
+                    </div>
+                    <div class="stat-card videos">
+                        <div class="stat-icon"><i data-lucide="video"></i></div>
+                        <div class="stat-info"><h3 id="stat-total-videos">0</h3><p>Videos</p></div>
+                    </div>
+                    <div class="stat-card docs">
+                        <div class="stat-icon"><i data-lucide="file-text"></i></div>
+                        <div class="stat-info"><h3 id="stat-total-docs">0</h3><p>Documents</p></div>
+                    </div>
+                </div>
+                <!-- More dashboard widgets can be added here -->
+            </div>
+
+            <!-- Files View -->
+            <div id="files-view" class="content-view">
+                <div class="page-header">
+                    <h2>My Files</h2>
+                    <div class="view-controls">
+                        <button id="grid-view-btn" class="active"><i data-lucide="layout-grid"></i></button>
+                        <button id="list-view-btn"><i data-lucide="list"></i></button>
+                    </div>
+                </div>
+                <div id="file-container" class="grid-view">
+                    <!-- File items will be injected here -->
+                    <!-- Skeleton Loader -->
+                    <div class="file-item skeleton">
+                        <div class="skeleton-thumbnail"></div>
+                        <div class="skeleton-text"></div>
+                        <div class="skeleton-meta"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin View -->
+            <div id="admin-view" class="content-view">
+                <div class="page-header">
+                    <h2>Admin Panel</h2>
+                </div>
+                <div class="stats-grid">
+                    <!-- Admin stats -->
+                    <div class="stat-card">
+                        <div class="stat-info"><h3 id="admin-stat-users">0</h3><p>Total Users</p></div>
+                    </div>
+                    <div class="stat-card">
+                         <div class="stat-info"><h3 id="admin-stat-files">0</h3><p>Total Files</p></div>
+                    </div>
+                     <div class="stat-card">
+                         <div class="stat-info"><h3 id="admin-stat-storage">0 GB</h3><p>Total Storage Used</p></div>
+                    </div>
+                </div>
+                <div>
+                    <h3>System Analytics</h3>
+                    <canvas id="uploadsChart"></canvas>
+                </div>
+                <div>
+                    <h3>User Management</h3>
+                    <table class="admin-table" id="users-table">
+                        <thead>
+                            <tr>
+                                <th>Email</th>
+                                <th>UID</th>
+                                <th>Role</th>
+                                <th>Storage Used</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- User rows will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- =========== MODALS =========== -->
+    <!-- Upload Modal -->
+    <div id="upload-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Upload Files</h3>
+                <button class="close-modal icon-btn"><i data-lucide="x"></i></button>
+            </div>
+            <div id="drop-zone">
+                <i data-lucide="upload-cloud" style="width: 48px; height: 48px; opacity: 0.5; margin-bottom: 16px;"></i>
+                <p><strong>Drag & drop files here</strong></p>
+                <p>or</p>
+                <button class="upload-btn">Browse Files</button>
+                <input type="file" id="file-input" multiple class="hidden">
+            </div>
+            <div id="upload-progress-container"></div>
+        </div>
+    </div>
+    
+    <!-- File Details Modal -->
+    <div id="file-details-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 80vw; max-height: 90vh; display: flex; flex-direction: column;">
+             <div class="modal-header">
+                <h3 id="details-modal-title">File Details</h3>
+                <button class="close-modal icon-btn"><i data-lucide="x"></i></button>
+            </div>
+            <div style="display: flex; gap: 24px; flex-grow: 1;">
+                <div id="file-preview-container" style="flex: 2; display: flex; align-items: center; justify-content: center; background: #eee; border-radius: 8px;">
+                    <!-- Preview will be here -->
+                </div>
+                <div id="file-info-container" style="flex: 1; display: flex; flex-direction: column; gap: 16px;">
+                    <!-- File info and actions here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GitHub Backup Modal -->
+    <div id="github-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>GitHub Backup Settings</h3>
+                <button class="close-modal icon-btn"><i data-lucide="x"></i></button>
+            </div>
+            <p style="margin-bottom: 16px; font-size: 0.9rem; opacity: 0.8;">
+                <strong>Warning:</strong> Storing your GitHub Personal Access Token in the browser is not secure. This feature is for demonstration purposes only.
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <input type="text" id="github-username" placeholder="GitHub Username" class="modal-input">
+                <input type="text" id="github-repo" placeholder="GitHub Repository Name" class="modal-input">
+                <input type="password" id="github-token" placeholder="GitHub Personal Access Token" class="modal-input">
+                <button id="save-github-settings" class="upload-btn">Save Settings</button>
+            </div>
+        </div>
+    </div>
+    
+    <style>.modal-input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); }
+        body.light-mode .modal-input { background-color: var(--bg-main-light); color: var(--text-primary-light); border-color: var(--border-color-light); }
+        body.dark-mode .modal-input { background-color: var(--bg-sidebar-dark); color: var(--text-primary-dark); border-color: var(--border-color-dark); }
+    </style>
+
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+
+    <!-- Toastify JS for Notifications -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
+    <script>
+    // Self-invoking function to encapsulate the entire application logic
+    (function() {
+        'use strict';
+
+        // =================================================================
+        // 1. CONFIGURATION
+        // =================================================================
+        
+        // --- Firebase Configuration ---
+        // IMPORTANT: Replace with your own Firebase project configuration.
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLCcgaoW9gNYhKk0c0gDWC6i5mKVTN4XE",
+            authDomain: "profile-d1214.firebaseapp.com",
+            projectId: "profile-d1214",
+            storageBucket: "profile-d1214.appspot.com",
+            messagingSenderId: "914980131889",
+            appId: "1:914980131889:web:72f8da15c42dbee671b110",
+            measurementId: "G-C587M69LZW"
+        };
+
+        // --- Admin Configuration ---
+        // IMPORTANT: Replace with the UID of your admin account(s).
+        const ADMIN_UIDS = ["VYIs9XHLR9RMStwtcdwMrOIo33w1"];
+
+        // --- Account Tiers Configuration ---
+        const ACCOUNT_TIERS = {
+            user:  { name: 'User',  limit: 1 * 1024 * 1024 * 1024 }, // 1 GB
+            vip:   { name: 'VIP',   limit: 10 * 1024 * 1024 * 1024 }, // 10 GB
+            svip:  { name: 'SVIP',  limit: 50 * 1024 * 1024 * 1024 }, // 50 GB
+            vvip:  { name: 'VVIP',  limit: 200 * 1024 * 1024 * 1024 } // 200 GB
+        };
+
+        // =================================================================
+        // 2. FIREBASE INITIALIZATION & SERVICES
+        // =================================================================
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+        const googleProvider = new firebase.auth.GoogleAuthProvider();
+
+        // =================================================================
+        // 3. APPLICATION STATE
+        // =================================================================
+        let appState = {
+            currentUser: null,
+            userProfile: null,
+            userFiles: [],
+            currentView: 'dashboard-view',
+            fileViewMode: 'grid',
+            uploadTasks: {}
+        };
+
+        // =================================================================
+        // 4. DOM ELEMENT SELECTORS
+        // =================================================================
+        const DOMElements = {
+            loginPage: document.getElementById('login-page'),
+            appPage: document.getElementById('app'),
+            googleLoginBtn: document.getElementById('google-login-btn'),
+            logoutBtn: document.getElementById('logout-btn'),
+            // User Profile UI
+            userAvatar: document.getElementById('user-avatar'),
+            userDisplayName: document.getElementById('user-display-name'),
+            userEmail: document.getElementById('user-email'),
+            storageStatus: document.getElementById('storage-status'),
+            storageProgressBar: document.getElementById('storage-progress-bar'),
+            userTier: document.getElementById('user-tier'),
+            // Navigation
+            navLinks: document.querySelectorAll('.nav-link'),
+            adminNavLink: document.getElementById('admin-nav-link'),
+            // Content Views
+            contentViews: document.querySelectorAll('.content-view'),
+            fileContainer: document.getElementById('file-container'),
+            // Dashboard Stats
+            statTotalFiles: document.getElementById('stat-total-files'),
+            statTotalImages: document.getElementById('stat-total-images'),
+            statTotalVideos: document.getElementById('stat-total-videos'),
+            statTotalDocs: document.getElementById('stat-total-docs'),
+            // Upload Modal
+            uploadModal: document.getElementById('upload-modal'),
+            openUploadModalBtn: document.getElementById('open-upload-modal-btn'),
+            dropZone: document.getElementById('drop-zone'),
+            fileInput: document.getElementById('file-input'),
+            uploadProgressContainer: document.getElementById('upload-progress-container'),
+            // File Details Modal
+            fileDetailsModal: document.getElementById('file-details-modal'),
+            detailsModalTitle: document.getElementById('details-modal-title'),
+            filePreviewContainer: document.getElementById('file-preview-container'),
+            fileInfoContainer: document.getElementById('file-info-container'),
+            // GitHub Modal
+            githubModal: document.getElementById('github-modal'),
+            githubBackupBtn: document.getElementById('github-backup-btn'),
+            saveGithubSettingsBtn: document.getElementById('save-github-settings'),
+            // Other controls
+            themeToggleBtn: document.getElementById('theme-toggle-btn'),
+            gridViewBtn: document.getElementById('grid-view-btn'),
+            listViewBtn: document.getElementById('list-view-btn'),
+            searchInput: document.getElementById('search-input'),
+            // Admin
+            adminStatUsers: document.getElementById('admin-stat-users'),
+            adminStatFiles: document.getElementById('admin-stat-files'),
+            adminStatStorage: document.getElementById('admin-stat-storage'),
+            usersTableBody: document.querySelector('#users-table tbody'),
+            uploadsChartCanvas: document.getElementById('uploadsChart'),
+        };
+
+        // =================================================================
+        // 5. UTILITY & HELPER FUNCTIONS
+        // =================================================================
+        
+        /**
+         * Formats bytes into a human-readable string (KB, MB, GB).
+         * @param {number} bytes - The number of bytes.
+         * @param {number} decimals - The number of decimal places.
+         * @returns {string} The formatted size string.
+         */
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        /**
+         * Shows a toast notification.
+         * @param {string} text - The message to display.
+         * @param {string} type - 'success', 'error', or 'info'.
+         */
+        function showToast(text, type = 'info') {
+            let backgroundColor;
+            switch(type) {
+                case 'success': backgroundColor = "linear-gradient(to right, #00b09b, #96c93d)"; break;
+                case 'error': backgroundColor = "linear-gradient(to right, #ff5f6d, #ffc371)"; break;
+                default: backgroundColor = "linear-gradient(to right, #4338ca, #667eea)"; break;
+            }
+            Toastify({
+                text: text,
+                duration: 3000,
+                gravity: "bottom",
+                position: "right",
+                style: { background: backgroundColor }
+            }).showToast();
+        }
+        
+        /**
+         * Generates a unique ID.
+         * @returns {string} A unique ID string.
+         */
+        function generateUniqueId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+
+        /**
+         * "AI" File Classification based on MIME type.
+         * @param {string} fileType - The MIME type of the file.
+         * @returns {string} The category ('Image', 'Video', 'Audio', 'Document', 'Archive', 'Other').
+         */
+        function classifyFileType(fileType) {
+            if (fileType.startsWith('image/')) return 'Image';
+            if (fileType.startsWith('video/')) return 'Video';
+            if (fileType.startsWith('audio/')) return 'Audio';
+            if (fileType.includes('pdf') || fileType.includes('document') || fileType.includes('text')) return 'Document';
+            if (fileType.includes('zip') || fileType.includes('rar') || fileType.includes('archive')) return 'Archive';
+            return 'Other';
+        }
+
+        // =================================================================
+        // 6. UI RENDERING & MANIPULATION
+        // =================================================================
+
+        /**
+         * Switches the main content view.
+         * @param {string} viewId - The ID of the view to show.
+         */
+        function switchView(viewId) {
+            appState.currentView = viewId;
+            DOMElements.contentViews.forEach(view => view.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            
+            DOMElements.navLinks.forEach(link => {
+                if (link.dataset.view === viewId) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+            // Load data for the new view if needed
+            if(viewId === 'files-view') renderFiles(appState.userFiles);
+            if(viewId === 'dashboard-view') updateDashboardStats();
+            if(viewId === 'admin-view' && appState.userProfile.role === 'admin') loadAdminData();
+        }
+
+        /**
+         * Updates the user profile information in the sidebar.
+         */
+        function updateProfileUI() {
+            if (!appState.userProfile) return;
+            DOMElements.userAvatar.src = appState.currentUser.photoURL;
+            DOMElements.userDisplayName.textContent = appState.currentUser.displayName;
+            DOMElements.userEmail.textContent = appState.currentUser.email;
+            
+            const tierInfo = ACCOUNT_TIERS[appState.userProfile.role] || ACCOUNT_TIERS.user;
+            DOMElements.userTier.textContent = tierInfo.name;
+
+            const usagePercent = (appState.userProfile.storageUsed / tierInfo.limit) * 100;
+            DOMElements.storageStatus.textContent = `Used ${formatBytes(appState.userProfile.storageUsed)} of ${formatBytes(tierInfo.limit)}`;
+            DOMElements.storageProgressBar.style.width = `${usagePercent}%`;
+        }
+        
+        /**
+         * Renders the list of files in the file container.
+         * @param {Array} files - An array of file metadata objects.
+         */
+        function renderFiles(files) {
+            DOMElements.fileContainer.innerHTML = '';
+            if (files.length === 0) {
+                DOMElements.fileContainer.innerHTML = `<p>No files found. Upload your first file!</p>`;
+                return;
+            }
+
+            files.forEach(file => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.dataset.fileId = file.fileId;
+                
+                const fileIcon = getFileIcon(file.fileType);
+                
+                fileItem.innerHTML = `
+                    <div class="file-thumbnail">
+                        ${file.thumbnail ? `<img src="${file.thumbnail}" alt="${file.fileName}">` : `<i data-lucide="${fileIcon}" class="file-icon"></i>`}
+                    </div>
+                    <div class="file-info">
+                        <p class="file-name">${file.fileName}</p>
+                        <p class="file-meta">${formatBytes(file.fileSize)} &bull; ${new Date(file.uploadDate.toDate()).toLocaleDateString()}</p>
+                    </div>
+                    <div class="file-actions">
+                         <button class="icon-btn action-btn" data-action="delete" title="Delete"><i data-lucide="trash-2"></i></button>
+                    </div>
+                `;
+                
+                fileItem.addEventListener('click', () => openFileDetails(file.fileId));
+                fileItem.querySelector('.action-btn[data-action="delete"]').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if(confirm(`Are you sure you want to delete ${file.fileName}?`)) {
+                        deleteFile(file.fileId);
+                    }
+                });
+                
+                DOMElements.fileContainer.appendChild(fileItem);
+            });
+            lucide.createIcons();
+        }
+        
+        /**
+         * Returns a Lucide icon name based on file type.
+         */
+        function getFileIcon(fileType) {
+            if (fileType.startsWith('image/')) return 'image';
+            if (fileType.startsWith('video/')) return 'video';
+            if (fileType.startsWith('audio/')) return 'music';
+            if (fileType.includes('pdf')) return 'file-text';
+            if (fileType.includes('zip') || fileType.includes('rar')) return 'archive';
+            if (fileType.includes('presentation') || fileType.includes('powerpoint')) return 'presentation';
+            if (fileType.includes('spreadsheet') || fileType.includes('excel')) return 'file-spreadsheet';
+            return 'file';
+        }
+
+        /**
+         * Updates the statistics on the dashboard.
+         */
+        function updateDashboardStats() {
+            const files = appState.userFiles;
+            const stats = {
+                total: files.length,
+                images: 0,
+                videos: 0,
+                docs: 0
+            };
+            files.forEach(file => {
+                const category = classifyFileType(file.fileType);
+                if (category === 'Image') stats.images++;
+                else if (category === 'Video') stats.videos++;
+                else if (category === 'Document') stats.docs++;
+            });
+
+            DOMElements.statTotalFiles.textContent = stats.total;
+            DOMElements.statTotalImages.textContent = stats.images;
+            DOMElements.statTotalVideos.textContent = stats.videos;
+            DOMElements.statTotalDocs.textContent = stats.docs;
+        }
+
+        /**
+         * Toggles between light and dark mode.
+         */
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            document.body.classList.toggle('light-mode');
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+            DOMElements.themeToggleBtn.innerHTML = isDarkMode ? `<i data-lucide="sun"></i>` : `<i data-lucide="moon"></i>`;
+            lucide.createIcons();
+        }
+        
+        /**
+         * Opens a modal.
+         * @param {HTMLElement} modalElement - The modal element to open.
+         */
+        function openModal(modalElement) {
+            modalElement.classList.add('active');
+        }
+
+        /**
+         * Closes a modal.
+         * @param {HTMLElement} modalElement - The modal element to close.
+         */
+        function closeModal(modalElement) {
+            modalElement.classList.remove('active');
+        }
+
+        // =================================================================
+        // 7. AUTHENTICATION
+        // =================================================================
+
+        /**
+         * Handles Google Sign-In process.
+         */
+        async function signInWithGoogle() {
+            try {
+                const result = await auth.signInWithPopup(googleProvider);
+                // The onAuthStateChanged observer will handle the rest.
+                showToast('Login successful!', 'success');
+            } catch (error) {
+                console.error("Google Sign-In Error:", error);
+                showToast(`Login failed: ${error.message}`, 'error');
+            }
+        }
+
+        /**
+         * Handles user sign-out.
+         */
+        async function signOut() {
+            try {
+                await auth.signOut();
+                // The onAuthStateChanged observer will handle UI changes.
+                showToast('Logged out successfully.');
+            } catch (error) {
+                console.error("Sign-Out Error:", error);
+                showToast(`Logout failed: ${error.message}`, 'error');
+            }
+        }
+        
+        /**
+         * Observer for authentication state changes.
+         */
+        function onAuthStateChanged(user) {
+            if (user) {
+                // User is signed in
+                appState.currentUser = user;
+                DOMElements.loginPage.style.display = 'none';
+                DOMElements.appPage.style.display = 'grid'; // Use grid to match CSS
+                
+                // Fetch or create user profile in Firestore
+                getUserProfile(user.uid).then(profile => {
+                    if (profile) {
+                        appState.userProfile = profile;
+                        initializeAppUI();
+                    } else {
+                        createUserProfile(user);
+                    }
+                });
+            } else {
+                // User is signed out
+                appState.currentUser = null;
+                appState.userProfile = null;
+                appState.userFiles = [];
+                DOMElements.loginPage.style.display = 'flex';
+                DOMElements.appPage.style.display = 'none';
+            }
+        }
+
+        // =================================================================
+        // 8. FIRESTORE (DATABASE) OPERATIONS
+        // =================================================================
+
+        /**
+         * Creates a new user profile in Firestore.
+         * @param {object} user - The Firebase Auth user object.
+         */
+        async function createUserProfile(user) {
+            const userRef = db.collection('users').doc(user.uid);
+            const newUserProfile = {
+                uid: user.uid,
+                email: user.email,
+                displayName: user.displayName,
+                photoURL: user.photoURL,
+                joinDate: firebase.firestore.FieldValue.serverTimestamp(),
+                role: 'user', // Default role
+                storageUsed: 0,
+                accountStatus: 'active'
+            };
+            try {
+                await userRef.set(newUserProfile);
+                appState.userProfile = newUserProfile;
+                initializeAppUI();
+            } catch (error) {
+                console.error("Error creating user profile:", error);
+                showToast('Failed to create user profile.', 'error');
+            }
+        }
+
+        /**
+         * Fetches a user profile from Firestore.
+         * @param {string} uid - The user's UID.
+         * @returns {Promise<object|null>} The user profile object or null.
+         */
+        async function getUserProfile(uid) {
+            const userRef = db.collection('users').doc(uid);
+            const doc = await userRef.get();
+            if (doc.exists) {
+                return { id: doc.id, ...doc.data() };
+            }
+            return null;
+        }
+
+        /**
+         * Fetches all files for the current user from Firestore.
+         */
+        function fetchUserFiles() {
+            if (!appState.currentUser) return;
+            
+            db.collection('files')
+              .where('uid', '==', appState.currentUser.uid)
+              .orderBy('uploadDate', 'desc')
+              .onSnapshot(snapshot => {
+                  appState.userFiles = snapshot.docs.map(doc => ({ fileId: doc.id, ...doc.data() }));
+                  if (appState.currentView === 'files-view') {
+                      renderFiles(appState.userFiles);
+                  }
+                  updateDashboardStats();
+              }, error => {
+                  console.error("Error fetching files:", error);
+                  showToast('Could not load your files.', 'error');
+              });
+        }
+        
+        /**
+         * Saves file metadata to Firestore.
+         * @param {object} metadata - The file metadata object.
+         */
+        async function saveFileMetadata(metadata) {
+            try {
+                await db.collection('files').add(metadata);
+            } catch (error) {
+                console.error("Error saving file metadata:", error);
+                throw error; // Re-throw to be caught by the upload handler
+            }
+        }
+        
+        /**
+         * Deletes file metadata from Firestore.
+         * @param {string} fileId - The ID of the file document.
+         */
+        async function deleteFileMetadata(fileId) {
+            try {
+                await db.collection('files').doc(fileId).delete();
+            } catch (error) {
+                console.error("Error deleting file metadata:", error);
+                showToast('Failed to delete file data.', 'error');
+            }
+        }
+        
+        /**
+         * Updates the user's total storage used in Firestore.
+         * @param {number} sizeChange - The change in storage size (positive for upload, negative for delete).
+         */
+        async function updateUserStorage(sizeChange) {
+            if (!appState.currentUser) return;
+            const userRef = db.collection('users').doc(appState.currentUser.uid);
+            try {
+                await userRef.update({
+                    storageUsed: firebase.firestore.FieldValue.increment(sizeChange)
+                });
+                // Update local state immediately for better UX
+                appState.userProfile.storageUsed += sizeChange;
+                updateProfileUI();
+            } catch (error) {
+                console.error("Error updating user storage:", error);
+            }
+        }
+        
+
+        // =================================================================
+        // 9. FIREBASE STORAGE (FILE UPLOADS)
+        // =================================================================
+        
+        /**
+         * Handles the file upload process from start to finish.
+         * @param {File} file - The file to upload.
+         */
+        function handleFileUpload(file) {
+             if (appState.userProfile.accountStatus === 'locked') {
+                showToast('Your account is locked. You cannot upload files.', 'error');
+                return;
+            }
+
+            const tierInfo = ACCOUNT_TIERS[appState.userProfile.role] || ACCOUNT_TIERS.user;
+            if (appState.userProfile.storageUsed + file.size > tierInfo.limit) {
+                showToast('Not enough storage space.', 'error');
+                return;
+            }
+
+            const fileId = generateUniqueId();
+            const filePath = `uploads/${appState.currentUser.uid}/${fileId}-${file.name}`;
+            const storageRef = storage.ref(filePath);
+            const uploadTask = storageRef.put(file);
+
+            appState.uploadTasks[fileId] = uploadTask;
+            addUploadProgressUI(file, fileId);
+            
+            uploadTask.on('state_changed', 
+                (snapshot) => {
+                    // Progress
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    updateUploadProgressUI(fileId, progress);
+                },
+                (error) => {
+                    // Error
+                    console.error("Upload Error:", error);
+                    showToast(`Upload failed for ${file.name}`, 'error');
+                    removeUploadProgressUI(fileId);
+                },
+                async () => {
+                    // Complete
+                    try {
+                        const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+                        
+                        // For images, generate a thumbnail (simplified client-side version)
+                        let thumbnailURL = null;
+                        if (file.type.startsWith('image/')) {
+                            // In a real app, this would be a Cloud Function. Here we just use the original URL.
+                            thumbnailURL = downloadURL; 
+                        }
+
+                        const metadata = {
+                            fileId: fileId,
+                            uid: appState.currentUser.uid,
+                            fileName: file.name,
+                            fileType: file.type,
+                            fileSize: file.size,
+                            downloadURL: downloadURL,
+                            thumbnail: thumbnailURL,
+                            description: '',
+                            note: '',
+                            uploadDate: firebase.firestore.FieldValue.serverTimestamp(),
+                            visibility: 'private',
+                        };
+                        
+                        await saveFileMetadata(metadata);
+                        await updateUserStorage(file.size);
+                        
+                        showToast(`${file.name} uploaded successfully!`, 'success');
+                        removeUploadProgressUI(fileId);
+                        
+                        // Ask for GitHub backup
+                        const ghSettings = getGitHubSettings();
+                        if (ghSettings.token && confirm(`Do you want to back up ${file.name} to GitHub?`)) {
+                            backupToGitHub(file, ghSettings);
+                        }
+
+                    } catch (err) {
+                        console.error("Error after upload completion:", err);
+                        showToast('Error processing file after upload.', 'error');
+                        removeUploadProgressUI(fileId);
+                    }
+                }
+            );
+        }
+        
+        /**
+         * Adds a progress bar for an ongoing upload to the UI.
+         */
+        function addUploadProgressUI(file, fileId) {
+            const progressItem = document.createElement('div');
+            progressItem.className = 'progress-item';
+            progressItem.id = `progress-${fileId}`;
+            progressItem.innerHTML = `
+                <div class="progress-item-info">
+                    <span class="file-name">${file.name}</span>
+                    <span class="percentage">0%</span>
+                </div>
+                <div class="progress-item-bar">
+                    <div class="progress-item-fill"></div>
+                </div>
+            `;
+            DOMElements.uploadProgressContainer.appendChild(progressItem);
+        }
+
+        /**
+         * Updates the progress bar for an ongoing upload.
+         */
+        function updateUploadProgressUI(fileId, progress) {
+            const progressItem = document.getElementById(`progress-${fileId}`);
+            if (progressItem) {
+                progressItem.querySelector('.percentage').textContent = `${Math.round(progress)}%`;
+                progressItem.querySelector('.progress-item-fill').style.width = `${progress}%`;
+            }
+        }
+
+        /**
+         * Removes the progress bar UI after completion or error.
+         */
+        function removeUploadProgressUI(fileId) {
+            const progressItem = document.getElementById(`progress-${fileId}`);
+            if (progressItem) {
+                progressItem.remove();
+            }
+            delete appState.uploadTasks[fileId];
+        }
+        
+        // =================================================================
+        // 10. FILE MANAGEMENT
+        // =================================================================
+        
+        /**
+         * Deletes a file from Storage and its metadata from Firestore.
+         * @param {string} fileId - The ID of the file to delete.
+         */
+        async function deleteFile(fileId) {
+            const file = appState.userFiles.find(f => f.fileId === fileId);
+            if (!file) {
+                showToast('File not found.', 'error');
+                return;
+            }
+            
+            // Construct the path based on how it was uploaded
+            const filePath = `uploads/${appState.currentUser.uid}/${file.fileId}-${file.fileName}`;
+            const fileRef = storage.ref(filePath);
+            
+            try {
+                // 1. Delete from Firebase Storage
+                await fileRef.delete();
+                // 2. Delete from Firestore
+                await deleteFileMetadata(fileId);
+                // 3. Update user's storage quota
+                await updateUserStorage(-file.fileSize);
+                
+                showToast(`${file.fileName} deleted successfully.`, 'success');
+                closeModal(DOMElements.fileDetailsModal);
+            } catch (error) {
+                console.error("Error deleting file:", error);
+                showToast(`Failed to delete ${file.fileName}.`, 'error');
+            }
+        }
+        
+        /**
+         * Opens the file details modal with information about the selected file.
+         * @param {string} fileId - The ID of the file to show details for.
+         */
+        function openFileDetails(fileId) {
+            const file = appState.userFiles.find(f => f.fileId === fileId);
+            if (!file) return;
+
+            DOMElements.detailsModalTitle.textContent = file.fileName;
+
+            // Render Preview
+            let previewHTML = '';
+            if (file.fileType.startsWith('image/')) {
+                previewHTML = `<img src="${file.downloadURL}" style="max-width: 100%; max-height: 100%; object-fit: contain;">`;
+            } else if (file.fileType.startsWith('video/')) {
+                previewHTML = `<video controls src="${file.downloadURL}" style="max-width: 100%; max-height: 100%;"></video>`;
+            } else if (file.fileType.startsWith('audio/')) {
+                previewHTML = `<audio controls src="${file.downloadURL}"></audio>`;
+            } else {
+                previewHTML = `<i data-lucide="${getFileIcon(file.fileType)}" style="width: 128px; height: 128px; opacity: 0.5;"></i>`;
+            }
+            DOMElements.filePreviewContainer.innerHTML = previewHTML;
+            
+            // Render Info & Actions
+            const shareLink = `${window.location.origin}/storage/${file.fileId}`;
+            DOMElements.fileInfoContainer.innerHTML = `
+                <h4>File Information</h4>
+                <p><strong>Size:</strong> ${formatBytes(file.fileSize)}</p>
+                <p><strong>Type:</strong> ${file.fileType}</p>
+                <p><strong>Uploaded:</strong> ${new Date(file.uploadDate.toDate()).toLocaleString()}</p>
+                <hr>
+                <h4>Share</h4>
+                <div style="display:flex; gap: 8px;">
+                    <input type="text" value="${shareLink}" readonly class="modal-input" id="share-link-input">
+                    <button class="icon-btn" id="copy-share-link"><i data-lucide="copy"></i></button>
+                </div>
+                <hr>
+                <h4>Actions</h4>
+                <div style="display: flex; gap: 12px;">
+                     <a href="${file.downloadURL}" download="${file.fileName}" class="upload-btn" style="text-decoration: none;">Download</a>
+                     <button class="upload-btn" id="modal-delete-btn" style="background-color: var(--danger-color);">Delete</button>
+                </div>
+            `;
+            
+            DOMElements.fileInfoContainer.querySelector('#copy-share-link').addEventListener('click', () => {
+                navigator.clipboard.writeText(shareLink).then(() => showToast('Link copied!', 'success'));
+            });
+
+            DOMElements.fileInfoContainer.querySelector('#modal-delete-btn').addEventListener('click', () => {
+                 if(confirm(`Are you sure you want to delete ${file.fileName}?`)) {
+                    deleteFile(file.fileId);
+                }
+            });
+
+
+            lucide.createIcons();
+            openModal(DOMElements.fileDetailsModal);
+        }
+
+        // =================================================================
+        // 11. ADVANCED FEATURES (GITHUB BACKUP)
+        // =================================================================
+        
+        function getGitHubSettings() {
+            return {
+                username: localStorage.getItem('github_username'),
+                repo: localStorage.getItem('github_repo'),
+                token: localStorage.getItem('github_token')
+            };
+        }
+
+        function saveGitHubSettings() {
+            const username = document.getElementById('github-username').value;
+            const repo = document.getElementById('github-repo').value;
+            const token = document.getElementById('github-token').value;
+            localStorage.setItem('github_username', username);
+            localStorage.setItem('github_repo', repo);
+            localStorage.setItem('github_token', token);
+            showToast('GitHub settings saved.', 'success');
+            closeModal(DOMElements.githubModal);
+        }
+        
+        /**
+         * Backs up a file to a GitHub repository.
+         * @param {File} file - The file object to back up.
+         * @param {object} settings - GitHub settings object.
+         */
+        async function backupToGitHub(file, settings) {
+            const { username, repo, token } = settings;
+            if (!username || !repo || !token) {
+                showToast('GitHub settings are incomplete.', 'error');
+                return;
+            }
+
+            showToast(`Starting backup of ${file.name} to GitHub...`);
+
+            // Read file content as Base64
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = async () => {
+                const base64Content = reader.result.split(',')[1];
+                const url = `https://api.github.com/repos/${username}/${repo}/contents/${file.name}`;
+
+                try {
+                    const response = await fetch(url, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `token ${token}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        },
+                        body: JSON.stringify({
+                            message: `Backup: Add ${file.name}`,
+                            content: base64Content
+                        })
+                    });
+
+                    if (response.ok) {
+                        showToast(`${file.name} backed up to GitHub successfully!`, 'success');
+                    } else {
+                        const errorData = await response.json();
+                        showToast(`GitHub backup failed: ${errorData.message}`, 'error');
+                        console.error('GitHub API Error:', errorData);
+                    }
+                } catch (error) {
+                    showToast('Network error during GitHub backup.', 'error');
+                    console.error('GitHub Backup Fetch Error:', error);
+                }
+            };
+            reader.onerror = () => {
+                showToast('Error reading file for GitHub backup.', 'error');
+            };
+        }
+        
+        // =================================================================
+        // 12. ADMIN FEATURES
+        // =================================================================
+
+        let uploadsChartInstance = null;
+        
+        async function loadAdminData() {
+            if (appState.userProfile.role !== 'admin') return;
+
+            // Load Users
+            const usersSnapshot = await db.collection('users').get();
+            const users = usersSnapshot.docs.map(doc => doc.data());
+            DOMElements.adminStatUsers.textContent = users.length;
+            renderUsersTable(users);
+            
+            // Load Files
+            const filesSnapshot = await db.collection('files').get();
+            const files = filesSnapshot.docs.map(doc => doc.data());
+            DOMElements.adminStatFiles.textContent = files.length;
+            const totalStorage = files.reduce((acc, file) => acc + file.fileSize, 0);
+            DOMElements.adminStatStorage.textContent = formatBytes(totalStorage);
+            
+            // Chart Data
+            const uploadsByDay = {};
+            files.forEach(file => {
+                if (file.uploadDate) {
+                    const date = file.uploadDate.toDate().toISOString().split('T')[0];
+                    uploadsByDay[date] = (uploadsByDay[date] || 0) + 1;
+                }
+            });
+            const sortedDates = Object.keys(uploadsByDay).sort();
+            const chartLabels = sortedDates;
+            const chartData = sortedDates.map(date => uploadsByDay[date]);
+            renderUploadsChart(chartLabels, chartData);
+        }
+        
+        function renderUsersTable(users) {
+            DOMElements.usersTableBody.innerHTML = '';
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${user.email}</td>
+                    <td>${user.uid}</td>
+                    <td>
+                        <select class="user-role-select" data-uid="${user.uid}">
+                            <option value="user" ${user.role === 'user' ? 'selected' : ''}>User</option>
+                            <option value="vip" ${user.role === 'vip' ? 'selected' : ''}>VIP</option>
+                            <option value="svip" ${user.role === 'svip' ? 'selected' : ''}>SVIP</option>
+                            <option value="vvip" ${user.role === 'vvip' ? 'selected' : ''}>VVIP</option>
+                        </select>
+                    </td>
+                    <td>${formatBytes(user.storageUsed)}</td>
+                    <td>
+                        <button class="account-status-btn" data-uid="${user.uid}" data-status="${user.accountStatus}">
+                            ${user.accountStatus === 'locked' ? 'Unlock' : 'Lock'}
+                        </button>
+                    </td>
+                `;
+                DOMElements.usersTableBody.appendChild(row);
+            });
+            
+            // Add event listeners for admin actions
+            document.querySelectorAll('.user-role-select').forEach(select => {
+                select.addEventListener('change', (e) => updateUserRole(e.target.dataset.uid, e.target.value));
+            });
+             document.querySelectorAll('.account-status-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const newStatus = e.target.dataset.status === 'locked' ? 'active' : 'locked';
+                    updateAccountStatus(e.target.dataset.uid, newStatus);
+                });
+            });
+        }
+        
+        async function updateUserRole(uid, newRole) {
+            try {
+                await db.collection('users').doc(uid).update({ role: newRole });
+                showToast('User role updated successfully.', 'success');
+            } catch (error) {
+                showToast('Failed to update user role.', 'error');
+                console.error(error);
+            }
+        }
+        
+         async function updateAccountStatus(uid, newStatus) {
+            try {
+                await db.collection('users').doc(uid).update({ accountStatus: newStatus });
+                showToast(`User account ${newStatus}.`, 'success');
+                loadAdminData(); // Refresh the table
+            } catch (error) {
+                showToast('Failed to update account status.', 'error');
+                console.error(error);
+            }
+        }
+        
+        function renderUploadsChart(labels, data) {
+            if (uploadsChartInstance) {
+                uploadsChartInstance.destroy();
+            }
+            const ctx = DOMElements.uploadsChartCanvas.getContext('2d');
+            uploadsChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Files Uploaded per Day',
+                        data: data,
+                        borderColor: 'rgba(79, 70, 229, 1)',
+                        backgroundColor: 'rgba(79, 70, 229, 0.2)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                }
+            });
+        }
+        
+        // =================================================================
+        // 13. EVENT LISTENERS
+        // =================================================================
+        
+        function setupEventListeners() {
+            // Auth
+            DOMElements.googleLoginBtn.addEventListener('click', signInWithGoogle);
+            DOMElements.logoutBtn.addEventListener('click', signOut);
+
+            // Navigation
+            DOMElements.navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    switchView(link.dataset.view);
+                });
+            });
+
+            // Theme Toggle
+            DOMElements.themeToggleBtn.addEventListener('click', toggleTheme);
+
+            // Upload Modal
+            DOMElements.openUploadModalBtn.addEventListener('click', () => openModal(DOMElements.uploadModal));
+            DOMElements.uploadModal.addEventListener('click', (e) => {
+                if (e.target === DOMElements.uploadModal || e.target.closest('.close-modal')) {
+                    closeModal(DOMElements.uploadModal);
+                }
+            });
+            DOMElements.dropZone.querySelector('button').addEventListener('click', () => DOMElements.fileInput.click());
+            
+            // Drag and Drop
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                DOMElements.dropZone.addEventListener(eventName, e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+            });
+            DOMElements.dropZone.addEventListener('dragover', () => DOMElements.dropZone.classList.add('dragover'));
+            DOMElements.dropZone.addEventListener('dragleave', () => DOMElements.dropZone.classList.remove('dragover'));
+            DOMElements.dropZone.addEventListener('drop', (e) => {
+                DOMElements.dropZone.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length) {
+                    Array.from(files).forEach(handleFileUpload);
+                }
+            });
+            DOMElements.fileInput.addEventListener('change', (e) => {
+                 if (e.target.files.length) {
+                    Array.from(e.target.files).forEach(handleFileUpload);
+                }
+            });
+            
+            // File Details Modal
+            DOMElements.fileDetailsModal.addEventListener('click', (e) => {
+                 if (e.target === DOMElements.fileDetailsModal || e.target.closest('.close-modal')) {
+                    closeModal(DOMElements.fileDetailsModal);
+                }
+            });
+            
+            // GitHub Modal
+            DOMElements.githubBackupBtn.addEventListener('click', () => {
+                const settings = getGitHubSettings();
+                document.getElementById('github-username').value = settings.username || '';
+                document.getElementById('github-repo').value = settings.repo || '';
+                document.getElementById('github-token').value = settings.token || '';
+                openModal(DOMElements.githubModal);
+            });
+            DOMElements.saveGithubSettingsBtn.addEventListener('click', saveGitHubSettings);
+            DOMElements.githubModal.addEventListener('click', (e) => {
+                 if (e.target === DOMElements.githubModal || e.target.closest('.close-modal')) {
+                    closeModal(DOMElements.githubModal);
+                }
+            });
+
+            // View Controls
+            DOMElements.gridViewBtn.addEventListener('click', () => {
+                DOMElements.fileContainer.className = 'grid-view';
+                DOMElements.gridViewBtn.classList.add('active');
+                DOMElements.listViewBtn.classList.remove('active');
+            });
+            // List view is not fully implemented in this version for simplicity
+            
+            // Search
+            DOMElements.searchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const filteredFiles = appState.userFiles.filter(file => file.fileName.toLowerCase().includes(searchTerm));
+                renderFiles(filteredFiles);
+            });
+        }
+        
+        // =================================================================
+        // 14. INITIALIZATION
+        // =================================================================
+
+        /**
+         * Initializes the main application UI after user login and profile fetch.
+         */
+        function initializeAppUI() {
+            // Update UI with user data
+            updateProfileUI();
+            
+            // Check if user is an admin
+            if (ADMIN_UIDS.includes(appState.currentUser.uid)) {
+                appState.userProfile.role = 'admin'; // Override role for UI
+                DOMElements.adminNavLink.classList.remove('hidden');
+            } else {
+                DOMElements.adminNavLink.classList.add('hidden');
+            }
+
+            // Fetch user's files
+            fetchUserFiles();
+            
+            // Set initial view
+            switchView('dashboard-view');
+        }
+
+        /**
+         * The main entry point of the application.
+         */
+        function init() {
+            // Apply saved theme
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                toggleTheme();
+            }
+            
+            // Render icons
+            lucide.createIcons();
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Listen for auth state changes
+            auth.onAuthStateChanged(onAuthStateChanged);
+        }
+
+        // Run the app
+        init();
+
+    })();
+    </script>
+</body>
+</html>
