@@ -124,7 +124,7 @@ export default function TransactionsPage() {
                         <div>
                           <p className="font-bold text-slate-200 text-sm leading-tight">{t.description}</p>
                           <p className="text-[10px] text-slate-600 mt-1 uppercase font-bold tracking-widest">
-                             {t.createdAt?.toDate().toLocaleString('vi-VN')}
+                             {t.createdAt?.toDate?.()?.toLocaleString?.('vi-VN') || 'Đang tải...'}
                           </p>
                         </div>
                       </div>
@@ -132,7 +132,7 @@ export default function TransactionsPage() {
                         "text-lg font-black italic",
                         t.amount > 0 ? "text-emerald-400" : "text-red-400"
                       )}>
-                        {t.amount > 0 ? '+' : ''}{t.amount.toLocaleString()}đ
+                        {t.amount > 0 ? '+' : ''}{(t.amount || 0).toLocaleString()}đ
                       </div>
                     </motion.div>
                   ))}

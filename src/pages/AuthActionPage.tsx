@@ -6,7 +6,8 @@ import {
   applyActionCode, 
   checkActionCode 
 } from 'firebase/auth';
-import { auth } from '../lib/firebase';
+import { auth, db } from '../lib/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 import Layout from '../components/Layout';
 import { 
   ShieldCheck, 
@@ -67,10 +68,20 @@ export default function AuthActionPage() {
   }, [mode, oobCode]);
 
   const handleVerifyEmail = async () => {
-    if (!oobCode) return;
+    if (!oobCode || !auth.currentUser) {
+      toast.error('Vui lòng đăng nhập để hoàn tất xác minh');
+      return;
+    }
     setIsProcessing(true);
     try {
       await applyActionCode(auth, oobCode);
+      
+      // Update Firestore profile
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      await updateDoc(userRef, {
+        isVerified: true
+      });
+
       setStatus('success');
       toast.success('Xác minh email thành công!');
     } catch (err: any) {

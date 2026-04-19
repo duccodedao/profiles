@@ -85,9 +85,22 @@ export interface Transaction {
   id?: string;
   userId: string;
   amount: number;
-  type: 'referral' | 'task' | 'withdrawal' | 'commission' | 'bonus' | 'penalty';
+  type: 'referral' | 'task' | 'withdrawal' | 'deposit' | 'commission' | 'bonus' | 'penalty';
   description: string;
   createdAt: any;
+}
+
+export interface Deposit {
+  id?: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  amountVnd: number;
+  method: 'bank';
+  status: 'pending' | 'approved' | 'rejected';
+  adminNote?: string;
+  createdAt: any;
+  processedAt?: any;
 }
 
 export interface Category {
@@ -115,8 +128,9 @@ export interface PaymentConfig {
   bankName: string;
   bankAccountName: string;
   bankAccountNumber: string;
-  adminWalletAddress: string;
-  usdtToVndRate: number;
+  bankCode?: string;
+  adminWalletAddress?: string;
+  usdtToVndRate?: number;
 }
 
 export interface Settings {

@@ -143,7 +143,7 @@ export default function TasksPage() {
                           </span>
                         )}
                         <div className="bg-emerald-500/10 px-4 py-2 rounded-2xl border border-emerald-500/20">
-                           <span className="text-emerald-400 font-black text-sm">+{task.reward.toLocaleString()}đ</span>
+                           <span className="text-emerald-400 font-black text-sm">+{(task.reward || 0).toLocaleString()}đ</span>
                         </div>
                       </div>
                     </div>
@@ -186,7 +186,7 @@ export default function TasksPage() {
                 <div className="flex justify-between items-start gap-4">
                    <div className="space-y-2">
                       <div className="flex items-center gap-2 text-emerald-400 uppercase font-black tracking-widest text-xs">
-                        <ShieldCheck className="w-4 h-4" /> THƯỞNG {selectedTask.reward.toLocaleString()}đ
+                        <ShieldCheck className="w-4 h-4" /> THƯỞNG {(selectedTask.reward || 0).toLocaleString()}đ
                       </div>
                       <h2 className="text-3xl md:text-4xl font-black text-white leading-none uppercase italic">{selectedTask.title}</h2>
                    </div>

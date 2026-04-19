@@ -240,7 +240,7 @@ export default function AdminTasks() {
                     <div>
                       <h3 className="font-bold text-lg text-slate-200">{task.title}</h3>
                       <div className="flex items-center gap-3 mt-1">
-                        <span className="text-emerald-400 font-bold text-sm">+{task.reward.toLocaleString()}đ</span>
+                        <span className="text-emerald-400 font-bold text-sm">+{(task.reward || 0).toLocaleString()}đ</span>
                         <span className="w-1.5 h-1.5 rounded-full bg-slate-700" />
                         <span className="text-xs text-slate-500 uppercase tracking-widest font-bold">{task.steps?.length || 0} Bước</span>
                         <span className="w-1.5 h-1.5 rounded-full bg-slate-700" />

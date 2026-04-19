@@ -63,7 +63,6 @@ export default function Sidebar({ onClose }: SidebarProps) {
         { label: 'Nhiệm vụ', icon: ListTodo, path: '/tasks' },
         { label: 'Rút tiền', icon: Wallet, path: '/withdraw' },
         { label: 'Nạp tiền', icon: PiggyBank, path: '/deposit' },
-        { label: 'Kết nối ví', icon: LinkIcon, path: '/connect-wallet' },
         { label: 'Lịch sử giao dịch', icon: History, path: '/transactions' },
       ]
     },

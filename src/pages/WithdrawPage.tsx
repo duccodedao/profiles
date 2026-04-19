@@ -40,7 +40,7 @@ export default function WithdrawPage() {
     }
 
     if (amount < MIN_WITHDRAW) {
-      toast.error(`Số tiền rút tối thiểu là ${MIN_WITHDRAW.toLocaleString()}đ`);
+      toast.error(`Số tiền rút tối thiểu là ${(MIN_WITHDRAW || 0).toLocaleString()}đ`);
       return;
     }
 

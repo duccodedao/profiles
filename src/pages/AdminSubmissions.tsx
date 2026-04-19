@@ -141,11 +141,11 @@ export default function AdminSubmissions() {
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-1 text-slate-400">
                           <Clock className="w-3.5 h-3.5" />
-                          <span className="text-[10px] font-bold uppercase">{sub.createdAt?.toDate().toLocaleString('vi-VN')}</span>
+                          <span className="text-[10px] font-bold uppercase">{sub.createdAt?.toDate?.()?.toLocaleString?.('vi-VN') || 'Đang tải...'}</span>
                         </div>
                         <div className="flex items-center gap-1 text-emerald-400">
                           <MessageSquare className="w-3.5 h-3.5" />
-                          <span className="text-[10px] font-black uppercase">Thưởng: {sub.reward.toLocaleString()}đ</span>
+                          <span className="text-[10px] font-black uppercase">Thưởng: {(sub.reward || 0).toLocaleString()}đ</span>
                         </div>
                       </div>
                     </div>

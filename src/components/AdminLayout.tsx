@@ -11,7 +11,8 @@ import {
   CheckSquare,
   Banknote,
   ListTodo,
-  LayoutDashboard
+  LayoutDashboard,
+  Wallet
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -28,6 +29,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { label: 'Nhiệm vụ', icon: ListTodo, path: '/admin/tasks' },
     { label: 'Phê duyệt', icon: CheckSquare, path: '/admin/submissions' },
     { label: 'Thanh toán', icon: Banknote, path: '/admin/withdrawals' },
+    { label: 'Duyệt nạp', icon: Wallet, path: '/admin/deposits' },
     { label: 'Cấu hình chung', icon: Settings, path: '/admin/settings' },
   ];
 

@@ -199,7 +199,7 @@ export default function AdminWithdrawals() {
                       </div>
                       <div>
                         <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Số tiền rút</p>
-                        <p className="text-base font-black text-emerald-400">{w.amount.toLocaleString()}đ</p>
+                        <p className="text-base font-black text-emerald-400">{(w.amount || 0).toLocaleString()}đ</p>
                       </div>
                     </div>
 
@@ -239,10 +239,10 @@ export default function AdminWithdrawals() {
                   
                   {/* Footer Time info */}
                   <div className="flex items-center gap-6 text-[10px] font-bold text-slate-500 uppercase tracking-widest px-2">
-                    <div className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> Tạo lúc: {w.createdAt?.toDate().toLocaleString('vi-VN')}</div>
+                    <div className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> Tạo lúc: {w.createdAt?.toDate?.()?.toLocaleString?.('vi-VN') || 'Đang tải...'}</div>
                     {w.processedAt && (
                       <div className="flex items-center gap-1.5 text-slate-400">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Khớp lệnh: {w.processedAt?.toDate().toLocaleString('vi-VN')}
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Khớp lệnh: {w.processedAt?.toDate?.()?.toLocaleString?.('vi-VN') || 'Đang tải...'}
                       </div>
                     )}
                   </div>
@@ -298,7 +298,7 @@ export default function AdminWithdrawals() {
                     <div className="space-y-3">
                       <div className="glass bg-white/5 p-5 rounded-2xl border border-white/5 hover:border-emerald-500/30 transition-colors">
                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Số tiền thanh toán</p>
-                        <p className="text-4xl font-black text-emerald-400">{selectedQR.amount.toLocaleString()}đ</p>
+                        <p className="text-4xl font-black text-emerald-400">{(selectedQR.amount || 0).toLocaleString()}đ</p>
                       </div>
 
                       <div className="glass bg-white/5 p-5 rounded-2xl border border-white/5 hover:border-violet-500/30 transition-colors">

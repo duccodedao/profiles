@@ -21,6 +21,7 @@ import AdminUsers from './pages/AdminUsers';
 import AdminTasks from './pages/AdminTasks';
 import AdminSubmissions from './pages/AdminSubmissions';
 import AdminWithdrawals from './pages/AdminWithdrawals';
+import AdminDeposits from './pages/AdminDeposits';
 import AccountPage from './pages/AccountPage';
 import ReferralPage from './pages/ReferralPage';
 import ProfileSettingsPage from './pages/ProfileSettingsPage';
@@ -31,7 +32,6 @@ import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import ToolsPage from './pages/ToolsPage';
 import DepositPage from './pages/DepositPage';
-import ConnectWalletPage from './pages/ConnectWalletPage';
 import AuthActionPage from './pages/AuthActionPage';
 import Layout from './components/Layout';
 import { Sparkles, ArrowLeft } from 'lucide-react';
@@ -120,7 +120,6 @@ export default function App() {
         <Route path="/auth/action" element={<AuthActionPage />} />
         <Route path="/store" element={<ComingSoonPage title="Cửa hàng" />} />
         <Route path="/deposit" element={<DepositPage />} />
-        <Route path="/connect-wallet" element={<ConnectWalletPage />} />
         
         {/* Admin Routes */}
         <Route 
@@ -193,6 +192,14 @@ export default function App() {
           element={
             <ProtectedAdminRoute>
               <AdminWithdrawals />
+            </ProtectedAdminRoute>
+          } 
+        />
+        <Route 
+          path="/admin/deposits" 
+          element={
+            <ProtectedAdminRoute>
+              <AdminDeposits />
             </ProtectedAdminRoute>
           } 
         />

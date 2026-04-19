@@ -36,8 +36,7 @@ export default function AdminSettings() {
     bankName: '',
     bankAccountName: '',
     bankAccountNumber: '',
-    adminWalletAddress: '',
-    usdtToVndRate: 25000
+    bankCode: ''
   });
 
   useEffect(() => {
@@ -268,39 +267,28 @@ export default function AdminSettings() {
                       />
                     </div>
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Chủ tài khoản</label>
-                    <input
-                      value={payment.bankAccountName}
-                      onChange={e => setPayment(prev => ({ ...prev, bankAccountName: e.target.value }))}
-                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 focus:outline-none"
-                      placeholder="VD: NGUYEN VAN A"
-                    />
-                  </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Chủ tài khoản</label>
+                      <input
+                        value={payment.bankAccountName}
+                        onChange={e => setPayment(prev => ({ ...prev, bankAccountName: e.target.value }))}
+                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 focus:outline-none"
+                        placeholder="VD: NGUYEN VAN A"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Mã ngân hàng (ID VietQR)</label>
+                      <input
+                        value={payment.bankCode}
+                        onChange={e => setPayment(prev => ({ ...prev, bankCode: e.target.value }))}
+                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 focus:outline-none"
+                        placeholder="VD: vcb, mbb, acb, tcb..."
+                      />
+                      <p className="text-[10px] text-slate-500 mt-1 italic pl-1">
+                        * Dùng mã ngân hàng chuẩn VietQR (Vietcombank: vcb, MB: mbb...)
+                      </p>
+                    </div>
                   
-                  <div className="h-px bg-white/5 my-4" />
-                  
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Địa chỉ ví Admin (Ethereum/ERC20)</label>
-                    <input
-                      value={payment.adminWalletAddress}
-                      onChange={e => setPayment(prev => ({ ...prev, adminWalletAddress: e.target.value }))}
-                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 focus:outline-none font-mono text-xs"
-                      placeholder="0x..."
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Tỷ giá chuyển đổi (1 USDT = ? VND)</label>
-                    <input
-                      type="number"
-                      value={payment.usdtToVndRate}
-                      onChange={e => setPayment(prev => ({ ...prev, usdtToVndRate: Number(e.target.value) }))}
-                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 focus:outline-none"
-                      placeholder="VD: 25000"
-                    />
-                  </div>
-
                   <div className="pt-4">
                     <button
                       disabled={loading}
@@ -319,8 +307,8 @@ export default function AdminSettings() {
                   <h4 className="font-bold">Lưu ý nạp tiền</h4>
                 </div>
                 <ul className="space-y-2 text-xs text-slate-400 list-disc pl-4">
-                  <li>Tỷ giá được dùng để tự động tính tiền VND khi nạp bằng Crypto.</li>
-                  <li>Địa chỉ ví phải là mạng Ethereum (ERC20) để người dùng gửi transaction.</li>
+                  <li>Mã VietQR sẽ được tạo tự động kèm nội dung chuyển khoản duy nhất.</li>
+                  <li>Người dùng nhập trực tiếp số tiền bằng VNĐ.</li>
                 </ul>
               </div>
             </div>
