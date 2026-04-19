@@ -28,7 +28,7 @@ export default function AuthActionPage() {
   const mode = searchParams.get('mode');
   const oobCode = searchParams.get('oobCode');
   
-  const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'reset-password'>('loading');
+  const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'reset-password' | 'confirm-verify'>('loading');
   const [email, setEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -44,18 +44,14 @@ export default function AuthActionPage() {
       try {
         switch (mode) {
           case 'verifyEmail':
-            await applyActionCode(auth, oobCode);
-            setStatus('success');
-            toast.success('Xác minh email thành công!');
+            const info = await checkActionCode(auth, oobCode);
+            setEmail(info.data.email || '');
+            setStatus('confirm-verify');
             break;
           case 'resetPassword':
             const verifiedEmail = await verifyPasswordResetCode(auth, oobCode);
             setEmail(verifiedEmail);
             setStatus('reset-password');
-            break;
-          case 'recoverEmail':
-            // Not implemented for simplicity but can be added
-            setStatus('error');
             break;
           default:
             setStatus('error');
@@ -69,6 +65,21 @@ export default function AuthActionPage() {
 
     handleAction();
   }, [mode, oobCode]);
+
+  const handleVerifyEmail = async () => {
+    if (!oobCode) return;
+    setIsProcessing(true);
+    try {
+      await applyActionCode(auth, oobCode);
+      setStatus('success');
+      toast.success('Xác minh email thành công!');
+    } catch (err: any) {
+      toast.error(err.message || 'Lỗi khi xác minh email');
+      setStatus('error');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,6 +153,36 @@ export default function AuthActionPage() {
               >
                 VỀ TRANG CHỦ
               </Link>
+            </div>
+          )}
+
+          {status === 'confirm-verify' && (
+            <div className="space-y-8">
+              <div className="space-y-4">
+                <div className="w-20 h-20 bg-violet-600/10 rounded-full flex items-center justify-center mx-auto border border-violet-600/20 shadow-xl shadow-violet-500/5">
+                   <MailCheck className="w-10 h-10 text-violet-400" />
+                </div>
+                <div className="space-y-2">
+                  <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">Xác minh Email</h2>
+                  <p className="text-slate-400 text-sm">Bạn đang thực hiện xác minh cho địa chỉ email:</p>
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 rounded-2xl border border-white/5 text-violet-400 font-bold text-xs mt-2">
+                    {email}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={handleVerifyEmail}
+                disabled={isProcessing}
+                className="w-full gradient-bg py-5 rounded-[30px] text-white font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-violet-500/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
+              >
+                {isProcessing ? <Loader2 className="animate-spin w-5 h-5" /> : <ShieldCheck className="w-5 h-5" />}
+                XÁC NHẬN XÁC MINH
+              </button>
+
+              <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest">
+                Nếu đây không phải là yêu cầu của bạn, vui lòng bỏ qua.
+              </p>
             </div>
           )}
 

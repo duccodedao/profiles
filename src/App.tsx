@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, ADMIN_EMAIL } from './lib/firebase';
 import { Loader2 } from 'lucide-react';
@@ -75,9 +75,22 @@ const ProtectedAdminRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+function AuthRedirect() {
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const mode = searchParams.get('mode');
+  const oobCode = searchParams.get('oobCode');
+
+  if (mode && oobCode && location.pathname === '/') {
+    return <Navigate to={`/auth/action?${searchParams.toString()}`} replace />;
+  }
+  return null;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
+      <AuthRedirect />
       <Toaster 
         position="top-right"
         toastOptions={{
