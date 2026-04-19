@@ -82,7 +82,7 @@ export default function Layout({ children }: LayoutProps) {
 
   // Strict Verification Check
   const isUnverified = user && profile && !profile.isVerified && !isAdmin;
-  const isAccountPage = location.pathname === '/account';
+  const isExemptPage = location.pathname === '/account' || location.pathname === '/auth/action';
 
   if (isBanned) {
     return (
@@ -120,7 +120,7 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen flex flex-col relative">
       {/* Unverified Blocking Overlay */}
-      {isUnverified && !isAccountPage && (
+      {isUnverified && !isExemptPage && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-6">
           <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xl" />
           <motion.div 
