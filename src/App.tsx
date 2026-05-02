@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useSearchParams, useNavigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { auth, db } from './lib/firebase';
@@ -85,6 +85,24 @@ const AccessGuard = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const AuthActionRedirector = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const mode = searchParams.get('mode');
+  const oobCode = searchParams.get('oobCode');
+
+  useEffect(() => {
+    if (mode && oobCode && window.location.pathname !== '/auth/action') {
+      navigate({
+        pathname: '/auth/action',
+        search: searchParams.toString()
+      }, { replace: true });
+    }
+  }, [mode, oobCode, navigate, searchParams]);
+
+  return null;
+};
+
 export default function App() {
   const { setUser, setUserData, setLoading, loading, isAdmin } = useAuthStore();
   const { maintenanceMode, setMaintenanceMode, setOnlineStatus, setMaintenanceTabs, setDomainExpiryDate } = useAppStore();
@@ -160,6 +178,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <AuthActionRedirector />
       <Toaster position="top-right" toastOptions={{ className: 'dark:bg-slate-800 dark:text-white' }} />
       <ConfirmModal />
       <AccessGuard>

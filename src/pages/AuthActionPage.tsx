@@ -4,6 +4,7 @@ import { auth } from '../lib/firebase';
 import { applyActionCode, confirmPasswordReset, verifyPasswordResetCode } from 'firebase/auth';
 import { Lock, Mail, CheckCircle, AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
+import toast from 'react-hot-toast';
 
 export default function AuthActionPage() {
   const [searchParams] = useSearchParams();
@@ -68,12 +69,12 @@ export default function AuthActionPage() {
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      alert('Mật khẩu xác nhận không khớp.');
+      toast.error('Mật khẩu xác nhận không khớp.');
       return;
     }
     
     if (newPassword.length < 6) {
-      alert('Mật khẩu phải có ít nhất 6 ký tự.');
+      toast.error('Mật khẩu phải có ít nhất 6 ký tự.');
       return;
     }
 
@@ -82,9 +83,11 @@ export default function AuthActionPage() {
       await confirmPasswordReset(auth, oobCode!, newPassword);
       setStatus('success');
       setMessage('Mật khẩu của bạn đã được đặt lại thành công.');
+      toast.success('Mật khẩu đã được đặt lại thành công');
     } catch (error: any) {
       setStatus('error');
       setMessage('Không thể đặt lại mật khẩu. Vui lòng thử lại.');
+      toast.error('Có lỗi xảy ra, vui lòng thử lại');
     }
   };
 
