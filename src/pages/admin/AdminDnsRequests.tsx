@@ -158,8 +158,10 @@ export default function AdminDnsRequests() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 dark:bg-white/5">
-                <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-white/5">Bản ghi & Type</th>
-                <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-white/5">Target Value</th>
+                <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-white/5">Subdomain</th>
+                <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-white/5">Loại</th>
+                <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-white/5">Giá trị</th>
+                <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-white/5">Domain</th>
                 <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-white/5">Người yêu cầu</th>
                 <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-white/5">Trạng thái</th>
                 <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-white/5 text-right">Thao tác</th>
@@ -168,29 +170,32 @@ export default function AdminDnsRequests() {
             <tbody className="divide-y divide-slate-100 dark:divide-white/5">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="py-20 text-center">
+                  <td colSpan={7} className="py-20 text-center">
                     <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mx-auto mb-2" />
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Đang tải dữ liệu...</span>
                   </td>
                 </tr>
               ) : filteredRequests.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-20 text-center text-slate-400 font-bold italic text-sm">Không tìm thấy yêu cầu DNS nào</td>
+                  <td colSpan={7} className="py-20 text-center text-slate-400 font-bold italic text-sm">Không tìm thấy yêu cầu DNS nào</td>
                 </tr>
               ) : (
                 filteredRequests.map((req) => (
                   <tr key={req.id} className="hover:bg-slate-50 dark:hover:bg-white/2 transition-colors group">
                     <td className="px-6 py-6 font-medium">
-                        <div className="flex items-center gap-2 mb-1">
-                           <span className="px-1.5 py-0.5 bg-indigo-600 text-white text-[9px] font-black rounded uppercase tracking-tighter">{req.type}</span>
-                           <span className="text-xs font-black text-slate-900 dark:text-white">{req.subdomain}.{CURR_HOST}</span>
-                        </div>
-                        <p className="text-[9px] text-slate-400 font-bold">{format(toSafeDate(req.createdAt), 'HH:mm - dd/MM/yyyy')}</p>
+                        <span className="text-xs font-black text-slate-900 dark:text-white">{req.subdomain}</span>
+                        <p className="text-[9px] text-slate-400 font-bold mt-1">{format(toSafeDate(req.createdAt), 'HH:mm - dd/MM/yyyy')}</p>
                     </td>
                     <td className="px-6 py-6">
-                       <div className="max-w-[200px] truncate text-[10px] font-black text-indigo-500 bg-indigo-600/5 px-2 py-1 rounded border border-indigo-600/10">
+                       <span className="px-2 py-1 bg-indigo-600/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 text-[10px] font-black rounded uppercase tracking-tighter border border-indigo-600/20">{req.type}</span>
+                    </td>
+                    <td className="px-6 py-6">
+                       <div className="max-w-[200px] truncate text-[10px] font-black text-slate-600 dark:text-slate-300">
                           {req.value}
                        </div>
+                    </td>
+                    <td className="px-6 py-6">
+                       <span className="text-[10px] font-bold text-slate-500">{CURR_HOST}</span>
                     </td>
                     <td className="px-6 py-6">
                       <p className="text-[10px] text-slate-600 dark:text-slate-300 font-bold flex items-center gap-1">

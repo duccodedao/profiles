@@ -33,6 +33,8 @@ import BanksPage from './pages/BanksPage';
 import ExchangesPage from './pages/ExchangesPage';
 import BlockedPage from './pages/BlockedPage';
 import DnsRequestPage from './pages/DnsRequestPage';
+import NotFoundPage from './pages/NotFoundPage';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 const TabGuard = ({ children, tabKey }: { children: React.ReactNode, tabKey: 'products' | 'utilities' | 'news' | 'banks' | 'exchanges' }) => {
   const { maintenanceTabs } = useAppStore();
@@ -182,39 +184,44 @@ export default function App() {
       <Toaster position="top-right" toastOptions={{ className: 'dark:bg-slate-800 dark:text-white' }} />
       <ConfirmModal />
       <AccessGuard>
-        <Routes>
-          {/* Auth Routes */}
-          <Route element={<AuthLayout />}>
-            <Route path="/login" element={<Auth />} />
-            <Route path="/register" element={<Auth />} />
-          </Route>
+        <ErrorBoundary>
+          <Routes>
+            {/* Auth Routes */}
+            <Route element={<AuthLayout />}>
+              <Route path="/login" element={<Auth />} />
+              <Route path="/register" element={<Auth />} />
+            </Route>
 
-          <Route path="/auth/action" element={<AuthActionPage />} />
+            <Route path="/auth/action" element={<AuthActionPage />} />
 
-          {/* Main App Routes */}
-          <Route path="/" element={<MainLayout />}>
-            <Route index element={<Home />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="utilities" element={<TabGuard tabKey="utilities"><UtilitiesPage /></TabGuard>} />
-            <Route path="products" element={<TabGuard tabKey="products"><ProductsPage /></TabGuard>} />
-            <Route path="news" element={<TabGuard tabKey="news"><NewsPage /></TabGuard>} />
-            <Route path="banks" element={<TabGuard tabKey="banks"><BanksPage /></TabGuard>} />
-            <Route path="exchanges" element={<TabGuard tabKey="exchanges"><ExchangesPage /></TabGuard>} />
-            <Route path="about" element={<AboutPage />} />
-            <Route path="airdrop" element={<AirdropPage />} />
-            <Route path="notifications" element={<NotificationsPage />} />
-            <Route path="contact" element={<ContactPage />} />
-            <Route path="dns" element={<DnsRequestPage />} />
+            {/* Main App Routes */}
+            <Route path="/" element={<MainLayout />}>
+              <Route index element={<Home />} />
+              <Route path="profile" element={<Profile />} />
+              <Route path="utilities" element={<TabGuard tabKey="utilities"><UtilitiesPage /></TabGuard>} />
+              <Route path="products" element={<TabGuard tabKey="products"><ProductsPage /></TabGuard>} />
+              <Route path="news" element={<TabGuard tabKey="news"><NewsPage /></TabGuard>} />
+              <Route path="banks" element={<TabGuard tabKey="banks"><BanksPage /></TabGuard>} />
+              <Route path="exchanges" element={<TabGuard tabKey="exchanges"><ExchangesPage /></TabGuard>} />
+              <Route path="about" element={<AboutPage />} />
+              <Route path="airdrop" element={<AirdropPage />} />
+              <Route path="notifications" element={<NotificationsPage />} />
+              <Route path="contact" element={<ContactPage />} />
+              <Route path="dns" element={<DnsRequestPage />} />
+              
+              {/* Admin Routes */}
+              <Route path="admin/*" element={isAdmin ? <AdminDashboard /> : <Navigate to="/" />} />
+              
+              <Route path="blocked" element={<BlockedPage />} />
+              
+              {/* 404 */}
+              <Route path="*" element={<NotFoundPage />} />
+            </Route>
             
-            {/* Admin Routes */}
-            <Route path="admin/*" element={isAdmin ? <AdminDashboard /> : <Navigate to="/" />} />
-            
-            <Route path="blocked" element={<BlockedPage />} />
-            
-            {/* 404 */}
-            <Route path="*" element={<Navigate to="/" />} />
-          </Route>
-        </Routes>
+            {/* Top-level catch all */}
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </ErrorBoundary>
       </AccessGuard>
     </BrowserRouter>
   );
