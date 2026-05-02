@@ -111,7 +111,6 @@ export default function Auth() {
       await checkAndSaveLocation(userCred.user.uid);
       navigate('/');
     } catch (error: any) {
-      console.error(error);
       if (error.code === 'auth/invalid-credential') {
         toast.error('Email hoặc mật khẩu không chính xác. Vui lòng thử lại.');
       } else if (error.code === 'auth/user-not-found') {
@@ -146,7 +145,6 @@ export default function Auth() {
       await checkAndSaveLocation(userCred.user.uid);
       navigate('/');
     } catch (error: any) {
-      console.error(error);
       if (error.code === 'auth/email-already-in-use') {
         toast.error('Email này đã được sử dụng bởi một tài khoản khác.');
       } else if (error.code === 'auth/weak-password') {
@@ -189,7 +187,6 @@ export default function Auth() {
       await logActivity(ActivityType.LOGIN, 'Đăng nhập thành công bằng Google');
       navigate('/');
     } catch (error: any) {
-       console.error(error);
        toast.error('Đăng nhập bằng Google thất bại');
     } finally {
       setGoogleLoading(false);

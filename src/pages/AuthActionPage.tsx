@@ -56,8 +56,8 @@ export default function AuthActionPage() {
       } catch (error: any) {
         setStatus('error');
         setMessage(
-          error.code === 'auth/invalid-action-code' 
-            ? 'Liên kết đã hết hạn hoặc đã được sử dụng.' 
+          error.code === 'auth/invalid-action-code' || error.code === 'auth/invalid-credential'
+            ? 'Liên kết đã hết hạn hoặc không hợp lệ.' 
             : 'Đã xảy ra lỗi trong quá trình xử lý.'
         );
       }
@@ -86,7 +86,11 @@ export default function AuthActionPage() {
       toast.success('Mật khẩu đã được đặt lại thành công');
     } catch (error: any) {
       setStatus('error');
-      setMessage('Không thể đặt lại mật khẩu. Vui lòng thử lại.');
+      if (error.code === 'auth/invalid-credential') {
+          setMessage('Liên kết đặt lại mật khẩu không hợp lệ.');
+      } else {
+          setMessage('Không thể đặt lại mật khẩu. Vui lòng thử lại.');
+      }
       toast.error('Có lỗi xảy ra, vui lòng thử lại');
     }
   };
