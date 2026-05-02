@@ -14,18 +14,29 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Mail, Lock, Loader2, X, Sparkles, User, ArrowRight } from 'lucide-react';
 import { logActivity, ActivityType } from '../services/activityService';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 
 export default function Auth() {
   const location = useLocation();
   const navigate = useNavigate();
   const isRegisterRoute = location.pathname.includes('register');
   const [activeCard, setActiveCard] = useState<'login' | 'register'>(isRegisterRoute ? 'register' : 'login');
+  const [rememberMe, setRememberMe] = useState(false);
 
   // Login states
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
+
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('rememberedEmail');
+    const savedPass = localStorage.getItem('rememberedPass');
+    if (savedEmail && savedPass) {
+      setLoginEmail(savedEmail);
+      setLoginPassword(savedPass);
+      setRememberMe(true);
+    }
+  }, []);
 
   // Register states
   const [registerName, setRegisterName] = useState('');
@@ -43,13 +54,22 @@ export default function Auth() {
 
   const checkAndSaveLocation = async (uid: string) => {
     let ip = 'Unknown';
-    try {
-      const res = await fetch('https://api.ipify.org?format=json');
-      const data = await res.json();
-      ip = data.ip || 'Unknown';
-    } catch(e) {}
+    const ipApis = [
+      'https://api.ipify.org?format=json',
+      'https://ipapi.co/json/',
+      'https://api64.ipify.org?format=json'
+    ];
 
-    const payload: any = { ip, lastLoginTime: Date.now() };
+    for (const url of ipApis) {
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        ip = data.ip || 'Unknown';
+        if (ip !== 'Unknown') break;
+      } catch(e) {}
+    }
+
+    const payload: any = { lastIpAddress: ip, lastLoginAt: Date.now() };
 
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(async (position) => {
@@ -57,12 +77,14 @@ export default function Auth() {
           const { latitude, longitude } = position.coords;
           payload.location = { lat: latitude, lng: longitude };
           await updateDoc(doc(db, 'users', uid), payload);
-        } catch(e) {}
+        } catch(e) {
+          await updateDoc(doc(db, 'users', uid), payload);
+        }
       }, async () => {
         try {
           await updateDoc(doc(db, 'users', uid), payload);
         } catch(e) {}
-      });
+      }, { timeout: 10000 });
     } else {
       try {
         await updateDoc(doc(db, 'users', uid), payload);
@@ -76,6 +98,13 @@ export default function Auth() {
     
     setLoginLoading(true);
     try {
+      if (rememberMe) {
+        localStorage.setItem('rememberedEmail', loginEmail);
+        localStorage.setItem('rememberedPass', loginPassword);
+      } else {
+        localStorage.removeItem('rememberedEmail');
+        localStorage.removeItem('rememberedPass');
+      }
       await setPersistence(auth, browserLocalPersistence);
       const userCred = await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
       await logActivity(ActivityType.LOGIN, 'Đăng nhập thành công bằng Email/Mật khẩu');
@@ -83,7 +112,15 @@ export default function Auth() {
       navigate('/');
     } catch (error: any) {
       console.error(error);
-      toast.error('Đăng nhập thất bại. Vui lòng kiểm tra lại');
+      if (error.code === 'auth/invalid-credential') {
+        toast.error('Email hoặc mật khẩu không chính xác. Vui lòng thử lại.');
+      } else if (error.code === 'auth/user-not-found') {
+        toast.error('Tài khoản không tồn tại.');
+      } else if (error.code === 'auth/wrong-password') {
+        toast.error('Mật khẩu không chính xác.');
+      } else {
+        toast.error('Đăng nhập thất bại. Vui lòng kiểm tra lại');
+      }
     } finally {
       setLoginLoading(false);
     }
@@ -110,7 +147,15 @@ export default function Auth() {
       navigate('/');
     } catch (error: any) {
       console.error(error);
-      toast.error('Đăng ký thất bại. Email có thể đã tồn tại.');
+      if (error.code === 'auth/email-already-in-use') {
+        toast.error('Email này đã được sử dụng bởi một tài khoản khác.');
+      } else if (error.code === 'auth/weak-password') {
+        toast.error('Mật khẩu quá yếu. Vui lòng chọn mật khẩu mạnh hơn.');
+      } else if (error.code === 'auth/invalid-email') {
+        toast.error('Email không hợp lệ.');
+      } else {
+        toast.error('Đăng ký thất bại. Vui lòng thử lại sau.');
+      }
     } finally {
       setRegisterLoading(false);
     }
@@ -174,9 +219,11 @@ export default function Auth() {
       <div className="absolute top-[10%] left-[10%] w-[500px] h-[500px] bg-blue-600/10 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute bottom-[10%] right-[10%] w-[500px] h-[500px] bg-purple-600/10 blur-[120px] rounded-full pointer-events-none" />
 
-      <Link to="/" className="absolute top-8 left-8 flex items-center gap-3 hover:opacity-80 transition-opacity z-50">
-        <img src="https://tytpht.hdd.io.vn/img/bmassloadings.png" alt="Logo" className="w-10 h-10 drop-shadow-sm" />
-        <span className="font-bold text-lg tracking-tight hidden sm:block">Hệ Sinh Thái</span>
+      <Link to="/" className="fixed top-4 md:top-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 md:gap-2 hover:opacity-80 transition-all z-50 group">
+        <div className="w-12 h-12 md:w-16 md:h-16 bg-white dark:bg-slate-900 rounded-2xl md:rounded-3xl flex items-center justify-center shadow-2xl border border-slate-100 dark:border-white/10 group-hover:scale-110 transition-transform">
+          <img src="https://tytpht.hdd.io.vn/img/bmassloadings.png" alt="Logo" className="w-8 h-8 md:w-10 md:h-10 drop-shadow-sm" />
+        </div>
+        <span className="font-black text-sm md:text-xl tracking-tighter uppercase bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">Hệ Sinh Thái</span>
       </Link>
 
       {/* Forgot Password Modal */}
@@ -237,7 +284,7 @@ export default function Auth() {
       </AnimatePresence>
 
       {/* Main Content Area - Stacked Cards */}
-      <div className="relative w-full max-w-md h-[680px] perspective-[1200px] mt-10">
+      <div className="relative w-full max-w-md h-[600px] md:h-[680px] perspective-[1200px] mt-24 md:mt-10 px-4 md:px-0">
         
         {/* Register Card */}
         <motion.div
@@ -251,48 +298,48 @@ export default function Auth() {
               filter: activeCard === 'register' ? 'blur(0px)' : 'blur(2px)',
            }}
            transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-           className={`absolute inset-0 w-full h-fit flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] ${activeCard !== 'register' ? 'cursor-pointer hover:opacity-80' : ''}`}
+           className={`absolute inset-x-4 md:inset-0 h-fit flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] ${activeCard !== 'register' ? 'cursor-pointer hover:opacity-80' : ''}`}
            onClick={() => activeCard !== 'register' && setActiveCard('register')}
         >
           {activeCard !== 'register' && <div className="absolute inset-0 z-20 rounded-[2.5rem]" />}
           
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold tracking-tight mb-2 text-blue-600 dark:text-blue-400">Tạo tài khoản.</h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm">Gia nhập cộng đồng của chúng tôi ngay hôm nay.</p>
+          <div className="mb-6 md:mb-8 font-sans">
+            <h1 className="text-2xl md:text-3xl font-black tracking-tighter mb-1 text-blue-600 dark:text-blue-400">Tạo tài khoản.</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-sm font-bold uppercase tracking-widest leading-tight">Gia nhập cộng đồng bmassHD.</p>
           </div>
 
           <form onSubmit={handleRegister} className="space-y-4">
-            <div className="space-y-1.5">
-               <label className="text-sm font-semibold ml-1">Họ và tên</label>
+            <div className="space-y-1">
+               <label className="text-[10px] md:text-sm font-black uppercase tracking-widest ml-1 text-slate-500">Họ và tên</label>
                <input 
                  type="text" 
                  value={registerName}
                  onChange={(e) => setRegisterName(e.target.value)}
-                 className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                 className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 md:py-3.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                  placeholder="Nguyễn Văn A"
                  required
                />
             </div>
 
-            <div className="space-y-1.5">
-               <label className="text-sm font-semibold ml-1">Email</label>
+            <div className="space-y-1">
+               <label className="text-[10px] md:text-sm font-black uppercase tracking-widest ml-1 text-slate-500">Email</label>
                <input 
                  type="email" 
                  value={registerEmail}
                  onChange={(e) => setRegisterEmail(e.target.value)}
-                 className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                 className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 md:py-3.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                  placeholder="name@example.com"
                  required
                />
             </div>
 
-            <div className="space-y-1.5">
-               <label className="text-sm font-semibold ml-1">Mật khẩu</label>
+            <div className="space-y-1">
+               <label className="text-[10px] md:text-sm font-black uppercase tracking-widest ml-1 text-slate-500">Mật khẩu</label>
                <input 
                  type="password" 
                  value={registerPassword}
                  onChange={(e) => setRegisterPassword(e.target.value)}
-                 className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                 className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 md:py-3.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                  placeholder="Tối thiểu 6 ký tự"
                  required
                  minLength={6}
@@ -303,16 +350,16 @@ export default function Auth() {
                <button 
                  type="submit" 
                  disabled={registerLoading || googleLoading}
-                 className="w-full bg-blue-600 text-white font-semibold py-3.5 rounded-xl hover:bg-blue-700 active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
+                 className="w-full bg-blue-600 text-white font-black py-3 md:py-4 rounded-xl hover:bg-blue-700 active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 text-xs md:text-sm uppercase tracking-widest"
                >
                  {registerLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Đăng ký ngay'}
                </button>
             </div>
           </form>
 
-          <div className="my-6 flex items-center gap-4">
+          <div className="my-4 md:my-6 flex items-center gap-4">
              <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800"></div>
-             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Hoặc</span>
+             <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Hoặc</span>
              <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800"></div>
           </div>
 
@@ -320,15 +367,15 @@ export default function Auth() {
             type="button"
             onClick={(e) => { e.preventDefault(); handleGoogleAuth(); }}
             disabled={registerLoading || googleLoading}
-            className="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-semibold py-3.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 active:scale-[0.99] transition-all"
+            className="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-black py-3 md:py-4 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 active:scale-[0.99] transition-all text-xs md:text-sm"
           >
             {googleLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" alt="Google" />}
-            Tiếp tục với Google
+            TIẾP TỤC VỚI GOOGLE
           </button>
 
-          <div className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
+          <div className="mt-6 md:mt-8 text-center text-xs text-slate-500 dark:text-slate-400">
              Đã có tài khoản?{' '}
-             <button type="button" onClick={() => setActiveCard('login')} className="font-semibold text-slate-900 dark:text-white hover:underline relative z-30">
+             <button type="button" onClick={() => setActiveCard('login')} className="font-black text-slate-900 dark:text-white hover:underline relative z-30 uppercase tracking-tighter">
                Đăng nhập
              </button>
           </div>
@@ -346,36 +393,36 @@ export default function Auth() {
               filter: activeCard === 'login' ? 'blur(0px)' : 'blur(2px)',
            }}
            transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-           className={`absolute inset-0 w-full h-fit flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] ${activeCard !== 'login' ? 'cursor-pointer hover:opacity-80' : ''}`}
+           className={`absolute inset-x-4 md:inset-0 h-fit flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] ${activeCard !== 'login' ? 'cursor-pointer hover:opacity-80' : ''}`}
            onClick={() => activeCard !== 'login' && setActiveCard('login')}
         >
           {activeCard !== 'login' && <div className="absolute inset-0 z-20 rounded-[2.5rem]" />}
 
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold tracking-tight mb-2">Đăng nhập.</h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm">Chào mừng trở lại! Vui lòng nhập thông tin.</p>
+          <div className="mb-6 md:mb-8 font-sans">
+            <h1 className="text-2xl md:text-3xl font-black tracking-tighter mb-1">Đăng nhập.</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-sm font-bold uppercase tracking-widest leading-tight">Chào mừng trở lại bmassHD.</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-1.5">
-               <label className="text-sm font-semibold ml-1">Email</label>
+            <div className="space-y-1">
+               <label className="text-[10px] md:text-sm font-black uppercase tracking-widest ml-1 text-slate-500">Email</label>
                <input 
                  type="email" 
                  value={loginEmail}
                  onChange={(e) => setLoginEmail(e.target.value)}
-                 className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                 className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 md:py-3.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                  placeholder="name@example.com"
                  required
                />
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-1">
                <div className="flex justify-between items-center ml-1">
-                  <label className="text-sm font-semibold">Mật khẩu</label>
+                  <label className="text-[10px] md:text-sm font-black uppercase tracking-widest text-slate-500">Mật khẩu</label>
                   <button 
                     type="button" 
                     onClick={() => setShowForgotModal(true)}
-                    className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors relative z-30"
+                    className="text-[10px] md:text-xs font-black text-blue-600 hover:text-blue-700 transition-colors relative z-30 uppercase tracking-tighter"
                   >
                     Quên mật khẩu?
                   </button>
@@ -384,10 +431,28 @@ export default function Auth() {
                  type="password" 
                  value={loginPassword}
                  onChange={(e) => setLoginPassword(e.target.value)}
-                 className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                 className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 md:py-3.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                  placeholder="••••••••"
                  required
                />
+            </div>
+
+            <div className="flex items-center justify-between ml-1 py-1">
+               <label className="flex items-center gap-2 cursor-pointer group">
+                 <div className="relative flex items-center">
+                   <input 
+                     type="checkbox" 
+                     checked={rememberMe}
+                     onChange={(e) => setRememberMe(e.target.checked)}
+                     className="peer sr-only"
+                   />
+                   <div className="w-5 h-5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all"></div>
+                   <svg className="absolute w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity left-[3px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
+                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                   </svg>
+                 </div>
+                 <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Ghi nhớ mật khẩu</span>
+               </label>
             </div>
 
             <div className="pt-2">
@@ -401,9 +466,9 @@ export default function Auth() {
             </div>
           </form>
 
-          <div className="my-6 flex items-center gap-4">
+          <div className="my-4 md:my-6 flex items-center gap-4">
              <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800"></div>
-             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Hoặc</span>
+             <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Hoặc</span>
              <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800"></div>
           </div>
 
@@ -411,15 +476,15 @@ export default function Auth() {
             type="button"
             onClick={(e) => { e.preventDefault(); handleGoogleAuth(); }}
             disabled={loginLoading || googleLoading}
-            className="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-semibold py-3.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 active:scale-[0.99] transition-all"
+            className="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-black py-3 md:py-4 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 active:scale-[0.99] transition-all text-xs md:text-sm"
           >
             {googleLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" alt="Google" />}
-            Tiếp tục với Google
+            TIẾP TỤC VỚI GOOGLE
           </button>
 
-          <div className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
+          <div className="mt-6 md:mt-8 text-center text-xs text-slate-500 dark:text-slate-400 pb-2">
              Chưa có tài khoản?{' '}
-             <button type="button" onClick={() => setActiveCard('register')} className="font-semibold text-slate-900 dark:text-white hover:underline relative z-30">
+             <button type="button" onClick={() => setActiveCard('register')} className="font-black text-slate-900 dark:text-white hover:underline relative z-30 uppercase tracking-tighter">
                Đăng ký ngay
              </button>
           </div>

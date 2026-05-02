@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import { WifiOff } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
 

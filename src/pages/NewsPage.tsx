@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Newspaper, ExternalLink, Calendar, User, TrendingUp, Loader2, Sparkles, RefreshCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -12,6 +12,8 @@ interface NewsItem {
   thumbnail: string;
   author: string;
 }
+
+import NoData from '../components/ui/NoData';
 
 export default function NewsPage() {
   const [news, setNews] = useState<NewsItem[]>([]);
@@ -74,7 +76,7 @@ export default function NewsPage() {
 
   if (loading) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh]">
+      <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh] bg-[#050508]/50 rounded-[3rem] p-8 m-4">
         <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
         <p className="text-slate-500 font-bold animate-pulse">Đang cập nhật tin tức mới nhất...</p>
       </div>
@@ -82,7 +84,7 @@ export default function NewsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-12 pb-20 pt-4">
+    <div className="max-w-7xl mx-auto space-y-12 pb-20 pt-4 px-4 lg:px-8">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-4">
           <motion.div
@@ -106,7 +108,7 @@ export default function NewsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm kiếm tin tức..."
-              className="px-4 py-3.5 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm w-full md:w-64 outline-none focus:ring-2 focus:ring-rose-500"
+              className="px-4 py-3.5 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm w-full md:w-64 outline-none focus:ring-2 focus:ring-rose-500 transition-all font-bold"
             />
           </form>
           <button 
@@ -119,75 +121,76 @@ export default function NewsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {news.map((item, idx) => (
-          <motion.article
-            key={idx}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.05 }}
-            className="group block bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-[2.5rem] overflow-hidden hover:shadow-2xl hover:shadow-rose-500/5 transition-all flex flex-col"
-          >
-            <div className="relative aspect-[16/9] overflow-hidden">
-              <img 
-                src={item.thumbnail} 
-                alt={item.title} 
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  if (target.src !== feedImage) {
-                    target.src = feedImage;
-                  }
-                }}
-              />
-              <div className="absolute top-4 left-4">
-                <span className="bg-rose-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl shadow-lg">
-                  HOT NEWS
-                </span>
-              </div>
-            </div>
-            
-            <div className="p-8 flex-1 flex flex-col">
-              <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">
-                <span className="flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5" />
-                  {format(new Date(item.pubDate), 'dd/MM/yyyy', { locale: vi })}
-                </span>
-                <span className="opacity-30">•</span>
-                <span className="flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5" />
-                  {item.author}
-                </span>
+      {news.length === 0 ? (
+        <NoData 
+          message="Chưa tìm thấy tin tức" 
+          description="Hiện tại chưa có tin mới nào hoặc đang gặp lỗi kết nối. Vui lòng quay lại sau."
+          icon={Newspaper}
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {news.map((item, idx) => (
+            <motion.article
+              key={idx}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.05 }}
+              className="group block bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-[2.5rem] overflow-hidden hover:shadow-2xl hover:shadow-rose-500/5 transition-all flex flex-col"
+            >
+              <div className="relative aspect-[16/9] overflow-hidden">
+                <img 
+                  src={item.thumbnail} 
+                  alt={item.title} 
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    if (target.src !== feedImage) {
+                      target.src = feedImage;
+                    }
+                  }}
+                />
+                <div className="absolute top-4 left-4">
+                  <span className="bg-rose-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl shadow-lg">
+                    HOT NEWS
+                  </span>
+                </div>
               </div>
               
-              <h2 className="text-xl font-black text-slate-900 dark:text-white mb-4 line-clamp-2 leading-tight group-hover:text-rose-600 transition-colors">
-                {item.title}
-              </h2>
-              
-              <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 line-clamp-3">
-                {item.description}
-              </p>
-              
-              <div className="mt-auto pt-6 border-t border-slate-100 dark:border-white/5 flex items-center justify-between">
-                <a 
-                  href={item.link} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-rose-600 dark:text-rose-400 group-hover:underline"
-                >
-                  Xem chi tiết <ExternalLink className="w-4 h-4" />
-                </a>
-                <Sparkles className="w-5 h-5 text-slate-200 dark:text-white/10" />
+              <div className="p-8 flex-1 flex flex-col">
+                <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">
+                  <span className="flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5" />
+                    {format(new Date(item.pubDate), 'dd/MM/yyyy', { locale: vi })}
+                  </span>
+                  <span className="opacity-30">•</span>
+                  <span className="flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5" />
+                    {item.author}
+                  </span>
+                </div>
+                
+                <h2 className="text-xl font-black text-slate-900 dark:text-white mb-4 line-clamp-2 leading-tight group-hover:text-rose-600 transition-colors uppercase">
+                  {item.title}
+                </h2>
+                
+                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 line-clamp-3">
+                  {item.description}
+                </p>
+                
+                <div className="mt-auto pt-6 border-t border-slate-100 dark:border-white/5 flex items-center justify-between">
+                  <a 
+                    href={item.link} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-rose-600 dark:text-rose-400 group-hover:underline"
+                  >
+                    Xem chi tiết <ExternalLink className="w-4 h-4" />
+                  </a>
+                  <Sparkles className="w-5 h-5 text-slate-200 dark:text-white/10" />
+                </div>
               </div>
-            </div>
-          </motion.article>
-        ))}
-      </div>
-
-      {news.length === 0 && !loading && (
-        <div className="text-center py-32 bg-slate-50 dark:bg-white/5 border-2 border-dashed border-slate-200 dark:border-white/10 rounded-[3rem]">
-          <Loader2 className="w-12 h-12 text-slate-300 mx-auto mb-4 animate-pulse" />
-          <p className="text-slate-500 font-bold">Chưa tìm thấy tin tức nào. Xin vui lòng thử lại sau.</p>
+            </motion.article>
+          ))}
         </div>
       )}
     </div>

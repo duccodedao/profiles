@@ -81,7 +81,7 @@ export default function AdminUtilities() {
             </button>
           )}
         </div>
-        <form onSubmit={handleCreateOrUpdate} className="space-y-4 max-w-xl">
+        <form onSubmit={handleCreateOrUpdate} className="space-y-4 w-full">
           <div>
             <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Tên chuyên mục / tiện ích</label>
             <input value={title} onChange={e=>setTitle(e.target.value)} className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2 text-slate-900 dark:text-white" required />
@@ -109,10 +109,10 @@ export default function AdminUtilities() {
           <table className="w-full text-left text-sm text-slate-900 dark:text-white">
             <thead className="bg-slate-50 dark:bg-white/5 border-b border-slate-200 dark:border-white/10 text-slate-500">
               <tr>
-                <th className="px-6 py-4">Tên</th>
-                <th className="px-6 py-4">Mô tả</th>
-                <th className="px-6 py-4">Link nhúng</th>
-                <th className="px-6 py-4 text-right">Thao tác</th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest">Tên</th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest">Mô tả</th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest">Link nhúng</th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-right">Thao tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-white/10">

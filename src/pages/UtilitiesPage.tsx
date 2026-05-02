@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { LayoutList, ExternalLink, Lightbulb, Code2 } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import FindMyDeviceUtility from './FindMyDeviceUtility';
-import AIToolsUtility from './AIToolsUtility';
 
 interface UtilityItem {
   id: string;
@@ -31,9 +30,6 @@ export default function UtilitiesPage() {
   if (activeUtility) {
     if (activeUtility.type === 'internal' && activeUtility.id === 'find-my-device') {
       return <FindMyDeviceUtility onBack={() => setActiveUtility(null)} />;
-    }
-    if (activeUtility.type === 'internal' && activeUtility.id === 'ai-tools') {
-      return <AIToolsUtility onBack={() => setActiveUtility(null)} />;
     }
     
     if (activeUtility.type === 'embed') {
@@ -63,34 +59,33 @@ const nativeUtilities: UtilityItem[] = [
     icon: 'search',
     type: 'internal',
     createdAt: Date.now()
-  },
-  {
-    id: 'ai-tools',
-    title: 'Kho Công Cụ AI',
-    description: 'Khám phá bộ sưu tập và truy cập nhanh các công cụ Trí tuệ Nhân tạo',
-    icon: 'sparkles',
-    type: 'internal',
-    createdAt: Date.now()
   }
 ];
 
   const allItems = [...nativeUtilities, ...utilities];
 
   return (
-    <div className="flex-1 max-w-7xl mx-auto w-full p-4 lg:p-8">
-      <div className="flex items-center gap-3 mb-8">
-        <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400">
-          <LayoutList className="w-6 h-6" />
-        </div>
-        <div>
-          <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
-            Tiện ích & Tính năng
-            <span className="text-xs bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 px-2.5 py-1 rounded-full border border-blue-500/20">
-              {allItems.length} đang hoạt động
-            </span>
-          </h1>
-          <p className="text-sm text-slate-500 mt-2">Các công cụ hỗ trợ công việc, tính năng đặc biệt và thủ thuật mạng xã hội</p>
-        </div>
+    <div className="max-w-7xl mx-auto space-y-6 md:space-y-8 pb-20 pt-4 px-4 lg:px-8">
+      <div className="flex flex-col gap-1 md:gap-2">
+        <motion.h1 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="text-2xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2 md:gap-3"
+        >
+          <LayoutList className="w-8 h-8 md:w-10 md:h-10 text-blue-600" />
+          Tiện ích & Tính năng
+          <span className="hidden sm:inline-block text-[10px] md:text-xs bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 px-2.5 py-1 rounded-full border border-blue-500/20 uppercase tracking-widest font-black">
+            {allItems.length} Actives
+          </span>
+        </motion.h1>
+        <motion.p 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          className="text-slate-500 text-sm md:text-lg"
+        >
+          Các công cụ hỗ trợ công việc và thủ thuật thông minh
+        </motion.p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

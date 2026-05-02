@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Hammer, Loader2, Sparkles, ServerCrash } from 'lucide-react';
 
 export default function MaintenancePage() {

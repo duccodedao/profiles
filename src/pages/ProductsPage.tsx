@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { ShoppingBag, ExternalLink } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -11,6 +11,8 @@ interface Product {
   thumbnail: string;
   createdAt: any;
 }
+
+import NoData from '../components/ui/NoData';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -26,23 +28,36 @@ export default function ProductsPage() {
   }, []);
 
   return (
-    <div className="flex-1 max-w-7xl mx-auto w-full p-4 lg:p-8">
-      <div className="flex items-center gap-3 mb-8">
-        <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-600 dark:text-orange-400">
-          <ShoppingBag className="w-6 h-6" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Sản phẩm</h1>
-          <p className="text-sm text-slate-500">Mua sắm và khám phá các sản phẩm nổi bật</p>
-        </div>
+    <div className="max-w-7xl mx-auto space-y-6 md:space-y-8 pb-20 pt-4 px-4 lg:px-8">
+      <div className="flex flex-col gap-1 md:gap-2">
+        <motion.h1 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="text-2xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2 md:gap-3"
+        >
+          <ShoppingBag className="w-8 h-8 md:w-10 md:h-10 text-orange-500" />
+          Sản phẩm
+        </motion.h1>
+        <motion.p 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          className="text-slate-500 text-sm md:text-lg"
+        >
+          Mua sắm và khám phá các sản phẩm nổi bật dành cho cộng đồng
+        </motion.p>
       </div>
 
       {loading ? (
-        <div className="text-center py-12"><p className="text-slate-500">Đang tải...</p></div>
-      ) : products.length === 0 ? (
-        <div className="text-center py-12 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-3xl">
-          <p className="text-slate-500">Chưa có sản phẩm nào.</p>
+        <div className="flex items-center justify-center py-32">
+          <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
+      ) : products.length === 0 ? (
+        <NoData 
+          message="Chưa có sản phẩm" 
+          description="Chúng tôi đang lựa chọn các sản phẩm tốt nhất để giới thiệu đến bạn."
+          icon={ShoppingBag}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {products.map((product) => (

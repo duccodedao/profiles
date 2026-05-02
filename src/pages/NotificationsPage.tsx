@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Bell, CheckCircle2, ChevronRight, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
 import { toSafeDate } from '../lib/utils';
 import { vi } from 'date-fns/locale';
@@ -16,6 +16,8 @@ interface NotificationData {
   readBy: string[]; // array of UIDs
   iconType?: string;
 }
+
+import NoData from '../components/ui/NoData';
 
 export default function NotificationsPage() {
   const { user } = useAuthStore();
@@ -69,7 +71,7 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto px-4 lg:px-8 pb-20 pt-4">
       <AnimatePresence>
         {activeItem && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -122,27 +124,28 @@ export default function NotificationsPage() {
         )}
       </AnimatePresence>
 
-      <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold mb-2 text-slate-900 dark:text-white">Thông báo</h1>
-          <p className="text-slate-500">Cập nhật những thông tin mới nhất từ hệ thống.</p>
+          <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Thông báo</h1>
+          <p className="text-slate-500 text-lg">Cật nhật những thông tin mới nhất từ hệ thống.</p>
         </div>
         <button 
           onClick={markAllRead}
-          className="text-sm font-medium text-blue-500 hover:underline flex items-center gap-1 bg-primary-50 dark:bg-primary-900/10 px-3 py-1.5 rounded-lg"
+          className="text-sm font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-2 bg-blue-500/5 px-4 py-2 rounded-xl transition-all"
         >
           <CheckCircle2 className="w-4 h-4" />
-          Đánh dấu tất cả đã đọc
+          Đọc tất cả
         </button>
       </div>
 
       <div className="space-y-4">
         <AnimatePresence>
           {notifications.length === 0 ? (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 p-12 rounded-3xl text-center">
-              <Bell className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-              <p className="text-slate-500 font-medium">Chưa có thông báo nào</p>
-            </motion.div>
+            <NoData 
+              message="Chưa có thông báo" 
+              description="Hiện tại không có thông báo nào dành cho bạn. Hãy quay lại sau!"
+              icon={Bell}
+            />
           ) : (
             notifications.map((item, idx) => {
               const isRead = item.readBy?.includes(user?.uid || '');

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { 
   Home, Grid, Box, Info, UserCircle, 
-  Bell, Phone, Shield, LogOut, FileText, Newspaper, TrendingUp, Gift, Landmark, LineChart
+  Bell, Phone, Shield, LogOut, FileText, Newspaper, TrendingUp, Gift, Landmark, LineChart, Globe, Server
 } from 'lucide-react';
 import { collection, query, onSnapshot, getFirestore } from 'firebase/firestore';
 import { cn } from '../../lib/utils';
@@ -16,22 +16,14 @@ const navGroups = [
     title: 'Chính',
     items: [
       { name: 'Trang chủ', path: '/', icon: Home },
-      { name: 'Khám phá', path: '/market', icon: TrendingUp },
       { name: 'Tài khoản', path: '/profile', icon: UserCircle },
-      { name: 'Thông báo', path: '/notifications', icon: Bell, hasBadge: true },
     ]
   },
   {
-    title: 'Khám phá & Cập nhật',
+    title: 'Hệ Sinh Thái',
     items: [
-      { name: 'Tin tức', path: '/news', icon: Newspaper },
       { name: 'Sản phẩm', path: '/products', icon: Box },
       { name: 'Airdrop', path: '/airdrop', icon: Gift },
-    ]
-  },
-  {
-    title: 'Tài chính & Đối tác',
-    items: [
       { name: 'Ngân hàng', path: '/banks', icon: Landmark },
       { name: 'Sàn giao dịch', path: '/exchanges', icon: LineChart },
     ]
@@ -40,7 +32,7 @@ const navGroups = [
     title: 'Công cụ',
     items: [
       { name: 'Tiện ích & Tính năng', path: '/utilities', icon: Grid },
-      { name: 'Chia sẻ file', path: '/files', icon: FileText },
+      { name: 'Quản lý DNS Subdomain', path: '/dns', icon: Server },
     ]
   },
   {
@@ -60,43 +52,6 @@ export default function Sidebar({ className }: SidebarProps) {
   const { isAdmin, user, userData } = useAuthStore();
   const { setSidebarOpen } = useAppStore();
   const location = useLocation();
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [initialLoad, setInitialLoad] = useState(true);
-
-  useEffect(() => {
-    if (!user) return;
-    const q = query(collection(db, 'notifications'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      let count = 0;
-      
-      snapshot.docChanges().forEach((change) => {
-        if (change.type === 'added' && !initialLoad) {
-          const data = change.doc.data();
-          // Check Notification preferences
-          const prefs = userData?.notificationPreferences || { system: true, security: true, files: true };
-          let shouldNotify = false;
-          
-          if (data.type === 'security' && prefs.security) shouldNotify = true;
-          else if (data.type === 'file' && prefs.files) shouldNotify = true;
-          else if (prefs.system) shouldNotify = true; // default to system types
-          
-          if (shouldNotify && 'Notification' in window && Notification.permission === 'granted') {
-            new Notification(data.title, { body: data.content, icon: 'https://tytpht.hdd.io.vn/img/bmassloadings.png' });
-          }
-        }
-      });
-
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        if (!data.readBy?.includes(user.uid)) {
-          count++;
-        }
-      });
-      setUnreadCount(count);
-      setInitialLoad(false);
-    });
-    return () => unsubscribe();
-  }, [user, initialLoad, userData]);
 
   const handleLogout = () => {
     signOut(auth);
@@ -141,11 +96,6 @@ export default function Sidebar({ className }: SidebarProps) {
                       <item.icon className={cn("w-5 h-5", isActive ? "text-blue-600 dark:text-blue-400" : "text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white")} />
                       {item.name}
                     </div>
-                    {item.hasBadge && unreadCount > 0 && (
-                      <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        {unreadCount > 99 ? '99+' : unreadCount}
-                      </span>
-                    )}
                   </NavLink>
                 );
               })}

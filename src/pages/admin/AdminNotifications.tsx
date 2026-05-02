@@ -103,7 +103,7 @@ export default function AdminNotifications() {
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">Lịch sử thông báo</h2>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-900 dark:text-white">
+          <table className="w-full text-left text-sm text-slate-900 dark:text-white min-w-[700px]">
             <thead className="bg-slate-50 dark:bg-white/5 border-b border-slate-200 dark:border-white/10 text-slate-500">
               <tr>
                 <th className="px-6 py-4">Tiêu đề</th>

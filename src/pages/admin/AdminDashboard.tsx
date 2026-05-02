@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { Shield, Users, Activity, Settings, Trash2, StopCircle, RefreshCcw, Lock, Box, Wrench, AppWindow, Gamepad2, FileText, Newspaper, Code, Info, Mail, MessageSquare, ShieldAlert, Gift, Landmark, LineChart } from 'lucide-react';
+import { Shield, Users, Activity, Settings, Trash2, StopCircle, RefreshCcw, Lock, Box, Wrench, AppWindow, Gamepad2, FileText, Newspaper, Code, Info, Mail, MessageSquare, ShieldAlert, Gift, Landmark, LineChart, Bell, Globe, Server } from 'lucide-react';
 import { useAuthStore, UserData } from '../../store/authStore';
 import { useAppStore } from '../../store/appStore';
 import toast from 'react-hot-toast';
@@ -13,13 +13,12 @@ import { vi } from 'date-fns/locale';
 import AdminProducts from './AdminProducts';
 import AdminUtilities from './AdminUtilities';
 import AdminNotifications from './AdminNotifications';
-import AdminFiles from './AdminFiles'; 
 import AdminAirdrop from './AdminAirdrop';
 import AdminIpBlocking from './AdminIpBlocking';
 import AdminLogins from './AdminLogins';
 import AdminBanks from './AdminBanks';
 import AdminExchanges from './AdminExchanges';
-import AdminAITools from './AdminAITools';
+import AdminDnsRequests from './AdminDnsRequests';
 import { useConfirmStore } from '../../store/confirmStore';
 
 export default function AdminDashboard() {
@@ -29,8 +28,37 @@ export default function AdminDashboard() {
   
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'users' | 'system' | 'banned' | 'products' | 'utilities' | 'notifications' | 'github' | 'about' | 'contacts' | 'files' | 'airdrop' | 'logins' | 'banks' | 'exchanges' | 'ai_tools'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'system' | 'banned' | 'products' | 'utilities' | 'notifications' | 'github' | 'about' | 'contacts' | 'airdrop' | 'logins' | 'banks' | 'exchanges' | 'dns'>('users');
+  const [domainExpiryInput, setDomainExpiryInput] = useState('');
+  const { domainExpiryDate } = useAppStore();
+  
+  useEffect(() => {
+    if (domainExpiryDate) {
+      setDomainExpiryInput(domainExpiryDate);
+    }
+  }, [domainExpiryDate]);
+
+  const handleSaveDomainExpiry = async () => {
+    if (!isSuperAdmin) return toast.error('Quyền truy cập bị từ chối.');
+    if (!domainExpiryInput) return toast.error('Vui lòng chọn ngày!');
+    
+    try {
+      await setDoc(doc(db, 'settings', 'system'), { domainExpiryDate: domainExpiryInput }, { merge: true });
+      toast.success('Đã cập nhật thời hạn domain chung');
+    } catch (e) {
+      toast.error('Lỗi thiết lập!');
+    }
+  };
+
   const [contacts, setContacts] = useState<any[]>([]);
+  const [stats, setStats] = useState({
+    users: 0,
+    blockedIps: 0,
+    files: 0,
+    notifications: 0,
+    airdrops: 0,
+    utilities: 0
+  });
   const [aboutConfig, setAboutConfig] = useState({
     introTitle: '',
     introDesc: '',
@@ -66,9 +94,23 @@ export default function AdminDashboard() {
     };
     fetchAbout();
 
+    // Stats listeners
+    const unsubStatsUsers = onSnapshot(collection(db, 'users'), s => setStats(prev => ({ ...prev, users: s.size })));
+    const unsubStatsIps = onSnapshot(collection(db, 'blockedIps'), s => setStats(prev => ({ ...prev, blockedIps: s.size })));
+    const unsubStatsFiles = onSnapshot(collection(db, 'files'), s => setStats(prev => ({ ...prev, files: s.size })));
+    const unsubStatsNotifs = onSnapshot(collection(db, 'notifications'), s => setStats(prev => ({ ...prev, notifications: s.size })));
+    const unsubStatsAirdrops = onSnapshot(collection(db, 'airdrops'), s => setStats(prev => ({ ...prev, airdrops: s.size })));
+    const unsubStatsUtils = onSnapshot(collection(db, 'utilities'), s => setStats(prev => ({ ...prev, utilities: s.size })));
+
     return () => {
       unsubGithub();
       unsubContacts();
+      unsubStatsUsers();
+      unsubStatsIps();
+      unsubStatsFiles();
+      unsubStatsNotifs();
+      unsubStatsAirdrops();
+      unsubStatsUtils();
     };
   }, []);
 
@@ -232,24 +274,22 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Sidebar Navigation */}
-      <div className="w-64 border-r border-slate-200 dark:border-white/10 p-6 flex flex-col gap-8">
+      <div className="w-full lg:w-64 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-white/10 p-4 lg:p-6 flex flex-col gap-4 lg:gap-8 bg-white dark:bg-slate-900 lg:bg-transparent">
         <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Shield className="w-7 h-7 text-amber-500" />
             Control Panel 
         </h1>
         
-        <nav className="flex flex-col gap-1">
+        <nav className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0 scrollbar-hide">
           {[
             { id: 'users', label: 'Người dùng', icon: Users },
             { id: 'banned', label: 'IP Banned', icon: ShieldAlert },
             { id: 'system', label: 'Hệ thống', icon: Settings },
             { id: 'products', label: 'Sản phẩm', icon: Box },
-            { id: 'files', label: 'Chia sẻ file', icon: FileText },
             { id: 'notifications', label: 'Thông báo', icon: MessageSquare },
             { id: 'utilities', label: 'Tiện ích', icon: Wrench },
-            { id: 'ai_tools', label: 'Công cụ AI', icon: AppWindow },
             { id: 'banks', label: 'Ngân hàng ĐT', icon: Landmark },
             { id: 'exchanges', label: 'Sàn GT ĐT', icon: LineChart },
             { id: 'logins', label: 'Tài khoản ĐN', icon: Users },
@@ -257,19 +297,20 @@ export default function AdminDashboard() {
             { id: 'about', label: 'About Setup', icon: Info },
             { id: 'contacts', label: 'Yêu cầu hỗ trợ', icon: Mail },
             { id: 'airdrop', label: 'Quản lý Airdrop', icon: Gift },
+            { id: 'dns', label: 'DNS Subdomain', icon: Server },
           ].map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${activeTab === tab.id ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>
+            <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition shrink-0 lg:shrink ${activeTab === tab.id ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>
                 <tab.icon className="w-5 h-5" />
-                {tab.label}
+                <span className="whitespace-nowrap">{tab.label}</span>
             </button>
           ))}
         </nav>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-8">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-8">
-            Quản lý { {users: 'Người dùng', banned: 'IP Banned', system: 'Hệ thống', products: 'Sản phẩm', files: 'Chia sẻ file', notifications: 'Thông báo', utilities: 'Tiện ích', ai_tools: 'Công cụ AI', github: 'GitHub', about: 'About', contacts: 'Yêu cầu hỗ trợ', airdrop: 'Quản lý Airdrop', logins: 'Tài khoản đăng nhập', banks: 'Ngân hàng đối tác', exchanges: 'Sàn giao dịch đối tác'}[activeTab] }
+      <div className="flex-1 p-4 lg:p-10 overflow-x-auto w-full">
+        <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-8 uppercase tracking-tighter">
+            Quản lý { {users: 'Người dùng', banned: 'IP Banned', system: 'Hệ thống', products: 'Sản phẩm', notifications: 'Thông báo', utilities: 'Tiện ích', github: 'GitHub', about: 'About', contacts: 'Yêu cầu hỗ trợ', airdrop: 'Quản lý Airdrop', logins: 'Tài khoản đăng nhập', banks: 'Ngân hàng đối tác', exchanges: 'Sàn giao dịch đối tác', dns: 'Bản ghi DNS Subdomain'}[activeTab] }
         </h1>
 
 
@@ -461,12 +502,6 @@ export default function AdminDashboard() {
         </motion.div>
       )}
 
-      {activeTab === 'ai_tools' && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <AdminAITools />
-        </motion.div>
-      )}
-
       {activeTab === 'banks' && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <AdminBanks />
@@ -482,12 +517,6 @@ export default function AdminDashboard() {
       {activeTab === 'notifications' && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <AdminNotifications />
-        </motion.div>
-      )}
-
-      {activeTab === 'files' && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <AdminFiles />
         </motion.div>
       )}
 
@@ -551,6 +580,12 @@ export default function AdminDashboard() {
         </motion.div>
       )}
 
+      {activeTab === 'dns' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <AdminDnsRequests />
+        </motion.div>
+      )}
+
       {activeTab === 'logins' && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <AdminLogins />
@@ -571,14 +606,14 @@ export default function AdminDashboard() {
               <div className="p-12 pl-6 pr-6 text-center text-slate-500">Đang tải biểu dữ liệu...</div>
             ) : (
               <table className="w-full text-left border-collapse min-w-[1000px]">
-                <thead>
-                  <tr className="bg-slate-100/50 dark:bg-white/5 border-b border-slate-200 dark:border-white/10 text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
-                    <th className="px-6 py-4">Tài khoản</th>
-                    <th className="px-6 py-4">Vai trò</th>
-                    <th className="px-6 py-4">Trạng thái</th>
-                    <th className="px-6 py-4">Đăng nhập lần cuối</th>
-                    <th className="px-6 py-4">IP / Vị trí</th>
-                    <th className="px-6 py-4 text-right">Quản trị</th>
+                <thead className="bg-slate-50 dark:bg-white/5 border-b border-slate-200 dark:border-white/10 text-slate-500">
+                  <tr>
+                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-500">Tài khoản</th>
+                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-500">Vai trò</th>
+                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-500">Trạng thái</th>
+                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-500">Đăng nhập lần cuối</th>
+                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-500">IP / Vị trí</th>
+                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-500 text-right">Quản trị</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-white/10 text-sm">
@@ -665,6 +700,28 @@ export default function AdminDashboard() {
 
       {activeTab === 'system' && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+          {/* Quick Stats Summary */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            {[
+              { label: 'Người dùng', value: stats.users, icon: Users, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+              { label: 'IP Bị chặn', value: stats.blockedIps, icon: ShieldAlert, color: 'text-rose-500', bg: 'bg-rose-500/10' },
+              { label: 'Tài liệu', value: stats.files, icon: FileText, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+              { label: 'Thông báo', value: stats.notifications, icon: Bell, color: 'text-purple-500', bg: 'bg-purple-500/10' },
+              { label: 'Airdrops', value: stats.airdrops, icon: Gift, color: 'text-pink-500', bg: 'bg-pink-500/10' },
+              { label: 'Tiện ích', value: stats.utilities, icon: Box, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+            ].map((s, i) => (
+              <div key={i} className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 p-4 rounded-2xl flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center shrink-0`}>
+                  <s.icon className={`w-5 h-5 ${s.color}`} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider leading-none mb-1">{s.label}</p>
+                  <h4 className="text-lg font-black text-slate-900 dark:text-white leading-none">{s.value}</h4>
+                </div>
+              </div>
+            ))}
+          </div>
+
           <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-[2rem] p-6 lg:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
             <div className="flex items-center gap-4">
               <div className={`w-14 h-14 rounded-full flex items-center justify-center border-4 ${maintenanceMode ? 'bg-amber-500/20 text-amber-500 border-amber-500/30' : 'bg-green-500/20 text-green-500 border-green-500/30'}`}>
@@ -685,6 +742,35 @@ export default function AdminDashboard() {
               <RefreshCcw className="w-4 h-4" />
               {maintenanceMode ? 'Khôi phục Web' : 'Bật Bảo trì Tổng'}
             </button>
+          </div>
+
+          <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-[2rem] p-6 lg:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full flex items-center justify-center border-4 bg-indigo-500/20 text-indigo-500 border-indigo-500/30">
+                <Globe className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Thiết lập Hạn sử dụng Subdomain</h3>
+                <p className="text-sm text-slate-500 mt-1 max-w-sm">Người dùng sẽ không thấy ngày hết hạn thực tế của domain mà chỉ thấy số ngày còn lại theo cài đặt này.</p>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+              <div className="relative w-full sm:w-auto">
+                <input 
+                  type="date"
+                  value={domainExpiryInput}
+                  onChange={(e) => setDomainExpiryInput(e.target.value)}
+                  className="w-full sm:w-48 px-4 py-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl outline-none focus:ring-4 ring-indigo-500/20 transition-all dark:text-white"
+                />
+              </div>
+              <button
+                onClick={handleSaveDomainExpiry}
+                disabled={!isSuperAdmin}
+                className="w-full sm:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold uppercase tracking-wider text-sm transition-all disabled:opacity-50"
+              >
+                Lưu
+              </button>
+            </div>
           </div>
 
           <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-[2rem] p-6 lg:p-8 shadow-sm">

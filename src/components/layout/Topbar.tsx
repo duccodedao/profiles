@@ -1,18 +1,58 @@
-import { Menu, Sun, CloudRain, Cloud, CloudLightning, Snowflake } from 'lucide-react';
+import { Menu, Sun, CloudRain, Cloud, CloudLightning, Snowflake, Moon, Bell } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
 import { useAuthStore } from '../../store/authStore';
 import { useState, useEffect } from 'react';
+import { collection, query, onSnapshot } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
+import { useNavigate } from 'react-router-dom';
 
 export default function Topbar() {
-  const { toggleSidebar } = useAppStore();
-  const { userData } = useAuthStore();
+  const { toggleSidebar, darkMode, toggleDarkMode } = useAppStore();
+  const { user, userData } = useAuthStore();
   const [time, setTime] = useState(new Date());
   const [weather, setWeather] = useState<{ temp: number; code: number } | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [initialLoad, setInitialLoad] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    const q = query(collection(db, 'notifications'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      let count = 0;
+      
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === 'added' && !initialLoad) {
+          const data = change.doc.data();
+          const prefs = userData?.notificationPreferences || { system: true, security: true, files: true };
+          let shouldNotify = false;
+          
+          if (data.type === 'security' && prefs.security) shouldNotify = true;
+          else if (data.type === 'file' && prefs.files) shouldNotify = true;
+          else if (prefs.system) shouldNotify = true; 
+          
+          if (shouldNotify && 'Notification' in window && Notification.permission === 'granted') {
+            new Notification(data.title, { body: data.content, icon: 'https://tytpht.hdd.io.vn/img/bmassloadings.png' });
+          }
+        }
+      });
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        if (!data.readBy?.includes(user.uid)) {
+          count++;
+        }
+      });
+      setUnreadCount(count);
+      setInitialLoad(false);
+    });
+    return () => unsubscribe();
+  }, [user, initialLoad, userData]);
 
   useEffect(() => {
     if ("geolocation" in navigator) {
@@ -88,7 +128,28 @@ export default function Topbar() {
       </div>
 
       <div className="flex items-center gap-4">
+        <button 
+          onClick={toggleDarkMode}
+          className="p-2.5 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-all hover:scale-105"
+          title={darkMode ? 'Chế độ sáng' : 'Chế độ tối'}
+        >
+          {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+        </button>
+
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate('/notifications')}
+            className="p-2.5 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-all hover:scale-105 relative mr-2"
+            title="Thông báo"
+          >
+            <Bell className="w-5 h-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-lg">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
+          
           <div className="text-right hidden sm:block">
             <p className="text-sm font-medium text-slate-900 dark:text-white leading-none">
               {userData?.displayName || 'Người dùng'}

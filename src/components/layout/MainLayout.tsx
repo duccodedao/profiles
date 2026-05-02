@@ -1,5 +1,5 @@
 import { Outlet, Navigate, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useAppStore } from '../../store/appStore';
 import { useAuthStore } from '../../store/authStore';
 import Sidebar from './Sidebar';
@@ -41,7 +41,7 @@ export default function MainLayout() {
       <div className="flex-1 flex flex-col overflow-hidden min-w-0 z-10">
         <Topbar />
         
-        <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-6 lg:p-8 relative">
+        <main className="flex-1 overflow-x-auto overflow-y-auto p-4 md:p-6 lg:p-8 relative">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
@@ -49,7 +49,7 @@ export default function MainLayout() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
               transition={{ duration: 0.25, ease: "easeOut" }}
-              className="max-w-7xl mx-auto h-full"
+              className="max-w-[1700px] mx-auto h-full w-full"
             >
               <Outlet />
             </motion.div>

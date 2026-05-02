@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Gift, ArrowRight } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+
+import NoData from '../components/ui/NoData';
 
 export default function AirdropPage() {
   const [airdrops, setAirdrops] = useState<any[]>([]);
@@ -16,49 +18,32 @@ export default function AirdropPage() {
   }, []);
 
   return (
-    <div className="flex-1 flex flex-col w-full h-full p-4 lg:p-8">
-      <motion.h1
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-4xl font-black text-slate-900 dark:text-white mb-2 flex items-center gap-3 tracking-tight"
-      >
-        <Gift className="w-10 h-10 text-pink-500" />
-        Dự án Airdrop
-      </motion.h1>
-      <motion.p 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.1 }}
-        className="text-slate-500 text-lg mb-8"
-      >
-        Tham gia các chương trình Airdrop hấp dẫn để nhận thưởng
-      </motion.p>
+    <div className="max-w-7xl mx-auto space-y-6 md:space-y-8 pb-20 pt-4 px-4 lg:px-8">
+      <div className="flex flex-col gap-1 md:gap-2">
+        <motion.h1 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="text-2xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2 md:gap-3"
+        >
+          <Gift className="w-8 h-8 md:w-10 md:h-10 text-pink-500" />
+          Dự án Airdrop
+        </motion.h1>
+        <motion.p 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          className="text-slate-500 text-sm md:text-lg"
+        >
+          Tham gia các chương trình Airdrop từ các đối tác bmassHD
+        </motion.p>
+      </div>
       
       {airdrops.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-32 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-[3rem]">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="w-24 h-24 rounded-[2.5rem] bg-pink-500/10 flex items-center justify-center text-pink-600 mb-8 border border-pink-500/20 shadow-xl shadow-pink-500/5"
-          >
-            <Gift className="w-12 h-12" />
-          </motion.div>
-          <motion.h2 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-3xl font-black text-slate-900 dark:text-white mb-4 tracking-tighter"
-          >
-            Sắp ra mắt
-          </motion.h2>
-          <motion.p 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-slate-500 text-lg mb-8"
-          >
-            Các chương trình Airdrop hấp dẫn đang được chuẩn bị.
-          </motion.p>
-        </div>
+        <NoData 
+          message="Sắp có sự kiện mới" 
+          description="Đội ngũ bmassHD đang chọn lọc các dự án Airdrop tiềm năng nhất để gửi tới bạn."
+          icon={Gift}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {airdrops.map((airdrop, index) => (
@@ -79,9 +64,6 @@ export default function AirdropPage() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-slate-900 dark:text-white line-clamp-2 leading-tight mb-1 group-hover:text-pink-500 transition-colors">{airdrop.title}</h3>
-                  {airdrop.rewards && (
-                    <p className="text-sm font-medium text-pink-500 bg-pink-500/10 px-2 py-1 rounded-lg inline-block">{airdrop.rewards}</p>
-                  )}
                 </div>
               </div>
               

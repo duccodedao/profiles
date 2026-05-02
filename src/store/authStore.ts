@@ -19,6 +19,7 @@ export interface UserData {
   photoURL: string;
   role: 'user' | 'admin' | 'superadmin';
   status: 'active' | 'banned';
+  isBanned?: boolean;
   createdAt: number;
   lastLoginAt: number;
   location?: { lat: number, lng: number, address?: string };

@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Landmark, ArrowRight, ExternalLink } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
+
+import NoData from '../components/ui/NoData';
 
 export default function BanksPage() {
   const [banks, setBanks] = useState<any[]>([]);
@@ -16,32 +18,32 @@ export default function BanksPage() {
   }, []);
 
   return (
-    <div className="flex-1 flex flex-col w-full h-full p-4 lg:p-8">
-      <motion.h1 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-4xl font-black text-slate-900 dark:text-white mb-2 tracking-tight flex items-center gap-3"
-      >
-        <Landmark className="w-10 h-10 text-blue-500" />
-        Ngân hàng đối tác
-      </motion.h1>
-      <motion.p 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.1 }}
-        className="text-slate-500 text-lg mb-8"
-      >
-        Mở thẻ và tài khoản ngân hàng nhận nhiều ưu đãi hấp dẫn
-      </motion.p>
+    <div className="max-w-7xl mx-auto space-y-6 md:space-y-8 pb-20 pt-4 px-4 lg:px-8">
+      <div className="flex flex-col gap-1 md:gap-2">
+        <motion.h1 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="text-2xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2 md:gap-3"
+        >
+          <Landmark className="w-8 h-8 md:w-10 md:h-10 text-blue-500" />
+          Ngân hàng đối tác
+        </motion.h1>
+        <motion.p 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          className="text-slate-500 text-sm md:text-lg"
+        >
+          Mở thẻ và tài khoản ngân hàng nhanh chóng
+        </motion.p>
+      </div>
       
       {banks.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-32 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-[3rem]">
-          <div className="w-24 h-24 bg-blue-500/10 rounded-[2.5rem] flex items-center justify-center text-blue-600 mb-6">
-            <Landmark className="w-12 h-12" />
-          </div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Đang cập nhật</h2>
-          <p className="text-slate-500">Các đối tác ngân hàng sẽ sớm có mặt tại đây.</p>
-        </div>
+        <NoData 
+          message="Đang cập nhật đối tác" 
+          description="Chúng tôi đang đàm phán với nhiều ngân hàng để mang lại quyền lợi tốt nhất cho bạn."
+          icon={Landmark}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {banks.map((bank, index) => (
@@ -62,7 +64,6 @@ export default function BanksPage() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-slate-900 dark:text-white line-clamp-2 leading-tight mb-1 group-hover:text-blue-500 transition-colors">{bank.title}</h3>
-                  <p className="text-sm font-medium text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-lg inline-block">{bank.benefits || 'Nhiều ưu đãi'}</p>
                 </div>
               </div>
               

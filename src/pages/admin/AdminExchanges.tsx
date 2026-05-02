@@ -92,9 +92,9 @@ export default function AdminExchanges() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
       {/* Form Server */}
-      <div className="lg:col-span-1">
+      <div className="lg:col-span-2">
         <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-6 sticky top-8 shadow-sm">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
             <LineChart className="w-5 h-5 text-emerald-500" />
@@ -143,7 +143,7 @@ export default function AdminExchanges() {
       </div>
 
       {/* List */}
-      <div className="lg:col-span-2 space-y-4">
+      <div className="lg:col-span-3 space-y-4">
         {exchanges.length === 0 ? (
           <EmptyState title="Sàn giao dịch đối tác" />
         ) : (

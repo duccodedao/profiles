@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { doc, updateDoc, collection, query, where, orderBy, onSnapshot, limit } from 'firebase/firestore';
+import { doc, updateDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { updateProfile, sendPasswordResetEmail, sendEmailVerification } from 'firebase/auth';
-import { auth, db } from '../lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { auth, db, storage } from '../lib/firebase';
 import toast from 'react-hot-toast';
-import { Camera, User, Mail, Shield, CheckCircle2, ChevronRight, KeyRound, Clock, Activity, AlertTriangle } from 'lucide-react';
+import { Camera, User, Mail, Shield, CheckCircle2, ChevronRight, KeyRound, Clock, Activity, AlertTriangle, Loader2 } from 'lucide-react';
 import { toSafeDate } from '../lib/utils';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -23,6 +24,8 @@ export default function Profile() {
   const { user, userData } = useAuthStore();
   const [displayName, setDisplayName] = useState(userData?.displayName || '');
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { openConfirm } = useConfirmStore();
 
   const [passwordCooldown, setPasswordCooldown] = useState(0);
@@ -42,13 +45,14 @@ export default function Profile() {
     if (userData?.socialLinks) {
        setSocialLinks({...socialLinks, ...userData.socialLinks});
     }
+    if (userData?.displayName) {
+      setDisplayName(userData.displayName);
+    }
   }, [userData]);
 
   useEffect(() => {
     if (!user) return;
 
-    // We simplify the query to avoid the index error (where + orderBy requires composite index)
-    // We will sort client-side for the latest 10 activities
     const q = query(
       collection(db, 'activities'), 
       where('userId', '==', user.uid)
@@ -60,7 +64,6 @@ export default function Profile() {
         ...doc.data() 
       } as ActivityLog));
 
-      // Client-side sort and limit
       const sorted = allActivities
         .sort((a, b) => {
           const dateA = a.timestamp ? toSafeDate(a.timestamp).getTime() : 0;
@@ -88,6 +91,41 @@ export default function Profile() {
     return () => { clearInterval(pTimer); clearInterval(vTimer); };
   }, [passwordCooldown, verifyCooldown]);
 
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      return toast.error('Kích thước ảnh không được vượt quá 2MB');
+    }
+
+    setUploading(true);
+    const toastId = toast.loading('Đang tải ảnh lên...');
+
+    try {
+      const storageRef = ref(storage, `avatars/${user.uid}/${Date.now()}_${file.name}`);
+      const snapshot = await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+
+      await updateProfile(user, { photoURL: downloadURL });
+      await updateDoc(doc(db, 'users', user.uid), {
+        photoURL: downloadURL
+      });
+
+      await logActivity(ActivityType.UPDATE_PROFILE, 'Đã cập nhật ảnh đại diện');
+      toast.success('Cập nhật ảnh đại diện thành công', { id: toastId });
+    } catch (error) {
+      console.error("Avatar upload error:", error);
+      toast.error('Lỗi khi tải ảnh lên. Vui lòng thử lại.', { id: toastId });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -102,7 +140,6 @@ export default function Profile() {
       await logActivity(ActivityType.UPDATE_PROFILE, `Đã cập nhật cấu hình tài khoản (Tên: ${displayName})`);
       toast.success('Cập nhật cấu hình thành công');
       
-      // Request browser push notification permission if enabled
       if (notifPerms.system || notifPerms.security || notifPerms.files) {
         if ('Notification' in window && Notification.permission !== 'granted') {
           Notification.requestPermission();
@@ -185,45 +222,72 @@ export default function Profile() {
       
       {/* Header Profile Summary */}
       <div className="glass-card rounded-[2rem] p-6 md:p-8 flex items-center flex-col sm:flex-row gap-6 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-primary-500 to-indigo-600 opacity-20 blur-3xl pointer-events-none" />
+        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-primary-500 to-indigo-600 opacity-10 blur-3xl pointer-events-none" />
         
-        <div className="relative group">
-          <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-white dark:border-slate-800 shadow-xl bg-slate-100 dark:bg-slate-900">
+        <div className="relative group mx-auto sm:mx-0">
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleAvatarChange} 
+            className="hidden" 
+            accept="image/*"
+          />
+          <div 
+            className={`w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-white dark:border-slate-800 shadow-xl bg-slate-100 dark:bg-slate-900 relative ${uploading ? 'opacity-50' : ''}`}
+          >
             {userData?.photoURL ? (
               <img src={userData.photoURL} alt="Avatar" className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-primary-500">
+              <div className="w-full h-full flex items-center justify-center text-4xl font-black text-slate-400">
                 {userData?.displayName?.charAt(0).toUpperCase() || 'U'}
               </div>
             )}
+            {uploading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                <Loader2 className="w-8 h-8 text-white animate-spin" />
+              </div>
+            )}
           </div>
-          <button className="absolute bottom-0 right-0 p-2 bg-primary-600 text-white rounded-full shadow-lg hover:bg-primary-700 transition">
+          <button 
+            onClick={handleAvatarClick}
+            disabled={uploading}
+            className="absolute bottom-1 right-1 p-2 bg-primary-600 text-white rounded-full shadow-lg hover:bg-primary-700 transition disabled:opacity-50"
+          >
             <Camera className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="text-center sm:text-left z-10 flex-1">
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-2">
-            {userData?.displayName || 'Người dùng'}
+        <div className="text-center sm:text-left space-y-2 relative z-10 flex-1">
+          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tighter">
+            {userData?.displayName || 'Thành viên'}
           </h1>
-          <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-2 sm:gap-4 text-slate-500 text-sm">
-            <span className="flex items-center gap-1">
-              <Mail className="w-4 h-4" />
-              {userData?.email}
+          <p className="text-blue-600 font-bold flex items-center justify-center sm:justify-start gap-2">
+            <Mail className="w-4 h-4" /> {user?.email}
+          </p>
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
+            <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-white/10 text-[10px] font-black uppercase tracking-widest text-slate-500">
+              {userData?.role || 'Member'}
             </span>
-            <span className="hidden sm:inline">・</span>
-            <span className="flex items-center gap-1">
-              <Shield className="w-4 h-4" />
-              Vai trò: <strong className="uppercase">{userData?.role}</strong>
-            </span>
+            {user?.emailVerified ? (
+              <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3" /> Đã xác thực
+              </span>
+            ) : (
+              <button 
+                onClick={handleVerifyEmail}
+                disabled={verifyCooldown > 0}
+                className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 hover:bg-amber-500/20 transition-all disabled:opacity-50"
+              >
+                <AlertTriangle className="w-3 h-3" /> Chưa xác thực
+              </button>
+            )}
           </div>
+          
           <div className="mt-4 flex flex-wrap justify-center sm:justify-start gap-2">
-             <a href="https://myaccount.google.com/" target="_blank" rel="noreferrer" className="text-xs px-3 py-1 bg-white/50 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 rounded-full border border-slate-200 dark:border-white/10 transition text-slate-700 dark:text-slate-300">Tài khoản Google</a>
-             <a href="https://myaccount.google.com/personal-info" target="_blank" rel="noreferrer" className="text-xs px-3 py-1 bg-white/50 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 rounded-full border border-slate-200 dark:border-white/10 transition text-slate-700 dark:text-slate-300">Thông tin cá nhân</a>
-             <a href="https://myaccount.google.com/security" target="_blank" rel="noreferrer" className="text-xs px-3 py-1 bg-white/50 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 rounded-full border border-slate-200 dark:border-white/10 transition text-slate-700 dark:text-slate-300">Bảo mật</a>
-             <a href="https://myaccount.google.com/notifications?origin=3" target="_blank" rel="noreferrer" className="text-xs px-3 py-1 bg-white/50 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 rounded-full border border-slate-200 dark:border-white/10 transition text-slate-700 dark:text-slate-300">Hoạt động bảo mật</a>
-             <a href="https://myaccount.google.com/device-activity" target="_blank" rel="noreferrer" className="text-xs px-3 py-1 bg-white/50 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 rounded-full border border-slate-200 dark:border-white/10 transition text-slate-700 dark:text-slate-300">Thiết bị của bạn</a>
-             <a href="https://myaccount.google.com/video-verification" target="_blank" rel="noreferrer" className="text-xs px-3 py-1 bg-white/50 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 rounded-full border border-slate-200 dark:border-white/10 transition text-slate-700 dark:text-slate-300">Video selfie</a>
+             <a href="https://myaccount.google.com/" target="_blank" rel="noreferrer" className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 bg-white/50 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 rounded-full border border-slate-200 dark:border-white/10 transition text-slate-700 dark:text-slate-300">Tài khoản Google</a>
+             <a href="https://myaccount.google.com/personal-info" target="_blank" rel="noreferrer" className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 bg-white/50 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 rounded-full border border-slate-200 dark:border-white/10 transition text-slate-700 dark:text-slate-300">Thông tin cá nhân</a>
+             <a href="https://myaccount.google.com/security" target="_blank" rel="noreferrer" className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 bg-white/50 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 rounded-full border border-slate-200 dark:border-white/10 transition text-slate-700 dark:text-slate-300">Bảo mật</a>
+             <a href="https://myaccount.google.com/device-activity" target="_blank" rel="noreferrer" className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 bg-white/50 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 rounded-full border border-slate-200 dark:border-white/10 transition text-slate-700 dark:text-slate-300">Thiết bị của bạn</a>
           </div>
         </div>
 
@@ -357,66 +421,81 @@ export default function Profile() {
         {/* Security & Stats Box */}
         <div className="space-y-6">
           <div className="glass-card rounded-[2rem] p-6">
-            <h3 className="font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+            <h3 className="font-black text-slate-900 dark:text-white mb-6 flex items-center gap-2 uppercase tracking-tighter text-xl">
               <Shield className="w-5 h-5 text-indigo-500" />
               Bảo mật
             </h3>
             
-            <div className="space-y-2">
+            <div className="space-y-3">
               <button 
                 onClick={handleChangePassword} 
                 disabled={passwordCooldown > 0}
-                className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-white/10 transition text-left text-sm group disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 dark:text-slate-300"
+                className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-2xl hover:bg-slate-100 dark:hover:bg-white/10 transition text-left text-sm group disabled:opacity-50 disabled:cursor-not-allowed border border-transparent hover:border-slate-200 dark:hover:border-white/10"
               >
-                <span className="flex items-center gap-3">
-                  <span className="w-8 h-8 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0">
-                    <KeyRound className="w-4 h-4" />
-                  </span>
-                  Đổi mật khẩu {passwordCooldown > 0 && `(${passwordCooldown}s)`}
-                </span>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white shrink-0" />
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-orange-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-orange-500/20">
+                    <KeyRound className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="font-black text-slate-900 dark:text-white uppercase tracking-widest text-[10px]">Mật khẩu</p>
+                    <p className="text-slate-500 text-[11px] font-bold">Cập nhật mã bảo mật</p>
+                  </div>
+                </div>
+                {passwordCooldown > 0 ? (
+                  <span className="text-[10px] font-black text-orange-500">{passwordCooldown}S</span>
+                ) : (
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+                )}
               </button>
 
               <button 
                 onClick={handleVerifyEmail} 
                 disabled={verifyCooldown > 0 || user?.emailVerified}
-                className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-white/10 transition text-left text-sm group disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 dark:text-slate-300"
+                className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-2xl hover:bg-slate-100 dark:hover:bg-white/10 transition text-left text-sm group disabled:opacity-50 disabled:cursor-not-allowed border border-transparent hover:border-slate-200 dark:hover:border-white/10"
               >
-                <span className="flex items-center gap-3">
-                  <span className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="w-4 h-4" />
-                  </span>
-                  {user?.emailVerified ? 'Đã xác minh Email' : `Xác minh Email ${verifyCooldown > 0 ? `(${verifyCooldown}s)` : ''}`}
-                </span>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white shrink-0" />
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/20">
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="font-black text-slate-900 dark:text-white uppercase tracking-widest text-[10px]">Email</p>
+                    <p className="text-slate-500 text-[11px] font-bold">Xác thực danh tính</p>
+                  </div>
+                </div>
+                {user?.emailVerified ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                ) : verifyCooldown > 0 ? (
+                  <span className="text-[10px] font-black text-amber-500">{verifyCooldown}S</span>
+                ) : (
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+                )}
               </button>
             </div>
           </div>
 
           <div className="glass-card rounded-[2rem] p-6">
-            <h3 className="font-bold text-sm text-slate-500 mb-4 uppercase tracking-wider">Thống kê</h3>
-            <div className="space-y-4">
-              <div>
-                <p className="text-xs text-slate-500 mb-1">Ngày tham gia</p>
-                <p className="font-medium text-slate-900 dark:text-white">
+            <h3 className="font-black text-slate-900 dark:text-white mb-6 uppercase tracking-tighter text-xl">Thống kê</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 rounded-3xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 leading-tight">Gia nhập</p>
+                <p className="font-black text-slate-900 dark:text-white text-sm">
                   {userData?.createdAt ? toSafeDate(userData.createdAt).toLocaleDateString('vi-VN') : 'N/A'}
                 </p>
               </div>
-              <div className="h-px bg-slate-200 dark:bg-white/10" />
-              <div>
-                <p className="text-xs text-slate-500 mb-1">Trạng thái tài khoản</p>
-                <div className="inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-full text-xs font-semibold">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                  Đang hoạt động
+              <div className="p-4 rounded-3xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 leading-tight">Trạng thái</p>
+                <div className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                  Online
                 </div>
               </div>
             </div>
           </div>
           
-          <div className="glass-card rounded-[2rem] p-6">
-            <h3 className="font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+          <div className="glass-card rounded-[2rem] p-6 lg:mb-0 mb-20">
+            <h3 className="font-black text-slate-900 dark:text-white mb-6 flex items-center gap-2 uppercase tracking-tighter text-xl">
               <Clock className="w-5 h-5 text-blue-500" />
-              Lịch sử hoạt động
+              Hoạt động
             </h3>
             
             <div className="space-y-6">

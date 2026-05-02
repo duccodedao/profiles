@@ -84,8 +84,8 @@ export default function AdminIpBlocking() {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden">
-        <table className="w-full text-left text-sm text-slate-900 dark:text-white">
+      <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl overflow-x-auto">
+        <table className="w-full text-left text-sm text-slate-900 dark:text-white min-w-[600px]">
           <thead className="bg-slate-50 dark:bg-white/5 text-slate-500 border-b border-slate-200 dark:border-white/10">
             <tr>
               <th className="px-6 py-4">IP</th>

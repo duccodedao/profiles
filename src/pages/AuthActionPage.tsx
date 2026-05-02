@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { auth } from '../lib/firebase';
 import { applyActionCode, confirmPasswordReset, verifyPasswordResetCode } from 'firebase/auth';
 import { Lock, Mail, CheckCircle, AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 export default function AuthActionPage() {
   const [searchParams] = useSearchParams();
